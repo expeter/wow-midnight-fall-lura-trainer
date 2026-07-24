@@ -2,6 +2,8 @@
 .entry-choice { display: flex; align-items: center; gap: 8px; margin-top: 28px; padding: 8px; border: 1px solid #26324e; border-radius: 10px; background: #0e1425; }
 .entry-choice span { margin: 0 8px; color: #8190ad; font: 10px 'DM Mono', monospace; text-transform: uppercase; letter-spacing: .08em; }
 .entry-choice button { padding: 9px 13px; }
+.entry-choice .coming-soon { color: #71809e; border-style: dashed; background: rgba(16,24,43,.58); cursor: not-allowed; opacity: .62; white-space: nowrap; }
+.entry-choice .coming-soon:hover { color: #71809e; border-color: #354361; background: rgba(16,24,43,.58); }
 .entry-choice .entry-start { width: auto; margin: 0 0 0 auto; padding: 10px 20px; white-space: nowrap; }
 .position-map { position: relative; width: min(100%, 952px); aspect-ratio: 16 / 9; margin: 0 0 24px; border: 1px solid #354361; border-radius: 12px; background-size: 140%; background-position: center; overflow: hidden; }
 .position-map::before, .position-map::after { content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); aspect-ratio: 1; border: 2px solid rgba(190,185,232,.78); border-radius: 50%; pointer-events: none; }

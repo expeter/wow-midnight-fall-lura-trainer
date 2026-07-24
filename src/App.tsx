@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import { bossBeamHitsPlayer, canPickupCrystal, canRecoverFromWipe, crystalCarrierPosition, crystalWipeReason, difficultySettings, distance, healthEmergencyLimit, isInSafeAnnulus, moveRelativeToCamera, moveWithIncreasingPull, npcEntryPosition, OPENING_BOOST_SECONDS, orientedAssignments, PLAYER_COLLISION_PENALTY, roamingNpcPosition, WIPE_PENALTY, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type Role } from './game'
+import { bossBeamHitsPlayer, canPickupCrystal, canRecoverFromWipe, crystalCarrierPosition, crystalWipeReason, difficultySettings, distance, healthEmergencyLimit, isInSafeAnnulus, moveRelativeToCamera, moveWithIncreasingPull, npcEntryPosition, OPENING_BOOST_SECONDS, orientedAssignments, P2_PERSONAL_CIRCLE_OUTER_RADIUS, PLAYER_COLLISION_PENALTY, roamingNpcPosition, WIPE_PENALTY, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type Role } from './game'
 import GameScene from './GameScene'
 import './styles.css'
 
@@ -10,8 +10,8 @@ const HEALTH_REACTION_EVENTS = new Set<EventKind>(['beam', 'splinter', 'p2-orbs'
 interface GameStats { score: number; hits: number; crystalDropped: boolean; time: number }
 interface Assignment { x: number; y: number }
 interface Mistake { id: number; time: number; label: string; penalty: number }
-interface KeyBindings { forward: string; backward: string; left: string; right: string; crystal: string; pause: string; healthPot: string; shield: string; mainAbility: string }
-type HudElement = 'mechanic' | 'beam' | 'crystal' | 'playerHealth' | 'bossHealth'
+interface KeyBindings { forward: string; backward: string; left: string; right: string; jump: string; crystal: string; pause: string; healthPot: string; shield: string; mainAbility: string }
+type HudElement = 'mechanic' | 'beam' | 'crystal' | 'playerHealth' | 'bossHealth' | 'castbar'
 type HudLayout = Record<HudElement, Point>
 
 const WORLD = { width: 960, height: 540, center: { x: 480, y: 270 }, innerRadius: 102, outerRadius: 169 }
@@ -19,7 +19,20 @@ const P2_RADIUS = WORLD.innerRadius * .54
 const P2_ASSIGNMENT_RADIUS = P2_RADIUS - 6
 const P2_CRYSTAL_SPREAD_RADIUS = 28
 const P2_MAP_SCALE = { x: 3.34, y: 1.88 }
+const P2_PLANNER_CIRCLE_DIAMETER = P2_PERSONAL_CIRCLE_OUTER_RADIUS * 2 / P2_MAP_SCALE.x
 const STAR_LENGTH = WORLD.outerRadius * 2 * .1
+const CREATOR_AVATAR = new URL('../images/pestivator-avatar.jpg', import.meta.url).href
+const SOLANA_ADDRESS = 'E684K1q1gzodtZK3xgdBXfTeRQbWWhSu8kVbzZNiw9Cz'
+const MUSIC_TRACKS = [
+  { id: 'panic', label: 'Panic Again Pulse · 1:19', src: new URL('../sounds/pixabay/oceanframemusic-panic-again-pulse-no-copyright-suspense-music-568851.mp3', import.meta.url).href },
+  { id: 'dominion', label: 'Dominion · 1:16', src: new URL('../sounds/pixabay/ancient_echoes-dominion-519384.mp3', import.meta.url).href },
+  { id: 'breath', label: 'Breath · 1:39', src: new URL('../sounds/pixabay/oceanframemusic-breath-no-copyright-suspense-music-568847.mp3', import.meta.url).href },
+  { id: 'cinematic', label: 'Cinematic Background · 2:46', src: new URL('../sounds/pixabay/the_mountain-cinematic-background-487010.mp3', import.meta.url).href },
+] as const
+type MusicTrackId = typeof MUSIC_TRACKS[number]['id']
+const DEFAULT_MUSIC_TRACK: MusicTrackId = 'panic'
+const DEFAULT_MUSIC_VOLUME = .2
+const PERSONAL_JUMP_SECONDS = .65
 const DEFAULT_ASSIGNMENTS: Assignment[] = [
   ...Array.from({ length: 8 }, (_, i) => { const a = -Math.PI / 2 + i * Math.PI * 2 / 8; return { x: WORLD.center.x + Math.cos(a) * 125, y: WORLD.center.y + Math.sin(a) * 125 } }),
   ...Array.from({ length: 12 }, (_, i) => { const a = -Math.PI / 2 + i * Math.PI * 2 / 12; return { x: WORLD.center.x + Math.cos(a) * 153, y: WORLD.center.y + Math.sin(a) * 153 } }),
@@ -69,17 +82,19 @@ const DEFAULT_PROFILES: PlayerProfile[] = Array.from({ length: 20 }, (_, index) 
   playerClass: CLASS_OPTIONS[index % CLASS_OPTIONS.length].value,
   crystal: [1, 4, 7, 10, 13, 16].includes(index),
 }))
-const DEFAULT_KEY_BINDINGS: KeyBindings = { forward: 'KeyW', backward: 'KeyS', left: 'KeyA', right: 'KeyD', crystal: 'KeyE', pause: 'Space', healthPot: 'KeyQ', shield: 'KeyR', mainAbility: 'KeyF' }
+const DEFAULT_KEY_BINDINGS: KeyBindings = { forward: 'KeyW', backward: 'KeyS', left: 'KeyA', right: 'KeyD', jump: 'Space', crystal: 'KeyE', pause: 'KeyP', healthPot: 'KeyQ', shield: 'KeyR', mainAbility: 'KeyF' }
 const DEFAULT_HUD_LAYOUT: HudLayout = {
   mechanic: { x: 50, y: 24 },
   beam: { x: 50, y: 39 },
   crystal: { x: 50, y: 74 },
   playerHealth: { x: 50, y: 86 },
   bossHealth: { x: 50, y: 10 },
+  castbar: { x: 50, y: 66 },
 }
 const KEY_BIND_LABELS: { action: keyof KeyBindings; label: string }[] = [
   { action: 'forward', label: 'Forward' }, { action: 'backward', label: 'Backward' },
   { action: 'left', label: 'Strafe left' }, { action: 'right', label: 'Strafe right' },
+  { action: 'jump', label: 'Jump' },
   { action: 'crystal', label: 'Drop crystal' }, { action: 'pause', label: 'Pause / resume' },
   { action: 'healthPot', label: 'Health potion' }, { action: 'shield', label: 'Shield' },
   { action: 'mainAbility', label: 'Main ability' },
@@ -87,7 +102,13 @@ const KEY_BIND_LABELS: { action: keyof KeyBindings; label: string }[] = [
 function loadKeyBindings(): KeyBindings {
   try {
     const saved = JSON.parse(localStorage.getItem('lura-keybindings') || 'null')
-    if (saved) return Object.fromEntries(Object.entries(DEFAULT_KEY_BINDINGS).map(([key, fallback]) => [key, typeof saved[key] === 'string' ? saved[key] : fallback])) as unknown as KeyBindings
+    if (saved) {
+      const legacyPause = typeof saved.jump !== 'string' && saved.pause === 'Space'
+      return Object.fromEntries(Object.entries(DEFAULT_KEY_BINDINGS).map(([key, fallback]) => {
+        if (legacyPause && key === 'pause') return [key, 'KeyP']
+        return [key, typeof saved[key] === 'string' ? saved[key] : fallback]
+      })) as unknown as KeyBindings
+    }
   } catch { /* use defaults */ }
   return { ...DEFAULT_KEY_BINDINGS }
 }
@@ -96,7 +117,7 @@ function loadBoolean(key: string, fallback: boolean) {
   return saved === null ? fallback : saved === 'true'
 }
 function loadHudLayout(): HudLayout {
-  const keys: HudElement[] = ['mechanic', 'beam', 'crystal', 'playerHealth', 'bossHealth']
+  const keys: HudElement[] = ['mechanic', 'beam', 'crystal', 'playerHealth', 'bossHealth', 'castbar']
   try {
     const saved = JSON.parse(localStorage.getItem('lura-hud-layout') || 'null')
     if (saved) {
@@ -107,6 +128,16 @@ function loadHudLayout(): HudLayout {
     }
   } catch { /* use defaults */ }
   return structuredClone(DEFAULT_HUD_LAYOUT)
+}
+function loadMusicTrack(): MusicTrackId {
+  const saved = localStorage.getItem('lura-music-track')
+  return MUSIC_TRACKS.some(track => track.id === saved) ? saved as MusicTrackId : DEFAULT_MUSIC_TRACK
+}
+function loadMusicVolume() {
+  const stored = localStorage.getItem('lura-music-volume')
+  if (stored === null) return DEFAULT_MUSIC_VOLUME
+  const saved = Number(stored)
+  return Number.isFinite(saved) && saved >= 0 && saved <= 1 ? saved : DEFAULT_MUSIC_VOLUME
 }
 function keyLabel(code: string) {
   return code === 'Space' ? 'Space' : code.replace(/^Key/, '').replace(/^Digit/, '')
@@ -210,6 +241,10 @@ export default function App() {
   const [healthPotEnabled, setHealthPotEnabled] = useState(() => loadBoolean('lura-health-pot-enabled', false))
   const [shieldEnabled, setShieldEnabled] = useState(() => loadBoolean('lura-shield-enabled', false))
   const [mainAbilityEnabled, setMainAbilityEnabled] = useState(() => loadBoolean('lura-main-ability-enabled', false))
+  const [musicTrack, setMusicTrack] = useState<MusicTrackId>(loadMusicTrack)
+  const [musicVolume, setMusicVolume] = useState(loadMusicVolume)
+  const [musicMuted, setMusicMuted] = useState(() => loadBoolean('lura-music-muted', false))
+  const [musicPreviewing, setMusicPreviewing] = useState(false)
   const [keyBindings, setKeyBindings] = useState<KeyBindings>(loadKeyBindings)
   const [assignment, setAssignment] = useState(loadAssignment)
   const [positions, setPositions] = useState<Assignment[]>(loadPositions)
@@ -248,6 +283,7 @@ export default function App() {
   const [shieldUsed, setShieldUsed] = useState(false)
   const [bossHealth, setBossHealth] = useState(100)
   const [mainCastRemaining, setMainCastRemaining] = useState(0)
+  const [personalJumpProgress, setPersonalJumpProgress] = useState(0)
   const [startSlot, setStartSlot] = useState(0)
   const [mistakes, setMistakes] = useState<Mistake[]>([])
   const hitRef = useRef(false)
@@ -268,6 +304,10 @@ export default function App() {
   const healthPotUsedRef = useRef(false)
   const shieldUsedRef = useRef(false)
   const mainAbilityReadyAtRef = useRef(0)
+  const jumpUntilRef = useRef(0)
+  const jumpKeysRef = useRef(new Set<string>())
+  const jumpCameraForwardRef = useRef<Point>({ x: 0, y: -1 })
+  const audioRef = useRef<HTMLAudioElement | null>(null)
   const jumpOriginRef = useRef<Point>(positions[0])
   const pullOriginRef = useRef<Point>(WORLD.center)
   const keysHeld = useRef(new Set<string>())
@@ -280,6 +320,26 @@ export default function App() {
   useEffect(() => { localStorage.setItem('lura-health-pot-enabled', String(healthPotEnabled)) }, [healthPotEnabled])
   useEffect(() => { localStorage.setItem('lura-shield-enabled', String(shieldEnabled)) }, [shieldEnabled])
   useEffect(() => { localStorage.setItem('lura-main-ability-enabled', String(mainAbilityEnabled)) }, [mainAbilityEnabled])
+  useEffect(() => { localStorage.setItem('lura-music-track', musicTrack) }, [musicTrack])
+  useEffect(() => { localStorage.setItem('lura-music-volume', String(musicVolume)) }, [musicVolume])
+  useEffect(() => { localStorage.setItem('lura-music-muted', String(musicMuted)) }, [musicMuted])
+  useEffect(() => {
+    const audio = new Audio()
+    audio.loop = true
+    audio.preload = 'none'
+    audioRef.current = audio
+    return () => { audio.pause(); audio.removeAttribute('src'); audioRef.current = null }
+  }, [])
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+    const track = MUSIC_TRACKS.find(candidate => candidate.id === musicTrack) ?? MUSIC_TRACKS[0]
+    if (audio.src !== track.src) { audio.src = track.src; audio.currentTime = 0 }
+    audio.volume = musicVolume
+    audio.muted = musicMuted
+    if (screen === 'game' || musicPreviewing) void audio.play().catch(() => { /* browser requires another user gesture */ })
+    else audio.pause()
+  }, [musicTrack, musicVolume, musicMuted, musicPreviewing, screen])
   useEffect(() => {
     setP2SpreadPositions(current => {
       let changed = false
@@ -321,12 +381,39 @@ export default function App() {
     softWipeGuardRef.current = false
   }, [event])
 
+  function restartMusic() {
+    const audio = audioRef.current
+    if (!audio) return
+    const track = MUSIC_TRACKS.find(candidate => candidate.id === musicTrack) ?? MUSIC_TRACKS[0]
+    audio.src = track.src
+    audio.currentTime = 0
+    audio.volume = musicVolume
+    audio.muted = musicMuted
+    void audio.play().catch(() => { /* browser requires another user gesture */ })
+  }
+  function toggleMusicPreview() {
+    const audio = audioRef.current
+    if (!audio || musicMuted) return
+    if (musicPreviewing) {
+      audio.pause()
+      setMusicPreviewing(false)
+      return
+    }
+    const track = MUSIC_TRACKS.find(candidate => candidate.id === musicTrack) ?? MUSIC_TRACKS[0]
+    audio.src = track.src
+    audio.currentTime = 0
+    audio.volume = musicVolume
+    audio.muted = false
+    void audio.play().catch(() => { /* browser rejected playback */ })
+    setMusicPreviewing(true)
+  }
   const initializeAttempt = (preserveScore = false) => {
     keysHeld.current.clear()
     const slot = difficulty === 'easy' ? 0 : Math.floor(Math.random() * startSlots.length)
     const intermissionStart = startSlots[slot]
     const oriented = orientedAssignments(positions, intermissionStart, WORLD.center)
     const startPosition = entryMode === 'arena2' ? WORLD.center : intermissionStart
+    jumpUntilRef.current = 0; jumpKeysRef.current.clear(); setPersonalJumpProgress(0); setMusicPreviewing(false); restartMusic()
     setPhasePositions(oriented); setStartSlot(slot); playerRef.current = startPosition; jumpOriginRef.current = startPosition; pullOriginRef.current = startPosition; crystalAgeRef.current = 0; eventTimeRef.current = 0; if (!preserveScore) timeRef.current = 0; droppedForPackRef.current = false; healthRef.current = 100; criticalDeadlineRef.current = 0; nextCriticalRef.current = difficulty === 'easy' || !healthPotEnabled && !shieldEnabled ? Infinity : 16 + Math.random() * 9; healthEmergencyCountRef.current = 0; healthPotUsedRef.current = false; shieldUsedRef.current = false; mainAbilityReadyAtRef.current = 0; setHealth(100); setCriticalRemaining(0); setHealthPotUsed(false); setShieldUsed(false); setBossHealth(100); setMainCastRemaining(0); setPlayer(startPosition); setCrystal(null); setCrystalAge(0); setNpcSplinters([]); setNpcCrystals([]); setNpcCarrier(null); setCrystalCarriers(crystalNpcOrdinals(crystalAssignments, assignment)); setNpcCrystalAge(0); setPlayerSplinterRotation(0); if (preserveScore) setStats(current => ({ ...current, crystalDropped: false })); else { setStats({ score: 1000, hits: 0, crystalDropped: false, time: 0 }); setMistakes([]); wipeCountRef.current = 0 } setWipeReason(''); setSoftWipeNotice(''); setEvent(entryMode === 'arena2' ? 'p2-countdown' : 'countdown'); setEventTime(0); setCycle(1); setP2Cycle(1); setP2Soaked(false); hitRef.current = false; unsafeRef.current = false; wipeRef.current = false; softWipeGuardRef.current = false; chooseBossPattern(oriented[assignment]); setPaused(false); setScreen('game')
   }
   const start = () => initializeAttempt(false)
@@ -341,6 +428,13 @@ export default function App() {
         e.preventDefault()
         if (event !== 'countdown' && event !== 'p2-countdown') keys.add(movement[1])
       }
+      if (!e.repeat && e.code === keyBindings.jump && event !== 'countdown' && event !== 'p2-countdown' && event !== 'p2-jump' && jumpUntilRef.current <= timeRef.current) {
+        e.preventDefault()
+        jumpUntilRef.current = timeRef.current + PERSONAL_JUMP_SECONDS
+        jumpKeysRef.current = new Set(keys)
+        jumpCameraForwardRef.current = { ...cameraForward.current }
+        setPersonalJumpProgress(.001)
+      }
       if (!e.repeat && e.code === keyBindings.crystal) toggleCrystal()
       if (!e.repeat && e.code === keyBindings.healthPot) useRecovery('healthPot')
       if (!e.repeat && e.code === keyBindings.shield) useRecovery('shield')
@@ -353,11 +447,14 @@ export default function App() {
     const tick = (now: number) => {
       const dt = Math.min((now - previous) / 1000, .05) * gameSpeed; previous = now
       eventTimeRef.current += dt; setEventTime(eventTimeRef.current); timeRef.current += dt; setStats(s => ({ ...s, time: s.time + dt }))
+      const jumpRemaining = Math.max(0, jumpUntilRef.current - timeRef.current)
+      const jumping = jumpRemaining > 0
+      setPersonalJumpProgress(jumping ? 1 - jumpRemaining / PERSONAL_JUMP_SECONDS : 0)
       setMainCastRemaining(Math.max(0, mainAbilityReadyAtRef.current - timeRef.current))
       updateHealth(dt)
       if (crystal) setCrystalAge(age => { const next = age + dt; crystalAgeRef.current = next; return next })
       if (npcCrystals.length) setNpcCrystalAge(age => age + dt)
-      setPlayer(p => { const speedBonusActive = movementBonus && event === 'positioning' && eventTimeRef.current <= OPENING_BOOST_SECONDS; const openingSpeed = movementSpeed * (speedBonusActive ? 1.4 : 1); const bounds = { minX: 30, maxX: WORLD.width - 30, minY: 30, maxY: WORLD.height - 30 }; let next: Point; if (event === 'countdown' || event === 'p2-countdown') next = p; else if (event === 'p2-jump') { const progress = Math.min(1, eventTimeRef.current / 1.4); const eased = 1 - Math.pow(1 - progress, 3); next = { x: jumpOriginRef.current.x + (WORLD.center.x - jumpOriginRef.current.x) * eased, y: jumpOriginRef.current.y + (WORLD.center.y - jumpOriginRef.current.y) * eased } } else if (event === 'p2-pull') next = moveWithIncreasingPull(p, keys, openingSpeed, dt, cameraForward.current, bounds, WORLD.center, eventTimeRef.current / 5); else next = moveRelativeToCamera(p, keys, openingSpeed, dt, cameraForward.current, bounds); playerRef.current = next; if (event === 'p2-orbs' && eventTimeRef.current >= 5 && distance(next, p2Positions[assignment]) <= 8) setP2Soaked(true); if (crystal && canPickupCrystal(next, crystal, crystalAgeRef.current)) { setCrystal(null); setCrystalAge(0); crystalAgeRef.current = 0; setStats(s => ({ ...s, crystalDropped: false })) } checkHazards(next, now / 1000, dt); return next })
+      setPlayer(p => { const speedBonusActive = movementBonus && event === 'positioning' && eventTimeRef.current <= OPENING_BOOST_SECONDS; const openingSpeed = movementSpeed * (speedBonusActive ? 1.4 : 1); const bounds = { minX: 30, maxX: WORLD.width - 30, minY: 30, maxY: WORLD.height - 30 }; const movementKeys = jumping ? jumpKeysRef.current : keys; const movementForward = jumping ? jumpCameraForwardRef.current : cameraForward.current; let next: Point; if (event === 'countdown' || event === 'p2-countdown') next = p; else if (event === 'p2-jump') { const progress = Math.min(1, eventTimeRef.current / 1.4); const eased = 1 - Math.pow(1 - progress, 3); next = { x: jumpOriginRef.current.x + (WORLD.center.x - jumpOriginRef.current.x) * eased, y: jumpOriginRef.current.y + (WORLD.center.y - jumpOriginRef.current.y) * eased } } else if (event === 'p2-pull') next = moveWithIncreasingPull(p, movementKeys, openingSpeed, dt, movementForward, bounds, WORLD.center, eventTimeRef.current / 5); else next = moveRelativeToCamera(p, movementKeys, openingSpeed, dt, movementForward, bounds); playerRef.current = next; if (event === 'p2-orbs' && eventTimeRef.current >= 5 && distance(next, p2Positions[assignment]) <= 8) setP2Soaked(true); if (crystal && canPickupCrystal(next, crystal, crystalAgeRef.current)) { setCrystal(null); setCrystalAge(0); crystalAgeRef.current = 0; setStats(s => ({ ...s, crystalDropped: false })) } checkHazards(next, now / 1000, dt); return next })
       frame = requestAnimationFrame(tick)
     }
     frame = requestAnimationFrame(tick)
@@ -468,7 +565,7 @@ export default function App() {
   useEffect(() => { if (!npcCrystals.length || npcCrystalAge < 6) return; setNpcCrystals([]); setNpcCarrier(null); setNpcCrystalAge(0) }, [npcCrystals, npcCrystalAge])
 
   function useRecovery(action: 'healthPot' | 'shield') {
-    if (difficulty === 'easy') return
+    if (difficulty === 'easy' || jumpUntilRef.current > timeRef.current) return
     const enabled = action === 'healthPot' ? healthPotEnabled : shieldEnabled
     const usedRef = action === 'healthPot' ? healthPotUsedRef : shieldUsedRef
     if (!enabled || usedRef.current) return
@@ -520,13 +617,13 @@ export default function App() {
     setEvent('p2-pull')
   }
   function useMainAbility() {
-    if (!mainAbilityEnabled || screen !== 'game' || paused || wipeRef.current || timeRef.current < mainAbilityReadyAtRef.current) return
+    if (!mainAbilityEnabled || screen !== 'game' || paused || wipeRef.current || jumpUntilRef.current > timeRef.current || timeRef.current < mainAbilityReadyAtRef.current) return
     mainAbilityReadyAtRef.current = timeRef.current + 1
     setMainCastRemaining(1)
     setBossHealth(current => Math.max(1, current - .5))
     setStats(current => ({ ...current, score: current.score + 1 }))
   }
-  function toggleCrystal() { if (!crystalAssignments.includes(assignment) || screen !== 'game' || crystal) return; droppedForPackRef.current = true; setCrystal(playerRef.current); setCrystalAge(0); crystalAgeRef.current = 0; setStats(s => ({ ...s, crystalDropped: true })) }
+  function toggleCrystal() { if (!crystalAssignments.includes(assignment) || screen !== 'game' || crystal || jumpUntilRef.current > timeRef.current) return; droppedForPackRef.current = true; setCrystal(playerRef.current); setCrystalAge(0); crystalAgeRef.current = 0; setStats(s => ({ ...s, crystalDropped: true })) }
   function checkHazards(position: Point, motionTime: number, dt: number) {
     if (event.startsWith('p2-')) {
       if (event === 'p2-orbs' && eventTimeRef.current >= 5.65 && crystal && (Math.abs(crystal.x - WORLD.center.x) < 7 || Math.abs(crystal.y - WORLD.center.y) < 7)) triggerWipe('The cross beam hit the crystal')
@@ -590,7 +687,8 @@ export default function App() {
     return true
   }
 
-  if (screen === 'menu') return <main className="shell">
+  if (screen === 'menu') return <main className="shell setup-shell">
+    <CreatorCard />
     <header><p className="eyebrow">MIDNIGHT FALLS · MOVEMENT PRACTICE</p><h1>L’ura Trainer</h1><p className="lede">Choose your assigned player below. Its WoW class determines its body color, while crystal duty is assigned directly to that spot.</p></header>
     <div className="entry-choice"><span>Practice target</span><button className={entryMode === 'arena1' ? 'selected' : ''} onClick={() => setEntryMode('arena1')}>Arena 1 → Arena 2</button><button className={entryMode === 'arena2' ? 'selected' : ''} onClick={() => setEntryMode('arena2')}>Arena 2 only</button><button className="start entry-start" onClick={start}>Enter {entryMode === 'arena2' ? 'Arena 2' : 'Arena 1'}</button></div>
     <section className="menu-grid setup-grid">
@@ -599,16 +697,17 @@ export default function App() {
       <fieldset><legend>Layout</legend><p className="assignment">Raid-plan sharing<span>Names, classes, Intermission/P2 positions, and start slots are included.</span></p><div className="editor-actions"><button onClick={savePositions}>Save layout</button><button onClick={resetPositions}>Reset</button></div><label className="profile-control">Share link or code<input aria-label="Raid plan share code" value={shareInput} onChange={event => setShareInput(event.target.value)} placeholder="Paste a shared plan here" /></label><div className="editor-actions"><button onClick={copyRaidPlan}>Copy share link</button><button onClick={applyRaidPlan}>Load shared plan</button></div>{shareStatus && <p className="share-status" role="status">{shareStatus}</p>}</fieldset>
     </section>
     <section className="practice-settings">
+      <fieldset><legend>Background music</legend><p className="hint">Optional Pixabay ambience. It restarts with each attempt and loops if the run lasts longer than the selected track.</p><label className="profile-control">Track<select aria-label="Background music track" value={musicTrack} onChange={event => setMusicTrack(event.target.value as MusicTrackId)}>{MUSIC_TRACKS.map(track => <option value={track.id} key={track.id}>{track.label}</option>)}</select></label><button type="button" className="music-preview" disabled={musicMuted} onClick={toggleMusicPreview}>{musicMuted ? 'Unmute to preview' : musicPreviewing ? '■ Stop preview' : '▶ Play preview'}</button><label className="speed-control">Volume <strong>{Math.round(musicVolume * 100)}%</strong><input aria-label="Background music volume" type="range" min="0" max="1" step=".05" value={musicVolume} onChange={event => setMusicVolume(Number(event.target.value))} /></label><label className="checkbox-control"><input aria-label="Mute background music" type="checkbox" checked={musicMuted} onChange={event => { setMusicMuted(event.target.checked); if (event.target.checked) setMusicPreviewing(false) }} /><span>Mute music<span>Can also be toggled inside the arena.</span></span></label></fieldset>
       <fieldset><legend>Optional combat actions</legend><p className="hint">Health emergencies only occur during active mechanics: once on Normal and twice on Hard across the complete run. Each recovery ability has one use.</p><label className="checkbox-control disabled-on-easy"><input aria-label="Enable health potion" type="checkbox" disabled={difficulty === 'easy'} checked={healthPotEnabled} onChange={event => setHealthPotEnabled(event.target.checked)} /><span>Health potion<span>{keyLabel(keyBindings.healthPot)} · restores full health · one use</span></span></label><label className="checkbox-control disabled-on-easy"><input aria-label="Enable shield" type="checkbox" disabled={difficulty === 'easy'} checked={shieldEnabled} onChange={event => setShieldEnabled(event.target.checked)} /><span>Shield<span>{keyLabel(keyBindings.shield)} · restores full health · one use</span></span></label><label className="checkbox-control"><input aria-label="Enable main ability" type="checkbox" checked={mainAbilityEnabled} onChange={event => setMainAbilityEnabled(event.target.checked)} /><span>Main ability<span>{keyLabel(keyBindings.mainAbility)} · one-second cast · +1 point per hit · available on every difficulty</span></span></label></fieldset>
       <fieldset><legend>Keybindings</legend><div className="keybind-grid">{KEY_BIND_LABELS.map(binding => <label className="keybind-control" key={binding.action}><span>{binding.label}</span><input aria-label={`${binding.label} keybind`} readOnly value={keyLabel(keyBindings[binding.action])} onKeyDown={event => { event.preventDefault(); event.stopPropagation(); setKeyBindings(current => ({ ...current, [binding.action]: event.code })) }} /></label>)}</div><button className="reset-keys" onClick={() => setKeyBindings({ ...DEFAULT_KEY_BINDINGS })}>Reset keybindings</button></fieldset>
     </section>
-    <div className="plan-heading"><p className="eyebrow">INTERFACE</p><h2>HUD positions</h2><p className="hint">Drag the mechanic counters and player/boss health bars around the Phase 2 preview. Their positions are saved automatically.</p></div>
+    <div className="plan-heading"><p className="eyebrow">INTERFACE</p><h2>HUD positions</h2><p className="hint">Drag the mechanic counters, castbar, and player/boss health bars around the Phase 2 preview. Their positions are saved automatically.</p></div>
     <HudLayoutEditor layout={hudLayout} onChange={(counter, point) => setHudLayout(current => ({ ...current, [counter]: point }))} onReset={() => setHudLayout(structuredClone(DEFAULT_HUD_LAYOUT))} />
     <PositionMap assignment={assignment} positions={positions} startSlots={startSlots} profiles={profiles} onPositionChange={(index, point) => { setAssignment(index); setPositions(current => current.map((position, positionIndex) => positionIndex === index ? clampToSafeBand(point) : position)) }} onStartSlotChange={(index, point) => setStartSlots(current => current.map((slot, slotIndex) => slotIndex === index ? clampStartSlot(point) : slot))} />
     <div className="plan-heading"><p className="eyebrow">PHASE 2 ASSIGNMENT</p><h2>Cross positioning</h2><p className="hint">Drag the same 20 players onto their Phase 2 positions across the fixed marker axes.</p></div>
     <P2PositionMap mapLabel="Phase 2 soak position map" buttonLabel="P2 soak" assignment={assignment} positions={p2Positions} profiles={profiles} onChange={(index, point) => { setAssignment(index); setP2Positions(current => current.map((position, positionIndex) => positionIndex === index ? clampToP2Arena(point) : position)) }} />
-    <div className="plan-heading"><p className="eyebrow">PHASE 2 PERSONAL CIRCLES</p><h2>Spread positioning</h2><p className="hint">After the center pull, each player moves to this second P2 assignment before their personal circle resolves.</p></div>
-    <P2PositionMap mapLabel="Phase 2 spread position map" buttonLabel="P2 spread" assignment={assignment} positions={p2SpreadPositions} profiles={profiles} onChange={(index, point) => { setAssignment(index); setP2SpreadPositions(current => current.map((position, positionIndex) => positionIndex === index ? clampToP2Arena(point) : position)) }} />
+    <div className="plan-heading"><p className="eyebrow">PHASE 2 PERSONAL CIRCLES</p><h2>Spread positioning</h2><p className="hint">After the center pull, each player moves to this second P2 assignment before their personal circle resolves. The pink rings use the same 12.16-yard outer radius as the in-game simulation.</p></div>
+    <P2PositionMap showPersonalCircles mapLabel="Phase 2 spread position map" buttonLabel="P2 spread" assignment={assignment} positions={p2SpreadPositions} profiles={profiles} onChange={(index, point) => { setAssignment(index); setP2SpreadPositions(current => current.map((position, positionIndex) => positionIndex === index ? clampToP2Arena(point) : position)) }} />
     <p className="scope-note">{entryMode === 'arena2' ? 'Start stacked in Phase 2.' : 'Positioning opener → six Intermission packs → Phase 2.'} · {keyLabel(keyBindings.forward)}/{keyLabel(keyBindings.left)}/{keyLabel(keyBindings.backward)}/{keyLabel(keyBindings.right)} move · {keyLabel(keyBindings.pause)} pause</p>
   </main>
   if (screen === 'results') return <main className="shell results"><p className="eyebrow">{wipeRef.current ? 'ATTEMPT ENDED' : event.startsWith('p2-') ? 'PHASE 2 COMPLETE' : 'INTERMISSION COMPLETE'}</p><h1>Movement review.</h1><p className="lede">{event.startsWith('p2-') ? 'Review the three-cycle orb, pull, spread, and crystal sequence.' : 'The cycle ended. Use the score to spot where your movement needs work.'}</p><div className="result-card"><strong>{Math.round(stats.score)}</strong><span>practice score</span><div className="result-row"><span>Time in arena</span><b>{stats.time.toFixed(1)}s</b></div><div className="result-row"><span>Recorded mistakes</span><b>{stats.hits}</b></div></div><section className="result-mistakes"><h2>Exact mistakes</h2>{mistakes.length ? <ol>{mistakes.slice().reverse().map(mistake => <li key={mistake.id}><time>{mistake.time.toFixed(1)}s</time><span>{mistake.label}</span><b>{mistake.penalty > 0 ? `−${mistake.penalty}` : 'movement'}</b></li>)}</ol> : <p>No mistakes recorded.</p>}</section><div className="actions"><button onClick={start}>Play again</button><button className="secondary" onClick={() => setScreen('menu')}>Change setup</button></div></main>
@@ -620,7 +719,7 @@ export default function App() {
   function applyRaidPlan() { const plan = decodeRaidPlan(shareInput); if (!plan) { setShareStatus('Invalid raid-plan code'); return } setPositions(plan.positions.map(clampToSafeBand)); setP2Positions(plan.p2Positions.map(clampToP2Arena)); setP2SpreadPositions(plan.p2SpreadPositions.map(clampToP2Arena)); setStartSlots(plan.startSlots.map(clampStartSlot)); setProfiles(plan.profiles); setShareStatus('Shared raid plan loaded') }
   function chooseBossPattern(target: Point) { const pattern = Math.random() < .5 ? 'line' : 'gap'; const count = Math.random() < .5 ? 11 : 13; const spacing = Math.PI * 2 / count; const targetAngle = Math.atan2(target.y - WORLD.center.y, target.x - WORLD.center.x); setBeamPattern(pattern); setBeamAngles(Array.from({ length: count }, (_, index) => { const anchor = targetAngle + (pattern === 'gap' ? spacing / 2 : 0) + index * spacing; const preservePlayerPattern = index === 0 || pattern === 'gap' && index === count - 1; return anchor + (preservePlayerPattern ? 0 : (Math.random() - .5) * spacing * .42) })) }
   const activePositions = event === 'p2-spread' || event === 'p2-fetch' || event === 'p2-wait' ? p2SpreadPositions : event.startsWith('p2-') ? p2Positions : phasePositions
-  return <GameArena mainAbilityEnabled={mainAbilityEnabled} bossHealth={bossHealth} mainCastRemaining={mainCastRemaining} softWipeNotice={softWipeNotice} hudLayout={hudLayout} positions={activePositions} intermissionPositions={phasePositions} p2SoakPositions={p2Positions} p2SpreadPositions={p2SpreadPositions} profiles={profiles} raidStart={startSlots[startSlot]} movementSpeed={movementSpeed} movementBonus={movementBonus} gameSpeed={gameSpeed} p2Cycle={p2Cycle} p2Soaked={p2Soaked} health={health} criticalRemaining={criticalRemaining} healthPotEnabled={difficulty !== 'easy' && healthPotEnabled} shieldEnabled={difficulty !== 'easy' && shieldEnabled} healthPotUsed={healthPotUsed} shieldUsed={shieldUsed} keyBindings={keyBindings} crystalCarriers={crystalCarriers} beamPattern={beamPattern} failureFlash={failureFlash} wipeReason={wipeReason} player={player} crystal={crystal} npcCrystals={npcCrystals} npcCarrier={npcCarrier} npcCrystalAge={npcCrystalAge} playerSplinterRotation={playerSplinterRotation} crystalAge={crystalAge} role={crystalAssignments.includes(assignment) ? 'carrier' : 'non-carrier'} difficulty={difficulty} assignment={assignment} stats={stats} mistakes={mistakes} startSlotName={`S${startSlot + 1}`} paused={paused} event={event} eventTime={eventTime} beamAngles={beamAngles} npcSplinters={npcSplinters} cycle={cycle} setPaused={setPaused} onRetry={start} onExit={() => setScreen('menu')} onDrop={toggleCrystal} onCameraDirection={direction => { cameraForward.current = direction }} />
+  return <GameArena mainAbilityEnabled={mainAbilityEnabled} bossHealth={bossHealth} mainCastRemaining={mainCastRemaining} personalJumpProgress={personalJumpProgress} musicMuted={musicMuted} softWipeNotice={softWipeNotice} hudLayout={hudLayout} positions={activePositions} intermissionPositions={phasePositions} p2SoakPositions={p2Positions} p2SpreadPositions={p2SpreadPositions} profiles={profiles} raidStart={startSlots[startSlot]} movementSpeed={movementSpeed} movementBonus={movementBonus} gameSpeed={gameSpeed} p2Cycle={p2Cycle} p2Soaked={p2Soaked} health={health} criticalRemaining={criticalRemaining} healthPotEnabled={difficulty !== 'easy' && healthPotEnabled} shieldEnabled={difficulty !== 'easy' && shieldEnabled} healthPotUsed={healthPotUsed} shieldUsed={shieldUsed} keyBindings={keyBindings} crystalCarriers={crystalCarriers} beamPattern={beamPattern} failureFlash={failureFlash} wipeReason={wipeReason} player={player} crystal={crystal} npcCrystals={npcCrystals} npcCarrier={npcCarrier} npcCrystalAge={npcCrystalAge} playerSplinterRotation={playerSplinterRotation} crystalAge={crystalAge} role={crystalAssignments.includes(assignment) ? 'carrier' : 'non-carrier'} difficulty={difficulty} assignment={assignment} stats={stats} mistakes={mistakes} startSlotName={`S${startSlot + 1}`} paused={paused} event={event} eventTime={eventTime} beamAngles={beamAngles} npcSplinters={npcSplinters} cycle={cycle} setPaused={setPaused} setMusicMuted={setMusicMuted} onRetry={start} onExit={() => setScreen('menu')} onDrop={toggleCrystal} onCameraDirection={direction => { cameraForward.current = direction }} />
 }
 
 function rayHitsAny(point: Point, origin: Point, rotation = 0): boolean { const dx = point.x - origin.x; const dy = point.y - origin.y; const length = Math.hypot(dx, dy); if (length < 10 || length > STAR_LENGTH) return false; const angle = Math.atan2(dy, dx); return Array.from({ length: 6 }, (_, i) => Math.abs(Math.atan2(Math.sin(angle - rotation - i * Math.PI / 3), Math.cos(angle - rotation - i * Math.PI / 3))) < .12).some(Boolean) }
@@ -646,7 +745,7 @@ function PositionMap({ assignment, positions, startSlots, profiles, onPositionCh
   return <div className="position-map" aria-label="Intermission position map" onPointerMove={move} onPointerUp={() => setDragging(null)} onPointerLeave={() => setDragging(null)} style={{ backgroundImage: `linear-gradient(rgba(7,9,22,.3), rgba(7,9,22,.3)), url(${ARENA_BACKGROUND})` }}><span className="map-boss">L’URA</span><span className="map-marker skull">☠</span><span className="map-marker cross">✕</span><span className="map-marker star">★</span><span className="map-marker orange">●</span>{startSlots.map((p, i) => <button type="button" aria-label={`Move S${i + 1} start slot`} title={`S${i + 1} orientation anchor`} key={`start-${i}`} onPointerDown={event => { event.preventDefault(); setDragging({ kind: 'start', index: i }); event.currentTarget.setPointerCapture(event.pointerId) }} className="map-start-slot" style={{ left: `${50 + (p.x - WORLD.center.x) / 9.22}%`, top: `${50 + (p.y - WORLD.center.y) / 5.19}%` }}>S{i + 1}</button>)}{positions.map((p, i) => <button type="button" aria-label={`Move player ${i + 1}`} title={`${profiles[i].name} · ${CLASS_OPTIONS.find(option => option.value === profiles[i].playerClass)?.label}${profiles[i].crystal ? ' · Crystal' : ''}`} key={i} onPointerDown={event => { event.preventDefault(); setDragging({ kind: 'player', index: i }); event.currentTarget.setPointerCapture(event.pointerId) }} className={`${i === assignment ? 'map-player selected-map' : 'map-player'}${profiles[i].crystal ? ' crystal-map-player' : ''}`} style={{ left: `${50 + (p.x - WORLD.center.x) / 9.22}%`, top: `${50 + (p.y - WORLD.center.y) / 5.19}%`, backgroundColor: CLASS_OPTIONS.find(option => option.value === profiles[i].playerClass)?.color }}>{i + 1}</button>)}</div>
 }
 
-function P2PositionMap({ mapLabel, buttonLabel, assignment, positions, profiles, onChange }: { mapLabel: string; buttonLabel: string; assignment: number; positions: Assignment[]; profiles: PlayerProfile[]; onChange: (index: number, point: Assignment) => void }) {
+function P2PositionMap({ mapLabel, buttonLabel, assignment, positions, profiles, showPersonalCircles = false, onChange }: { mapLabel: string; buttonLabel: string; assignment: number; positions: Assignment[]; profiles: PlayerProfile[]; showPersonalCircles?: boolean; onChange: (index: number, point: Assignment) => void }) {
   const [dragging, setDragging] = useState<number | null>(null)
   function move(event: ReactPointerEvent<HTMLDivElement>) {
     if (dragging === null) return
@@ -655,7 +754,29 @@ function P2PositionMap({ mapLabel, buttonLabel, assignment, positions, profiles,
     const top = Math.max(0, Math.min(100, (event.clientY - bounds.top) / bounds.height * 100))
     onChange(dragging, { x: WORLD.center.x + (left - 50) * P2_MAP_SCALE.x, y: WORLD.center.y + (top - 50) * P2_MAP_SCALE.y })
   }
-  return <div className="position-map p2-position-map" aria-label={mapLabel} onPointerMove={move} onPointerUp={() => setDragging(null)} onPointerLeave={() => setDragging(null)} style={{ backgroundImage: `linear-gradient(rgba(7,9,22,.46), rgba(7,9,22,.46)), url(${ARENA_BACKGROUND})` }}><span className="p2-cross horizontal" /><span className="p2-cross vertical" /><span className="map-boss">L’URA</span><span className="map-marker skull">☠</span><span className="map-marker cross">✕</span><span className="map-marker star">★</span><span className="map-marker orange">●</span>{positions.map((point, index) => <button type="button" aria-label={`Move ${buttonLabel} player ${index + 1}`} title={`${profiles[index].name} · ${buttonLabel}`} key={index} onPointerDown={event => { event.preventDefault(); setDragging(index); event.currentTarget.setPointerCapture(event.pointerId) }} className={`${index === assignment ? 'map-player selected-map' : 'map-player'}${profiles[index].crystal ? ' crystal-map-player' : ''}`} style={{ left: `${50 + (point.x - WORLD.center.x) / P2_MAP_SCALE.x}%`, top: `${50 + (point.y - WORLD.center.y) / P2_MAP_SCALE.y}%`, backgroundColor: CLASS_OPTIONS.find(option => option.value === profiles[index].playerClass)?.color }}>{index + 1}</button>)}</div>
+  return <div className={`position-map p2-position-map${showPersonalCircles ? ' personal-circle-map' : ''}`} aria-label={mapLabel} onPointerMove={move} onPointerUp={() => setDragging(null)} onPointerLeave={() => setDragging(null)} style={{ backgroundImage: `linear-gradient(rgba(7,9,22,.46), rgba(7,9,22,.46)), url(${ARENA_BACKGROUND})` }}><span className="p2-cross horizontal" /><span className="p2-cross vertical" /><span className="map-boss">L’URA</span><span className="map-marker skull">☠</span><span className="map-marker cross">✕</span><span className="map-marker star">★</span><span className="map-marker orange">●</span>{positions.map((point, index) => {
+    const left = 50 + (point.x - WORLD.center.x) / P2_MAP_SCALE.x
+    const top = 50 + (point.y - WORLD.center.y) / P2_MAP_SCALE.y
+    return <span className="p2-player-assignment" key={index}>{showPersonalCircles && <i className={index === assignment ? 'planner-personal-circle selected-circle' : 'planner-personal-circle'} aria-hidden="true" style={{ left: `${left}%`, top: `${top}%`, width: `${P2_PLANNER_CIRCLE_DIAMETER}%` }} />}<button type="button" aria-label={`Move ${buttonLabel} player ${index + 1}`} title={`${profiles[index].name} · ${buttonLabel} · ${P2_PERSONAL_CIRCLE_OUTER_RADIUS.toFixed(2)} yd circle radius`} onPointerDown={event => { event.preventDefault(); setDragging(index); event.currentTarget.setPointerCapture(event.pointerId) }} className={`${index === assignment ? 'map-player selected-map' : 'map-player'}${profiles[index].crystal ? ' crystal-map-player' : ''}`} style={{ left: `${left}%`, top: `${top}%`, backgroundColor: CLASS_OPTIONS.find(option => option.value === profiles[index].playerClass)?.color }}>{index + 1}</button></span>
+  })}</div>
+}
+
+function CreatorCard() {
+  const [copied, setCopied] = useState(false)
+  async function copyAddress() {
+    try {
+      await navigator.clipboard.writeText(SOLANA_ADDRESS)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1800)
+    } catch { setCopied(false) }
+  }
+  return <aside className="creator-card" aria-label="About Pestivator">
+    <img src={CREATOR_AVATAR} alt="Pestivator's gnome avatar" />
+    <div><span>Created by</span><strong>Pestivator</strong><code>pestivator#2515</code>
+      <nav aria-label="Pestivator links"><a href="https://twitch.tv/pestivator" target="_blank" rel="noreferrer">Twitch</a><a className="coffee-link" href={`solana:${SOLANA_ADDRESS}?label=Pestivator&message=Thanks%20for%20the%20Lura%20Trainer`} title={`Send SOL to ${SOLANA_ADDRESS}`}>☕ Buy me a coffee</a></nav>
+      <button type="button" className="copy-wallet" onClick={copyAddress} title={SOLANA_ADDRESS}>{copied ? 'SOL address copied!' : 'Copy Solana address'}</button>
+    </div>
+  </aside>
 }
 
 function HudLayoutEditor({ layout, onChange, onReset }: { layout: HudLayout; onChange: (counter: HudElement, point: Point) => void; onReset: () => void }) {
@@ -674,6 +795,7 @@ function HudLayoutEditor({ layout, onChange, onReset }: { layout: HudLayout; onC
     { key: 'crystal', label: 'PICK UP IN', value: '6' },
     { key: 'playerHealth', label: 'PLAYER HEALTH', value: '78%' },
     { key: 'bossHealth', label: 'L’URA', value: '99.5%' },
+    { key: 'castbar', label: 'MAIN ABILITY', value: '0.6s' },
   ]
   return <section className="hud-layout-editor">
     <div className="hud-preview" aria-label="Phase 2 HUD layout preview" onPointerMove={move} onPointerUp={() => setDragging(null)} onPointerLeave={() => setDragging(null)}>
@@ -684,7 +806,7 @@ function HudLayoutEditor({ layout, onChange, onReset }: { layout: HudLayout; onC
   </section>
 }
 
-function GameArena(props: { mainAbilityEnabled: boolean; bossHealth: number; mainCastRemaining: number; softWipeNotice: string; hudLayout: HudLayout; positions: Assignment[]; intermissionPositions: Assignment[]; p2SoakPositions: Assignment[]; p2SpreadPositions: Assignment[]; profiles: PlayerProfile[]; raidStart: Point; movementSpeed: number; movementBonus: boolean; gameSpeed: number; p2Cycle: number; p2Soaked: boolean; health: number; criticalRemaining: number; healthPotEnabled: boolean; shieldEnabled: boolean; healthPotUsed: boolean; shieldUsed: boolean; keyBindings: KeyBindings; crystalCarriers: number[]; beamPattern: 'line' | 'gap'; failureFlash: boolean; wipeReason: string; player: Point; crystal: Point | null; npcCrystals: Point[]; npcCarrier: number | null; npcCrystalAge: number; playerSplinterRotation: number; crystalAge: number; role: Role; difficulty: Difficulty; assignment: number; stats: GameStats; mistakes: Mistake[]; startSlotName: string; paused: boolean; event: EventKind; eventTime: number; beamAngles: number[]; npcSplinters: number[]; cycle: number; setPaused: (p: boolean) => void; onRetry: () => void; onExit: () => void; onDrop: () => void; onCameraDirection: (direction: Point) => void }) {
+function GameArena(props: { mainAbilityEnabled: boolean; bossHealth: number; mainCastRemaining: number; personalJumpProgress: number; musicMuted: boolean; softWipeNotice: string; hudLayout: HudLayout; positions: Assignment[]; intermissionPositions: Assignment[]; p2SoakPositions: Assignment[]; p2SpreadPositions: Assignment[]; profiles: PlayerProfile[]; raidStart: Point; movementSpeed: number; movementBonus: boolean; gameSpeed: number; p2Cycle: number; p2Soaked: boolean; health: number; criticalRemaining: number; healthPotEnabled: boolean; shieldEnabled: boolean; healthPotUsed: boolean; shieldUsed: boolean; keyBindings: KeyBindings; crystalCarriers: number[]; beamPattern: 'line' | 'gap'; failureFlash: boolean; wipeReason: string; player: Point; crystal: Point | null; npcCrystals: Point[]; npcCarrier: number | null; npcCrystalAge: number; playerSplinterRotation: number; crystalAge: number; role: Role; difficulty: Difficulty; assignment: number; stats: GameStats; mistakes: Mistake[]; startSlotName: string; paused: boolean; event: EventKind; eventTime: number; beamAngles: number[]; npcSplinters: number[]; cycle: number; setPaused: (p: boolean) => void; setMusicMuted: (muted: boolean) => void; onRetry: () => void; onExit: () => void; onDrop: () => void; onCameraDirection: (direction: Point) => void }) {
   const [zoomDisplay, setZoomDisplay] = useState(16)
   const countdown = props.event === 'countdown'
   const positioning = props.event === 'positioning'
@@ -705,10 +827,10 @@ function GameArena(props: { mainAbilityEnabled: boolean; bossHealth: number; mai
   return <main className="game-shell">
     <div className="game-top">
       <div><p className="eyebrow">{phaseTwo ? `PHASE 2 · CYCLE ${props.p2Cycle} / 3` : 'INTERMISSION'} · {phaseTwo ? `SPOT ${props.assignment + 1}` : countdown || positioning ? `${props.startSlotName.toUpperCase()} START` : `PACK ${props.cycle} / 6`} · {props.role === 'carrier' ? 'CRYSTAL CARRIER' : 'NON-CARRIER'} · {props.gameSpeed.toFixed(2)}×</p><h1>{p2?.title ?? (countdown ? 'Get ready.' : positioning ? 'Take your position.' : finalRecovery ? 'Recover your crystal.' : props.event === 'beam' ? 'Find the gap.' : 'Clear the crystals.')}</h1></div>
-      <div className="game-actions"><button disabled={Boolean(props.wipeReason)} onClick={() => props.setPaused(!props.paused)}>{props.wipeReason ? 'Wiped' : props.paused ? 'Resume' : 'Pause'}</button><button className="secondary" onClick={props.onExit}>Exit</button></div>
+      <div className="game-actions"><button aria-label={props.musicMuted ? 'Unmute music' : 'Mute music'} onClick={() => props.setMusicMuted(!props.musicMuted)}>{props.musicMuted ? '🔇 Muted' : '🔊 Music'}</button><button disabled={Boolean(props.wipeReason)} onClick={() => props.setPaused(!props.paused)}>{props.wipeReason ? 'Wiped' : props.paused ? 'Resume' : 'Pause'}</button><button className="secondary" onClick={props.onExit}>Exit</button></div>
     </div>
     <div className="game-layout">
-      <div className={`arena-wrap${props.failureFlash ? ' failure-flash' : ''}`}><GameScene positions={props.positions} intermissionPositions={props.intermissionPositions} p2SoakPositions={props.p2SoakPositions} p2SpreadPositions={props.p2SpreadPositions} profiles={props.profiles} raidStart={props.raidStart} movementSpeed={props.movementSpeed} movementBonus={props.movementBonus} difficulty={props.difficulty} p2Cycle={props.p2Cycle} crystalCarriers={props.crystalCarriers} playerIsCrystal={props.role === 'carrier'} player={props.player} crystal={props.crystal} npcCrystals={props.npcCrystals} npcCarrier={props.npcCarrier} npcCrystalAge={props.npcCrystalAge} playerSplinterRotation={props.playerSplinterRotation} crystalAge={props.crystalAge} event={props.event} eventTime={props.eventTime} beamAngles={props.beamAngles} npcSplinters={props.npcSplinters} time={props.stats.time} assignment={props.assignment} easy={props.difficulty === 'easy'} onCameraDirection={props.onCameraDirection} onZoomChange={setZoomDisplay} /><div className="score-overlay"><span>Points</span><strong>{Math.round(props.stats.score)}</strong></div>{props.softWipeNotice && <div className="soft-wipe-notice" role="status"><span>Strike 1 / 2 · −500 points</span><strong>{props.softWipeNotice}</strong><small>Practice continues</small></div>}{props.event === 'p2-orbs' && (props.difficulty === 'easy' || props.eventTime >= 2) && <div className={`beam-drop-counter${props.eventTime >= 2 ? ' safe' : ''}`} style={{ left: `${props.hudLayout.beam.x}%`, top: `${props.hudLayout.beam.y}%` }}>{props.eventTime < 2 ? <strong>WAIT TO DROP</strong> : <>{props.difficulty === 'easy' ? 'SAFE TO DROP · ' : ''}BEAM IN <strong>{Math.max(1, Math.ceil(6 - props.eventTime))}</strong></>}</div>}{props.wipeReason && <div className="wipe-overlay" role="alert"><p>Raid wiped</p><h2>Wiped due to:</h2><strong>{props.wipeReason}</strong><div><button onClick={props.onRetry}>Try again</button><button className="secondary" onClick={props.onExit}>Change setup</button></div></div>}{(countdown || props.event === 'p2-countdown') && <div className="start-countdown">{Math.max(1, Math.ceil(3 - props.eventTime))}</div>}<div className="splinter-counter" style={{ left: `${props.hudLayout.mechanic.x}%`, top: `${props.hudLayout.mechanic.y}%` }}>{p2 ? <>{p2.counter} <strong>{props.event === 'p2-recover' || props.event === 'p2-fetch' ? Math.max(0, 6 - props.crystalAge).toFixed(1) : Math.max(0, p2.duration - props.eventTime).toFixed(1)}s</strong></> : countdown ? <>STARTING <strong>{Math.max(0, 3 - props.eventTime).toFixed(1)}s</strong></> : positioning ? <>POSITIONING <strong>{Math.max(0, 10 - props.eventTime).toFixed(1)}s</strong></> : finalRecovery ? <>FINAL PICKUP <strong>{Math.max(0, 2 - props.eventTime).toFixed(1)}s</strong></> : <>SPLINTER SET <strong>{props.cycle}/6</strong></>}</div>{props.crystal && <div className="crystal-countdown" style={{ left: `${props.hudLayout.crystal.x}%`, top: `${props.hudLayout.crystal.y}%` }}>PICK UP IN<br /><strong>{finalRecovery ? Math.max(1, Math.ceil(2 - props.eventTime)) : Math.max(1, Math.ceil(6 - props.crystalAge))}</strong></div>}{(props.healthPotEnabled || props.shieldEnabled) && <div className={`player-health${props.criticalRemaining > 0 ? ' critical-health' : ''}`} style={{ left: `${props.hudLayout.playerHealth.x}%`, top: `${props.hudLayout.playerHealth.y}%` }}><div className="health-track"><i style={{ width: `${props.health}%` }} /></div><span>{Math.round(props.health)}%{props.criticalRemaining > 0 ? ` · REACT ${props.criticalRemaining.toFixed(1)}s` : ''}</span><div className="health-abilities">{props.healthPotEnabled && <b className={props.healthPotUsed ? 'used' : ''}>{keyLabel(props.keyBindings.healthPot)} POT</b>}{props.shieldEnabled && <b className={props.shieldUsed ? 'used' : ''}>{keyLabel(props.keyBindings.shield)} SHIELD</b>}</div></div>}{props.mainAbilityEnabled && <div className="boss-health" style={{ left: `${props.hudLayout.bossHealth.x}%`, top: `${props.hudLayout.bossHealth.y}%` }}><span>L’URA · {props.bossHealth.toFixed(1)}%</span><div className="boss-health-track"><i style={{ width: `${props.bossHealth}%` }} /></div>{props.mainCastRemaining > 0 ? <div className="main-cast"><i style={{ width: `${(1 - props.mainCastRemaining) * 100}%` }} /><b>MAIN ABILITY · {props.mainCastRemaining.toFixed(1)}s</b></div> : <small>{keyLabel(props.keyBindings.mainAbility)} · MAIN ABILITY READY</small>}</div>}<div className="controls">{keyLabel(props.keyBindings.forward)}/{keyLabel(props.keyBindings.left)}/{keyLabel(props.keyBindings.backward)}/{keyLabel(props.keyBindings.right)} move · {keyLabel(props.keyBindings.pause)} pause · left-drag look · right-drag view + face · wheel zoom · Zoom {zoomDisplay.toFixed(1)} yd · {p2 ? p2.detail : countdown ? `Wait for the timer at ${props.startSlotName}` : positioning ? props.difficulty === 'easy' ? `Follow the teal guide to Spot ${props.assignment + 1}` : `Find Spot ${props.assignment + 1}; its ring appears only when close` : finalRecovery ? 'Two seconds to recover the final crystal before the Phase 2 center jump' : props.role === 'carrier' ? `${keyLabel(props.keyBindings.crystal)} drops the crystal anywhere · move away · pick up in time` : props.cycle === 6 ? 'Final set: all 20 players marked' : 'Dodge the ten marked Starsplinters'}</div></div>
+      <div className={`arena-wrap${props.failureFlash ? ' failure-flash' : ''}${props.personalJumpProgress > 0 ? ' personal-jump' : ''}`} data-personal-jump={props.personalJumpProgress > 0}><GameScene positions={props.positions} intermissionPositions={props.intermissionPositions} p2SoakPositions={props.p2SoakPositions} p2SpreadPositions={props.p2SpreadPositions} profiles={props.profiles} raidStart={props.raidStart} movementSpeed={props.movementSpeed} movementBonus={props.movementBonus} difficulty={props.difficulty} p2Cycle={props.p2Cycle} crystalCarriers={props.crystalCarriers} playerIsCrystal={props.role === 'carrier'} player={props.player} crystal={props.crystal} npcCrystals={props.npcCrystals} npcCarrier={props.npcCarrier} npcCrystalAge={props.npcCrystalAge} playerSplinterRotation={props.playerSplinterRotation} personalJumpProgress={props.personalJumpProgress} crystalAge={props.crystalAge} event={props.event} eventTime={props.eventTime} beamAngles={props.beamAngles} npcSplinters={props.npcSplinters} time={props.stats.time} assignment={props.assignment} easy={props.difficulty === 'easy'} onCameraDirection={props.onCameraDirection} onZoomChange={setZoomDisplay} /><div className="score-overlay"><span>Points</span><strong>{Math.round(props.stats.score)}</strong></div>{props.softWipeNotice && <div className="soft-wipe-notice" role="status"><span>Strike 1 / 2 · −500 points</span><strong>{props.softWipeNotice}</strong><small>Practice continues</small></div>}{props.event === 'p2-orbs' && (props.difficulty === 'easy' || props.eventTime >= 2) && <div className={`beam-drop-counter${props.eventTime >= 2 ? ' safe' : ''}`} style={{ left: `${props.hudLayout.beam.x}%`, top: `${props.hudLayout.beam.y}%` }}>{props.eventTime < 2 ? <strong>WAIT TO DROP</strong> : <>{props.difficulty === 'easy' ? 'SAFE TO DROP · ' : ''}BEAM IN <strong>{Math.max(1, Math.ceil(6 - props.eventTime))}</strong></>}</div>}{props.wipeReason && <div className="wipe-overlay" role="alert"><p>Raid wiped</p><h2>Wiped due to:</h2><strong>{props.wipeReason}</strong><div><button onClick={props.onRetry}>Try again</button><button className="secondary" onClick={props.onExit}>Change setup</button></div></div>}{(countdown || props.event === 'p2-countdown') && <div className="start-countdown">{Math.max(1, Math.ceil(3 - props.eventTime))}</div>}<div className="splinter-counter" style={{ left: `${props.hudLayout.mechanic.x}%`, top: `${props.hudLayout.mechanic.y}%` }}>{p2 ? <>{p2.counter} <strong>{props.event === 'p2-recover' || props.event === 'p2-fetch' ? Math.max(0, 6 - props.crystalAge).toFixed(1) : Math.max(0, p2.duration - props.eventTime).toFixed(1)}s</strong></> : countdown ? <>STARTING <strong>{Math.max(0, 3 - props.eventTime).toFixed(1)}s</strong></> : positioning ? <>POSITIONING <strong>{Math.max(0, 10 - props.eventTime).toFixed(1)}s</strong></> : finalRecovery ? <>FINAL PICKUP <strong>{Math.max(0, 2 - props.eventTime).toFixed(1)}s</strong></> : <>SPLINTER SET <strong>{props.cycle}/6</strong></>}</div>{props.crystal && <div className="crystal-countdown" style={{ left: `${props.hudLayout.crystal.x}%`, top: `${props.hudLayout.crystal.y}%` }}>PICK UP IN<br /><strong>{finalRecovery ? Math.max(1, Math.ceil(2 - props.eventTime)) : Math.max(1, Math.ceil(6 - props.crystalAge))}</strong></div>}{(props.healthPotEnabled || props.shieldEnabled) && <div className={`player-health${props.criticalRemaining > 0 ? ' critical-health' : ''}`} style={{ left: `${props.hudLayout.playerHealth.x}%`, top: `${props.hudLayout.playerHealth.y}%` }}><div className="health-track"><i style={{ width: `${props.health}%` }} /></div><span>{Math.round(props.health)}%{props.criticalRemaining > 0 ? ` · REACT ${props.criticalRemaining.toFixed(1)}s` : ''}</span><div className="health-abilities">{props.healthPotEnabled && <b className={props.healthPotUsed ? 'used' : ''}>{keyLabel(props.keyBindings.healthPot)} POT</b>}{props.shieldEnabled && <b className={props.shieldUsed ? 'used' : ''}>{keyLabel(props.keyBindings.shield)} SHIELD</b>}</div></div>}{props.mainAbilityEnabled && <><div className="boss-health" style={{ left: `${props.hudLayout.bossHealth.x}%`, top: `${props.hudLayout.bossHealth.y}%` }}><span>L’URA · {props.bossHealth.toFixed(1)}%</span><div className="boss-health-track"><i style={{ width: `${props.bossHealth}%` }} /></div><small>{keyLabel(props.keyBindings.mainAbility)} · MAIN ABILITY READY</small></div>{props.mainCastRemaining > 0 && <div className="player-castbar main-cast" style={{ left: `${props.hudLayout.castbar.x}%`, top: `${props.hudLayout.castbar.y}%` }}><i style={{ width: `${(1 - props.mainCastRemaining) * 100}%` }} /><b>MAIN ABILITY · {props.mainCastRemaining.toFixed(1)}s</b></div>}</>}<div className="controls">{keyLabel(props.keyBindings.forward)}/{keyLabel(props.keyBindings.left)}/{keyLabel(props.keyBindings.backward)}/{keyLabel(props.keyBindings.right)} move · {keyLabel(props.keyBindings.jump)} jump · {keyLabel(props.keyBindings.pause)} pause · left-drag look · right-drag view + face · wheel zoom · Zoom {zoomDisplay.toFixed(1)} yd · {p2 ? p2.detail : countdown ? `Wait for the timer at ${props.startSlotName}` : positioning ? props.difficulty === 'easy' ? `Follow the teal guide to Spot ${props.assignment + 1}` : `Find Spot ${props.assignment + 1}; its ring appears only when close` : finalRecovery ? 'Two seconds to recover the final crystal before the Phase 2 center jump' : props.role === 'carrier' ? `${keyLabel(props.keyBindings.crystal)} drops the crystal anywhere · move away · pick up in time` : props.cycle === 6 ? 'Final set: all 20 players marked' : 'Dodge the ten marked Starsplinters'}</div></div>
     </div>
   </main>
 }

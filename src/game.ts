@@ -14,6 +14,8 @@ export const INTERMISSION_SEQUENCE = [
 export const WIPE_PENALTY = 500
 export const PLAYER_COLLISION_PENALTY = 50
 export const OPENING_BOOST_SECONDS = 5
+export const P2_PERSONAL_CIRCLE_INNER_RADIUS = 11.55
+export const P2_PERSONAL_CIRCLE_OUTER_RADIUS = 12.16
 export function assignmentRevealDistance(difficulty: Difficulty): number {
   return difficulty === 'easy' ? Infinity : difficulty === 'normal' ? 45 : 22
 }
@@ -29,6 +31,11 @@ export function seededStars(seed: number, count = 6): Star[] {
 }
 
 export function distance(a: Point, b: Point): number { return Math.hypot(a.x - b.x, a.y - b.y) }
+export function jumpHeights(scriptedProgress: number, personalProgress: number): { player: number; npc: number } {
+  const scripted = scriptedProgress > 0 ? Math.sin(Math.min(1, scriptedProgress) * Math.PI) * 42 : 0
+  const personal = personalProgress > 0 ? Math.sin(Math.min(1, personalProgress) * Math.PI) * 8 : 0
+  return { player: scripted + personal, npc: scripted }
+}
 export function rotatePoint(point: Point, center: Point, radians: number): Point {
   const dx = point.x - center.x
   const dy = point.y - center.y

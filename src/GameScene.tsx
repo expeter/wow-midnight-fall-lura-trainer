@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
-import { assignmentRevealDistance, crystalCarrierPosition, distance, npcEntryPosition, OPENING_BOOST_SECONDS, roamingNpcPosition, type Difficulty, type PlayerClass, type PlayerProfile, type Point } from './game'
+import { assignmentRevealDistance, crystalCarrierPosition, distance, jumpHeights, npcEntryPosition, OPENING_BOOST_SECONDS, P2_PERSONAL_CIRCLE_INNER_RADIUS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, roamingNpcPosition, type Difficulty, type PlayerClass, type PlayerProfile, type Point } from './game'
 
 interface SceneProps {
   positions: Point[]
@@ -21,6 +21,7 @@ interface SceneProps {
   npcCarrier: number | null
   npcCrystalAge: number
   playerSplinterRotation: number
+  personalJumpProgress: number
   crystalAge: number
   event: 'countdown' | 'positioning' | 'beam' | 'splinter' | 'p1-recover' | 'p2-countdown' | 'p2-jump' | 'p2-positioning' | 'p2-orbs' | 'p2-recover' | 'p2-pull' | 'p2-spread' | 'p2-fetch' | 'p2-wait'
   eventTime: number
@@ -437,8 +438,8 @@ export default function GameScene(props: SceneProps) {
         orbitAngle = THREE.MathUtils.lerp(orbitSoakStart, orbitSoakTarget, eased)
       } else if (state.event.startsWith('p2-')) orbitAngle += renderDelta * P2_ORBIT_SPEED
       const jumpProgress = state.event === 'p2-jump' ? Math.min(1, state.eventTime / 1.4) : 0
-      const jumpHeight = state.event === 'p2-jump' ? Math.sin(jumpProgress * Math.PI) * 42 : 0
-      player.position.set(state.player.x, jumpHeight, state.player.y)
+      const heights = jumpHeights(jumpProgress, state.personalJumpProgress)
+      player.position.set(state.player.x, heights.player, state.player.y)
       const phaseTwo = state.event.startsWith('p2-')
       boss.visible = !phaseTwo
       p2Boss.visible = phaseTwo
@@ -494,7 +495,7 @@ export default function GameScene(props: SceneProps) {
         const openingMultiplier = state.movementBonus && state.event === 'positioning' && state.eventTime <= OPENING_BOOST_SECONDS ? 1.4 : 1
         if (previousPosition && !forcedMovement) position = walkTowards(previousPosition, position, simulationDelta, state.movementSpeed * openingMultiplier)
         renderedNpcPositions[index] = position
-        sprite.position.set(position.x, jumpHeight, position.y)
+        sprite.position.set(position.x, heights.npc, position.y)
         const pathTarget = state.event === 'p2-wait' || state.event === 'p2-orbs' ? soakTarget : state.event === 'p2-spread' ? spreadTarget : state.event === 'p2-pull' || state.event === 'p2-jump' ? WORLD.center : null
         if (pathTarget && distance(position, pathTarget) > .1) sprite.rotation.y = -Math.atan2(pathTarget.y - position.y, pathTarget.x - position.x)
         const glow = sprite.getObjectByName('crystal-glow')
@@ -574,8 +575,8 @@ export default function GameScene(props: SceneProps) {
         addGroundRing(hazards, WORLD.center, 8 + pullProgress * 15, 10 + pullProgress * 15, 0xd981ff, .72)
       }
       if (state.event === 'p2-spread') {
-        addGroundRing(hazards, state.player, 11.55, 12.16, 0xff6f9e, .82)
-        npcPositions.forEach(point => addGroundRing(hazards, point, 11.55, 12.16, 0xff6f9e, .52))
+        addGroundRing(hazards, state.player, P2_PERSONAL_CIRCLE_INNER_RADIUS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, 0xff6f9e, .82)
+        npcPositions.forEach(point => addGroundRing(hazards, point, P2_PERSONAL_CIRCLE_INNER_RADIUS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, 0xff6f9e, .52))
         if (state.playerIsCrystal) addGroundRing(hazards, WORLD.center, 4, 8, 0xffe05a, .65)
       }
 
@@ -596,7 +597,7 @@ export default function GameScene(props: SceneProps) {
       currentCameraForwardAngle = Math.atan2(normalizedForward.y, normalizedForward.x)
       if (facingAngle === null) applyFacing(currentCameraForwardAngle)
       player.rotation.y = -(facingAngle ?? currentCameraForwardAngle)
-      camera.lookAt(state.player.x, jumpHeight + 5, state.player.y)
+      camera.lookAt(state.player.x, heights.player + 5, state.player.y)
       renderer.render(scene, camera)
       animation = requestAnimationFrame(render)
     }

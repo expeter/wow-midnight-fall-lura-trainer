@@ -326,7 +326,7 @@ export default function GameScene(props: SceneProps) {
     const crystal = makeCrystal()
     crystal.visible = false
     scene.add(crystal)
-    const npcCrystalSprites = Array.from({ length: 2 }, () => { const object = makeCrystal(); object.scale.setScalar(.9); object.visible = false; scene.add(object); return object })
+    const npcCrystalSprites = Array.from({ length: 19 }, () => { const object = makeCrystal(); object.scale.setScalar(.9); object.visible = false; scene.add(object); return object })
     const helper = new THREE.Mesh(new THREE.RingGeometry(22, 25, 40), new THREE.MeshBasicMaterial({ color: 0x73e0c1, transparent: true, opacity: .8, side: THREE.DoubleSide }))
     helper.rotation.x = -Math.PI / 2
     scene.add(helper)
@@ -503,7 +503,10 @@ export default function GameScene(props: SceneProps) {
         const body = sprite.getObjectByName('role-body') as THREE.Mesh<THREE.BoxGeometry, THREE.MeshBasicMaterial>
         body.material.color.setHex(body.userData.baseColor)
         const carriedCrystal = sprite.getObjectByName('carried-crystal')
-        if (carriedCrystal) carriedCrystal.visible = state.crystalCarriers.includes(index) && !(index === state.npcCarrier && state.npcCrystals.length)
+        if (carriedCrystal) {
+          const droppedForP2Spread = state.event === 'p2-spread' && state.npcCrystals.length > 0
+          carriedCrystal.visible = state.crystalCarriers.includes(index) && !droppedForP2Spread && !(index === state.npcCarrier && state.npcCrystals.length)
+        }
         return position
       })
       crystal.visible = Boolean(state.crystal)

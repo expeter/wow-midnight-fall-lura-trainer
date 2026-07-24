@@ -57,6 +57,17 @@ test('continues the current Phase 2 sequence after the first Normal wipe', async
   await expect(page.getByText(/PHASE 2 · CYCLE 1 \/ 3/)).toBeVisible()
 })
 
+test('wipes when a non-carrier personal circle hits an NPC crystal in Phase 2', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('lura-game-speed', '2.5'))
+  await page.goto('/')
+  await page.getByRole('button', { name: 'hard' }).click()
+  await page.getByRole('button', { name: 'P2', exact: true }).click()
+  await page.getByRole('button', { name: /Enter P2/ }).click()
+
+  await expect(page.getByRole('alert')).toContainText('Your personal circle hit another player’s crystal', { timeout: MECHANIC_TIMEOUT })
+  await expect(page.locator('.score-overlay strong')).toHaveText('400')
+})
+
 test('Space jumps while actions are locked and P pauses', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('lura-game-speed', '2.5'))
   await page.goto('/')

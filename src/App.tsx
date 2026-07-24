@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import { bossBeamHitsPlayer, canPickupCrystal, canRecoverFromWipe, crystalCarrierPosition, crystalWipeReason, difficultySettings, distance, healthEmergencyLimit, isInSafeAnnulus, moveRelativeToCamera, moveWithIncreasingPull, npcEntryPosition, OPENING_BOOST_SECONDS, orientedAssignments, P2_PERSONAL_CIRCLE_OUTER_RADIUS, PLAYER_COLLISION_PENALTY, roamingNpcPosition, WIPE_PENALTY, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type Role } from './game'
+import { bossBeamHitsPlayer, canPickupCrystal, canRecoverFromWipe, crystalCarrierPosition, crystalWipeReason, difficultySettings, distance, healthEmergencyLimit, isInSafeAnnulus, moveRelativeToCamera, moveWithIncreasingPull, npcEntryPosition, OPENING_BOOST_SECONDS, orientedAssignments, p2NpcCrystalDrops, P2_PERSONAL_CIRCLE_OUTER_RADIUS, personalCircleHitsCrystal, PLAYER_COLLISION_PENALTY, roamingNpcPosition, WIPE_PENALTY, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type Role } from './game'
 import GameScene from './GameScene'
 import './styles.css'
 
@@ -519,20 +519,26 @@ export default function App() {
       playerRef.current = WORLD.center
       setPlayer(WORLD.center)
       droppedForPackRef.current = false
+      setNpcCrystals(p2NpcCrystalDrops(WORLD.center, crystalAssignments.filter(index => index !== assignment).length))
+      setNpcCrystalAge(0)
+      setNpcCarrier(null)
       setEvent('p2-spread')
     } else if (event === 'p2-spread') {
       const isCarrier = crystalAssignments.includes(assignment)
       const npcSpreadPositions = p2SpreadPositions.filter((_, index) => index !== assignment)
-      if (npcSpreadPositions.some(target => distance(player, target) < 21)) recordMistake('Personal circle overlapped another player', 100)
+      if (npcSpreadPositions.some(target => distance(player, target) < 21)) recordMistake('Personal circle overlapped another player', PLAYER_COLLISION_PENALTY)
       const placementFailure = isCarrier && (!droppedForPackRef.current || !crystal || distance(crystal, WORLD.center) > 11)
-      const circleHitCrystal = Boolean(crystal && [player, ...npcSpreadPositions].some(target => distance(target, crystal) < 12))
-      const crystalFailure = placementFailure ? 'Crystal was not dropped in the middle before the circles' : circleHitCrystal ? 'A personal circle hit the crystal' : ''
+      const circleHitCrystal = Boolean(crystal && [player, ...npcSpreadPositions].some(target => distance(target, crystal) < P2_PERSONAL_CIRCLE_OUTER_RADIUS))
+      const playerHitNpcCrystal = personalCircleHitsCrystal(player, npcCrystals)
+      const crystalFailure = placementFailure ? 'Crystal was not dropped in the middle before the circles' : playerHitNpcCrystal ? 'Your personal circle hit another player’s crystal' : circleHitCrystal ? 'A personal circle hit the crystal' : ''
       if (crystalFailure && triggerWipe(crystalFailure)) return
       if (crystalFailure) {
         setCrystal(null)
         setCrystalAge(0)
         crystalAgeRef.current = 0
       }
+      setNpcCrystals([])
+      setNpcCrystalAge(0)
       setEvent(isCarrier && !crystalFailure ? 'p2-fetch' : 'p2-wait')
     } else if (event === 'p2-fetch') {
       if (crystal) {

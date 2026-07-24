@@ -31,6 +31,15 @@ export function seededStars(seed: number, count = 6): Star[] {
 }
 
 export function distance(a: Point, b: Point): number { return Math.hypot(a.x - b.x, a.y - b.y) }
+export function p2NpcCrystalDrops(center: Point, count: number, radius = 6): Point[] {
+  return Array.from({ length: count }, (_, index) => {
+    const angle = -Math.PI / 2 + index * Math.PI * 2 / Math.max(1, count)
+    return { x: center.x + Math.cos(angle) * radius, y: center.y + Math.sin(angle) * radius }
+  })
+}
+export function personalCircleHitsCrystal(circleCenter: Point, crystals: Point[], radius = P2_PERSONAL_CIRCLE_OUTER_RADIUS): boolean {
+  return crystals.some(crystal => distance(circleCenter, crystal) < radius)
+}
 export function jumpHeights(scriptedProgress: number, personalProgress: number): { player: number; npc: number } {
   const scripted = scriptedProgress > 0 ? Math.sin(Math.min(1, scriptedProgress) * Math.PI) * 42 : 0
   const personal = personalProgress > 0 ? Math.sin(Math.min(1, personalProgress) * Math.PI) * 8 : 0

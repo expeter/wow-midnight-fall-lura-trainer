@@ -1,5 +1,12 @@
 import { expect, test } from '@playwright/test'
 
+// Three.js can render substantially slower on GitHub's software-only runner.
+// The game caps animation-frame deltas to keep mechanics stable, so simulated
+// time intentionally advances more slowly when the renderer is under load.
+const MECHANIC_TIMEOUT = 20_000
+
+test.setTimeout(60_000)
+
 test('selects Arena 2 and enters the Phase 2 countdown', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('lura-game-speed', '2.5'))
   await page.goto('/')
@@ -20,9 +27,9 @@ test('selects Arena 2 and enters the Phase 2 countdown', async ({ page }) => {
   expect(viewportFits.documentHeight).toBeLessThanOrEqual(viewportFits.viewportHeight)
 
   const beamCountdown = page.locator('.beam-drop-counter')
-  await expect(page.getByText('Soak your assigned beam.')).toBeVisible({ timeout: 6_000 })
+  await expect(page.getByText('Soak your assigned beam.')).toBeVisible({ timeout: MECHANIC_TIMEOUT })
   await expect(page.getByText('WAIT TO DROP')).toHaveCount(0)
-  await expect(beamCountdown).toBeVisible({ timeout: 6_000 })
+  await expect(beamCountdown).toBeVisible({ timeout: MECHANIC_TIMEOUT })
   await expect(beamCountdown).toContainText(/BEAM IN [1-4]/)
 })
 
@@ -33,7 +40,7 @@ test('shows the early crystal drop warning on Easy only', async ({ page }) => {
   await page.getByRole('button', { name: 'Arena 2 only' }).click()
   await page.getByRole('button', { name: /Enter Arena 2/ }).click()
 
-  await expect(page.getByText('WAIT TO DROP')).toBeVisible({ timeout: 6_000 })
+  await expect(page.getByText('WAIT TO DROP')).toBeVisible({ timeout: MECHANIC_TIMEOUT })
 })
 
 test('continues the current Phase 2 sequence after the first Normal wipe', async ({ page }) => {
@@ -43,10 +50,10 @@ test('continues the current Phase 2 sequence after the first Normal wipe', async
   await page.getByRole('button', { name: 'Arena 2 only' }).click()
   await page.getByRole('button', { name: /Enter Arena 2/ }).click()
 
-  await expect(page.getByText(/Strike 1 \/ 2/)).toBeVisible({ timeout: 8_000 })
+  await expect(page.getByText(/Strike 1 \/ 2/)).toBeVisible({ timeout: MECHANIC_TIMEOUT })
   await expect(page.getByText('Practice continues')).toBeVisible()
   await expect(page.getByRole('alert')).toHaveCount(0)
-  await expect(page.getByText(/Pulled to the center|Spread your circle/)).toBeVisible({ timeout: 4_000 })
+  await expect(page.getByText(/Pulled to the center|Spread your circle/)).toBeVisible({ timeout: MECHANIC_TIMEOUT })
   await expect(page.getByText(/PHASE 2 · CYCLE 1 \/ 3/)).toBeVisible()
 })
 

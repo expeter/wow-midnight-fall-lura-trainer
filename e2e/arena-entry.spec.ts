@@ -11,9 +11,9 @@ test('selects Arena 2 and enters the Phase 2 countdown', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('lura-game-speed', '2.5'))
   await page.goto('/')
 
-  await expect(page.getByRole('button', { name: 'Arena 1 → Arena 2' })).toBeVisible()
-  await page.getByRole('button', { name: 'Arena 2 only' }).click()
-  await page.getByRole('button', { name: /Enter Arena 2/ }).click()
+  await expect(page.getByRole('button', { name: 'Intermission', exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'P2', exact: true }).click()
+  await page.getByRole('button', { name: /Enter P2/ }).click()
 
   await expect(page.getByText('Get ready for Phase 2.')).toBeVisible()
   await expect(page.getByText(/PHASE 2 · CYCLE 1 \/ 3/)).toBeVisible()
@@ -37,8 +37,8 @@ test('shows the early crystal drop warning on Easy only', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('lura-game-speed', '2.5'))
   await page.goto('/')
   await page.getByRole('button', { name: 'easy' }).click()
-  await page.getByRole('button', { name: 'Arena 2 only' }).click()
-  await page.getByRole('button', { name: /Enter Arena 2/ }).click()
+  await page.getByRole('button', { name: 'P2', exact: true }).click()
+  await page.getByRole('button', { name: /Enter P2/ }).click()
 
   await expect(page.getByText('WAIT TO DROP')).toBeVisible({ timeout: MECHANIC_TIMEOUT })
 })
@@ -47,8 +47,8 @@ test('continues the current Phase 2 sequence after the first Normal wipe', async
   await page.addInitScript(() => localStorage.setItem('lura-game-speed', '2.5'))
   await page.goto('/')
   await page.getByLabel('Assignment position').fill('1')
-  await page.getByRole('button', { name: 'Arena 2 only' }).click()
-  await page.getByRole('button', { name: /Enter Arena 2/ }).click()
+  await page.getByRole('button', { name: 'P2', exact: true }).click()
+  await page.getByRole('button', { name: /Enter P2/ }).click()
 
   await expect(page.getByText(/Strike 1 \/ 2/)).toBeVisible({ timeout: MECHANIC_TIMEOUT })
   await expect(page.getByText('Practice continues')).toBeVisible()
@@ -63,7 +63,7 @@ test('Space jumps while actions are locked and P pauses', async ({ page }) => {
   await page.getByRole('button', { name: 'easy' }).click()
   await page.getByLabel('Assignment position').fill('1')
   await page.getByLabel('Enable main ability').check()
-  await page.getByRole('button', { name: /Enter Arena 1/ }).click()
+  await page.getByRole('button', { name: /Enter Intermission/ }).click()
 
   await expect(page.getByText('Take your position.')).toBeVisible({ timeout: 3_000 })
   await page.keyboard.press('Space')

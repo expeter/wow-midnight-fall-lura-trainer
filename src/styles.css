@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;600;700;800&display=swap');
 .entry-choice { display: flex; align-items: center; gap: 8px; margin-top: 28px; padding: 8px; border: 1px solid #26324e; border-radius: 10px; background: #0e1425; }
-.entry-choice span { margin: 0 8px; color: #8190ad; font: 10px 'DM Mono', monospace; text-transform: uppercase; letter-spacing: .08em; }
+.entry-choice span { margin: 0 8px; color: #8190ad; font: 11px 'DM Mono', monospace; text-transform: uppercase; letter-spacing: .08em; }
 .entry-choice button { padding: 9px 13px; }
 .entry-choice .coming-soon { color: #71809e; border-style: dashed; background: rgba(16,24,43,.58); cursor: not-allowed; opacity: .62; white-space: nowrap; }
 .entry-choice .coming-soon:hover { color: #71809e; border-color: #354361; background: rgba(16,24,43,.58); }
@@ -54,15 +54,15 @@
 .scene-3d canvas { display: block; width: 100%; height: 100%; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-user-drag: none; }
 .scene-3d canvas:active { cursor: grabbing; }
 .zoom-readout { position: absolute; z-index: 3; right: 12px; bottom: 12px; padding: 7px 9px; border: 1px solid rgba(115,224,193,.4); border-radius: 6px; color: #bdf5e6; background: rgba(7,10,20,.78); pointer-events: none; font: 10px 'DM Mono', monospace; letter-spacing: .06em; }
-.speed-control { display: block; margin-top: 15px; color: #aeb8d0; font-size: 12px; }
+.speed-control { display: block; margin-top: 15px; color: #aeb8d0; font-size: 13px; }
 .speed-control strong { float: right; color: #73e0c1; font-family: 'DM Mono', monospace; }
 .speed-control input { display: block; margin-top: 8px; }
-.coordinate-control { display: block; margin-top: 9px; color: #aeb8d0; font-size: 11px; }
+.coordinate-control { display: block; margin-top: 9px; color: #aeb8d0; font-size: 12px; }
 .coordinate-control strong { float: right; color: #73e0c1; font-family: 'DM Mono', monospace; }
 .coordinate-control input { display: block; margin-top: 4px; }
-.profile-control { display: block; margin-top: 11px; color: #aeb8d0; font-size: 11px; }
-.profile-control input, .profile-control select { display: block; width: 100%; margin-top: 5px; padding: 8px 9px; border: 1px solid #354361; border-radius: 6px; color: #f6f4ee; background: #10182b; font: 12px Manrope, sans-serif; }
-.share-status { margin: 9px 0 0; color: #73e0c1; font: 10px 'DM Mono', monospace; }
+.profile-control { display: block; margin-top: 11px; color: #aeb8d0; font-size: 12px; }
+.profile-control input, .profile-control select { display: block; width: 100%; margin-top: 5px; padding: 8px 9px; border: 1px solid #354361; border-radius: 6px; color: #f6f4ee; background: #10182b; font: 13px Manrope, sans-serif; }
+.share-status { margin: 9px 0 0; color: #73e0c1; font: 11px 'DM Mono', monospace; }
 .setup-shell {
   padding-top: 4vh;
   display: grid;
@@ -90,9 +90,9 @@
 .creator-card img { width: 72px; height: 72px; flex: 0 0 auto; border: 2px solid #73e0c1; border-radius: 10px; object-fit: cover; }
 .creator-card > div { min-width: 0; }
 .creator-card span, .creator-card code { display: block; }
-.creator-card > div > span { color: #8190ad; font: 9px 'DM Mono', monospace; text-transform: uppercase; letter-spacing: .1em; }
+.creator-card > div > span { color: #8190ad; font: 10px 'DM Mono', monospace; text-transform: uppercase; letter-spacing: .1em; }
 .creator-card strong { display: block; margin: 2px 0; font-size: 17px; }
-.creator-card code { color: #b9c4d9; font: 9px 'DM Mono', monospace; }
+.creator-card code { color: #b9c4d9; font: 10px 'DM Mono', monospace; }
 .creator-card nav { display: flex; gap: 5px; margin-top: 7px; }
 .creator-card a {
   display: inline-flex;
@@ -102,26 +102,26 @@
   border-radius: 5px;
   color: #c9fff1;
   background: #121d32;
-  font: 8px 'DM Mono', monospace;
+  font: 9px 'DM Mono', monospace;
   text-decoration: none;
   white-space: nowrap;
 }
 .creator-card a:hover { border-color: #73e0c1; background: #193239; }
 .creator-card .coffee-link { color: #ffe18b; border-color: #625331; }
-.creator-card .copy-wallet { width: auto; margin: 5px 0 0; padding: 2px 0; border: 0; color: #8190ad; background: transparent; font: 8px 'DM Mono', monospace; text-align: left; }
+.creator-card .copy-wallet { width: auto; margin: 5px 0 0; padding: 2px 0; border: 0; color: #8190ad; background: transparent; font: 9px 'DM Mono', monospace; text-align: left; }
 .creator-card .copy-wallet:hover { color: #73e0c1; background: transparent; }
 .practice-settings { display: grid; grid-template-columns: .9fr 1fr 1.35fr; gap: 14px; margin: -12px 0 24px; }
-.music-preview { padding: 8px 10px; margin: 10px 0 0; text-align: center; font-size: 10px; }
+.music-preview { padding: 8px 10px; margin: 10px 0 0; text-align: center; font-size: 11px; }
 .music-preview:disabled { opacity: .45; cursor: not-allowed; }
-.checkbox-control { display: flex; gap: 9px; align-items: flex-start; margin-top: 12px; color: #f6f4ee; font-size: 12px; cursor: pointer; }
+.checkbox-control { display: flex; gap: 9px; align-items: flex-start; margin-top: 12px; color: #f6f4ee; font-size: 13px; cursor: pointer; }
 .checkbox-control input { flex: 0 0 auto; width: 16px; height: 16px; margin: 1px 0 0; }
-.checkbox-control > span > span { display: block; margin-top: 3px; color: #8190ad; font-size: 10px; line-height: 1.35; }
+.checkbox-control > span > span { display: block; margin-top: 3px; color: #8190ad; font-size: 11px; line-height: 1.35; }
 .checkbox-control:has(input:disabled) { opacity: .42; cursor: not-allowed; }
 .keybind-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
-.keybind-control span { display: block; margin-bottom: 3px; color: #8190ad; font-size: 9px; }
-.keybind-control input { width: 100%; padding: 7px 4px; border: 1px solid #354361; border-radius: 5px; color: #bdf5e6; background: #10182b; text-align: center; font: 10px 'DM Mono', monospace; cursor: pointer; }
+.keybind-control span { display: block; margin-bottom: 3px; color: #8190ad; font-size: 10px; }
+.keybind-control input { width: 100%; padding: 7px 4px; border: 1px solid #354361; border-radius: 5px; color: #bdf5e6; background: #10182b; text-align: center; font: 11px 'DM Mono', monospace; cursor: pointer; }
 .keybind-control input:focus { outline: 1px solid #73e0c1; border-color: #73e0c1; }
-.reset-keys { width: auto; padding: 7px 10px; margin: 10px 0 0; font-size: 10px; }
+.reset-keys { width: auto; padding: 7px 10px; margin: 10px 0 0; font-size: 11px; }
 .editor-actions { display: flex; gap: 6px; margin-top: 10px; }
 .editor-actions button { padding: 8px; text-align: center; }
 .crystal-toggle { padding: 8px 10px; margin: 8px 0 2px; text-align: center; }
@@ -466,4 +466,12 @@
   .controls { padding: 7px 9px; font-size: 9px; }
   .hud-preview-counter { min-width: 92px; padding: 5px 8px; }
   .hud-preview-counter strong { font-size: 17px; }
+}
+
+/* Keep setup guidance readable without enlarging the compact arena HUD. */
+.setup-shell .hint,
+.setup-shell .scope-note,
+.setup-shell fieldset button span,
+.setup-shell .assignment span {
+  font-size: 13px;
 }

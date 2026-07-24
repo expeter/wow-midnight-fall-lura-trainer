@@ -356,14 +356,20 @@ export default function App() {
     })
   }, [profiles])
   useEffect(() => {
-    const hashPlan = window.location.hash.startsWith('#raidplan=') ? decodeRaidPlan(window.location.hash) : null
-    if (!hashPlan) return
-    setPositions(hashPlan.positions.map(clampToSafeBand))
-    setP2Positions(hashPlan.p2Positions.map(clampToP2Arena))
-    setP2SpreadPositions(hashPlan.p2SpreadPositions.map(clampToP2Arena))
-    setStartSlots(hashPlan.startSlots.map(clampStartSlot))
-    setProfiles(hashPlan.profiles)
-    setShareStatus('Shared raid plan loaded')
+    const loadHashPlan = () => {
+      const hashPlan = window.location.hash.startsWith('#raidplan=') ? decodeRaidPlan(window.location.hash) : null
+      if (!hashPlan) return
+      setPositions(hashPlan.positions.map(clampToSafeBand))
+      setP2Positions(hashPlan.p2Positions.map(clampToP2Arena))
+      setP2SpreadPositions(hashPlan.p2SpreadPositions.map(clampToP2Arena))
+      setStartSlots(hashPlan.startSlots.map(clampStartSlot))
+      setProfiles(hashPlan.profiles)
+      setShareInput(window.location.href)
+      setShareStatus('Shared raid plan loaded')
+    }
+    loadHashPlan()
+    window.addEventListener('hashchange', loadHashPlan)
+    return () => window.removeEventListener('hashchange', loadHashPlan)
   }, [])
   useEffect(() => {
     if (screen !== 'game') return

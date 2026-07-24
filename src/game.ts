@@ -31,6 +31,9 @@ export function seededStars(seed: number, count = 6): Star[] {
 }
 
 export function distance(a: Point, b: Point): number { return Math.hypot(a.x - b.x, a.y - b.y) }
+export function angleToward(origin: Point, target: Point): number {
+  return Math.atan2(target.y - origin.y, target.x - origin.x)
+}
 export function p2NpcCrystalDrops(center: Point, count: number, radius = 6): Point[] {
   return Array.from({ length: count }, (_, index) => {
     const angle = -Math.PI / 2 + index * Math.PI * 2 / Math.max(1, count)

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
-import { assignmentRevealDistance, crystalCarrierPosition, distance, jumpHeights, npcEntryPosition, OPENING_BOOST_SECONDS, P2_PERSONAL_CIRCLE_INNER_RADIUS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, roamingNpcPosition, type Difficulty, type PlayerClass, type PlayerProfile, type Point } from './game'
+import { angleToward, assignmentRevealDistance, crystalCarrierPosition, distance, jumpHeights, npcEntryPosition, OPENING_BOOST_SECONDS, P2_PERSONAL_CIRCLE_INNER_RADIUS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, roamingNpcPosition, type Difficulty, type PlayerClass, type PlayerProfile, type Point } from './game'
 
 interface SceneProps {
   positions: Point[]
@@ -367,6 +367,7 @@ export default function GameScene(props: SceneProps) {
       player.rotation.y = -angle
       latest.current.onCameraDirection({ x: Math.cos(angle), y: Math.sin(angle) })
     }
+    if (initial.event === 'countdown' || initial.event === 'positioning') applyFacing(angleToward(initial.player, WORLD.center))
     initial.onZoomChange(Math.round(zoomYards * 10) / 10)
     const saveCamera = () => localStorage.setItem('lura-camera-settings', JSON.stringify({ yaw: yawOffset, pitch, zoom: zoomYards }))
     const updateZoom = (next: number) => { zoomYards = THREE.MathUtils.clamp(next, 8, 24); initial.onZoomChange(Math.round(zoomYards * 10) / 10); saveCamera() }

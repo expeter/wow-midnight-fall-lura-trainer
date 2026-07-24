@@ -90,7 +90,7 @@ test('Space jumps while actions are locked and P pauses', async ({ page }) => {
   await page.keyboard.press('f')
   await expect(page.locator('.score-overlay strong')).toHaveText('1001')
   await expect(page.locator('.player-castbar')).toBeVisible()
-  await expect(page.locator('.player-castbar')).toHaveAttribute('style', /left: 50%; top: 66%/)
+  await expect(page.locator('.player-castbar')).toHaveAttribute('style', /left: 50%; top: 65%/)
   await expect(page.locator('.boss-health .main-cast')).toHaveCount(0)
   await page.keyboard.press('e')
   await expect(page.locator('.crystal-countdown')).toBeVisible()

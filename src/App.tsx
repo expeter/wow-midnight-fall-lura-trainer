@@ -84,12 +84,12 @@ const DEFAULT_PROFILES: PlayerProfile[] = Array.from({ length: 20 }, (_, index) 
 }))
 const DEFAULT_KEY_BINDINGS: KeyBindings = { forward: 'KeyW', backward: 'KeyS', left: 'KeyA', right: 'KeyD', jump: 'Space', crystal: 'KeyE', pause: 'KeyP', healthPot: 'KeyQ', shield: 'KeyR', mainAbility: 'KeyF' }
 const DEFAULT_HUD_LAYOUT: HudLayout = {
-  mechanic: { x: 50, y: 24 },
-  beam: { x: 50, y: 39 },
-  crystal: { x: 50, y: 74 },
-  playerHealth: { x: 50, y: 86 },
-  bossHealth: { x: 50, y: 10 },
-  castbar: { x: 50, y: 66 },
+  mechanic: { x: 43, y: 23 },
+  beam: { x: 57, y: 23 },
+  crystal: { x: 50, y: 78 },
+  playerHealth: { x: 21, y: 53 },
+  bossHealth: { x: 79, y: 53 },
+  castbar: { x: 50, y: 65 },
 }
 const KEY_BIND_LABELS: { action: keyof KeyBindings; label: string }[] = [
   { action: 'forward', label: 'Forward' }, { action: 'backward', label: 'Backward' },
@@ -811,7 +811,7 @@ function HudLayoutEditor({ layout, onChange, onReset }: { layout: HudLayout; onC
   ]
   return <section className="hud-layout-editor">
     <div className="hud-preview" aria-label="Phase 2 HUD layout preview" onPointerMove={move} onPointerUp={() => setDragging(null)} onPointerLeave={() => setDragging(null)}>
-      <div className="hud-preview-arena"><i className="preview-boss" />{Array.from({ length: 12 }, (_, index) => { const angle = index * Math.PI * 2 / 12; return <i key={index} className="preview-player" style={{ left: `${50 + Math.cos(angle) * 32}%`, top: `${50 + Math.sin(angle) * 32}%` }} /> })}<i className="preview-you" /></div>
+      <div className="hud-preview-arena"><span className="preview-caption">Static P2 view · drag the HUD boxes</span><i className="preview-cross horizontal" /><i className="preview-cross vertical" /><i className="preview-boss"><b>L’URA</b></i>{Array.from({ length: 12 }, (_, index) => { const angle = index * Math.PI * 2 / 12; return <i key={index} className="preview-player" style={{ left: `${50 + Math.cos(angle) * 32}%`, top: `${50 + Math.sin(angle) * 32}%` }} /> })}<i className="preview-you"><b>YOU</b></i></div>
       {counters.map(counter => <button type="button" key={counter.key} aria-label={`Move ${counter.label.toLowerCase()} counter`} className={`hud-preview-counter ${counter.key}`} style={{ left: `${layout[counter.key].x}%`, top: `${layout[counter.key].y}%` }} onPointerDown={event => { event.preventDefault(); setDragging(counter.key); event.currentTarget.setPointerCapture(event.pointerId) }}><span>{counter.label}</span><strong>{counter.value}</strong></button>)}
     </div>
     <button type="button" className="secondary hud-reset" onClick={onReset}>Reset counter positions</button>

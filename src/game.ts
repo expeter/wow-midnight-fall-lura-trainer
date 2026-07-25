@@ -20,8 +20,12 @@ export const P3_OUTER_RADIUS = 199
 export const P3_LIGHT_RADIUS = 38
 export const P3_POOL_RADIUS = 12
 export const P3_LANDING_SOAK_RADIUS = 15
-export const P3_MEMORY_START_SECONDS = 1
-export const P3_MEMORY_STEP_SECONDS = 14 / 3
+export const P3_SECTOR_SECONDS = 60
+export const P3_STARS_START_SECONDS = 5
+export const P3_STARS_INTERVAL_SECONDS = 5
+export const P3_MEMORY_PANEL_SECONDS = 20
+export const P3_MEMORY_START_SECONDS = 25
+export const P3_MEMORY_STEP_SECONDS = 5
 export type RuneSymbol = 'T' | 'X' | 'O'
 export function assignmentRevealDistance(difficulty: Difficulty): number {
   return difficulty === 'test' || difficulty === 'easy' ? Infinity : difficulty === 'normal' ? 45 : 22
@@ -51,7 +55,7 @@ export function p3LightCenters(side: -1 | 1, center: Point, round: number): Poin
 }
 
 export function p3BossPosition(side: -1 | 1, center: Point, round: number): Point {
-  return { x: center.x + side * 118, y: center.y + (round === 1 ? -70 : 25) }
+  return { x: center.x + side * 95, y: center.y + (round === 1 ? -105 : 105) }
 }
 
 export function p3ArchangelStackPosition(side: -1 | 1, center: Point, round: number): Point {
@@ -85,14 +89,14 @@ export function p3PoolCenters(side: -1 | 1, center: Point, round: number): Point
 
 export function p3RunePartnerPosition(assignment: number, center: Point, round: number): Point {
   const side: -1 | 1 = assignment < 10 ? -1 : 1
-  const pool = p3PoolCenters(side, center, round)[assignment % 3]
-  return { x: pool.x + side * 8, y: pool.y - 5 }
+  return p3LightCenters(side, center, round)[assignment % 3]
 }
 
-export function p3RuneOrbs(side: -1 | 1, center: Point, round: number): Point[] {
-  const anchorX = center.x + side * 142
-  const anchorY = round === 1 ? center.y - 30 : center.y + 45
-  let seed = 113 + round * 97 + (side > 0 ? 41 : 0)
+export function p3RuneOrbs(side: -1 | 1, center: Point, round: number, cycle = 0): Point[] {
+  const boss = p3BossPosition(side, center, round)
+  const anchorX = boss.x + side * 18
+  const anchorY = boss.y
+  let seed = 113 + round * 97 + cycle * 131 + (side > 0 ? 41 : 0)
   const random = () => { seed = seed * 16807 % 2147483647; return (seed - 1) / 2147483646 }
   const anchors = [
     [-33, -34], [-11, -36], [10, -31], [32, -25],
@@ -120,6 +124,16 @@ export function isP3RuneTurn(order: RuneSymbol[], rune: RuneSymbol, eventTime: n
 
 export function p3RuneDeadline(order: RuneSymbol[], rune: RuneSymbol): number {
   return P3_MEMORY_START_SECONDS + (order.indexOf(rune) + 1) * P3_MEMORY_STEP_SECONDS
+}
+
+export function p3StarsTiming(eventTime: number): { active: boolean; cycle: number; localTime: number } {
+  if (eventTime < P3_STARS_START_SECONDS) return { active: false, cycle: 0, localTime: 0 }
+  const elapsed = eventTime - P3_STARS_START_SECONDS
+  return {
+    active: true,
+    cycle: Math.floor(elapsed / P3_STARS_INTERVAL_SECONDS),
+    localTime: elapsed % P3_STARS_INTERVAL_SECONDS,
+  }
 }
 
 export function nearestRuneEdges(points: Point[], maximumConnections = 3, maximumDistance = 39): Array<[number, number]> {

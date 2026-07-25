@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
-import { angleToward, assignmentRevealDistance, crystalCarrierPosition, distance, jumpHeights, nearestRuneEdges, npcEntryPosition, OPENING_BOOST_SECONDS, P2_PERSONAL_CIRCLE_INNER_RADIUS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, p3ArchangelStackPosition, p3BossPosition, p3LandingPosition, p3LightCenters, p3PoolCenters, p3RuneOrbs, p3RunePartnerPosition, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_MEMORY_START_SECONDS, P3_OUTER_RADIUS, P3_POOL_RADIUS, roamingNpcPosition, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type RuneSymbol } from './game'
+import { angleToward, assignmentRevealDistance, crystalCarrierPosition, distance, jumpHeights, nearestRuneEdges, npcEntryPosition, OPENING_BOOST_SECONDS, P2_PERSONAL_CIRCLE_INNER_RADIUS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, p3ArchangelStackPosition, p3BossPosition, p3LandingPosition, p3LightCenters, p3PoolCenters, p3RuneOrbs, p3RunePartnerPosition, p3StarsTiming, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_MEMORY_START_SECONDS, P3_MEMORY_STEP_SECONDS, P3_OUTER_RADIUS, P3_POOL_RADIUS, roamingNpcPosition, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type RuneSymbol } from './game'
 
 interface SceneProps {
   positions: Point[]
@@ -28,7 +28,7 @@ interface SceneProps {
   playerSplinterRotation: number
   personalJumpProgress: number
   crystalAge: number
-  event: 'countdown' | 'positioning' | 'beam' | 'splinter' | 'p1-recover' | 'p2-countdown' | 'p2-jump' | 'p2-positioning' | 'p2-orbs' | 'p2-recover' | 'p2-pull' | 'p2-spread' | 'p2-fetch' | 'p2-wait' | 'p3-countdown' | 'p3-flight' | 'p3-landing' | 'p3-approach' | 'p3-light-pools' | 'p3-rune-preview' | 'p3-lattice-memory' | 'p3-lattice-second' | 'p3-pools-overlap' | 'p3-archangel-position' | 'p3-archangel' | 'p3-sector-move'
+  event: 'countdown' | 'positioning' | 'beam' | 'splinter' | 'p1-recover' | 'p2-countdown' | 'p2-jump' | 'p2-positioning' | 'p2-orbs' | 'p2-recover' | 'p2-pull' | 'p2-spread' | 'p2-fetch' | 'p2-wait' | 'p3-countdown' | 'p3-flight' | 'p3-landing' | 'p3-approach' | 'p3-light-pools' | 'p3-rune-preview' | 'p3-lattice-memory' | 'p3-lattice-second' | 'p3-pools-overlap' | 'p3-big-boom' | 'p3-archangel-position' | 'p3-archangel' | 'p3-sector-move'
   eventTime: number
   beamAngles: number[]
   npcSplinters: number[]
@@ -96,6 +96,7 @@ function p3NpcTarget(index: number, crystal: boolean, round: number, event: Scen
   }
   if (event === 'p3-approach') return safeSpread
   if (event === 'p3-light-pools' || event === 'p3-pools-overlap') {
+    if (event === 'p3-light-pools' && eventTime >= P3_MEMORY_START_SECONDS) return safeSpread
     if (crystal) return lights[cluster]
     return {
       x: pools[cluster].x + Math.cos(spreadAngle) * (4 + sideIndex % 2 * 3),
@@ -105,6 +106,7 @@ function p3NpcTarget(index: number, crystal: boolean, round: number, event: Scen
   if (event === 'p3-rune-preview' || event === 'p3-lattice-memory' || event === 'p3-lattice-second') {
     return safeSpread
   }
+  if (event === 'p3-big-boom') return safeSpread
   if (event === 'p3-archangel-position' || event === 'p3-archangel') return p3ArchangelStackPosition(side, WORLD.center, round)
   if (event === 'p3-sector-move') {
     const nextLights = p3LightCenters(side, WORLD.center, round + 1)
@@ -577,7 +579,22 @@ export default function GameScene(props: SceneProps) {
         const spreadResolutionPosition = walkTowards(WORLD.center, spreadTarget, 3, state.movementSpeed)
         const recoveredSoakPosition = state.p2Cycle === 1 ? soakTarget : walkTowards(spreadResolutionPosition, soakTarget, 8, state.movementSpeed)
         let p3Target = p3NpcTarget(baseIndex, state.profiles[baseIndex].crystal, state.p3Round, state.event, state.eventTime)
-        if ((state.event === 'p3-lattice-memory' || state.event === 'p3-light-pools' && state.eventTime >= 1) && index === partnerNpcOrdinal) p3Target = p3RunePartnerPosition(state.assignment, WORLD.center, state.p3Round)
+        if (state.event === 'p3-light-pools' && index === partnerNpcOrdinal) p3Target = p3RunePartnerPosition(state.assignment, WORLD.center, state.p3Round)
+        if (state.event === 'p3-light-pools') {
+          const origin = state.p3Round === 1
+            ? p3LandingPosition(baseIndex, WORLD.center)
+            : p3ArchangelStackPosition(baseIndex < 10 ? -1 : 1, WORLD.center, state.p3Round - 1)
+          p3Target = walkTowards(origin, p3Target, state.eventTime + (state.p3Round > 1 ? 4 : 0), state.movementSpeed)
+        } else if (state.event === 'p3-archangel-position' || state.event === 'p3-archangel') {
+          const spreadOrigin = p3NpcTarget(baseIndex, state.profiles[baseIndex].crystal, state.p3Round, 'p3-big-boom', 0)
+          const travelTime = state.eventTime + (state.event === 'p3-archangel' ? 4 : 0)
+          p3Target = walkTowards(spreadOrigin, p3Target, travelTime, state.movementSpeed)
+        } else if (state.event === 'p3-sector-move') {
+          const side: -1 | 1 = baseIndex < 10 ? -1 : 1
+          const stackOrigin = p3ArchangelStackPosition(side, WORLD.center, state.p3Round)
+          p3Target = walkTowards(stackOrigin, p3Target, state.eventTime, state.movementSpeed)
+        }
+        if (state.event === 'p3-lattice-memory' && index === partnerNpcOrdinal) p3Target = p3RunePartnerPosition(state.assignment, WORLD.center, state.p3Round)
         const pairOrdinal = markedNpcOrdinals.indexOf(index)
         if (state.event === 'p3-light-pools' && state.eventTime >= P3_MEMORY_START_SECONDS && pairOrdinal >= 0) {
           const side: -1 | 1 = state.assignment < 10 ? -1 : 1
@@ -585,7 +602,10 @@ export default function GameScene(props: SceneProps) {
           const playerRune = (['T', 'X', 'O'] as RuneSymbol[])[state.assignment % 3]
           const otherRunes = (['T', 'X', 'O'] as RuneSymbol[]).filter(symbol => symbol !== playerRune)
           if (state.p3RuneOrder[state.p3RuneStep] === otherRunes[pair]) {
-            p3Target = p3LightCenters(side, WORLD.center, state.p3Round)[(state.assignment % 3 + 1 + pair) % 3]
+            const pairTarget = p3LightCenters(side, WORLD.center, state.p3Round)[(['T', 'X', 'O'] as RuneSymbol[]).indexOf(otherRunes[pair])]
+            const pairOrigin = p3NpcTarget(baseIndex, state.profiles[baseIndex].crystal, state.p3Round, 'p3-light-pools', P3_MEMORY_START_SECONDS)
+            const turnTime = state.eventTime - P3_MEMORY_START_SECONDS - state.p3RuneStep * P3_MEMORY_STEP_SECONDS
+            p3Target = walkTowards(pairOrigin, pairTarget, turnTime, state.movementSpeed)
           }
         }
         const normal = phaseThree
@@ -744,13 +764,14 @@ export default function GameScene(props: SceneProps) {
             })
           })
         }
-        const firstPoolLattice = state.event === 'p3-light-pools' && state.eventTime >= 1 && state.eventTime <= 7
+        const starsTiming = p3StarsTiming(state.eventTime)
+        const firstPoolLattice = state.event === 'p3-light-pools' && starsTiming.active
         const lattice = state.event === 'p3-lattice-second'
         const overlapLattice = state.event === 'p3-pools-overlap' && state.eventTime >= 4 && state.eventTime <= 9
         if (firstPoolLattice || lattice || overlapLattice) {
-          const localTime = firstPoolLattice ? state.eventTime - 1 : overlapLattice ? state.eventTime - 4 : state.eventTime
+          const localTime = firstPoolLattice ? starsTiming.localTime : overlapLattice ? state.eventTime - 4 : state.eventTime
           ;([-1, 1] as const).forEach(side => {
-            const orbs = p3RuneOrbs(side, WORLD.center, state.p3Round)
+            const orbs = p3RuneOrbs(side, WORLD.center, state.p3Round, firstPoolLattice ? starsTiming.cycle : 0)
             orbs.forEach(point => addOrb(hazards, point, 0x25578f, 3.25, .58))
             if (localTime >= 2.5 && localTime <= 4.5) nearestRuneEdges(orbs).forEach(([from, to]) => {
               const start = orbs[from]
@@ -759,7 +780,7 @@ export default function GameScene(props: SceneProps) {
             })
           })
         }
-        const memoryVisible = state.event === 'p3-lattice-memory' || state.event === 'p3-light-pools' && state.eventTime >= 1
+        const memoryVisible = state.event === 'p3-lattice-memory' || state.event === 'p3-light-pools' && state.eventTime >= P3_MEMORY_START_SECONDS
         if (memoryVisible) {
           const rune = (['T', 'X', 'O'] as RuneSymbol[])[state.assignment % 3]
           const playerRuneResolved = state.p3ResolvedRunes.includes(rune)
@@ -779,6 +800,10 @@ export default function GameScene(props: SceneProps) {
             const npcRune = npcRunes[index]
             if (!state.p3ResolvedRunes.includes(npcRune)) addRuneMarker(hazards, point, runeTextures[npcRune], activeRune === npcRune)
           })
+        }
+        if (state.event === 'p3-big-boom') {
+          const progress = THREE.MathUtils.clamp(state.eventTime, 0, 1)
+          addGroundRing(hazards, WORLD.center, WORLD.innerRadius + progress * (P3_OUTER_RADIUS - WORLD.innerRadius) - 4, WORLD.innerRadius + progress * (P3_OUTER_RADIUS - WORLD.innerRadius) + 4, 0xd999ff, .92 - progress * .45, 4)
         }
         if (state.p3Round > 1 || state.event === 'p3-sector-move') {
           const armProgress = state.p3Round > 1 ? 1 : THREE.MathUtils.clamp(state.eventTime / 3, 0, 1)

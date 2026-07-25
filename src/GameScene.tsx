@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
-import { angleToward, assignmentRevealDistance, crystalCarrierPosition, distance, jumpHeights, nearestRuneEdges, npcEntryPosition, OPENING_BOOST_SECONDS, P2_PERSONAL_CIRCLE_INNER_RADIUS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, p3ArchangelStackPosition, p3BossPosition, p3LandingPosition, p3LightCenters, p3PoolCenters, p3RuneOrbs, p3RunePartnerPosition, p3StarsTiming, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_MEMORY_START_SECONDS, P3_MEMORY_STEP_SECONDS, P3_OUTER_RADIUS, P3_POOL_RADIUS, roamingNpcPosition, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type RuneSymbol } from './game'
+import { angleToward, assignmentRevealDistance, crystalCarrierPosition, distance, distanceToSegment, jumpHeights, nearestRuneEdges, npcEntryPosition, OPENING_BOOST_SECONDS, P2_PERSONAL_CIRCLE_INNER_RADIUS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, p2OrbReturnState, p3ArchangelStackPosition, p3AssignmentForRound, p3BossPosition, p3LandingPosition, p3LightCenters, p3PoolCenters, p3RuneOrbs, p3RunePartnerPosition, p3StarsTiming, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_MEMORY_START_SECONDS, P3_MEMORY_STEP_SECONDS, P3_OUTER_RADIUS, P3_POOL_RADIUS, roamingNpcPosition, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type RuneSymbol } from './game'
 
 interface SceneProps {
   positions: Point[]
@@ -13,6 +13,7 @@ interface SceneProps {
   movementBonus: boolean
   difficulty: Difficulty
   p2Cycle: number
+  p2OrbReturnAge: number
   p3Round: number
   p3PoolHealth: number[]
   p3RuneOrder: RuneSymbol[]
@@ -75,6 +76,18 @@ function walkTowards(origin: Point, target: Point, seconds: number, speed: numbe
   const length = Math.hypot(dx, dy) || 1
   const travelled = Math.min(length, Math.max(0, seconds) * speed)
   return { x: origin.x + dx / length * travelled, y: origin.y + dy / length * travelled }
+}
+function avoidP3Stars(position: Point, target: Point, side: -1 | 1, round: number, cycle: number, index: number): Point {
+  const orbs = p3RuneOrbs(side, WORLD.center, round, cycle)
+  const nearby = nearestRuneEdges(orbs).find(([from, to]) => distanceToSegment(position, orbs[from], orbs[to]) < 8 || distanceToSegment(target, orbs[from], orbs[to]) < 5)
+  if (!nearby) return target
+  const start = orbs[nearby[0]]
+  const end = orbs[nearby[1]]
+  const dx = end.x - start.x
+  const dy = end.y - start.y
+  const length = Math.hypot(dx, dy) || 1
+  const direction = index % 2 ? 1 : -1
+  return { x: target.x - dy / length * 13 * direction, y: target.y + dx / length * 13 * direction }
 }
 function p3NpcTarget(index: number, crystal: boolean, round: number, event: SceneProps['event'], eventTime: number): Point {
   const side: -1 | 1 = index < 10 ? -1 : 1
@@ -579,6 +592,15 @@ export default function GameScene(props: SceneProps) {
         const spreadResolutionPosition = walkTowards(WORLD.center, spreadTarget, 3, state.movementSpeed)
         const recoveredSoakPosition = state.p2Cycle === 1 ? soakTarget : walkTowards(spreadResolutionPosition, soakTarget, 8, state.movementSpeed)
         let p3Target = p3NpcTarget(baseIndex, state.profiles[baseIndex].crystal, state.p3Round, state.event, state.eventTime)
+        if (state.event === 'p3-light-pools') {
+          const side: -1 | 1 = baseIndex < 10 ? -1 : 1
+          const poolIndex = baseIndex % 3
+          const poolHealthIndex = (side < 0 ? 0 : 3) + poolIndex
+          const planned = state.positions[baseIndex]
+          p3Target = !state.profiles[baseIndex].crystal && state.p3PoolHealth[poolHealthIndex] > .5
+            ? p3PoolCenters(side, WORLD.center, state.p3Round)[poolIndex]
+            : planned
+        }
         if (state.event === 'p3-light-pools' && index === partnerNpcOrdinal) p3Target = p3RunePartnerPosition(state.assignment, WORLD.center, state.p3Round)
         if (state.event === 'p3-light-pools') {
           const origin = state.p3Round === 1
@@ -592,6 +614,7 @@ export default function GameScene(props: SceneProps) {
         } else if (state.event === 'p3-sector-move') {
           const side: -1 | 1 = baseIndex < 10 ? -1 : 1
           const stackOrigin = p3ArchangelStackPosition(side, WORLD.center, state.p3Round)
+          if (state.p3Round < 2) p3Target = p3AssignmentForRound(state.positions[baseIndex], WORLD.center, 2)
           p3Target = walkTowards(stackOrigin, p3Target, state.eventTime, state.movementSpeed)
         }
         if (state.event === 'p3-lattice-memory' && index === partnerNpcOrdinal) p3Target = p3RunePartnerPosition(state.assignment, WORLD.center, state.p3Round)
@@ -606,6 +629,13 @@ export default function GameScene(props: SceneProps) {
             const pairOrigin = p3NpcTarget(baseIndex, state.profiles[baseIndex].crystal, state.p3Round, 'p3-light-pools', P3_MEMORY_START_SECONDS)
             const turnTime = state.eventTime - P3_MEMORY_START_SECONDS - state.p3RuneStep * P3_MEMORY_STEP_SECONDS
             p3Target = walkTowards(pairOrigin, pairTarget, turnTime, state.movementSpeed)
+          }
+        }
+        if (state.event === 'p3-light-pools') {
+          const stars = p3StarsTiming(state.eventTime)
+          if (stars.active && stars.localTime >= 2.5 && stars.localTime <= 4.5) {
+            const current = renderedNpcPositions[index] ?? p3Target
+            p3Target = avoidP3Stars(current, p3Target, baseIndex < 10 ? -1 : 1, state.p3Round, stars.cycle, index)
           }
         }
         const normal = phaseThree
@@ -660,10 +690,10 @@ export default function GameScene(props: SceneProps) {
       npcCrystalSprites.forEach((sprite, index) => { const point = state.npcCrystals[index]; sprite.visible = Boolean(point); if (point) sprite.position.set(point.x, 2.25, point.y) })
       const recurringP2Guide = state.p2Cycle > 1 && (state.event === 'p2-wait' || state.event === 'p2-orbs' && state.eventTime < 2.5)
       const assigned = recurringP2Guide ? state.p2SoakPositions[state.assignment] : state.positions[state.assignment]
-      const opening = state.event === 'countdown' || state.event === 'positioning' || state.event === 'p2-countdown' || state.event === 'p2-positioning' || recurringP2Guide
+      const opening = state.event === 'countdown' || state.event === 'positioning' || state.event === 'p2-countdown' || state.event === 'p2-positioning' || recurringP2Guide || phaseThree && state.event === 'p3-light-pools' && state.eventTime < 20
       const revealDistance = phaseTwo ? state.difficulty === 'normal' ? 14 : state.difficulty === 'hard' ? 7 : Infinity : assignmentRevealDistance(state.difficulty)
       helper.visible = opening && (state.easy || distance(state.player, assigned) <= revealDistance)
-      helper.scale.setScalar(phaseTwo ? .55 : 1)
+      helper.scale.setScalar(phaseTwo ? .55 : phaseThree ? .45 : 1)
       helper.position.set(assigned.x, 2.2, assigned.y)
 
       clearGroup(hazards)
@@ -707,6 +737,21 @@ export default function GameScene(props: SceneProps) {
           const angle = index % 4 * Math.PI / 2 + Math.floor(index / 4) * Math.PI / 6 + orbitAngle
           const currentBeamTarget = state.event === 'p2-orbs' && index < state.p2Cycle * 4
           addOrb(hazards, { x: WORLD.center.x + Math.cos(angle) * 82, y: WORLD.center.y + Math.sin(angle) * 82 }, currentBeamTarget ? 0x70edff : 0xb170ff)
+        }
+        const returning = p2OrbReturnState(state.p2OrbReturnAge)
+        if (returning.phase === 'orbiting' || returning.phase === 'returning') {
+          for (let localIndex = 0; localIndex < 4; localIndex++) {
+            const orbIndex = (state.p2Cycle - 1) * 4 + localIndex
+            const angle = orbIndex % 4 * Math.PI / 2 + Math.floor(orbIndex / 4) * Math.PI / 6 + orbitAngle
+            const point = { x: WORLD.center.x + Math.cos(angle) * returning.radius, y: WORLD.center.y + Math.sin(angle) * returning.radius }
+            const pulse = .75 + Math.sin(state.time * 9 + localIndex) * .2
+            addOrb(hazards, point, 0xffe66d, 6.2, pulse)
+            addGroundRing(hazards, point, 8, 10, 0xfff2a6, pulse * .75, 3)
+            if (returning.phase === 'returning') addFlatBeam(hazards, point, Math.atan2(WORLD.center.y - point.y, WORLD.center.x - point.x), returning.radius, 2.2, 0xffe88a, .68)
+          }
+        } else if (state.p2OrbReturnAge >= 11 && state.p2OrbReturnAge < 11.5) {
+          const pulseRadius = 8 + (state.p2OrbReturnAge - 11) * 55
+          addGroundRing(hazards, WORLD.center, pulseRadius - 2, pulseRadius + 2, 0xffefa2, 1 - (state.p2OrbReturnAge - 11) * 1.5, 4)
         }
       }
       if (state.event === 'p2-orbs') {

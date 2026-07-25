@@ -11,7 +11,7 @@ enter Phase 2 or Phase 3 directly.
 
 - Six Intermission Starsplinter and boss-beam sets
 - Crystal carrier drop, avoidance, and recovery timing
-- Phase 2 cross-beam positioning and orb destruction
+- Phase 2 cross-beam positioning, glowing ten-second orb returns, and center explosions
 - Center pulls, personal-circle spreads, and crystal recovery
 - Phase 3 outward flight, trio landing soaks, split-room positioning, light
   zones, dark-pool draining, runic lattices, ordered rune matching, and Dark
@@ -19,7 +19,8 @@ enter Phase 2 or Phase 3 directly.
 - Test, Easy, Normal, and Hard difficulty settings; Test mode records mistakes
   without stopping the run
 - Configurable 20-player raid plans, including names, classes, crystal
-  assignments, start slots, and separate Phase 2 soak/spread positions
+  assignments, start slots, separate Phase 2 soak/spread positions, and a
+  Phase 3 initial-sector plan that rotates into the next sector
 - Shareable raid-plan codes and locally saved settings
 - Optional health reactions, main-ability casts, music, and adjustable HUD
 

@@ -16,13 +16,16 @@ export const PLAYER_COLLISION_PENALTY = 50
 export const OPENING_BOOST_SECONDS = 5
 export const P2_PERSONAL_CIRCLE_INNER_RADIUS = 11.55
 export const P2_PERSONAL_CIRCLE_OUTER_RADIUS = 12.16
+export const P2_ORB_RETURN_SECONDS = 10
+export const P2_ORB_RETURN_TRAVEL_SECONDS = 1
 export const P3_OUTER_RADIUS = 199
 export const P3_LIGHT_RADIUS = 38
 export const P3_POOL_RADIUS = 12
 export const P3_LANDING_SOAK_RADIUS = 15
 export const P3_SECTOR_SECONDS = 60
 export const P3_STARS_START_SECONDS = 5
-export const P3_STARS_INTERVAL_SECONDS = 5
+export const P3_STARS_TELEGRAPH_SECONDS = 4.5
+export const P3_STARS_INTERVAL_SECONDS = P3_STARS_TELEGRAPH_SECONDS + 5
 export const P3_MEMORY_PANEL_SECONDS = 20
 export const P3_MEMORY_START_SECONDS = 25
 export const P3_MEMORY_STEP_SECONDS = 5
@@ -56,6 +59,17 @@ export function p3LightCenters(side: -1 | 1, center: Point, round: number): Poin
 
 export function p3BossPosition(side: -1 | 1, center: Point, round: number): Point {
   return { x: center.x + side * 95, y: center.y + (round === 1 ? -105 : 105) }
+}
+
+export function p3AssignmentForRound(initial: Point, center: Point, round: number): Point {
+  if (round <= 1) return initial
+  const side: -1 | 1 = initial.x < center.x ? -1 : 1
+  const originBoss = p3BossPosition(side, center, 1)
+  const destinationBoss = p3BossPosition(side, center, 2)
+  return rotatePoint({
+    x: destinationBoss.x + initial.x - originBoss.x,
+    y: destinationBoss.y + initial.y - originBoss.y,
+  }, destinationBoss, Math.PI / 3)
 }
 
 export function p3ArchangelStackPosition(side: -1 | 1, center: Point, round: number): Point {
@@ -129,10 +143,11 @@ export function p3RuneDeadline(order: RuneSymbol[], rune: RuneSymbol): number {
 export function p3StarsTiming(eventTime: number): { active: boolean; cycle: number; localTime: number } {
   if (eventTime < P3_STARS_START_SECONDS) return { active: false, cycle: 0, localTime: 0 }
   const elapsed = eventTime - P3_STARS_START_SECONDS
+  const localTime = elapsed % P3_STARS_INTERVAL_SECONDS
   return {
-    active: true,
+    active: localTime < P3_STARS_TELEGRAPH_SECONDS,
     cycle: Math.floor(elapsed / P3_STARS_INTERVAL_SECONDS),
-    localTime: elapsed % P3_STARS_INTERVAL_SECONDS,
+    localTime,
   }
 }
 
@@ -183,6 +198,15 @@ export function p2NpcCrystalDrops(center: Point, count: number, radius = 6): Poi
     const angle = -Math.PI / 2 + index * Math.PI * 2 / Math.max(1, count)
     return { x: center.x + Math.cos(angle) * radius, y: center.y + Math.sin(angle) * radius }
   })
+}
+export function p2OrbReturnState(age: number, orbitRadius = 82): { phase: 'inactive' | 'orbiting' | 'returning' | 'done'; radius: number } {
+  if (age < 0) return { phase: 'inactive', radius: orbitRadius }
+  if (age < P2_ORB_RETURN_SECONDS) return { phase: 'orbiting', radius: orbitRadius }
+  if (age < P2_ORB_RETURN_SECONDS + P2_ORB_RETURN_TRAVEL_SECONDS) {
+    const progress = (age - P2_ORB_RETURN_SECONDS) / P2_ORB_RETURN_TRAVEL_SECONDS
+    return { phase: 'returning', radius: orbitRadius * (1 - progress * progress) }
+  }
+  return { phase: 'done', radius: 0 }
 }
 export function personalCircleHitsCrystal(circleCenter: Point, crystals: Point[], radius = P2_PERSONAL_CIRCLE_OUTER_RADIUS): boolean {
   return crystals.some(crystal => distance(circleCenter, crystal) < radius)

@@ -54,6 +54,7 @@ test('continues the current Phase 2 sequence after the first Normal wipe', async
   await expect(page.getByText('Practice continues')).toBeVisible()
   await expect(page.getByRole('alert')).toHaveCount(0)
   await expect(page.getByText(/Pulled to the center|Spread your circle/)).toBeVisible({ timeout: MECHANIC_TIMEOUT })
+  await expect(page.getByText(/ORBS RETURN IN/)).toBeVisible({ timeout: MECHANIC_TIMEOUT })
   await expect(page.getByText(/PHASE 2 · CYCLE 1 \/ 3/)).toBeVisible()
 })
 
@@ -113,7 +114,7 @@ test('enters Phase 3 directly in non-blocking Test mode', async ({ page }) => {
   await page.keyboard.down('w')
   await expect(page.getByText('Complete the Soaks.')).toBeVisible({ timeout: MECHANIC_TIMEOUT })
   await page.keyboard.up('w')
-  await expect(page.getByText(/Stars repeat every five seconds/i)).toBeVisible()
+  await expect(page.getByText(/Stars pattern disappears for five seconds/i)).toBeVisible()
   await expect(page.getByText(/BIG BOOM/)).toBeVisible()
   await expect(page.locator('.player-health')).toBeVisible()
   await expect(page.getByText('RUNE ORDER', { exact: true })).toBeVisible({ timeout: 10_000 })

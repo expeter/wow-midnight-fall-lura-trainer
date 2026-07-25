@@ -28,9 +28,9 @@ export function assignmentRevealDistance(difficulty: Difficulty): number {
 export function p3LandingPosition(index: number, center: Point, radius = 176): Point {
   const side = index < 10 ? -1 : 1
   const sideIndex = index % 10
-  const angle = (side < 0 ? Math.PI : 0) + (sideIndex - 4.5) * .105
+  const angle = (side < 0 ? Math.PI : 0) + (sideIndex - 4.5) * .15
   const row = sideIndex % 3
-  const distanceFromCenter = radius - row * 9
+  const distanceFromCenter = radius - row * 13
   return { x: center.x + Math.cos(angle) * distanceFromCenter, y: center.y + Math.sin(angle) * distanceFromCenter }
 }
 
@@ -47,42 +47,51 @@ export function p3LightCenters(side: -1 | 1, center: Point, round: number): Poin
 }
 
 export function p3PoolCenters(side: -1 | 1, center: Point, round: number): Point[] {
-  const sectorY = round === 1 ? center.y - 78 : center.y + 24
-  return [
-    { x: center.x + side * 128, y: sectorY - 35 },
-    { x: center.x + side * 158, y: sectorY + 10 },
-    { x: center.x + side * 102, y: sectorY + 42 },
-  ]
+  return p3LightCenters(side, center, round).map((light, index) => {
+    const outward = side < 0 ? Math.PI : 0
+    const angle = outward + (index - 1) * .55
+    return { x: light.x + Math.cos(angle) * 11, y: light.y + Math.sin(angle) * 11 }
+  })
 }
 
 export function p3RuneOrbs(side: -1 | 1, center: Point, round: number): Point[] {
-  const anchorX = center.x + side * 132
-  const anchorY = round === 1 ? center.y - 40 : center.y + 48
-  return Array.from({ length: 12 }, (_, index) => {
-    const column = index % 4
-    const row = Math.floor(index / 4)
-    const jitter = ((index * 17 + round * 11) % 9) - 4
+  const anchorX = center.x + side * 142
+  const anchorY = round === 1 ? center.y - 30 : center.y + 45
+  let seed = 113 + round * 97 + (side > 0 ? 41 : 0)
+  const random = () => { seed = seed * 16807 % 2147483647; return (seed - 1) / 2147483646 }
+  const anchors = [
+    [-38, -40], [-9, -43], [25, -35], [44, -12],
+    [-42, -8], [-14, -12], [14, -5], [39, 18],
+    [-35, 27], [-8, 34], [19, 31], [43, 45],
+  ]
+  return anchors.map(([x, y]) => {
+    const jitterX = (random() - .5) * 15
+    const jitterY = (random() - .5) * 15
     return {
-      x: anchorX + side * ((column - 1.5) * 25 + jitter),
-      y: anchorY + (row - 1) * 28 + ((index * 13) % 7) - 3,
+      x: anchorX + side * (x + jitterX),
+      y: anchorY + y + jitterY,
     }
   })
 }
 
-export function nearestRuneEdges(points: Point[]): Array<[number, number]> {
-  const keys = new Set<string>()
-  for (let index = 0; index < points.length; index++) {
-    let nearest = -1
-    let nearestDistance = Infinity
-    for (let candidate = 0; candidate < points.length; candidate++) {
-      if (candidate === index) continue
-      const separation = distance(points[index], points[candidate])
-      if (separation < nearestDistance) { nearest = candidate; nearestDistance = separation }
+export function nearestRuneEdges(points: Point[], maximumConnections = 3, maximumDistance = 39): Array<[number, number]> {
+  const candidates: Array<{ from: number; to: number; length: number }> = []
+  for (let from = 0; from < points.length; from++) {
+    for (let to = from + 1; to < points.length; to++) {
+      const length = distance(points[from], points[to])
+      if (length <= maximumDistance) candidates.push({ from, to, length })
     }
-    const edge = [Math.min(index, nearest), Math.max(index, nearest)] as [number, number]
-    keys.add(`${edge[0]}:${edge[1]}`)
   }
-  return Array.from(keys, key => key.split(':').map(Number) as [number, number])
+  candidates.sort((a, b) => a.length - b.length)
+  const degree = Array.from({ length: points.length }, () => 0)
+  const edges: Array<[number, number]> = []
+  for (const candidate of candidates) {
+    if (degree[candidate.from] >= maximumConnections || degree[candidate.to] >= maximumConnections) continue
+    edges.push([candidate.from, candidate.to])
+    degree[candidate.from] += 1
+    degree[candidate.to] += 1
+  }
+  return edges
 }
 
 export function distanceToSegment(point: Point, start: Point, end: Point): number {

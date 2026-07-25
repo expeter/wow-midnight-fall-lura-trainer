@@ -86,13 +86,31 @@ function p3NpcTarget(index: number, crystal: boolean, round: number, event: Scen
   if (event === 'p3-landing') return landing
   const lights = p3LightCenters(side, WORLD.center, round)
   const pools = p3PoolCenters(side, WORLD.center, round)
-  if (event === 'p3-light-pools' || event === 'p3-pools-overlap') return crystal ? lights[index % 3] : pools[index % 3]
+  const sideIndex = index % 10
+  const cluster = sideIndex % 3
+  const spreadAngle = sideIndex * 2.399 + (side < 0 ? Math.PI : 0)
+  const safeSpread = {
+    x: lights[cluster].x + Math.cos(spreadAngle) * (crystal ? 0 : 14 + sideIndex % 3 * 3),
+    y: lights[cluster].y + Math.sin(spreadAngle) * (crystal ? 0 : 14 + sideIndex % 3 * 3),
+  }
+  if (event === 'p3-light-pools' || event === 'p3-pools-overlap') {
+    if (crystal) return lights[cluster]
+    return {
+      x: pools[cluster].x + Math.cos(spreadAngle) * (4 + sideIndex % 2 * 3),
+      y: pools[cluster].y + Math.sin(spreadAngle) * (4 + sideIndex % 2 * 3),
+    }
+  }
   if (event === 'p3-rune-preview' || event === 'p3-lattice-memory' || event === 'p3-lattice-second') {
-    const runeSpot = pools[index % 3]
-    return { x: runeSpot.x + side * (index % 2 ? 8 : -8), y: runeSpot.y + (index % 2 ? 5 : -5) }
+    return safeSpread
   }
   if (event === 'p3-archangel-position' || event === 'p3-archangel') return { x: WORLD.center.x + side * (round === 1 ? 176 : 138), y: WORLD.center.y + (round === 1 ? -54 : 58) }
-  if (event === 'p3-sector-move') return crystal ? p3LightCenters(side, WORLD.center, round + 1)[index % 3] : p3PoolCenters(side, WORLD.center, round + 1)[index % 3]
+  if (event === 'p3-sector-move') {
+    const nextLights = p3LightCenters(side, WORLD.center, round + 1)
+    return crystal ? nextLights[cluster] : {
+      x: nextLights[cluster].x + Math.cos(spreadAngle) * (14 + sideIndex % 3 * 3),
+      y: nextLights[cluster].y + Math.sin(spreadAngle) * (14 + sideIndex % 3 * 3),
+    }
+  }
   return landing
 }
 function clearGroup(group: THREE.Group) {
@@ -133,11 +151,11 @@ function addRuneMarker(group: THREE.Group, point: Point, texture: THREE.Texture,
   group.add(marker)
   addGroundRing(group, point, 5, 5.8, 0x78cfff, active ? .92 : .48)
 }
-function addOrb(group: THREE.Group, point: Point, color = 0xb170ff) {
-  const orb = new THREE.Mesh(new THREE.SphereGeometry(5.4, 20, 12), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: .92 }))
-  orb.position.set(point.x, 7, point.y)
+function addOrb(group: THREE.Group, point: Point, color = 0xb170ff, size = 5.4, opacity = .92) {
+  const orb = new THREE.Mesh(new THREE.SphereGeometry(size, 20, 12), new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: opacity > .8 }))
+  orb.position.set(point.x, size + 1.5, point.y)
   group.add(orb)
-  addGroundRing(group, point, 6, 9, color, .42)
+  addGroundRing(group, point, size + .6, size + 2.4, color, opacity * .42)
 }
 function makeMarkerTexture(symbol: string, color: string) {
   const canvas = document.createElement('canvas')
@@ -661,23 +679,31 @@ export default function GameScene(props: SceneProps) {
         const landing = p3LandingPosition(state.assignment, WORLD.center)
         const landingSoaks = [{ x: landing.x + playerSide * 12, y: landing.y - 15 }, { x: landing.x - playerSide * 7, y: landing.y + 16 }]
         if (state.event === 'p3-landing') landingSoaks.forEach((point, index) => {
-          addGroundDisc(hazards, point, P3_LANDING_SOAK_RADIUS, 0xffdf54, .18)
-          addGroundRing(hazards, point, P3_LANDING_SOAK_RADIUS - 1.2, P3_LANDING_SOAK_RADIUS, 0xffef82, .95)
+          const occupied = [state.player, ...npcPositions].some(playerPoint => distance(playerPoint, point) <= P3_LANDING_SOAK_RADIUS)
+          const emptyPulse = .55 + Math.sin(state.time * 5 + index) * .25
+          addGroundDisc(hazards, point, P3_LANDING_SOAK_RADIUS, occupied ? 0xf3bd16 : 0xffee8a, occupied ? .3 : .16 + emptyPulse * .12)
+          addGroundRing(hazards, point, P3_LANDING_SOAK_RADIUS - (occupied ? 1.6 : 2.4), P3_LANDING_SOAK_RADIUS, occupied ? 0xffc928 : 0xffffc2, occupied ? .86 : emptyPulse)
           const drop = new THREE.Mesh(new THREE.SphereGeometry(3.5, 16, 10), new THREE.MeshBasicMaterial({ color: 0xffe66c }))
           drop.position.set(point.x, Math.max(3, 55 * (1 - state.eventTime / 3)) + index * 4, point.y)
           hazards.add(drop)
         })
+        if (state.event !== 'p3-countdown' && state.event !== 'p3-flight' && state.event !== 'p3-landing') {
+          ;([-1, 1] as const).forEach(side => {
+            p3LightCenters(side, WORLD.center, state.p3Round).forEach(point => {
+              addGroundDisc(hazards, point, P3_LIGHT_RADIUS, 0xffdf65, .045)
+              addGroundRing(hazards, point, P3_LIGHT_RADIUS - .75, P3_LIGHT_RADIUS, 0xffe987, .22)
+            })
+          })
+        }
         if (state.event === 'p3-light-pools' || state.event === 'p3-pools-overlap') {
           ;([-1, 1] as const).forEach((side, sideIndex) => {
-            p3LightCenters(side, WORLD.center, state.p3Round).forEach(point => {
-              addGroundDisc(hazards, point, P3_LIGHT_RADIUS, 0xffe56c, .11)
-              addGroundRing(hazards, point, P3_LIGHT_RADIUS - 1.1, P3_LIGHT_RADIUS, 0xffed85, .55)
-            })
             p3PoolCenters(side, WORLD.center, state.p3Round).forEach((point, poolIndex) => {
               const health = state.p3PoolHealth[sideIndex * 3 + poolIndex]
               if (health <= .5) return
-              addGroundDisc(hazards, point, P3_POOL_RADIUS, 0x345ccf, .32 + health / 250)
-              addGroundRing(hazards, point, P3_POOL_RADIUS - 1, P3_POOL_RADIUS, 0x6f9fff, .88)
+              const occupants = [state.player, ...npcPositions].filter(playerPoint => distance(playerPoint, point) <= P3_POOL_RADIUS).length
+              const emptyPulse = .55 + Math.sin(state.time * 5.4 + poolIndex * 1.7) * .28
+              addGroundDisc(hazards, point, P3_POOL_RADIUS, occupants ? 0x1553b8 : 0x4c8fff, occupants ? .48 : .2 + emptyPulse * .16)
+              addGroundRing(hazards, point, P3_POOL_RADIUS - (occupants ? 1.35 : 2.1), P3_POOL_RADIUS, occupants ? 0x3187ff : 0x8fc7ff, occupants ? .92 : emptyPulse)
             })
           })
         }
@@ -687,11 +713,11 @@ export default function GameScene(props: SceneProps) {
           const localTime = overlapLattice ? state.eventTime - 4 : state.eventTime
           ;([-1, 1] as const).forEach(side => {
             const orbs = p3RuneOrbs(side, WORLD.center, state.p3Round)
-            orbs.forEach(point => addOrb(hazards, point, 0x58dfff))
+            orbs.forEach(point => addOrb(hazards, point, 0x25578f, 3.25, .58))
             if (localTime >= 2.5 && localTime <= 4.5) nearestRuneEdges(orbs).forEach(([from, to]) => {
               const start = orbs[from]
               const end = orbs[to]
-              addFlatBeam(hazards, start, Math.atan2(end.y - start.y, end.x - start.x), distance(start, end), 3.5, 0x64e7ff, .9)
+              addFlatBeam(hazards, start, Math.atan2(end.y - start.y, end.x - start.x), distance(start, end), 2.4, 0x3278ad, .56)
             })
           })
         }

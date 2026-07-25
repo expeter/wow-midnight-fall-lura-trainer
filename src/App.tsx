@@ -718,7 +718,7 @@ export default function App() {
       const localIndex = index % 3
       const needsPlayer = difficulty === 'hard' && poolSide === side && localIndex === assignedPool
       const playerInside = poolSide === side && distance(position, centers[localIndex]) <= 12
-      const rate = needsPlayer ? 4 + (playerInside ? 6 : 0) : 10
+      const rate = needsPlayer ? 3 + (playerInside ? 7 : 0) : 6
       return Math.max(0, healthValue - rate * dt)
     }))
   }

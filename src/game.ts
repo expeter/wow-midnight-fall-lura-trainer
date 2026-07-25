@@ -18,87 +18,427 @@ export const P2_PERSONAL_CIRCLE_INNER_RADIUS = 11.55
 export const P2_PERSONAL_CIRCLE_OUTER_RADIUS = 12.16
 export const P2_ORB_RETURN_SECONDS = 10
 export const P2_ORB_RETURN_TRAVEL_SECONDS = 1
+export const P2_ORBIT_SPEED = .12
+export const P1_STAR_LENGTH = 38.8
 export const P3_OUTER_RADIUS = 199
-export const P3_LIGHT_RADIUS = 38
-export const P3_POOL_RADIUS = 12
-export const P3_LANDING_SOAK_RADIUS = 15
-export const P3_SECTOR_SECONDS = 60
+export const P3_LIGHT_RADIUS = 24
+export const P3_POOL_RADIUS = 10
+export const P3_POOL_HEALTH = 42
+export const P3_LANDING_SOAK_RADIUS = 12
+export const P3_SECTOR_SECONDS = 40
 export const P3_STARS_START_SECONDS = 5
 export const P3_STARS_TELEGRAPH_SECONDS = 4.5
-export const P3_STARS_INTERVAL_SECONDS = P3_STARS_TELEGRAPH_SECONDS + 5
+export const P3_STARS_INTERVAL_SECONDS = P3_STARS_TELEGRAPH_SECONDS + 3
+export const P3_RUNE_ORB_MIN_GAP = 15
 export const P3_MEMORY_PANEL_SECONDS = 20
 export const P3_MEMORY_START_SECONDS = 25
 export const P3_MEMORY_STEP_SECONDS = 5
+export const P3_SECOND_SOAK_NPC_DELAY_SECONDS = 4
+export const P4_STACK_RADIUS = 150
+export const P4_PROTECTION_RADIUS = 22.572
+export const P4_INITIAL_SPLINTER_START_SECONDS = 12.5
+export const P4_SPLINTER_START_SECONDS = 12.5
+export const P4_SPLINTER_INTERVAL_SECONDS = 1.1
+export const P4_SPLINTER_DETONATION_SECONDS = 3.5
+export const P4_HEAVEN_START_SECONDS = 22
+export const P4_HEAVEN_MOVE_SECONDS = 12
+export const P4_KNOCKUP_SECONDS = 1.5
+export const P4_MOVEMENT_MULTIPLIER = 1.1
+export const P4_CYCLE_SECONDS = 22
+export const P4_FINAL_KILL_START_SECONDS = 9
+export const P4_FINAL_KILL_SECONDS = 1
+export const P4_FINAL_SEQUENCE_END_SECONDS = 12
+export const P4_FRONT_SOAKER_OFFSET = 6
+export const P4_FRONT_CONE_RANGE = 30
+export const P4_TANK_KILL_RADIUS = 7
+export const P4_BOX_COUNT = 36
+export const P4_BOX_MIN_SEPARATION = 15
+export const P4_BOX_SPEED = 6.336
+export const P4_TANK_CONE_INTERVAL_SECONDS = 3
+export const P4_TANK_CONE_DURATION_SECONDS = .65
+export const P4_BOSS_DURATION_SECONDS = 92
 export type RuneSymbol = 'T' | 'X' | 'O'
+let p3BossPlan: [Point, Point] | null = null
+let p3PoolLayoutSeed = 0
+export function setP3BossPlan(points: Point[]): void {
+  p3BossPlan = points.length === 2 ? [{ ...points[0] }, { ...points[1] }] : null
+}
+export function randomizeP3PoolLayout(seed = Math.floor(Math.random() * 2147483646) + 1): void {
+  p3PoolLayoutSeed = Math.abs(Math.floor(seed)) % 2147483647
+}
 export function assignmentRevealDistance(difficulty: Difficulty): number {
   return difficulty === 'test' || difficulty === 'easy' ? Infinity : difficulty === 'normal' ? 45 : 22
 }
 
-export function p3LandingPosition(index: number, center: Point, radius = 176): Point {
+export function p3LandingGroupIndex(index: number): number {
+  return (index < 10 ? 0 : 3) + Math.min(2, Math.floor(index % 10 / 3))
+}
+
+export function p3LandingGroupCenter(index: number, center: Point, radius = 176): Point {
   const side = index < 10 ? -1 : 1
   const sideIndex = index % 10
-  const boss = p3BossPosition(side, center, 1)
-  const bossAngle = Math.atan2(boss.y - center.y, boss.x - center.x)
-  const angle = bossAngle + (sideIndex - 4.5) * .085
-  const row = sideIndex % 3
-  const distanceFromCenter = radius - row * 10
-  return { x: center.x + Math.cos(angle) * distanceFromCenter, y: center.y + Math.sin(angle) * distanceFromCenter }
+  const group = Math.min(2, Math.floor(sideIndex / 3))
+  const angles = side < 0
+    ? [-Math.PI * 2 / 3, Math.PI, Math.PI * 2 / 3]
+    : [-Math.PI / 3, 0, Math.PI / 3]
+  const angle = angles[group]
+  return { x: center.x + Math.cos(angle) * radius, y: center.y + Math.sin(angle) * radius }
+}
+
+export function p3LandingPosition(index: number, center: Point, radius = 176): Point {
+  const groupCenter = p3LandingGroupCenter(index, center, radius)
+  const member = index % 10 - Math.min(2, Math.floor(index % 10 / 3)) * 3
+  const offsets = [{ x: -3.5, y: -1.5 }, { x: 3.5, y: -1.5 }, { x: 0, y: 3.5 }, { x: 0, y: -5 }]
+  const offset = offsets[member]
+  return { x: groupCenter.x + offset.x, y: groupCenter.y + offset.y }
+}
+
+export function p3LandingSoakPositions(index: number, center: Point): Point[] {
+  const landing = p3LandingGroupCenter(index, center)
+  const radialX = landing.x - center.x
+  const radialY = landing.y - center.y
+  const length = Math.hypot(radialX, radialY) || 1
+  const inward = { x: -radialX / length * 8, y: -radialY / length * 8 }
+  const tangent = { x: -radialY / length * 24, y: radialX / length * 24 }
+  return [
+    { x: landing.x + inward.x + tangent.x, y: landing.y + inward.y + tangent.y },
+    { x: landing.x + inward.x - tangent.x, y: landing.y + inward.y - tangent.y },
+  ]
+}
+export function p3LightHealthRate(protectedByLight: boolean): number {
+  return protectedByLight ? 12 : -2
+}
+export function isProtectedByP3Bubble(player: Point, bubble: Point, playerRadius = 4): boolean {
+  return distance(player, bubble) <= P3_LIGHT_RADIUS + playerRadius
+}
+export function p3PoolSoakRate(occupants: number): number {
+  return occupants >= 3 ? occupants : 0
 }
 
 export function p3LightCenters(side: -1 | 1, center: Point, round: number): Point[] {
   const boss = p3BossPosition(side, center, round)
-  const outward = side < 0 ? Math.PI : 0
-  return [-.75, 0, .75].map(offset => {
-    const angle = outward + offset
-    return {
-    x: boss.x + Math.cos(angle) * 43,
-    y: boss.y + Math.sin(angle) * 43,
+  const dx = boss.x - center.x
+  const dy = boss.y - center.y
+  const length = Math.hypot(dx, dy) || 1
+  const radial = { x: dx / length, y: dy / length }
+  const tangent = { x: -radial.y, y: radial.x }
+  return [-50, 0, 50].map(offset => {
+    const point = {
+      x: boss.x + radial.x * 4 + tangent.x * offset,
+      y: boss.y + radial.y * 4 + tangent.y * offset,
     }
+    return round > 1 ? keepClearOfP3ConsumedSector(point, side, center, P3_LIGHT_RADIUS + 2) : point
   })
 }
 
 export function p3BossPosition(side: -1 | 1, center: Point, round: number): Point {
-  return { x: center.x + side * 95, y: center.y + (round === 1 ? -105 : 105) }
+  if (p3BossPlan) {
+    const initial = p3BossPlan[side < 0 ? 0 : 1]
+    return round <= 1 ? initial : rotatePoint(initial, center, -side * Math.PI / 3)
+  }
+  const angle = round <= 1
+    ? side < 0 ? Math.PI * 2 / 3 : Math.PI / 3
+    : side < 0 ? Math.PI : 0
+  const radius = 148
+  return { x: center.x + Math.cos(angle) * radius, y: center.y + Math.sin(angle) * radius }
+}
+
+export function p3SpreadPosition(index: number, crystal: boolean, center: Point, round: number): Point {
+  const side: -1 | 1 = index < 10 ? -1 : 1
+  const sideIndex = index % 10
+  const cluster = sideIndex % 3
+  const member = Math.floor(sideIndex / 3)
+  const safeCenter = p3LightCenters(side, center, round)[cluster]
+  const boss = p3BossPosition(side, center, round)
+  const towardBossX = boss.x - safeCenter.x
+  const towardBossY = boss.y - safeCenter.y
+  const towardBossLength = Math.hypot(towardBossX, towardBossY) || 1
+  const towardBoss = { x: towardBossX / towardBossLength, y: towardBossY / towardBossLength }
+  const across = { x: -towardBoss.y, y: towardBoss.x }
+  const inward = (member < 2 ? 7 : 15) - (crystal ? 1 : 0)
+  const lateral = (member % 2 ? 1 : -1) * 7
+  return {
+    x: safeCenter.x + towardBoss.x * inward + across.x * lateral,
+    y: safeCenter.y + towardBoss.y * inward + across.y * lateral,
+  }
 }
 
 export function p3AssignmentForRound(initial: Point, center: Point, round: number): Point {
   if (round <= 1) return initial
   const side: -1 | 1 = initial.x < center.x ? -1 : 1
-  const originBoss = p3BossPosition(side, center, 1)
-  const destinationBoss = p3BossPosition(side, center, 2)
-  return rotatePoint({
-    x: destinationBoss.x + initial.x - originBoss.x,
-    y: destinationBoss.y + initial.y - originBoss.y,
-  }, destinationBoss, Math.PI / 3)
+  const rotated = rotatePoint(initial, center, -side * Math.PI / 3)
+  const dx = rotated.x - center.x
+  const dy = rotated.y - center.y
+  const radius = Math.hypot(dx, dy) || 1
+  const safeRadius = Math.max(110, Math.min(P3_OUTER_RADIUS - 7, radius))
+  return keepClearOfP3ConsumedSector(
+    { x: center.x + dx / radius * safeRadius, y: center.y + dy / radius * safeRadius },
+    side,
+    center,
+    5,
+  )
+}
+
+function keepClearOfP3ConsumedSector(point: Point, side: -1 | 1, center: Point, clearance: number): Point {
+  const radius = distance(point, center)
+  if (radius <= clearance) return point
+  const angle = Math.atan2(point.y - center.y, point.x - center.x)
+  const comparableAngle = side < 0 && angle < 0 ? angle + Math.PI * 2 : angle
+  const angularClearance = Math.asin(Math.min(.95, clearance / radius))
+  const boundary = side < 0 ? Math.PI * 5 / 6 + angularClearance : Math.PI / 6 - angularClearance
+  const safeAngle = side < 0 ? Math.max(comparableAngle, boundary) : Math.min(comparableAngle, boundary)
+  return { x: center.x + Math.cos(safeAngle) * radius, y: center.y + Math.sin(safeAngle) * radius }
 }
 
 export function p3ArchangelStackPosition(side: -1 | 1, center: Point, round: number): Point {
   const boss = p3BossPosition(side, center, round)
-  const dx = boss.x - center.x
-  const dy = boss.y - center.y
-  const length = Math.hypot(dx, dy) || 1
-  return { x: center.x + dx / length * 180, y: center.y + dy / length * 180 }
+  const bossAngle = Math.atan2(boss.y - center.y, boss.x - center.x)
+  const radius = P3_OUTER_RADIUS - 14
+  return { x: center.x + Math.cos(bossAngle) * radius, y: center.y + Math.sin(bossAngle) * radius }
 }
 
 export function isInP3ConsumedSector(point: Point, center: Point, innerRadius: number, outerRadius: number): boolean {
   const radius = distance(point, center)
   if (radius < innerRadius || radius > outerRadius) return false
   const angle = Math.atan2(point.y - center.y, point.x - center.x)
-  const fromNorth = Math.abs(Math.atan2(Math.sin(angle + Math.PI / 2), Math.cos(angle + Math.PI / 2)))
-  return fromNorth <= Math.PI / 3
+  const fromSouth = Math.abs(Math.atan2(Math.sin(angle - Math.PI / 2), Math.cos(angle - Math.PI / 2)))
+  return fromSouth <= Math.PI / 3
 }
 
 export function isP3ConsumedSectorLethal(point: Point, center: Point, innerRadius: number, outerRadius: number, round: number, event: string, eventTime: number): boolean {
   return isInP3ConsumedSector(point, center, innerRadius, outerRadius)
-    && (round > 1 || event === 'p3-sector-move' && eventTime >= 3)
+    && (round > 1 || event === 'p3-sector-move' && eventTime >= 4.5)
+}
+
+export function p3NpcPoolAssignment(sideOrdinal: number, playerSide: boolean, requiredPlayerPool: number, health: number[], assignedCounts = [0, 0, 0]): number | null {
+  const supportPools = [(requiredPlayerPool + 1) % 3, (requiredPlayerPool + 2) % 3]
+  const initialPool = !playerSide
+    ? sideOrdinal % 3
+    : sideOrdinal < 6
+      ? Math.floor(sideOrdinal / 2)
+      : sideOrdinal === 6
+        ? supportPools[0]
+        : sideOrdinal === 7
+          ? supportPools[1]
+          : sideOrdinal === 8
+            ? supportPools[health[supportPools[0]] >= health[supportPools[1]] ? 0 : 1]
+            : -1
+  if (initialPool >= 0 && health[initialPool] > .5 && assignedCounts[initialPool] < 5) return initialPool
+  const aPoolFinished = health.some(value => value <= .5)
+  if (!aPoolFinished) return null
+  const unfinished = health.map((value, index) => ({ value, index })).filter(pool => pool.value > .5 && assignedCounts[pool.index] < 5)
+  return unfinished.length ? unfinished[Math.max(0, sideOrdinal) % unfinished.length].index : null
+}
+
+export function p3NpcSoaksActive(playerEngaged: boolean, round: number, eventTime: number): boolean {
+  return playerEngaged || round > 1 && eventTime >= P3_SECOND_SOAK_NPC_DELAY_SECONDS
+}
+
+export function p4StackPosition(cycle: number, center: Point, radius = P4_STACK_RADIUS): Point {
+  const angle = -Math.PI / 2 + (cycle - 1) * Math.PI / 2
+  return { x: center.x + Math.cos(angle) * radius, y: center.y + Math.sin(angle) * radius }
+}
+
+export function p4SplinterStartSeconds(cycle: number): number {
+  return cycle === 1 ? P4_INITIAL_SPLINTER_START_SECONDS : P4_SPLINTER_START_SECONDS
+}
+
+export function p4SplinterAge(cycle: number, eventTime: number, ordinal: number): number {
+  return eventTime - p4SplinterStartSeconds(cycle) - ordinal * P4_SPLINTER_INTERVAL_SECONDS
+}
+
+function p4PatternValue(seed: number, cycle: number, salt: number): number {
+  let value = (Math.floor(seed) ^ Math.imul(cycle + 17, 0x9e3779b1) ^ Math.imul(salt + 31, 0x85ebca6b)) >>> 0
+  value = Math.imul(value ^ value >>> 16, 0x7feb352d)
+  value = Math.imul(value ^ value >>> 15, 0x846ca68b)
+  return (value ^ value >>> 16) >>> 0
+}
+
+export function p4PlayerSplinterDuty(assignment: number, cycle = 1, seed = 0): 0 | 1 | 2 {
+  return p4PatternValue(seed, cycle, assignment) % 3 as 0 | 1 | 2
+}
+
+export function randomCrystalDropDuty(random = Math.random()): 1 | 2 {
+  return random < .5 ? 1 : 2
+}
+
+export function p4RelocationProgress(cycle: number, eventTime: number): number | null {
+  if (cycle >= 5) return null
+  const carrySeconds = P4_CYCLE_SECONDS - P4_HEAVEN_START_SECONDS
+  const splinterStart = p4SplinterStartSeconds(cycle)
+  if (cycle > 1 && eventTime < splinterStart) return Math.max(0, Math.min(1, (carrySeconds + eventTime) / P4_HEAVEN_MOVE_SECONDS))
+  if (eventTime >= P4_HEAVEN_START_SECONDS) return Math.max(0, Math.min(1, (eventTime - P4_HEAVEN_START_SECONDS) / P4_HEAVEN_MOVE_SECONDS))
+  return null
+}
+
+export function p4NpcRelocationPace(relocationSeconds: number): number {
+  void relocationSeconds
+  return 1
+}
+
+export function p4GroupPosition(cycle: number, eventTime: number, center: Point, radius = P4_STACK_RADIUS): Point {
+  if (cycle >= 5) return p4StackPosition(4, center, radius)
+  let baseCycle = cycle
+  const relocation = p4RelocationProgress(cycle, eventTime)
+  if (cycle > 1 && eventTime < p4SplinterStartSeconds(cycle)) baseCycle = cycle - 1
+  const progress = relocation ?? 0
+  const angle = -Math.PI / 2 + (baseCycle - 1 + progress) * Math.PI / 2
+  return { x: center.x + Math.cos(angle) * radius, y: center.y + Math.sin(angle) * radius }
+}
+
+export function p4SplinterRotation(cycle: number, ordinal: number, seed = 0): number {
+  return p4PatternValue(seed, cycle, ordinal + 101) % 2 ? Math.PI / 6 : 0
+}
+
+export function p4FrontSoakerPosition(stack: Point, center: Point, offset = P4_FRONT_SOAKER_OFFSET): Point {
+  const dx = center.x - stack.x
+  const dy = center.y - stack.y
+  const length = Math.hypot(dx, dy) || 1
+  return { x: stack.x + dx / length * offset, y: stack.y + dy / length * offset }
+}
+
+export function p4TankConeActive(eventTime: number): boolean {
+  return eventTime >= 0 && eventTime % P4_TANK_CONE_INTERVAL_SECONDS < P4_TANK_CONE_DURATION_SECONDS
+}
+
+export function p4TankKillsBox(boxPosition: Point, tankPosition: Point): boolean {
+  return distance(boxPosition, tankPosition) <= P4_TANK_KILL_RADIUS
+}
+
+export interface P4BoxState { id: number; position: Point; size: number; aimedAtGroup: boolean; active: boolean }
+export function p4BoxStates(cycle: number, eventTime: number, center: Point): P4BoxState[] {
+  const spawnClock = cycle === 1 ? Math.max(0, eventTime - P4_KNOCKUP_SECONDS) : eventTime
+  const yellowCircle = p4GroupPosition(cycle, eventTime, center)
+  const packAngle = Math.atan2(yellowCircle.y - center.y, yellowCircle.x - center.x)
+  const spawned: Array<{ angle: number; spawnDelay: number }> = []
+  return Array.from({ length: P4_BOX_COUNT }, (_, index) => {
+    const randomA = Math.abs(Math.sin((index + 1) * 12.9898 + cycle * 78.233)) % 1
+    const randomB = Math.abs(Math.sin((index + 7) * 39.346 + cycle * 11.135)) % 1
+    const aimedAtGroup = index < 7
+    const groupFocused = index >= 7 && index < 21
+    const spawnDelay = index * .56
+    const angleForAttempt = (attempt: number) => {
+      const randomAngle = (randomA + attempt * .61803398875) % 1
+      if (aimedAtGroup) return packAngle + (randomAngle - .5)
+      if (groupFocused) return packAngle + (randomAngle - .5) * 2.2
+      return randomAngle * Math.PI * 2
+    }
+    let angle = angleForAttempt(0)
+    for (let attempt = 0; attempt < 64; attempt += 1) {
+      const candidate = angleForAttempt(attempt)
+      const candidatePosition = { x: center.x + Math.cos(candidate) * 104, y: center.y + Math.sin(candidate) * 104 }
+      const clear = spawned.every(previous => {
+        const previousTravel = 104 + Math.max(0, spawnDelay - previous.spawnDelay) * P4_BOX_SPEED
+        const previousPosition = { x: center.x + Math.cos(previous.angle) * previousTravel, y: center.y + Math.sin(previous.angle) * previousTravel }
+        return distance(candidatePosition, previousPosition) >= P4_BOX_MIN_SEPARATION
+      })
+      angle = candidate
+      if (clear) break
+    }
+    spawned.push({ angle, spawnDelay })
+    const landed = cycle !== 1 || eventTime >= P4_KNOCKUP_SECONDS
+    const active = landed && spawnClock >= spawnDelay
+    const travel = 104 + Math.max(0, spawnClock - spawnDelay) * P4_BOX_SPEED
+    return {
+      id: cycle * 100 + index,
+      position: { x: center.x + Math.cos(angle) * travel, y: center.y + Math.sin(angle) * travel },
+      size: 6.3 + randomB * 2.1,
+      aimedAtGroup,
+      active,
+    }
+  })
+}
+
+export function p4EncounterBoxStates(cycle: number, eventTime: number, center: Point): P4BoxState[] {
+  const currentWave = p4BoxStates(cycle, eventTime, center)
+  if (cycle <= 1) return currentWave
+  const outgoingWave = p4BoxStates(cycle - 1, eventTime + P4_CYCLE_SECONDS, center)
+    .filter(box => box.active && distance(box.position, center) <= P3_OUTER_RADIUS + box.size)
+  return [...outgoingWave, ...currentWave]
+}
+
+export function p4SplinterResolutionActive(age: number): boolean {
+  return age >= P4_SPLINTER_DETONATION_SECONDS && age <= P4_SPLINTER_DETONATION_SECONDS + .3
+}
+
+export function p4SplinterHitsGroup(origin: Point, rotation: number, groupCenter: Point, groupRadius = 8, length = 42): boolean {
+  if (distance(origin, groupCenter) <= groupRadius) return true
+  return Array.from({ length: 6 }, (_, index) => {
+    const angle = rotation + index * Math.PI / 3
+    const end = { x: origin.x + Math.cos(angle) * length, y: origin.y + Math.sin(angle) * length }
+    return distanceToSegment(groupCenter, origin, end) <= groupRadius
+  }).some(Boolean)
+}
+
+export function p4NpcSplinterPosition(stack: Point, center: Point, ordinal: number, age: number, rotation: number): Point {
+  const stackAngle = Math.atan2(stack.y - center.y, stack.x - center.x)
+  const radial = { x: Math.cos(stackAngle), y: Math.sin(stackAngle) }
+  const tangent = { x: -radial.y, y: radial.x }
+  const side = ordinal === 1 ? -1 : 1
+  const base = { x: stack.x + tangent.x * 19 * side, y: stack.y + tangent.y * 19 * side }
+  let final = base
+  if (p4SplinterHitsGroup(final, rotation, stack)) {
+    for (let backward = 5; backward <= 24; backward += 1) {
+      const candidate = { x: base.x + radial.x * backward, y: base.y + radial.y * backward }
+      final = candidate
+      if (!p4SplinterHitsGroup(candidate, rotation, stack)) break
+    }
+  }
+  const progress = Math.min(1, Math.max(0, age) / 1.35)
+  return { x: stack.x + (final.x - stack.x) * progress, y: stack.y + (final.y - stack.y) * progress }
+}
+
+export function p4BossHealth(cycle: number, eventTime: number): number {
+  const elapsed = (cycle - 1) * P4_CYCLE_SECONDS + eventTime
+  return Math.max(0, 100 * (1 - elapsed / P4_BOSS_DURATION_SECONDS))
 }
 
 export function p3PoolCenters(side: -1 | 1, center: Point, round: number): Point[] {
-  return p3LightCenters(side, center, round).map((light, index) => {
-    const outward = side < 0 ? Math.PI : 0
-    const angle = outward + (index - 1) * .55
-    return { x: light.x + Math.cos(angle) * 11, y: light.y + Math.sin(angle) * 11 }
-  })
+  const boss = p3BossPosition(side, center, round)
+  const dx = boss.x - center.x
+  const dy = boss.y - center.y
+  const length = Math.hypot(dx, dy) || 1
+  const radial = { x: dx / length, y: dy / length }
+  const tangent = { x: -radial.y, y: radial.x }
+  let seed = 419 + p3PoolLayoutSeed + round * 173 + (side > 0 ? 71 : 0) + Math.round(boss.x * 3 + boss.y * 5)
+  const random = () => { seed = seed * 16807 % 2147483647; return (seed - 1) / 2147483646 }
+  const pools: Point[] = []
+  for (let attempt = 0; attempt < 200 && pools.length < 3; attempt += 1) {
+    const tangentOffset = (random() * 2 - 1) * 48
+    const radialOffset = -32 + random() * 36
+    const candidate = {
+      x: boss.x + radial.x * radialOffset + tangent.x * tangentOffset,
+      y: boss.y + radial.y * radialOffset + tangent.y * tangentOffset,
+    }
+    const arenaRadius = distance(candidate, center)
+    const staysInHalf = side < 0 ? candidate.x <= center.x - P3_POOL_RADIUS : candidate.x >= center.x + P3_POOL_RADIUS
+    const hasRoom = arenaRadius >= 102 + P3_POOL_RADIUS + 3 && arenaRadius <= P3_OUTER_RADIUS - P3_POOL_RADIUS - 3
+    const avoidsConsumedSector = round <= 1 || Array.from({ length: 9 }, (_, index) => {
+      if (index === 0) return candidate
+      const angle = (index - 1) * Math.PI / 4
+      return { x: candidate.x + Math.cos(angle) * (P3_POOL_RADIUS + 2), y: candidate.y + Math.sin(angle) * (P3_POOL_RADIUS + 2) }
+    }).every(point => !isInP3ConsumedSector(point, center, 102, P3_OUTER_RADIUS))
+    const separated = pools.every(pool => distance(pool, candidate) >= P3_POOL_RADIUS * 2 + 15)
+    if (staysInHalf && hasRoom && avoidsConsumedSector && separated) pools.push(candidate)
+  }
+  if (pools.length === 3) return pools
+  return [-38, 0, 38].map((offset, index) => ({
+    x: boss.x + radial.x * (index === 1 ? 16 : -14) + tangent.x * offset,
+    y: boss.y + radial.y * (index === 1 ? 16 : -14) + tangent.y * offset,
+  }))
+}
+
+export function translateSelectedPoints(points: Point[], selected: number[], anchor: Point): Point[] {
+  if (!selected.length) return points.map(point => ({ ...point }))
+  const selectedPoints = selected.map(index => points[index]).filter((point): point is Point => Boolean(point))
+  if (!selectedPoints.length) return points.map(point => ({ ...point }))
+  const center = selectedPoints.reduce((sum, point) => ({ x: sum.x + point.x, y: sum.y + point.y }), { x: 0, y: 0 })
+  center.x /= selectedPoints.length
+  center.y /= selectedPoints.length
+  const selectedSet = new Set(selected)
+  return points.map((point, index) => selectedSet.has(index)
+    ? { x: point.x + anchor.x - center.x, y: point.y + anchor.y - center.y }
+    : { ...point })
 }
 
 export function p3RunePartnerPosition(assignment: number, center: Point, round: number): Point {
@@ -108,24 +448,55 @@ export function p3RunePartnerPosition(assignment: number, center: Point, round: 
 
 export function p3RuneOrbs(side: -1 | 1, center: Point, round: number, cycle = 0): Point[] {
   const boss = p3BossPosition(side, center, round)
-  const anchorX = boss.x + side * 18
-  const anchorY = boss.y
+  const radialX = boss.x - center.x
+  const radialY = boss.y - center.y
+  const radialLength = Math.hypot(radialX, radialY) || 1
+  const radial = { x: radialX / radialLength, y: radialY / radialLength }
+  const tangent = { x: -radial.y, y: radial.x }
+  const coverage = [boss, ...p3LightCenters(side, center, round), ...p3PoolCenters(side, center, round)]
+  const local = coverage.map(point => ({
+    tangent: (point.x - boss.x) * tangent.x + (point.y - boss.y) * tangent.y,
+    radial: (point.x - boss.x) * radial.x + (point.y - boss.y) * radial.y,
+  }))
+  const tangentMin = Math.min(...local.map(point => point.tangent)) - 18
+  const tangentMax = Math.max(...local.map(point => point.tangent)) + 18
+  const radialMin = Math.min(...local.map(point => point.radial)) - 18
+  const radialMax = Math.max(...local.map(point => point.radial)) + 18
   let seed = 113 + round * 97 + cycle * 131 + (side > 0 ? 41 : 0)
   const random = () => { seed = seed * 16807 % 2147483647; return (seed - 1) / 2147483646 }
-  const anchors = [
-    [-33, -34], [-11, -36], [10, -31], [32, -25],
-    [-35, -13], [-12, -15], [9, -10], [34, -5],
-    [-31, 9], [-9, 6], [13, 12], [32, 17],
-    [-34, 30], [-10, 32], [11, 28], [34, 35],
-  ]
-  return anchors.map(([x, y]) => {
-    const jitterX = (random() - .5) * 10
-    const jitterY = (random() - .5) * 10
+  const pointForRatio = ({ x, y }: Point): Point => {
+    const tangentOffset = tangentMin + (tangentMax - tangentMin) * x
+    const radialOffset = radialMin + (radialMax - radialMin) * y
     return {
-      x: anchorX + side * (x + jitterX),
-      y: anchorY + y + jitterY,
+      x: boss.x + tangent.x * tangentOffset + radial.x * radialOffset,
+      y: boss.y + tangent.y * tangentOffset + radial.y * radialOffset,
     }
-  })
+  }
+  const isPlayableRatio = (ratio: Point) => round < 2 || !isInP3ConsumedSector(pointForRatio(ratio), center, 102, P3_OUTER_RADIUS)
+  const ratios: Point[] = round < 2 ? [
+    { x: 0, y: .04 },
+    { x: 1, y: .1 },
+    { x: .04, y: .96 },
+    { x: .96, y: 1 },
+  ] : []
+  while (ratios.length < 20) {
+    let best: Point | null = null
+    let bestGap = 0
+    for (let attempt = 0; attempt < 96; attempt += 1) {
+      const candidate = { x: random(), y: random() }
+      if (!isPlayableRatio(candidate)) continue
+      const tangentGap = tangentMax - tangentMin
+      const radialGap = radialMax - radialMin
+      const gap = ratios.length
+        ? Math.min(...ratios.map(point => Math.hypot((candidate.x - point.x) * tangentGap, (candidate.y - point.y) * radialGap)))
+        : Infinity
+      if (gap > bestGap) { best = candidate; bestGap = gap }
+      if (gap >= P3_RUNE_ORB_MIN_GAP) break
+    }
+    if (!best) break
+    ratios.push(best)
+  }
+  return ratios.map(pointForRatio)
 }
 
 export function p3RuneStepAt(eventTime: number): number {
@@ -133,7 +504,14 @@ export function p3RuneStepAt(eventTime: number): number {
 }
 
 export function isP3RuneTurn(order: RuneSymbol[], rune: RuneSymbol, eventTime: number): boolean {
-  return eventTime >= P3_MEMORY_START_SECONDS && order[p3RuneStepAt(eventTime)] === rune
+  if (eventTime < P3_MEMORY_START_SECONDS - .25) return false
+  return order[p3RuneStepAt(eventTime - .35)] === rune
+    || order[p3RuneStepAt(eventTime)] === rune
+    || order[p3RuneStepAt(eventTime + .25)] === rune
+}
+
+export function p3WrongRuneContact(contacts: RuneSymbol[], required: RuneSymbol): RuneSymbol | null {
+  return contacts.find(rune => rune !== required) ?? null
 }
 
 export function p3RuneDeadline(order: RuneSymbol[], rune: RuneSymbol): number {
@@ -151,12 +529,27 @@ export function p3StarsTiming(eventTime: number): { active: boolean; cycle: numb
   }
 }
 
-export function nearestRuneEdges(points: Point[], maximumConnections = 3, maximumDistance = 39): Array<[number, number]> {
+export function nearestRuneEdges(points: Point[], maximumConnections = 3, maximumDistance = 72): Array<[number, number]> {
   const candidates: Array<{ from: number; to: number; length: number }> = []
   for (let from = 0; from < points.length; from++) {
     for (let to = from + 1; to < points.length; to++) {
       const length = distance(points[from], points[to])
-      if (length <= maximumDistance) candidates.push({ from, to, length })
+      const hasCloserBridge = points.some((point, index) =>
+        index !== from
+        && index !== to
+        && distance(points[from], point) < length
+        && distance(points[to], point) < length
+      )
+      const crossesAnotherOrb = points.some((point, index) => {
+        if (index === from || index === to) return false
+        const start = points[from]
+        const end = points[to]
+        const dx = end.x - start.x
+        const dy = end.y - start.y
+        const projection = length * length ? ((point.x - start.x) * dx + (point.y - start.y) * dy) / (length * length) : 0
+        return projection > .08 && projection < .92 && distanceToSegment(point, start, end) < 8
+      })
+      if (length <= maximumDistance && !hasCloserBridge && !crossesAnotherOrb) candidates.push({ from, to, length })
     }
   }
   candidates.sort((a, b) => a.length - b.length)
@@ -164,11 +557,22 @@ export function nearestRuneEdges(points: Point[], maximumConnections = 3, maximu
   const edges: Array<[number, number]> = []
   for (const candidate of candidates) {
     if (degree[candidate.from] >= maximumConnections || degree[candidate.to] >= maximumConnections) continue
+    const crossesBeam = edges.some(([from, to]) => {
+      if (from === candidate.from || from === candidate.to || to === candidate.from || to === candidate.to) return false
+      return segmentsIntersect(points[candidate.from], points[candidate.to], points[from], points[to])
+    })
+    if (crossesBeam) continue
     edges.push([candidate.from, candidate.to])
     degree[candidate.from] += 1
     degree[candidate.to] += 1
   }
   return edges
+}
+
+function segmentsIntersect(a: Point, b: Point, c: Point, d: Point): boolean {
+  const cross = (origin: Point, first: Point, second: Point) =>
+    (first.x - origin.x) * (second.y - origin.y) - (first.y - origin.y) * (second.x - origin.x)
+  return cross(a, b, c) * cross(a, b, d) < 0 && cross(c, d, a) * cross(c, d, b) < 0
 }
 
 export function distanceToSegment(point: Point, start: Point, end: Point): number {
@@ -207,6 +611,14 @@ export function p2OrbReturnState(age: number, orbitRadius = 82): { phase: 'inact
     return { phase: 'returning', radius: orbitRadius * (1 - progress * progress) }
   }
   return { phase: 'done', radius: 0 }
+}
+export function p2ReturningOrbPositions(age: number, cycle: number, time: number, center: Point, orbitRadius = 82): Point[] {
+  const state = p2OrbReturnState(age, orbitRadius)
+  if (state.phase !== 'orbiting' && state.phase !== 'returning') return []
+  return Array.from({ length: 4 }, (_, index) => {
+    const angle = index * Math.PI / 2 + (cycle - 1) * Math.PI / 6 + time * P2_ORBIT_SPEED
+    return { x: center.x + Math.cos(angle) * state.radius, y: center.y + Math.sin(angle) * state.radius }
+  })
 }
 export function personalCircleHitsCrystal(circleCenter: Point, crystals: Point[], radius = P2_PERSONAL_CIRCLE_OUTER_RADIUS): boolean {
   return crystals.some(crystal => distance(circleCenter, crystal) < radius)
@@ -255,13 +667,13 @@ export function bossBeamHitsPlayer(point: Point, origin: Point, angles: number[]
     return along > 20 && across < width
   })
 }
-export function roamingNpcPosition(base: Point, index: number, time: number, event: 'countdown' | 'positioning' | 'beam' | 'splinter' | 'p1-recover' | 'p2-countdown' | 'p2-jump' | 'p2-positioning' | 'p2-orbs' | 'p2-recover' | 'p2-pull' | 'p2-spread' | 'p2-fetch' | 'p2-wait' | `p3-${string}`, eventTime: number, beamAngles: number[], center: Point): Point {
+export function roamingNpcPosition(base: Point, index: number, time: number, event: 'countdown' | 'positioning' | 'beam' | 'splinter' | 'p1-recover' | 'p2-countdown' | 'p2-jump' | 'p2-positioning' | 'p2-orbs' | 'p2-recover' | 'p2-pull' | 'p2-spread' | 'p2-fetch' | 'p2-wait' | `p3-${string}` | `p4-${string}`, eventTime: number, beamAngles: number[], center: Point): Point {
   const phase = index * 1.73
   const roaming = {
     x: base.x + Math.sin(time * (.31 + index % 3 * .04) + phase) * (4 + index % 4),
     y: base.y + Math.cos(time * (.27 + index % 5 * .025) + phase * .7) * (4 + (index + 2) % 5),
   }
-  if (event === 'countdown' || event === 'positioning' || event.startsWith('p2-') || event.startsWith('p3-') || !beamAngles.length) return roaming
+  if (event === 'countdown' || event === 'positioning' || event.startsWith('p2-') || event.startsWith('p3-') || event.startsWith('p4-') || !beamAngles.length) return roaming
   let nearest: { angle: number; across: number; signedAcross: number } | null = null
   for (const angle of beamAngles) {
     const dx = roaming.x - center.x
@@ -344,8 +756,8 @@ export function canRecoverFromWipe(difficulty: Difficulty, wipeCount: number, sc
   return difficulty === 'test' || difficulty !== 'hard' && wipeCount < 2 && score - penalty > 0
 }
 
-export function healthEmergencyLimit(difficulty: Difficulty): number {
-  return difficulty === 'hard' ? 2 : difficulty === 'normal' ? 1 : 0
+export function healthResponsesPerPhase(difficulty: Difficulty): number {
+  return difficulty === 'normal' || difficulty === 'hard' ? 1 : 0
 }
 
 export function difficultySettings(difficulty: Difficulty) {

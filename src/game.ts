@@ -28,14 +28,16 @@ export function assignmentRevealDistance(difficulty: Difficulty): number {
 export function p3LandingPosition(index: number, center: Point, radius = 176): Point {
   const side = index < 10 ? -1 : 1
   const sideIndex = index % 10
-  const angle = (side < 0 ? Math.PI : 0) + (sideIndex - 4.5) * .15
+  const boss = p3BossPosition(side, center, 1)
+  const bossAngle = Math.atan2(boss.y - center.y, boss.x - center.x)
+  const angle = bossAngle + (sideIndex - 4.5) * .085
   const row = sideIndex % 3
-  const distanceFromCenter = radius - row * 13
+  const distanceFromCenter = radius - row * 10
   return { x: center.x + Math.cos(angle) * distanceFromCenter, y: center.y + Math.sin(angle) * distanceFromCenter }
 }
 
 export function p3LightCenters(side: -1 | 1, center: Point, round: number): Point[] {
-  const boss = { x: center.x + side * 108, y: center.y - 22 + (round - 1) * 45 }
+  const boss = p3BossPosition(side, center, round)
   const outward = side < 0 ? Math.PI : 0
   return [-.75, 0, .75].map(offset => {
     const angle = outward + offset
@@ -44,6 +46,31 @@ export function p3LightCenters(side: -1 | 1, center: Point, round: number): Poin
     y: boss.y + Math.sin(angle) * 43,
     }
   })
+}
+
+export function p3BossPosition(side: -1 | 1, center: Point, round: number): Point {
+  return { x: center.x + side * 118, y: center.y + (round === 1 ? -70 : 25) }
+}
+
+export function p3ArchangelStackPosition(side: -1 | 1, center: Point, round: number): Point {
+  const boss = p3BossPosition(side, center, round)
+  const dx = boss.x - center.x
+  const dy = boss.y - center.y
+  const length = Math.hypot(dx, dy) || 1
+  return { x: center.x + dx / length * 180, y: center.y + dy / length * 180 }
+}
+
+export function isInP3ConsumedSector(point: Point, center: Point, innerRadius: number, outerRadius: number): boolean {
+  const radius = distance(point, center)
+  if (radius < innerRadius || radius > outerRadius) return false
+  const angle = Math.atan2(point.y - center.y, point.x - center.x)
+  const fromNorth = Math.abs(Math.atan2(Math.sin(angle + Math.PI / 2), Math.cos(angle + Math.PI / 2)))
+  return fromNorth <= Math.PI / 3
+}
+
+export function isP3ConsumedSectorLethal(point: Point, center: Point, innerRadius: number, outerRadius: number, round: number, event: string, eventTime: number): boolean {
+  return isInP3ConsumedSector(point, center, innerRadius, outerRadius)
+    && (round > 1 || event === 'p3-sector-move' && eventTime >= 3)
 }
 
 export function p3PoolCenters(side: -1 | 1, center: Point, round: number): Point[] {

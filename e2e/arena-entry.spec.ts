@@ -120,8 +120,8 @@ test('enters Phase 3 directly in non-blocking Test mode', async ({ page }) => {
   await expect(page.getByText(/Stars pattern disappears for three seconds/i)).toBeVisible()
   await expect(page.getByText(/BIG BOOM/)).toBeVisible()
   await expect(page.locator('.player-health')).toBeVisible()
-  await expect(page.getByText('RUNE ORDER', { exact: true })).toBeVisible({ timeout: 10_000 })
-  await expect(page.getByText('RUNE ORDER', { exact: true })).toHaveCount(0, { timeout: 10_000 })
+  await expect(page.getByText('RUNE ORDER', { exact: true })).toBeVisible({ timeout: MECHANIC_TIMEOUT })
+  await expect(page.getByText('RUNE ORDER', { exact: true })).toHaveCount(0, { timeout: MECHANIC_TIMEOUT })
   await expect(page.getByRole('alert')).toHaveCount(0)
 })
 

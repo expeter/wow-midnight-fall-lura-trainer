@@ -172,6 +172,7 @@ message was a separate ticket.
 | `BUG-004` | P3 assets disappearing at some camera angles | Implemented through depth/render-order and material adjustments | [`screen-p3-bug08.png`](../images/screen-p3-bug08.png), [`screen-p3-bug09.png`](../images/screen-p3-bug09.png), [`screen-p3-bug12.png`](../images/screen-p3-bug12.png), [`screen-p3-bug14.png`](../images/screen-p3-bug14.png), [`screen-p3-bug15.png`](../images/screen-p3-bug15.png) |
 | `BUG-005` | P3 memory order and Stars topology | Implemented with ordered active pairs, contact guards, spaced nodes, and local non-crossing edges | [`screen-p3-bug17.png`](../images/screen-p3-bug17.png), [`screen-p3-bug18.png`](../images/screen-p3-bug18.png) |
 | `BUG-006` | P4 stacking, safe-area movement, and add density | Implemented through group-relative targeting, tuned actors, separated streams, and tank cleanup | [`screen-p4-bug11.png`](../images/screen-p4-bug11.png), [`screen-p4-bug12.png`](../images/screen-p4-bug12.png), [`screen-p4-bug16.png`](../images/screen-p4-bug16.png), [`screen-p4-bug-20.png`](../images/screen-p4-bug-20.png) |
+| `BUG-007` | P3 browser test could miss the Rune Order panel on GitHub's software renderer | Implemented by using the existing CI-aware mechanic timeout for both panel transitions | GitHub Actions failure at `e2e/arena-entry.spec.ts:123` |
 
 ## Visual reference index
 

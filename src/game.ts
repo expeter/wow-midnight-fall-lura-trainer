@@ -20,6 +20,8 @@ export const P3_OUTER_RADIUS = 199
 export const P3_LIGHT_RADIUS = 38
 export const P3_POOL_RADIUS = 12
 export const P3_LANDING_SOAK_RADIUS = 15
+export const P3_MEMORY_START_SECONDS = 1
+export const P3_MEMORY_STEP_SECONDS = 14 / 3
 export type RuneSymbol = 'T' | 'X' | 'O'
 export function assignmentRevealDistance(difficulty: Difficulty): number {
   return difficulty === 'test' || difficulty === 'easy' ? Infinity : difficulty === 'normal' ? 45 : 22
@@ -93,18 +95,31 @@ export function p3RuneOrbs(side: -1 | 1, center: Point, round: number): Point[] 
   let seed = 113 + round * 97 + (side > 0 ? 41 : 0)
   const random = () => { seed = seed * 16807 % 2147483647; return (seed - 1) / 2147483646 }
   const anchors = [
-    [-38, -40], [-9, -43], [25, -35], [44, -12],
-    [-42, -8], [-14, -12], [14, -5], [39, 18],
-    [-35, 27], [-8, 34], [19, 31], [43, 45],
+    [-33, -34], [-11, -36], [10, -31], [32, -25],
+    [-35, -13], [-12, -15], [9, -10], [34, -5],
+    [-31, 9], [-9, 6], [13, 12], [32, 17],
+    [-34, 30], [-10, 32], [11, 28], [34, 35],
   ]
   return anchors.map(([x, y]) => {
-    const jitterX = (random() - .5) * 15
-    const jitterY = (random() - .5) * 15
+    const jitterX = (random() - .5) * 10
+    const jitterY = (random() - .5) * 10
     return {
       x: anchorX + side * (x + jitterX),
       y: anchorY + y + jitterY,
     }
   })
+}
+
+export function p3RuneStepAt(eventTime: number): number {
+  return Math.min(2, Math.max(0, Math.floor((eventTime - P3_MEMORY_START_SECONDS) / P3_MEMORY_STEP_SECONDS)))
+}
+
+export function isP3RuneTurn(order: RuneSymbol[], rune: RuneSymbol, eventTime: number): boolean {
+  return eventTime >= P3_MEMORY_START_SECONDS && order[p3RuneStepAt(eventTime)] === rune
+}
+
+export function p3RuneDeadline(order: RuneSymbol[], rune: RuneSymbol): number {
+  return P3_MEMORY_START_SECONDS + (order.indexOf(rune) + 1) * P3_MEMORY_STEP_SECONDS
 }
 
 export function nearestRuneEdges(points: Point[], maximumConnections = 3, maximumDistance = 39): Array<[number, number]> {

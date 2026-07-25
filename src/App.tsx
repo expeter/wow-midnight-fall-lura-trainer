@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import { bossBeamHitsPlayer, canPickupCrystal, canRecoverFromWipe, crystalCarrierPosition, crystalWipeReason, difficultySettings, distance, distanceToSegment, healthEmergencyLimit, isP3ConsumedSectorLethal, isInSafeAnnulus, moveRelativeToCamera, moveWithIncreasingPull, nearestRuneEdges, npcEntryPosition, OPENING_BOOST_SECONDS, orientedAssignments, p2NpcCrystalDrops, P2_PERSONAL_CIRCLE_OUTER_RADIUS, p3ArchangelStackPosition, p3LandingPosition, p3LightCenters, p3PoolCenters, p3RuneOrbs, p3RunePartnerPosition, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_OUTER_RADIUS, personalCircleHitsCrystal, PLAYER_COLLISION_PENALTY, roamingNpcPosition, WIPE_PENALTY, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type Role, type RuneSymbol } from './game'
+import { bossBeamHitsPlayer, canPickupCrystal, canRecoverFromWipe, crystalCarrierPosition, crystalWipeReason, difficultySettings, distance, distanceToSegment, healthEmergencyLimit, isP3ConsumedSectorLethal, isP3RuneTurn, isInSafeAnnulus, moveRelativeToCamera, moveWithIncreasingPull, nearestRuneEdges, npcEntryPosition, OPENING_BOOST_SECONDS, orientedAssignments, p2NpcCrystalDrops, P2_PERSONAL_CIRCLE_OUTER_RADIUS, p3ArchangelStackPosition, p3LandingPosition, p3LightCenters, p3PoolCenters, p3RuneDeadline, p3RuneOrbs, p3RunePartnerPosition, p3RuneStepAt, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_MEMORY_START_SECONDS, P3_MEMORY_STEP_SECONDS, P3_OUTER_RADIUS, personalCircleHitsCrystal, PLAYER_COLLISION_PENALTY, roamingNpcPosition, WIPE_PENALTY, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type Role, type RuneSymbol } from './game'
 import GameScene from './GameScene'
 import './styles.css'
 
@@ -317,6 +317,8 @@ export default function App() {
   const pullOriginRef = useRef<Point>(WORLD.center)
   const p3FlightOriginRef = useRef<Point>(WORLD.center)
   const p3RuneCheckedRef = useRef(false)
+  const p3RuneContactRef = useRef(false)
+  const p3RuneFailedRef = useRef(false)
   const p3LandingRequiredRef = useRef(false)
   const keysHeld = useRef(new Set<string>())
 
@@ -331,6 +333,15 @@ export default function App() {
   useEffect(() => { localStorage.setItem('lura-music-track', musicTrack) }, [musicTrack])
   useEffect(() => { localStorage.setItem('lura-music-volume', String(musicVolume)) }, [musicVolume])
   useEffect(() => { localStorage.setItem('lura-music-muted', String(musicMuted)) }, [musicMuted])
+  useEffect(() => {
+    if (event !== 'p3-light-pools' || typeof window === 'undefined' || !('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) return
+    const speech = new SpeechSynthesisUtterance(`Memory game. Order ${p3RuneOrder.join(', ')}`)
+    speech.rate = 1.12
+    speech.volume = .85
+    window.speechSynthesis.cancel()
+    window.speechSynthesis.speak(speech)
+    return () => window.speechSynthesis.cancel()
+  }, [event, p3RuneOrder])
   useEffect(() => {
     const audio = new Audio()
     audio.loop = true
@@ -429,7 +440,7 @@ export default function App() {
     const oriented = orientedAssignments(positions, intermissionStart, WORLD.center)
     const startPosition = entryMode === 'arena1' ? intermissionStart : WORLD.center
     jumpUntilRef.current = 0; jumpKeysRef.current.clear(); setPersonalJumpProgress(0); setMusicPreviewing(false); restartMusic()
-    setPhasePositions(oriented); setStartSlot(slot); playerRef.current = startPosition; jumpOriginRef.current = startPosition; pullOriginRef.current = startPosition; p3FlightOriginRef.current = startPosition; crystalAgeRef.current = 0; eventTimeRef.current = 0; if (!preserveScore) timeRef.current = 0; droppedForPackRef.current = false; healthRef.current = 100; criticalDeadlineRef.current = 0; nextCriticalRef.current = difficulty === 'easy' || difficulty === 'test' || !healthPotEnabled && !shieldEnabled ? Infinity : 16 + Math.random() * 9; healthEmergencyCountRef.current = 0; healthPotUsedRef.current = false; shieldUsedRef.current = false; mainAbilityReadyAtRef.current = 0; setHealth(100); setCriticalRemaining(0); setHealthPotUsed(false); setShieldUsed(false); setBossHealth(100); setMainCastRemaining(0); setPlayer(startPosition); setCrystal(null); setCrystalAge(0); setNpcSplinters([]); setNpcCrystals([]); setNpcCarrier(null); setCrystalCarriers(crystalNpcOrdinals(crystalAssignments, assignment)); setNpcCrystalAge(0); setPlayerSplinterRotation(0); if (preserveScore) setStats(current => ({ ...current, crystalDropped: false })); else { setStats({ score: 1000, hits: 0, crystalDropped: false, time: 0 }); setMistakes([]); wipeCountRef.current = 0 } setWipeReason(''); setSoftWipeNotice(''); setEvent(entryMode === 'arena2' ? 'p2-countdown' : entryMode === 'arena3' ? 'p3-countdown' : 'countdown'); setEventTime(0); setCycle(1); setP2Cycle(1); setP2Soaked(false); setP3Round(1); setP3PoolHealth([100, 100, 100, 100, 100, 100]); setP3RuneOrder(shuffledRunes()); setP3RuneStep(0); setP3ResolvedRunes([]); p3RuneCheckedRef.current = false; p3LandingRequiredRef.current = difficulty === 'hard' || difficulty === 'normal' && Math.random() < .5; hitRef.current = false; unsafeRef.current = false; wipeRef.current = false; softWipeGuardRef.current = false; chooseBossPattern(oriented[assignment]); setPaused(false); setScreen('game')
+    setPhasePositions(oriented); setStartSlot(slot); playerRef.current = startPosition; jumpOriginRef.current = startPosition; pullOriginRef.current = startPosition; p3FlightOriginRef.current = startPosition; crystalAgeRef.current = 0; eventTimeRef.current = 0; if (!preserveScore) timeRef.current = 0; droppedForPackRef.current = false; healthRef.current = 100; criticalDeadlineRef.current = 0; nextCriticalRef.current = difficulty === 'easy' || difficulty === 'test' || !healthPotEnabled && !shieldEnabled ? Infinity : 16 + Math.random() * 9; healthEmergencyCountRef.current = 0; healthPotUsedRef.current = false; shieldUsedRef.current = false; mainAbilityReadyAtRef.current = 0; setHealth(100); setCriticalRemaining(0); setHealthPotUsed(false); setShieldUsed(false); setBossHealth(100); setMainCastRemaining(0); setPlayer(startPosition); setCrystal(null); setCrystalAge(0); setNpcSplinters([]); setNpcCrystals([]); setNpcCarrier(null); setCrystalCarriers(crystalNpcOrdinals(crystalAssignments, assignment)); setNpcCrystalAge(0); setPlayerSplinterRotation(0); if (preserveScore) setStats(current => ({ ...current, crystalDropped: false })); else { setStats({ score: 1000, hits: 0, crystalDropped: false, time: 0 }); setMistakes([]); wipeCountRef.current = 0 } setWipeReason(''); setSoftWipeNotice(''); setEvent(entryMode === 'arena2' ? 'p2-countdown' : entryMode === 'arena3' ? 'p3-countdown' : 'countdown'); setEventTime(0); setCycle(1); setP2Cycle(1); setP2Soaked(false); setP3Round(1); setP3PoolHealth([100, 100, 100, 100, 100, 100]); setP3RuneOrder(shuffledRunes()); setP3RuneStep(0); setP3ResolvedRunes([]); p3RuneCheckedRef.current = false; p3RuneContactRef.current = false; p3RuneFailedRef.current = false; p3LandingRequiredRef.current = difficulty === 'hard' || difficulty === 'normal' && Math.random() < .5; hitRef.current = false; unsafeRef.current = false; wipeRef.current = false; softWipeGuardRef.current = false; chooseBossPattern(oriented[assignment]); setPaused(false); setScreen('game')
   }
   const start = () => initializeAttempt(false)
 
@@ -472,12 +483,21 @@ export default function App() {
         }
       }
       if (event === 'p3-light-pools' && eventTimeRef.current >= 1) {
-        const step = Math.min(2, Math.floor((eventTimeRef.current - 1) / (14 / 3)))
+        const step = p3RuneStepAt(eventTimeRef.current)
         setP3RuneStep(step)
-        const npcRunes = p3RuneOrder.filter(rune => rune !== playerRune(assignment))
-        npcRunes.forEach((rune, index) => {
-          if (eventTimeRef.current >= 4 + index * 2) setP3ResolvedRunes(current => current.includes(rune) ? current : [...current, rune])
+        const requiredRune = playerRune(assignment)
+        p3RuneOrder.forEach((rune, index) => {
+          const npcResolution = P3_MEMORY_START_SECONDS + index * P3_MEMORY_STEP_SECONDS + 1.2
+          if (rune !== requiredRune && eventTimeRef.current >= npcResolution) setP3ResolvedRunes(current => current.includes(rune) ? current : [...current, rune])
         })
+        if (!p3RuneCheckedRef.current && !p3RuneFailedRef.current && eventTimeRef.current >= p3RuneDeadline(p3RuneOrder, requiredRune)) {
+          p3RuneFailedRef.current = true
+          const ended = triggerWipe(`Missed rune ${requiredRune} during its turn`)
+          if (!ended) {
+            p3RuneCheckedRef.current = true
+            setP3ResolvedRunes(current => current.includes(requiredRune) ? current : [...current, requiredRune])
+          }
+        }
       }
       const jumpRemaining = Math.max(0, jumpUntilRef.current - timeRef.current)
       const jumping = jumpRemaining > 0
@@ -599,6 +619,8 @@ export default function App() {
     } else if (event === 'p3-approach') {
       setP3PoolHealth([100, 100, 100, 100, 100, 100])
       p3RuneCheckedRef.current = false
+      p3RuneContactRef.current = false
+      p3RuneFailedRef.current = false
       setEvent('p3-light-pools')
     } else if (event === 'p3-light-pools') {
       if (p3PoolHealth.some(value => value > .5) && triggerWipe('A dark pool was not fully drained')) return
@@ -643,6 +665,8 @@ export default function App() {
       setP3RuneStep(0)
       setP3ResolvedRunes([])
       p3RuneCheckedRef.current = false
+      p3RuneContactRef.current = false
+      p3RuneFailedRef.current = false
       setEvent('p3-light-pools')
     } else if (event === 'countdown') {
       setEvent('positioning')
@@ -729,6 +753,8 @@ export default function App() {
     setP3RuneStep(0)
     setP3ResolvedRunes([])
     p3RuneCheckedRef.current = false
+    p3RuneContactRef.current = false
+    p3RuneFailedRef.current = false
     p3LandingRequiredRef.current = difficulty === 'hard' || difficulty === 'normal' && Math.random() < .5
     setEvent('p3-flight')
   }
@@ -793,9 +819,26 @@ export default function App() {
         const hit = nearestRuneEdges(orbs).some(([from, to]) => distanceToSegment(position, orbs[from], orbs[to]) < 2.8)
         if (hit) { hitRef.current = true; triggerWipe('Touched a runic lattice beam') }
       }
-      if (event === 'p3-lattice-memory' || event === 'p3-light-pools' && eventTimeRef.current >= 1) {
+      if (event === 'p3-light-pools' && eventTimeRef.current >= P3_MEMORY_START_SECONDS) {
         const requiredRune = playerRune(assignment)
-        if (distance(position, p3RunePartnerPosition(assignment, WORLD.center, p3Round)) <= 13) {
+        const touchingPartner = distance(position, p3RunePartnerPosition(assignment, WORLD.center, p3Round)) <= 7
+        if (touchingPartner && !p3RuneContactRef.current && !p3RuneCheckedRef.current && !p3RuneFailedRef.current) {
+          if (isP3RuneTurn(p3RuneOrder, requiredRune, eventTimeRef.current)) {
+            p3RuneCheckedRef.current = true
+            setP3ResolvedRunes(current => current.includes(requiredRune) ? current : [...current, requiredRune])
+          } else {
+            p3RuneFailedRef.current = true
+            const ended = triggerWipe(`Matched rune ${requiredRune} out of order`)
+            if (!ended) {
+              p3RuneCheckedRef.current = true
+              setP3ResolvedRunes(current => current.includes(requiredRune) ? current : [...current, requiredRune])
+            }
+          }
+        }
+        p3RuneContactRef.current = touchingPartner
+      } else if (event === 'p3-lattice-memory') {
+        const requiredRune = playerRune(assignment)
+        if (distance(position, p3RunePartnerPosition(assignment, WORLD.center, p3Round)) <= 7) {
           p3RuneCheckedRef.current = true
           setP3ResolvedRunes(current => current.includes(requiredRune) ? current : [...current, requiredRune])
         }
@@ -1031,7 +1074,7 @@ function GameArena(props: { mainAbilityEnabled: boolean; bossHealth: number; mai
     'p3-flight': { title: 'Thrown into the split arena.', detail: 'Follow the outward flight and orient toward your assigned boss.', counter: 'FLIGHT', duration: 2 },
     'p3-landing': { title: 'Catch a yellow impact.', detail: 'Your nearby trio must cover both yellow landing circles.', counter: 'LANDING SOAK', duration: 3 },
     'p3-approach': { title: 'Run to your assigned boss.', detail: 'Move inward with your half of the raid before the dark pools appear.', counter: 'APPROACH', duration: 5 },
-    'p3-light-pools': { title: 'Soak, dodge, and match.', detail: 'The pools spawn immediately. One second later the orb lattice and rune assignments overlap it; bump your matching NPC to clear both marks.', counter: 'DARK POOLS', duration: 15 },
+    'p3-light-pools': { title: 'Soak, dodge, and match.', detail: 'The pools spawn immediately. One second later the 16-orb lattice and ordered rune assignments overlap it; bump your matching NPC only during your rune’s turn.', counter: 'DARK POOLS', duration: 15 },
     'p3-rune-preview': { title: 'Memorize the rune order.', detail: 'Match T, X, and O pairs in the displayed order.', counter: 'MEMORIZE', duration: 2 },
     'p3-lattice-memory': { title: 'Resolve the memory marks.', detail: 'Touch only the NPC carrying your matching rune when that symbol is active. Resolved pairs disappear.', counter: 'RUNES', duration: 10 },
     'p3-lattice-second': { title: 'Second runic lattice.', detail: 'Reposition before the nearest-neighbor beams connect again.', counter: 'LATTICE', duration: 4.5 },

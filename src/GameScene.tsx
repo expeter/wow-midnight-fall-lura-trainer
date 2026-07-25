@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
-import { angleToward, assignmentRevealDistance, crystalCarrierPosition, distance, jumpHeights, nearestRuneEdges, npcEntryPosition, OPENING_BOOST_SECONDS, P2_PERSONAL_CIRCLE_INNER_RADIUS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, p3ArchangelStackPosition, p3BossPosition, p3LandingPosition, p3LightCenters, p3PoolCenters, p3RuneOrbs, p3RunePartnerPosition, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_OUTER_RADIUS, P3_POOL_RADIUS, roamingNpcPosition, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type RuneSymbol } from './game'
+import { angleToward, assignmentRevealDistance, crystalCarrierPosition, distance, jumpHeights, nearestRuneEdges, npcEntryPosition, OPENING_BOOST_SECONDS, P2_PERSONAL_CIRCLE_INNER_RADIUS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, p3ArchangelStackPosition, p3BossPosition, p3LandingPosition, p3LightCenters, p3PoolCenters, p3RuneOrbs, p3RunePartnerPosition, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_MEMORY_START_SECONDS, P3_OUTER_RADIUS, P3_POOL_RADIUS, roamingNpcPosition, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type RuneSymbol } from './game'
 
 interface SceneProps {
   positions: Point[]
@@ -579,10 +579,14 @@ export default function GameScene(props: SceneProps) {
         let p3Target = p3NpcTarget(baseIndex, state.profiles[baseIndex].crystal, state.p3Round, state.event, state.eventTime)
         if ((state.event === 'p3-lattice-memory' || state.event === 'p3-light-pools' && state.eventTime >= 1) && index === partnerNpcOrdinal) p3Target = p3RunePartnerPosition(state.assignment, WORLD.center, state.p3Round)
         const pairOrdinal = markedNpcOrdinals.indexOf(index)
-        if (state.event === 'p3-light-pools' && state.eventTime >= 1 && pairOrdinal >= 0) {
+        if (state.event === 'p3-light-pools' && state.eventTime >= P3_MEMORY_START_SECONDS && pairOrdinal >= 0) {
           const side: -1 | 1 = state.assignment < 10 ? -1 : 1
           const pair = Math.floor(pairOrdinal / 2)
-          p3Target = p3LightCenters(side, WORLD.center, state.p3Round)[(state.assignment % 3 + 1 + pair) % 3]
+          const playerRune = (['T', 'X', 'O'] as RuneSymbol[])[state.assignment % 3]
+          const otherRunes = (['T', 'X', 'O'] as RuneSymbol[]).filter(symbol => symbol !== playerRune)
+          if (state.p3RuneOrder[state.p3RuneStep] === otherRunes[pair]) {
+            p3Target = p3LightCenters(side, WORLD.center, state.p3Round)[(state.assignment % 3 + 1 + pair) % 3]
+          }
         }
         const normal = phaseThree
           ? p3Target
@@ -759,9 +763,10 @@ export default function GameScene(props: SceneProps) {
         if (memoryVisible) {
           const rune = (['T', 'X', 'O'] as RuneSymbol[])[state.assignment % 3]
           const playerRuneResolved = state.p3ResolvedRunes.includes(rune)
+          const activeRune = state.p3RuneOrder[state.p3RuneStep]
           if (!playerRuneResolved) {
-            addRuneMarker(hazards, state.player, runeTextures[rune], true)
-            addRuneMarker(hazards, npcPositions[partnerNpcOrdinal], runeTextures[rune], true)
+            addRuneMarker(hazards, state.player, runeTextures[rune], activeRune === rune)
+            addRuneMarker(hazards, npcPositions[partnerNpcOrdinal], runeTextures[rune], activeRune === rune)
           }
           const otherRunes = (['T', 'X', 'O'] as RuneSymbol[]).filter(symbol => symbol !== rune)
           const npcRunes: RuneSymbol[] = [otherRunes[0], otherRunes[0], otherRunes[1], otherRunes[1]]
@@ -772,7 +777,7 @@ export default function GameScene(props: SceneProps) {
           }).slice(0, 4)
           localNpcs.forEach((point, index) => {
             const npcRune = npcRunes[index]
-            if (!state.p3ResolvedRunes.includes(npcRune)) addRuneMarker(hazards, point, runeTextures[npcRune], false)
+            if (!state.p3ResolvedRunes.includes(npcRune)) addRuneMarker(hazards, point, runeTextures[npcRune], activeRune === npcRune)
           })
         }
         if (state.p3Round > 1 || state.event === 'p3-sector-move') {

@@ -114,7 +114,7 @@ test('enters Phase 3 directly in non-blocking Test mode', async ({ page }) => {
   await page.keyboard.down('w')
   await expect(page.getByText('Soak, dodge, and match.')).toBeVisible({ timeout: MECHANIC_TIMEOUT })
   await page.keyboard.up('w')
-  await expect(page.getByText(/orb lattice and rune assignments overlap/i)).toBeVisible()
+  await expect(page.getByText(/16-orb lattice and ordered rune assignments overlap/i)).toBeVisible()
   await expect(page.locator('.player-health')).toBeVisible()
   await expect(page.getByRole('alert')).toHaveCount(0)
 })

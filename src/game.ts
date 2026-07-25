@@ -29,7 +29,8 @@ export const P3_SECTOR_SECONDS = 40
 export const P3_STARS_START_SECONDS = 5
 export const P3_STARS_TELEGRAPH_SECONDS = 4.5
 export const P3_STARS_INTERVAL_SECONDS = P3_STARS_TELEGRAPH_SECONDS + 3
-export const P3_RUNE_ORB_MIN_GAP = 15
+export const P3_RUNE_ORB_MIN_GAP = 18
+export const P3_RUNE_HALF_CLEARANCE = 10
 export const P3_MEMORY_PANEL_SECONDS = 20
 export const P3_MEMORY_START_SECONDS = 25
 export const P3_MEMORY_STEP_SECONDS = 5
@@ -93,23 +94,35 @@ export function p3LandingPosition(index: number, center: Point, radius = 176): P
   return { x: groupCenter.x + offset.x, y: groupCenter.y + offset.y }
 }
 
-export function p3LandingSoakPositions(index: number, center: Point): Point[] {
+function seededUnit(seed: number, salt: number): number {
+  let value = (Math.floor(seed) ^ Math.imul(salt + 17, 0x9e3779b1)) >>> 0
+  value = Math.imul(value ^ value >>> 16, 0x7feb352d)
+  value = Math.imul(value ^ value >>> 15, 0x846ca68b)
+  return ((value ^ value >>> 16) >>> 0) / 0x100000000
+}
+
+export function p3LandingSoakPositions(index: number, center: Point, seed = 0): Point[] {
   const landing = p3LandingGroupCenter(index, center)
   const radialX = landing.x - center.x
   const radialY = landing.y - center.y
   const length = Math.hypot(radialX, radialY) || 1
-  const inward = { x: -radialX / length * 8, y: -radialY / length * 8 }
-  const tangent = { x: -radialY / length * 24, y: radialX / length * 24 }
-  return [
-    { x: landing.x + inward.x + tangent.x, y: landing.y + inward.y + tangent.y },
-    { x: landing.x + inward.x - tangent.x, y: landing.y + inward.y - tangent.y },
-  ]
+  const group = p3LandingGroupIndex(index)
+  const anchor = { x: landing.x - radialX / length * 9, y: landing.y - radialY / length * 9 }
+  const points = [0, 1].map(ordinal => {
+    const angle = seededUnit(seed, group * 4 + ordinal * 2) * Math.PI * 2
+    const radius = Math.sqrt(seededUnit(seed, group * 4 + ordinal * 2 + 1)) * 19
+    return { x: anchor.x + Math.cos(angle) * radius, y: anchor.y + Math.sin(angle) * radius }
+  })
+  return points.sort((a, b) => distance(b, landing) - distance(a, landing))
 }
 export function p3LightHealthRate(protectedByLight: boolean): number {
   return protectedByLight ? 12 : -2
 }
 export function isProtectedByP3Bubble(player: Point, bubble: Point, playerRadius = 4): boolean {
   return distance(player, bubble) <= P3_LIGHT_RADIUS + playerRadius
+}
+export function p3ProtectionBubbleCenter(stack: Point, crystal: Point | null, playerDuty: 1 | 2 | null, round: number): Point {
+  return playerDuty === round && crystal ? crystal : stack
 }
 export function p3PoolSoakRate(occupants: number): number {
   return occupants >= 3 ? occupants : 0
@@ -458,10 +471,10 @@ export function p3RuneOrbs(side: -1 | 1, center: Point, round: number, cycle = 0
     tangent: (point.x - boss.x) * tangent.x + (point.y - boss.y) * tangent.y,
     radial: (point.x - boss.x) * radial.x + (point.y - boss.y) * radial.y,
   }))
-  const tangentMin = Math.min(...local.map(point => point.tangent)) - 18
-  const tangentMax = Math.max(...local.map(point => point.tangent)) + 18
-  const radialMin = Math.min(...local.map(point => point.radial)) - 18
-  const radialMax = Math.max(...local.map(point => point.radial)) + 18
+  const tangentMin = Math.min(...local.map(point => point.tangent)) - 24
+  const tangentMax = Math.max(...local.map(point => point.tangent)) + 24
+  const radialMin = Math.min(...local.map(point => point.radial)) - 24
+  const radialMax = Math.max(...local.map(point => point.radial)) + 24
   let seed = 113 + round * 97 + cycle * 131 + (side > 0 ? 41 : 0)
   const random = () => { seed = seed * 16807 % 2147483647; return (seed - 1) / 2147483646 }
   const pointForRatio = ({ x, y }: Point): Point => {
@@ -472,17 +485,25 @@ export function p3RuneOrbs(side: -1 | 1, center: Point, round: number, cycle = 0
       y: boss.y + tangent.y * tangentOffset + radial.y * radialOffset,
     }
   }
-  const isPlayableRatio = (ratio: Point) => round < 2 || !isInP3ConsumedSector(pointForRatio(ratio), center, 102, P3_OUTER_RADIUS)
-  const ratios: Point[] = round < 2 ? [
+  const isPlayableRatio = (ratio: Point) => {
+    const point = pointForRatio(ratio)
+    const arenaRadius = distance(point, center)
+    const staysInHalf = side < 0 ? point.x <= center.x - P3_RUNE_HALF_CLEARANCE : point.x >= center.x + P3_RUNE_HALF_CLEARANCE
+    return staysInHalf
+      && arenaRadius >= 108
+      && arenaRadius <= P3_OUTER_RADIUS - 5
+      && (round < 2 || !isInP3ConsumedSector(point, center, 102, P3_OUTER_RADIUS))
+  }
+  const ratios: Point[] = [
     { x: 0, y: .04 },
     { x: 1, y: .1 },
     { x: .04, y: .96 },
     { x: .96, y: 1 },
-  ] : []
+  ].filter(isPlayableRatio)
   while (ratios.length < 20) {
     let best: Point | null = null
     let bestGap = 0
-    for (let attempt = 0; attempt < 96; attempt += 1) {
+    for (let attempt = 0; attempt < 1024; attempt += 1) {
       const candidate = { x: random(), y: random() }
       if (!isPlayableRatio(candidate)) continue
       const tangentGap = tangentMax - tangentMin
@@ -493,7 +514,7 @@ export function p3RuneOrbs(side: -1 | 1, center: Point, round: number, cycle = 0
       if (gap > bestGap) { best = candidate; bestGap = gap }
       if (gap >= P3_RUNE_ORB_MIN_GAP) break
     }
-    if (!best) break
+    if (!best || bestGap < P3_RUNE_ORB_MIN_GAP) break
     ratios.push(best)
   }
   return ratios.map(pointForRatio)

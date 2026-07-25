@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import { bossBeamHitsPlayer, canPickupCrystal, canRecoverFromWipe, crystalCarrierPosition, crystalWipeReason, difficultySettings, distance, distanceToSegment, isP3ConsumedSectorLethal, isInSafeAnnulus, isProtectedByP3Bubble, moveRelativeToCamera, moveWithIncreasingPull, nearestRuneEdges, npcEntryPosition, OPENING_BOOST_SECONDS, orientedAssignments, p2NpcCrystalDrops, p2ReturningOrbPositions, P1_STAR_LENGTH, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, p3ArchangelStackPosition, p3AssignmentForRound, p3BossPosition, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3LightHealthRate, p3PoolCenters, p3PoolSoakRate, p3RuneDeadline, p3RuneOrbs, p3RuneStepAt, p3StarsTiming, p3WrongRuneContact, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_MEMORY_STEP_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, P3_SECTOR_SECONDS, p4BossHealth, p4EncounterBoxStates, p4GroupPosition, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4SplinterStartSeconds, p4StackPosition, P4_CYCLE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, P4_SPLINTER_INTERVAL_SECONDS, personalCircleHitsCrystal, PLAYER_COLLISION_PENALTY, randomCrystalDropDuty, randomizeP3PoolLayout, roamingNpcPosition, setP3BossPlan, translateSelectedPoints, WIPE_PENALTY, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type Role, type RuneSymbol } from './game'
+import { bossBeamHitsPlayer, canPickupCrystal, canRecoverFromWipe, crystalCarrierPosition, crystalWipeReason, difficultySettings, distance, distanceToSegment, isP3ConsumedSectorLethal, isInSafeAnnulus, isProtectedByP3Bubble, moveRelativeToCamera, moveWithIncreasingPull, nearestRuneEdges, npcEntryPosition, OPENING_BOOST_SECONDS, orientedAssignments, p2NpcCrystalDrops, p2ReturningOrbPositions, P1_STAR_LENGTH, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, p3ArchangelStackPosition, p3AssignmentForRound, p3BossPosition, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3LightHealthRate, p3PoolCenters, p3PoolSoakRate, p3ProtectionBubbleCenter, p3RuneDeadline, p3RuneOrbs, p3RuneStepAt, p3StarsTiming, p3WrongRuneContact, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_MEMORY_STEP_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, P3_SECTOR_SECONDS, p4BossHealth, p4EncounterBoxStates, p4GroupPosition, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4SplinterStartSeconds, p4StackPosition, P4_CYCLE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, P4_SPLINTER_INTERVAL_SECONDS, personalCircleHitsCrystal, PLAYER_COLLISION_PENALTY, randomCrystalDropDuty, randomizeP3PoolLayout, roamingNpcPosition, setP3BossPlan, translateSelectedPoints, WIPE_PENALTY, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type Role, type RuneSymbol } from './game'
 import { buildPhaseResult, completionShareText, isFullSequenceCompletion, type PhaseKey, type PhaseResult } from './completion'
 import { p4FrontSoakerPosition, p4TankKillsBox } from './game'
 import GameScene from './GameScene'
@@ -400,8 +400,6 @@ export default function App() {
   const p4CycleRef = useRef(1)
   const lastMistakeRef = useRef<{ label: string; time: number }>({ label: '', time: -Infinity })
   const p3PoolOccupancyRef = useRef([0, 0, 0, 0, 0, 0])
-  const p3PoolHealthRef = useRef(Array(6).fill(P3_POOL_HEALTH))
-  const p3PoolDeadlineCheckedRef = useRef(false)
   const p4SplinterCheckedRef = useRef(-1)
   const p4NpcSplinterCheckedRef = useRef(new Set<string>())
   const p4LastBoxHitRef = useRef(-Infinity)
@@ -421,10 +419,8 @@ export default function App() {
   useEffect(() => { localStorage.setItem('lura-music-volume', String(musicVolume)) }, [musicVolume])
   useEffect(() => { localStorage.setItem('lura-music-muted', String(musicMuted)) }, [musicMuted])
   useEffect(() => { setP3BossPlan(p3BossPositions) }, [p3BossPositions])
-  useEffect(() => { p3PoolHealthRef.current = p3PoolHealth }, [p3PoolHealth])
   useEffect(() => { p3ResolvedRunesRef.current = p3ResolvedRunes }, [p3ResolvedRunes])
   useEffect(() => {
-    if (event === 'p3-light-pools') p3PoolDeadlineCheckedRef.current = false
     if (event === 'p4-countdown' || event === 'p4-transition') p4DestroyedBoxIdsRef.current.clear()
   }, [event, p3Round])
   useEffect(() => {
@@ -654,10 +650,6 @@ export default function App() {
         }
       }
       if (event === 'p3-light-pools') {
-        if (p3Round === 1 && eventTimeRef.current >= P3_MEMORY_PANEL_SECONDS && !p3PoolDeadlineCheckedRef.current) {
-          p3PoolDeadlineCheckedRef.current = true
-          if (p3PoolHealthRef.current.some(value => value > .5)) triggerWipe('The three-player Soaks were not completed within 20 seconds')
-        }
         const stars = p3StarsTiming(eventTimeRef.current)
         if (stars.active && stars.cycle !== p3StarsCycleRef.current) {
           p3StarsCycleRef.current = stars.cycle
@@ -830,8 +822,9 @@ export default function App() {
       setPlayer(target)
       setEvent('p3-landing')
     } else if (event === 'p3-landing') {
-      const soaks = p3LandingSoakPositions(assignment, WORLD.center)
-      if (p3LandingRequiredRef.current && distance(player, soaks[1]) > P3_LANDING_SOAK_RADIUS) {
+      const soaks = p3LandingSoakPositions(assignment, WORLD.center, p4PatternSeed)
+      const playerSoak = soaks[profiles[assignment].crystal ? 1 : 0]
+      if (p3LandingRequiredRef.current && distance(player, playerSoak) > P3_LANDING_SOAK_RADIUS) {
         if (triggerWipe('Missed the initial yellow landing soak')) return
       }
       setP3RuneOrder(shuffledRunes())
@@ -880,7 +873,8 @@ export default function App() {
     } else if (event === 'p3-archangel') {
       const bubble = p3ArchangelStack(assignment, p3Round)
       const duty = crystalAssignments.includes(assignment) ? p3ArchangelDuty : null
-      const protectedByBubble = isProtectedByP3Bubble(player, crystal ?? bubble)
+      const protectionCenter = p3ProtectionBubbleCenter(bubble, crystal, duty, p3Round)
+      const protectedByBubble = isProtectedByP3Bubble(player, protectionCenter)
       const failure = duty === p3Round && (!droppedForPackRef.current || !crystal)
         ? 'Dark Archangel resolved before your assigned crystal protection'
         : duty === p3Round && crystal && distance(crystal, bubble) > 15
@@ -889,7 +883,7 @@ export default function App() {
           ? 'Dark Archangel hit you outside the protection bubble'
           : ''
       if (failure && triggerWipe(failure)) return
-      if (crystalAssignments.includes(assignment) && crystal) setCrystalSpent(true)
+      if (duty === p3Round && crystal) setCrystalSpent(true)
       setCrystal(null); setCrystalAge(0); crystalAgeRef.current = 0
       setStats(current => ({ ...current, crystalDropped: false }))
       setEvent('p3-sector-move')
@@ -1041,8 +1035,9 @@ export default function App() {
     const carrierLights = crystalAssignments.filter(index => index !== assignment).map(index => p3LightCenters(index < 10 ? -1 : 1, WORLD.center, p3Round)[index % 3])
     const protectedByLight = crystalAssignments.includes(assignment) || carrierLights.some(light => distance(position, light) <= P3_LIGHT_RADIUS + 3)
     const archangelStack = p3ArchangelStack(assignment, p3Round)
+    const duty = crystalAssignments.includes(assignment) ? p3ArchangelDuty : null
     const correctlyPositioned = event === 'p3-archangel' || event === 'p3-archangel-position'
-      ? isProtectedByP3Bubble(position, crystal ?? archangelStack)
+      ? isProtectedByP3Bubble(position, p3ProtectionBubbleCenter(archangelStack, crystal, duty, p3Round))
       : inArena && !inConsumedSector && protectedByLight
     healthRef.current = Math.max(0, Math.min(100, healthRef.current + p3LightHealthRate(correctlyPositioned) * dt))
     setHealth(healthRef.current)
@@ -1590,7 +1585,7 @@ function HudLayoutEditor({ layout, onChange, onReset }: { layout: HudLayout; onC
   </section>
 }
 
-function GameArena(props: { mainAbilityEnabled: boolean; bossHealth: number; mainCastRemaining: number; personalJumpProgress: number; musicMuted: boolean; softWipeNotice: string; hudLayout: HudLayout; positions: Assignment[]; intermissionPositions: Assignment[]; p2SoakPositions: Assignment[]; p2SpreadPositions: Assignment[]; p3Positions: Assignment[]; profiles: PlayerProfile[]; raidStart: Point; movementSpeed: number; movementBonus: boolean; gameSpeed: number; p2Cycle: number; p2Soaked: boolean; p2OrbReturnAge: number; p3Round: number; p3ArchangelDuty: number | null; crystalSpent: boolean; p4Cycle: number; p4PatternSeed: number; p3PoolHealth: number[]; onP3PoolOccupancy: (occupancy: number[]) => void; onP3RuneContacts: (runes: RuneSymbol[]) => void; p3RuneOrder: RuneSymbol[]; p3RuneStep: number; p3ResolvedRunes: RuneSymbol[]; health: number; criticalRemaining: number; healthPotEnabled: boolean; shieldEnabled: boolean; healthPotUsed: boolean; shieldUsed: boolean; keyBindings: KeyBindings; crystalCarriers: number[]; beamPattern: 'line' | 'gap'; failureFlash: boolean; wipeReason: string; player: Point; crystal: Point | null; npcCrystals: Point[]; npcCarrier: number | null; npcCrystalAge: number; playerSplinterRotation: number; crystalAge: number; role: Role; difficulty: Difficulty; assignment: number; stats: GameStats; mistakes: Mistake[]; startSlotName: string; paused: boolean; event: EventKind; eventTime: number; beamAngles: number[]; npcSplinters: number[]; cycle: number; setPaused: (p: boolean) => void; setMusicMuted: (muted: boolean) => void; onRetry: () => void; onExit: () => void; onDrop: () => void; onCameraDirection: (direction: Point) => void }) {
+function GameArena(props: { mainAbilityEnabled: boolean; bossHealth: number; mainCastRemaining: number; personalJumpProgress: number; musicMuted: boolean; softWipeNotice: string; hudLayout: HudLayout; positions: Assignment[]; intermissionPositions: Assignment[]; p2SoakPositions: Assignment[]; p2SpreadPositions: Assignment[]; p3Positions: Assignment[]; profiles: PlayerProfile[]; raidStart: Point; movementSpeed: number; movementBonus: boolean; gameSpeed: number; p2Cycle: number; p2Soaked: boolean; p2OrbReturnAge: number; p3Round: number; p3ArchangelDuty: 1 | 2 | null; crystalSpent: boolean; p4Cycle: number; p4PatternSeed: number; p3PoolHealth: number[]; onP3PoolOccupancy: (occupancy: number[]) => void; onP3RuneContacts: (runes: RuneSymbol[]) => void; p3RuneOrder: RuneSymbol[]; p3RuneStep: number; p3ResolvedRunes: RuneSymbol[]; health: number; criticalRemaining: number; healthPotEnabled: boolean; shieldEnabled: boolean; healthPotUsed: boolean; shieldUsed: boolean; keyBindings: KeyBindings; crystalCarriers: number[]; beamPattern: 'line' | 'gap'; failureFlash: boolean; wipeReason: string; player: Point; crystal: Point | null; npcCrystals: Point[]; npcCarrier: number | null; npcCrystalAge: number; playerSplinterRotation: number; crystalAge: number; role: Role; difficulty: Difficulty; assignment: number; stats: GameStats; mistakes: Mistake[]; startSlotName: string; paused: boolean; event: EventKind; eventTime: number; beamAngles: number[]; npcSplinters: number[]; cycle: number; setPaused: (p: boolean) => void; setMusicMuted: (muted: boolean) => void; onRetry: () => void; onExit: () => void; onDrop: () => void; onCameraDirection: (direction: Point) => void }) {
   const [zoomDisplay, setZoomDisplay] = useState(16)
   const [wipeMinimized, setWipeMinimized] = useState(false)
   useEffect(() => { if (props.wipeReason) setWipeMinimized(false) }, [props.wipeReason])
@@ -1619,7 +1614,7 @@ function GameArena(props: { mainAbilityEnabled: boolean; bossHealth: number; mai
     'p3-approach': { title: 'Reach your opening assignment.', detail: 'Your five-second movement boost is active. Find the raid-plan spot; mechanics drive your movement after this.', counter: 'APPROACH', duration: 5 },
     'p3-light-pools': {
       title: props.eventTime < P3_MEMORY_PANEL_SECONDS ? 'Complete the Soaks.' : props.eventTime < P3_MEMORY_START_SECONDS ? 'Memorize the rune order.' : props.eventTime < P3_MEMORY_START_SECONDS + P3_MEMORY_STEP_SECONDS * 3 ? 'Resolve the memory game.' : 'Survive the repeating Stars.',
-      detail: `Move with your group around the boss; the opening assignment is no longer fixed. Each Soak needs at least three players for 14 seconds, with every extra player accelerating it. ${props.p3Round === 1 ? 'Finish them within the opening 20-second window.' : 'NPC assistance begins late so the Soaks overlap the memory game; finish before Big Boom.'} Each Stars pattern disappears for three seconds before the next one. At 20 seconds the memory panel appears; from 25–40 seconds, spread and bump your matching NPC only during your rune’s turn.`,
+      detail: `Move with your group around the boss; the opening assignment is no longer fixed. Each Soak needs at least three players for 14 seconds, with every extra player accelerating it. Finish every Soak before Big Boom; they remain active throughout the 15-second memory-game overlap. Each Stars pattern disappears for three seconds before the next one. At 20 seconds the memory panel appears; from 25–40 seconds, spread and bump your matching NPC only during your rune’s turn.`,
       counter: 'BIG BOOM',
       duration: P3_SECTOR_SECONDS,
     },
@@ -1663,6 +1658,7 @@ function GameArena(props: { mainAbilityEnabled: boolean; bossHealth: number; mai
           p2Cycle={props.p2Cycle}
           p2OrbReturnAge={props.p2OrbReturnAge}
           p3Round={props.p3Round}
+          p3ArchangelDuty={props.p3ArchangelDuty}
           p4PatternSeed={props.p4PatternSeed}
           p3PoolHealth={props.p3PoolHealth}
           onP3PoolOccupancy={props.onP3PoolOccupancy}

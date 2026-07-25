@@ -5,6 +5,8 @@
 .entry-choice .coming-soon { color: #71809e; border-style: dashed; background: rgba(16,24,43,.58); cursor: not-allowed; opacity: .62; white-space: nowrap; }
 .entry-choice .coming-soon:hover { color: #71809e; border-color: #354361; background: rgba(16,24,43,.58); }
 .entry-choice .entry-start { width: auto; margin: 0 0 0 auto; padding: 10px 20px; white-space: nowrap; }
+.entry-choice .preview-results { width: auto; margin: 0 0 0 auto; padding: 9px 12px; white-space: nowrap; }
+.entry-choice .preview-results + .entry-start { margin-left: 0; }
 .position-map { position: relative; width: min(100%, 952px); aspect-ratio: 16 / 9; margin: 0 0 24px; border: 1px solid #354361; border-radius: 12px; background-size: 140%; background-position: center; overflow: hidden; }
 .position-map::before, .position-map::after { content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); aspect-ratio: 1; border: 2px solid rgba(190,185,232,.78); border-radius: 50%; pointer-events: none; }
 .position-map::before { width: 36.7%; }
@@ -201,6 +203,8 @@
 .results { width: min(900px, 100%); max-width: 900px; padding-top: 5vh; }
 .completion-card { position: relative; overflow: hidden; margin-bottom: 22px; padding: clamp(26px, 5vw, 50px); border: 1px solid rgba(115,224,193,.34); border-radius: 22px; background: radial-gradient(circle at 86% 12%, rgba(115,224,193,.17), transparent 35%), linear-gradient(145deg, #111a30, #090d19 72%); box-shadow: 0 30px 90px rgba(0,0,0,.42); }
 .completion-card.achievement-unlocked { border-color: rgba(255,211,105,.62); background: radial-gradient(circle at 86% 12%, rgba(255,211,105,.2), transparent 36%), linear-gradient(145deg, #1b2135, #0a0d18 72%); box-shadow: 0 30px 90px rgba(0,0,0,.48), inset 0 0 70px rgba(255,211,105,.035); }
+.completion-card.result-preview { border-style: dashed; }
+.completion-preview-note { width: fit-content; margin: -14px 0 24px; padding: 8px 11px; border: 1px solid rgba(255,217,120,.35); border-radius: 7px; color: #ffd978; background: rgba(255,217,120,.07); font: 11px 'DM Mono', monospace; }
 .completion-card h1 { max-width: 690px; margin-bottom: 14px; font-size: clamp(45px, 8vw, 76px); }
 .completion-card .lede { margin: 0 0 28px; max-width: 660px; }
 .completion-glow { position: absolute; top: -42px; right: 18px; color: rgba(115,224,193,.14); font-size: 210px; line-height: 1; transform: rotate(12deg); pointer-events: none; }

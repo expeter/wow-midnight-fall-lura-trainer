@@ -3,9 +3,12 @@
 A browser-based movement trainer for practicing the L'ura encounter from a
 top-down, player-focused 3D view.
 
-The trainer currently covers the Intermission, a three-cycle Phase 2 sequence,
-and two sectors of Phase 3. You can practice the complete transition chain or
-enter Phase 2 or Phase 3 directly.
+The trainer covers the Intermission, a three-cycle Phase 2 sequence, two
+sectors of Phase 3, and the four-quarter Phase 4 finale. You can practice the
+complete transition chain or enter any phase directly.
+
+The detailed [feature inventory, request convention, historical bug register,
+and screenshot index](docs/README.md) document how the simulator evolved.
 
 ## What you can practice
 
@@ -16,6 +19,8 @@ enter Phase 2 or Phase 3 directly.
 - Phase 3 outward flight, trio landing soaks, split-room positioning, light
   zones, dark-pool draining, runic lattices, ordered rune matching, and Dark
   Archangel crystal protection
+- Phase 4 knock-up, protected raid-stack movement, sequential Starsplinters,
+  Heaven & Hell sectors, and incoming fragments
 - Test, Easy, Normal, and Hard difficulty settings; Test mode records mistakes
   without stopping the run
 - Configurable 20-player raid plans, including names, classes, crystal
@@ -23,6 +28,8 @@ enter Phase 2 or Phase 3 directly.
   Phase 3 initial-sector plan that rotates into the next sector
 - Shareable raid-plan codes and locally saved settings
 - Optional health reactions, main-ability casts, music, and adjustable HUD
+- Per-phase results and a shareable full-run achievement card; Test mode also
+  offers a clearly marked final-screen preview
 
 ## Controls
 

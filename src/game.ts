@@ -1,5 +1,5 @@
 export type Role = 'carrier' | 'non-carrier'
-export type Difficulty = 'easy' | 'normal' | 'hard'
+export type Difficulty = 'test' | 'easy' | 'normal' | 'hard'
 export type PlayerClass = 'mage' | 'warlock' | 'augmentation' | 'priest' | 'death-knight' | 'demon-hunter' | 'warrior' | 'paladin' | 'druid' | 'evoker' | 'shaman' | 'hunter' | 'monk'
 
 export interface Point { x: number; y: number }
@@ -16,8 +16,81 @@ export const PLAYER_COLLISION_PENALTY = 50
 export const OPENING_BOOST_SECONDS = 5
 export const P2_PERSONAL_CIRCLE_INNER_RADIUS = 11.55
 export const P2_PERSONAL_CIRCLE_OUTER_RADIUS = 12.16
+export const P3_OUTER_RADIUS = 199
+export const P3_LIGHT_RADIUS = 38
+export const P3_POOL_RADIUS = 12
+export const P3_LANDING_SOAK_RADIUS = 15
+export type RuneSymbol = 'T' | 'X' | 'O'
 export function assignmentRevealDistance(difficulty: Difficulty): number {
-  return difficulty === 'easy' ? Infinity : difficulty === 'normal' ? 45 : 22
+  return difficulty === 'test' || difficulty === 'easy' ? Infinity : difficulty === 'normal' ? 45 : 22
+}
+
+export function p3LandingPosition(index: number, center: Point, radius = 176): Point {
+  const side = index < 10 ? -1 : 1
+  const sideIndex = index % 10
+  const angle = (side < 0 ? Math.PI : 0) + (sideIndex - 4.5) * .105
+  const row = sideIndex % 3
+  const distanceFromCenter = radius - row * 9
+  return { x: center.x + Math.cos(angle) * distanceFromCenter, y: center.y + Math.sin(angle) * distanceFromCenter }
+}
+
+export function p3LightCenters(side: -1 | 1, center: Point, round: number): Point[] {
+  const boss = { x: center.x + side * 108, y: center.y - 22 + (round - 1) * 45 }
+  const outward = side < 0 ? Math.PI : 0
+  return [-.75, 0, .75].map(offset => {
+    const angle = outward + offset
+    return {
+    x: boss.x + Math.cos(angle) * 43,
+    y: boss.y + Math.sin(angle) * 43,
+    }
+  })
+}
+
+export function p3PoolCenters(side: -1 | 1, center: Point, round: number): Point[] {
+  const sectorY = round === 1 ? center.y - 78 : center.y + 24
+  return [
+    { x: center.x + side * 128, y: sectorY - 35 },
+    { x: center.x + side * 158, y: sectorY + 10 },
+    { x: center.x + side * 102, y: sectorY + 42 },
+  ]
+}
+
+export function p3RuneOrbs(side: -1 | 1, center: Point, round: number): Point[] {
+  const anchorX = center.x + side * 132
+  const anchorY = round === 1 ? center.y - 40 : center.y + 48
+  return Array.from({ length: 12 }, (_, index) => {
+    const column = index % 4
+    const row = Math.floor(index / 4)
+    const jitter = ((index * 17 + round * 11) % 9) - 4
+    return {
+      x: anchorX + side * ((column - 1.5) * 25 + jitter),
+      y: anchorY + (row - 1) * 28 + ((index * 13) % 7) - 3,
+    }
+  })
+}
+
+export function nearestRuneEdges(points: Point[]): Array<[number, number]> {
+  const keys = new Set<string>()
+  for (let index = 0; index < points.length; index++) {
+    let nearest = -1
+    let nearestDistance = Infinity
+    for (let candidate = 0; candidate < points.length; candidate++) {
+      if (candidate === index) continue
+      const separation = distance(points[index], points[candidate])
+      if (separation < nearestDistance) { nearest = candidate; nearestDistance = separation }
+    }
+    const edge = [Math.min(index, nearest), Math.max(index, nearest)] as [number, number]
+    keys.add(`${edge[0]}:${edge[1]}`)
+  }
+  return Array.from(keys, key => key.split(':').map(Number) as [number, number])
+}
+
+export function distanceToSegment(point: Point, start: Point, end: Point): number {
+  const dx = end.x - start.x
+  const dy = end.y - start.y
+  const lengthSquared = dx * dx + dy * dy
+  const t = lengthSquared ? Math.max(0, Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared)) : 0
+  return distance(point, { x: start.x + dx * t, y: start.y + dy * t })
 }
 
 export function seededStars(seed: number, count = 6): Star[] {
@@ -87,13 +160,13 @@ export function bossBeamHitsPlayer(point: Point, origin: Point, angles: number[]
     return along > 20 && across < width
   })
 }
-export function roamingNpcPosition(base: Point, index: number, time: number, event: 'countdown' | 'positioning' | 'beam' | 'splinter' | 'p1-recover' | 'p2-countdown' | 'p2-jump' | 'p2-positioning' | 'p2-orbs' | 'p2-recover' | 'p2-pull' | 'p2-spread' | 'p2-fetch' | 'p2-wait', eventTime: number, beamAngles: number[], center: Point): Point {
+export function roamingNpcPosition(base: Point, index: number, time: number, event: 'countdown' | 'positioning' | 'beam' | 'splinter' | 'p1-recover' | 'p2-countdown' | 'p2-jump' | 'p2-positioning' | 'p2-orbs' | 'p2-recover' | 'p2-pull' | 'p2-spread' | 'p2-fetch' | 'p2-wait' | `p3-${string}`, eventTime: number, beamAngles: number[], center: Point): Point {
   const phase = index * 1.73
   const roaming = {
     x: base.x + Math.sin(time * (.31 + index % 3 * .04) + phase) * (4 + index % 4),
     y: base.y + Math.cos(time * (.27 + index % 5 * .025) + phase * .7) * (4 + (index + 2) % 5),
   }
-  if (event === 'countdown' || event === 'positioning' || event.startsWith('p2-') || !beamAngles.length) return roaming
+  if (event === 'countdown' || event === 'positioning' || event.startsWith('p2-') || event.startsWith('p3-') || !beamAngles.length) return roaming
   let nearest: { angle: number; across: number; signedAcross: number } | null = null
   for (const angle of beamAngles) {
     const dx = roaming.x - center.x
@@ -173,7 +246,7 @@ export function moveWithIncreasingPull(position: Point, keys: Set<string>, speed
 export function isInsideArena(position: Point): boolean { return distance(position, ARENA.center) < ARENA.radius - 14 }
 
 export function canRecoverFromWipe(difficulty: Difficulty, wipeCount: number, score: number, penalty: number): boolean {
-  return difficulty !== 'hard' && wipeCount < 2 && score - penalty > 0
+  return difficulty === 'test' || difficulty !== 'hard' && wipeCount < 2 && score - penalty > 0
 }
 
 export function healthEmergencyLimit(difficulty: Difficulty): number {
@@ -181,5 +254,5 @@ export function healthEmergencyLimit(difficulty: Difficulty): number {
 }
 
 export function difficultySettings(difficulty: Difficulty) {
-  return { easy: { telegraph: 2.2, helper: true, speed: 120 }, normal: { telegraph: 1.5, helper: false, speed: 136 }, hard: { telegraph: 0.95, helper: false, speed: 156 } }[difficulty]
+  return { test: { telegraph: 2.5, helper: true, speed: 120 }, easy: { telegraph: 2.2, helper: true, speed: 120 }, normal: { telegraph: 1.5, helper: false, speed: 136 }, hard: { telegraph: 0.95, helper: false, speed: 156 } }[difficulty]
 }

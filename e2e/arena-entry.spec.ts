@@ -98,3 +98,17 @@ test('Space jumps while actions are locked and P pauses', async ({ page }) => {
   await page.keyboard.press('p')
   await expect(page.getByRole('button', { name: 'Resume' })).toBeVisible()
 })
+
+test('enters Phase 3 directly in non-blocking Test mode', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('lura-game-speed', '2.5'))
+  await page.goto('/')
+  await page.getByRole('button', { name: 'test' }).click()
+  await page.getByRole('button', { name: 'P3', exact: true }).click()
+  await page.getByRole('button', { name: /Enter P3/ }).click()
+
+  await expect(page.getByText('Get ready for Phase 3.')).toBeVisible()
+  await expect(page.getByText(/PHASE 3 · SECTOR 1 \/ 2/)).toBeVisible()
+  await expect(page.getByText('Thrown into the split arena.')).toBeVisible({ timeout: MECHANIC_TIMEOUT })
+  await expect(page.getByText('Catch a yellow impact.')).toBeVisible({ timeout: MECHANIC_TIMEOUT })
+  await expect(page.getByRole('alert')).toHaveCount(0)
+})

@@ -3,9 +3,9 @@
 A browser-based movement trainer for practicing the L'ura encounter from a
 top-down, player-focused 3D view.
 
-The trainer currently covers the Intermission and a three-cycle Phase 2
-sequence. You can practice the complete Arena 1 → Arena 2 transition or enter
-Arena 2 directly. Phase 3 is not implemented yet.
+The trainer currently covers the Intermission, a three-cycle Phase 2 sequence,
+and two sectors of Phase 3. You can practice the complete transition chain or
+enter Phase 2 or Phase 3 directly.
 
 ## What you can practice
 
@@ -13,7 +13,11 @@ Arena 2 directly. Phase 3 is not implemented yet.
 - Crystal carrier drop, avoidance, and recovery timing
 - Phase 2 cross-beam positioning and orb destruction
 - Center pulls, personal-circle spreads, and crystal recovery
-- Easy, Normal, and Hard difficulty settings
+- Phase 3 outward flight, trio landing soaks, split-room positioning, light
+  zones, dark-pool draining, runic lattices, ordered rune matching, and Dark
+  Archangel crystal protection
+- Test, Easy, Normal, and Hard difficulty settings; Test mode records mistakes
+  without stopping the run
 - Configurable 20-player raid plans, including names, classes, crystal
   assignments, start slots, and separate Phase 2 soak/spread positions
 - Shareable raid-plan codes and locally saved settings

@@ -36,6 +36,8 @@ const MUSIC_TRACKS = [
 type MusicTrackId = typeof MUSIC_TRACKS[number]['id']
 const DEFAULT_MUSIC_TRACK: MusicTrackId = 'panic'
 const DEFAULT_MUSIC_VOLUME = .2
+const APP_VERSION = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : '0.1.0'
+const APP_BUILD_TIME = typeof __BUILD_TIME__ === 'string' ? __BUILD_TIME__ : new Date().toISOString()
 const PERSONAL_JUMP_SECONDS = .65
 const DEFAULT_ASSIGNMENTS: Assignment[] = [
   ...Array.from({ length: 8 }, (_, i) => { const a = -Math.PI / 2 + i * Math.PI * 2 / 8; return { x: WORLD.center.x + Math.cos(a) * 125, y: WORLD.center.y + Math.sin(a) * 125 } }),
@@ -1352,6 +1354,7 @@ export default function App() {
   }
 
   if (screen === 'menu') return <main className="shell setup-shell">
+    <BuildIndicator />
     <CreatorCard />
     <header><p className="eyebrow">MIDNIGHT FALLS · MOVEMENT PRACTICE</p><h1>L’ura Trainer</h1><p className="lede">Choose your assigned player below. Its WoW class determines its body color, while crystal duty is assigned directly to that spot.</p></header>
     <div className="entry-choice"><span>Practice target</span><button className={entryMode === 'arena1' ? 'selected' : ''} onClick={() => setEntryMode('arena1')}>Intermission</button><button className={entryMode === 'arena2' ? 'selected' : ''} onClick={() => setEntryMode('arena2')}>P2</button><button className={entryMode === 'arena3' ? 'selected' : ''} onClick={() => setEntryMode('arena3')}>P3</button><button className={entryMode === 'arena4' ? 'selected' : ''} onClick={() => setEntryMode('arena4')}>P4</button>{difficulty === 'test' && <button className="secondary preview-results" onClick={previewCompletionScreen}>Preview final screen</button>}<button aria-label={entryMode === 'arena1' ? 'Enter Arena 1 — Enter Intermission' : entryMode === 'arena2' ? 'Enter Arena 2 — Enter P2' : entryMode === 'arena3' ? 'Enter Arena 3 — Enter P3' : 'Enter Arena 4 — Enter P4'} className="start entry-start" onClick={start}>Enter {entryMode === 'arena1' ? 'Intermission' : entryMode === 'arena2' ? 'P2' : entryMode === 'arena3' ? 'P3' : 'P4'}</button></div>
@@ -1377,6 +1380,7 @@ export default function App() {
     <p className="scope-note">{entryMode === 'arena4' ? 'Start at the Phase 4 north regroup.' : entryMode === 'arena3' ? 'Start with the Phase 3 outward flight.' : entryMode === 'arena2' ? 'Start stacked in Phase 2, then transition into Phase 3.' : 'Positioning opener → Intermission → Phase 2 → Phase 3 → Phase 4.'} · {keyLabel(keyBindings.forward)}/{keyLabel(keyBindings.left)}/{keyLabel(keyBindings.backward)}/{keyLabel(keyBindings.right)} move · {keyLabel(keyBindings.pause)} pause</p>
   </main>
   if (screen === 'results') return <main className="shell results">
+    <BuildIndicator />
     <section className={`completion-card ${fullSequenceComplete ? 'achievement-unlocked' : ''} ${completionPreview ? 'result-preview' : ''}`}>
       <div className="completion-glow" aria-hidden="true">✦</div>
       <p className="eyebrow">{completionPreview ? 'RESULT SCREEN PREVIEW' : fullSequenceComplete ? 'FULL RUN COMPLETE · ACHIEVEMENT UNLOCKED' : 'PRACTICE COMPLETE'}</p>
@@ -1558,6 +1562,14 @@ function CreatorCard() {
   </aside>
 }
 
+function BuildIndicator() {
+  const built = new Date(APP_BUILD_TIME)
+  const timestamp = Number.isNaN(built.getTime())
+    ? APP_BUILD_TIME
+    : `${built.toISOString().slice(0, 16).replace('T', ' ')} UTC`
+  return <aside className="build-indicator" aria-label="Build information" title={`Built ${built.toISOString()}`}>v{APP_VERSION} · {timestamp}</aside>
+}
+
 function HudLayoutEditor({ layout, onChange, onReset }: { layout: HudLayout; onChange: (counter: HudElement, point: Point) => void; onReset: () => void }) {
   const [dragging, setDragging] = useState<HudElement | null>(null)
   function move(event: ReactPointerEvent<HTMLDivElement>) {
@@ -1638,6 +1650,7 @@ function GameArena(props: { mainAbilityEnabled: boolean; bossHealth: number; mai
     ? p4SplinterStart - props.eventTime
     : P4_CYCLE_SECONDS - props.eventTime + p4SplinterStartSeconds(props.p4Cycle + 1)
   return <main className="game-shell">
+    <BuildIndicator />
     <div className="game-top">
       <div><p className="eyebrow">{phaseFour ? 'PHASE 4 · RAID STACK · HEAVEN & HELL' : phaseThree ? `PHASE 3 · SECTOR ${props.p3Round} / 2 · ${props.assignment < 10 ? 'L’URA SIDE' : 'IMAGE SIDE'} · ${props.role === 'carrier' ? 'CRYSTAL CARRIER' : 'NON-CARRIER'}` : phaseTwo ? `PHASE 2 · CYCLE ${props.p2Cycle} / 3 · SPOT ${props.assignment + 1} · ${props.role === 'carrier' ? 'CRYSTAL CARRIER' : 'NON-CARRIER'}` : `INTERMISSION · ${countdown || positioning ? `${props.startSlotName.toUpperCase()} START` : `PACK ${props.cycle} / 6`} · ${props.role === 'carrier' ? 'CRYSTAL CARRIER' : 'NON-CARRIER'}`} · {props.gameSpeed.toFixed(2)}×</p><h1>{phaseFour ? props.event === 'p4-countdown' ? 'Get ready for Phase 4.' : props.event === 'p4-transition' ? 'Knocked into Phase 4.' : 'Starsplinter into Heaven and Hell.' : p3?.title ?? p2?.title ?? (countdown ? 'Get ready.' : positioning ? 'Take your position.' : finalRecovery ? 'Recover your crystal.' : props.event === 'beam' ? 'Find the gap.' : 'Clear the crystals.')}</h1></div>
       <div className="game-actions"><button aria-label={props.musicMuted ? 'Unmute music' : 'Mute music'} onClick={() => props.setMusicMuted(!props.musicMuted)}>{props.musicMuted ? '🔇 Muted' : '🔊 Music'}</button><button disabled={Boolean(props.wipeReason)} onClick={() => props.setPaused(!props.paused)}>{props.wipeReason ? 'Wiped' : props.paused ? 'Resume' : 'Pause'}</button><button className="secondary" onClick={props.onExit}>Exit</button></div>

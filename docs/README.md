@@ -43,6 +43,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `FR-002` | Implemented | Add a Test-mode shortcut to inspect the full completion card without replaying the complete encounter. Preview exports are visibly marked as non-completions. |
 | `CR-002` | Implemented | Randomize the two P3 landing impacts per attempt and make a valid three-player Soak glow without revealing remaining progress outside Test/Easy. |
 | `CR-003` | Implemented | Generate the two P3 landing impacts independently within their group area; the crystal carrier takes the nearer impact and the helper takes the farther one. |
+| `CR-004` | Implemented | Add a subtle top-left version indicator with the package version and UTC build timestamp on every screen. |
 | `BUG-008` | Implemented | Remove the premature 20-second P3 Soak failure; unfinished pools are now checked only when Big Boom resolves at 40 seconds. |
 | `BUG-009` | Implemented | Enforce P3 Stars orb spacing and isolate the southwest/southeast fields with clearance from the room divider. |
 | `BUG-010` | Implemented | Use the NPC protection bubble when the player's crystal duty belongs to the other Dark Archangel set; only consume the player's crystal on its assigned set. |

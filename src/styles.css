@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;600;700;800&display=swap');
+.build-indicator { position: fixed; z-index: 80; top: 7px; left: 10px; padding: 3px 6px; border-radius: 4px; color: rgba(164,176,202,.58); background: rgba(5,8,17,.46); font: 9px 'DM Mono', monospace; letter-spacing: .025em; pointer-events: none; }
 .entry-choice { display: flex; align-items: center; gap: 8px; margin-top: 28px; padding: 8px; border: 1px solid #26324e; border-radius: 10px; background: #0e1425; }
 .entry-choice span { margin: 0 8px; color: #8190ad; font: 11px 'DM Mono', monospace; text-transform: uppercase; letter-spacing: .08em; }
 .entry-choice button { padding: 9px 13px; }

@@ -54,6 +54,12 @@ export function p3PoolCenters(side: -1 | 1, center: Point, round: number): Point
   })
 }
 
+export function p3RunePartnerPosition(assignment: number, center: Point, round: number): Point {
+  const side: -1 | 1 = assignment < 10 ? -1 : 1
+  const pool = p3PoolCenters(side, center, round)[assignment % 3]
+  return { x: pool.x + side * 8, y: pool.y - 5 }
+}
+
 export function p3RuneOrbs(side: -1 | 1, center: Point, round: number): Point[] {
   const anchorX = center.x + side * 142
   const anchorY = round === 1 ? center.y - 30 : center.y + 45

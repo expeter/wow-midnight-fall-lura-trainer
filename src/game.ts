@@ -110,16 +110,20 @@ function seededUnit(seed: number, salt: number): number {
 
 export function p3LandingSoakPositions(index: number, center: Point, seed = 0): Point[] {
   const landing = p3LandingGroupCenter(index, center)
-  const radialX = landing.x - center.x
-  const radialY = landing.y - center.y
-  const length = Math.hypot(radialX, radialY) || 1
   const group = p3LandingGroupIndex(index)
-  const anchor = { x: landing.x - radialX / length * 9, y: landing.y - radialY / length * 9 }
-  const points = [0, 1].map(ordinal => {
-    const angle = seededUnit(seed, group * 4 + ordinal * 2) * Math.PI * 2
-    const radius = Math.sqrt(seededUnit(seed, group * 4 + ordinal * 2 + 1)) * 19
-    return { x: anchor.x + Math.cos(angle) * radius, y: anchor.y + Math.sin(angle) * radius }
-  })
+  const candidate = (ordinal: number, attempt: number): Point => {
+    const salt = group * 40 + ordinal * 20 + attempt * 2
+    const angle = seededUnit(seed, salt) * Math.PI * 2
+    const radius = 21 + Math.sqrt(seededUnit(seed, salt + 1)) * 7
+    return { x: landing.x + Math.cos(angle) * radius, y: landing.y + Math.sin(angle) * radius }
+  }
+  const first = candidate(0, 0)
+  let second = candidate(1, 0)
+  for (let attempt = 1; attempt < 20 && distance(first, second) < P3_LANDING_SOAK_RADIUS * 2; attempt += 1) second = candidate(1, attempt)
+  if (distance(first, second) < P3_LANDING_SOAK_RADIUS * 2) {
+    second = { x: landing.x * 2 - first.x, y: landing.y * 2 - first.y }
+  }
+  const points = [first, second]
   return points.sort((a, b) => distance(b, landing) - distance(a, landing))
 }
 export function p3LightHealthRate(protectedByLight: boolean): number {

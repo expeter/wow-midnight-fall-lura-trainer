@@ -23,6 +23,7 @@ describe('completion card results', () => {
     const results: PhaseResult[] = [buildPhaseResult('p4', 1000, 950, 0, 55)]
     const text = completionShareText({
       playerName: 'Pestivator',
+      playedPosition: 'Assigned Mage — Spot 4',
       playerClass: 'Mage',
       difficulty: 'Normal',
       totalScore: 950,
@@ -37,5 +38,6 @@ describe('completion card results', () => {
     expect(text).toContain('Phase 4: 950 pts · 55.0s')
     expect(text).toContain('1 mistake')
     expect(text).toContain('Attempt #7')
+    expect(text).toContain('Played position: Assigned Mage — Spot 4')
   })
 })

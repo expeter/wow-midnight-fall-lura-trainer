@@ -228,6 +228,8 @@
 .completion-card.result-preview { border-style: dashed; }
 .completion-preview-note { width: fit-content; margin: -14px 0 24px; padding: 8px 11px; border: 1px solid rgba(255,217,120,.35); border-radius: 7px; color: #ffd978; background: rgba(255,217,120,.07); font: 11px 'DM Mono', monospace; }
 .completion-card h1 { max-width: 690px; margin-bottom: 14px; font-size: clamp(45px, 8vw, 76px); }
+.completion-player-name { margin: 0; color: #f8fafc; font-size: clamp(28px, 4vw, 38px); line-height: 1.05; }
+.completion-played-position { margin: 5px 0 18px; color: #8e9bb6; font: 13px 'DM Mono', monospace; }
 .completion-card .lede { margin: 0 0 28px; max-width: 660px; }
 .completion-glow { position: absolute; top: -42px; right: 18px; color: rgba(115,224,193,.14); font-size: 210px; line-height: 1; transform: rotate(12deg); pointer-events: none; }
 .achievement-unlocked .completion-glow { color: rgba(255,211,105,.16); }

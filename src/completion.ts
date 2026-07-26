@@ -32,6 +32,7 @@ export function isFullSequenceCompletion(results: PhaseResult[]): boolean {
 
 interface ShareSummary {
   playerName: string
+  playedPosition?: string
   playerClass: string
   difficulty: string
   totalScore: number
@@ -49,6 +50,7 @@ export function completionShareText(summary: ShareSummary): string {
   return [
     heading,
     `${summary.playerName} · ${summary.playerClass} · ${summary.difficulty} · Attempt #${summary.attempt}`,
+    ...(summary.playedPosition ? [`Played position: ${summary.playedPosition}`] : []),
     ...phases.map((phase, index) => `${phase}${summary.results[index].recovery ? ` · Recovery ${summary.results[index].recovery === 'passed' ? '+50' : '−50'}` : ''}`),
     `Optional challenges: ${summary.extras}`,
     `Total: ${Math.round(summary.totalScore)} pts · ${summary.totalTime.toFixed(1)}s · ${summary.mistakes} mistake${summary.mistakes === 1 ? '' : 's'}`,

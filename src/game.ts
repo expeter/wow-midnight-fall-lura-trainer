@@ -80,6 +80,10 @@ export function assignmentRevealDistance(difficulty: Difficulty): number {
   return difficulty === 'test' || difficulty === 'easy' ? Infinity : difficulty === 'normal' ? 45 : 22
 }
 
+export function isP3RaidMemberVisible(playerAssignment: number, memberAssignment: number, phaseThree: boolean): boolean {
+  return !phaseThree || (playerAssignment < 10) === (memberAssignment < 10)
+}
+
 export function p3LandingGroupIndex(index: number): number {
   return (index < 10 ? 0 : 3) + Math.min(2, Math.floor(index % 10 / 3))
 }

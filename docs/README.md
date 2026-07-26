@@ -94,6 +94,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-021` | Implemented | Remove the invisible Phase 3 planner side-ownership clamp so players may be dragged across the visible divider while the divider and arena rings remain planning guides. |
 | `BUG-022` | Implemented | Persist each phase crystal roster immediately so a configured Phase 3 carrier assignment survives reload/navigation before entering P3 directly. |
 | `BUG-023` | Implemented | Let the phase crystal editor explanation use its available header width so its final word does not wrap alone on desktop. |
+| `BUG-024` | Implemented | Hide the opposite ten-player half-raid and its crystal-light visuals during Phase 3 while continuing its off-screen simulation and restoring everyone for Phase 4. |
 
 ## Implemented feature inventory
 

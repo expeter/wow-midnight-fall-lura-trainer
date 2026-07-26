@@ -1137,7 +1137,7 @@ export default function App() {
     if (!event.startsWith('p3-') || event === 'p3-countdown' || event === 'p3-flight' || event === 'p3-landing' || event === 'p3-approach' || wipeRef.current) return
     const inArena = distance(position, WORLD.center) >= WORLD.innerRadius && distance(position, WORLD.center) <= P3_OUTER_RADIUS
     const inConsumedSector = isP3ConsumedSectorLethal(position, WORLD.center, WORLD.innerRadius, P3_OUTER_RADIUS, p3Round, event, eventTimeRef.current)
-    const fallbackLights = activeCrystalAssignments.filter(index => index !== assignment).map(index => p3LightCenters(index < 10 ? -1 : 1, WORLD.center, p3Round)[index % 3])
+    const fallbackLights = activeCrystalAssignments.filter(index => index !== assignment && (index < 10) === (assignment < 10)).map(index => p3LightCenters(index < 10 ? -1 : 1, WORLD.center, p3Round)[index % 3])
     const carrierLights = p3NpcLightCentersRef.current.length ? p3NpcLightCentersRef.current : fallbackLights
     const protectedByLight = isProtectedByP3Light(position, hasActiveP3CrystalLight(activeCrystalAssignments.includes(assignment), crystalSpent), carrierLights)
     const archangelStack = p3ArchangelStack(assignment, p3Round)

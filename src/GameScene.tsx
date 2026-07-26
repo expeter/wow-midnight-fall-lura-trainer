@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { angleToward, assignmentRevealDistance, crystalCarrierPosition, distance, distanceToSegment, hasActiveP3CrystalLight, jumpHeights, npcEntryPosition, OPENING_BOOST_SECONDS, P1_STAR_LENGTH, P2_BEAM_SECONDS, P2_ORBIT_SPEED, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_INNER_RADIUS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p2NpcRoamingPosition, p2NpcShouldReturnToSoak, p2OrbReturnState, p2ReturningOrbPositions, p3ArchangelStackPosition, p3BossPosition, p3FlightPosition, P3_FLIGHT_SECONDS, p3LandingGroupIndex, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3NpcPoolAssignment, p3NpcRuneReactionDelay, p3NpcSoaksActive, p3PoolCenters, p3ProtectionBubbleCenter, p3RuneEdges, p3RuneOrbs, p3RunePartnerPosition, p3StarsTiming, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, p4EncounterBoxStates, p4FrontSoakerPosition, p4GroupPosition, p4NpcRelocationPace, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterRotation, p4StackPosition, p4TankConeActive, P4_FRONT_CONE_RANGE, P4_HEAVEN_MOVE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, roamingNpcPosition, separateP3NpcTarget, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type RuneSymbol } from './game'
 import { p3SpreadPosition, p4TankKillsBox } from './game'
+import { isP3RaidMemberVisible } from './game'
 
 interface SceneProps {
   positions: Point[]
@@ -744,6 +745,7 @@ export default function GameScene(props: SceneProps) {
       const plannedP3Targets: Array<{ point: Point; crystal: boolean }> = [{ point: state.player, crystal: playerLightActive }]
       const npcPositions = npcs.map((sprite, index) => {
         const baseIndex = npcProfileIndices[index]
+        sprite.visible = isP3RaidMemberVisible(state.assignment, baseIndex, phaseThree)
         const soakTarget = state.p2SoakPositions[baseIndex]
         const spreadTarget = state.p2SpreadPositions[baseIndex]
         const intermissionPosition = npcPosition(index, state.time, state.intermissionPositions, state.assignment, state.event, state.eventTime, state.beamAngles, state.raidStart, state.movementSpeed, state.movementBonus)
@@ -922,7 +924,7 @@ export default function GameScene(props: SceneProps) {
         return position
       })
       const npcP3LightCenters = phaseThree
-        ? npcPositions.filter((_, npcIndex) => state.profiles[npcProfileIndices[npcIndex]].crystal)
+        ? npcPositions.filter((_, npcIndex) => isP3RaidMemberVisible(state.assignment, npcProfileIndices[npcIndex], true) && state.profiles[npcProfileIndices[npcIndex]].crystal)
         : []
       state.onP3LightCenters(npcP3LightCenters)
       if (state.event === 'p3-light-pools' || state.event === 'p3-pools-overlap') {

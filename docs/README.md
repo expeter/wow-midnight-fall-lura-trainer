@@ -138,6 +138,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-063` | Implemented | Replace timing-critical Phase 4 browser-generated calls with pre-rendered `Left`, `Right`, `Left`, and `Move` clips scheduled on one audio clock, preserving the exact mechanic rhythm across game speed and pause/resume. |
 | `CR-064` | Implemented | Add a compact disabled `P1 · Coming soon` phase teaser before Intermission without making the backlog encounter playable. |
 | `CR-065` | Implemented | Exclude the workspace-local `.tmp/` Playwright browser cache from Git so Chromium may be installed beside the project without risking large generated binaries entering a commit. |
+| `CR-066` | Implemented | Remove the partial-width border beneath each achievement-cluster header so it no longer duplicates the surrounding section divider. |
 | `SPEC-001` | Implemented | Define the stable ticket lifecycle: assign an ID, record intent, add focused regression coverage, validate, and commit. |
 | `SPEC-002` | Implemented | Define the creator business card’s stable content, readability, compact layout, and external-link behavior. |
 | `SPEC-003` | Implemented | Define the P3-to-P4 north gather, shared knockup origin, and phase-local HUD boundary. |

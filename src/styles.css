@@ -360,7 +360,7 @@
 .achievement-collection > header .hint { max-width: 680px; margin: 0; }
 .achievement-progress { flex: 0 0 auto; color: #ffd978; font: 700 16px 'DM Mono', monospace; }
 .achievement-clusters { display: grid; gap: 28px; }
-.achievement-cluster > header { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 12px; padding-bottom: 9px; border-bottom: 1px solid rgba(143,158,190,.16); }
+.achievement-cluster > header { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 12px; padding-bottom: 9px; }
 .achievement-cluster > header h3 { margin: 0; color: #f0f3fa; font-size: 20px; }
 .achievement-cluster > header p { max-width: 700px; margin: 3px 0 0; color: #8491aa; font-size: 14px; }
 .achievement-cluster > header > span { flex: 0 0 auto; padding: 4px 9px; border: 1px solid rgba(255,211,105,.2); border-radius: 999px; color: #d8be77; background: rgba(255,211,105,.055); font: 700 14px 'DM Mono', monospace; }

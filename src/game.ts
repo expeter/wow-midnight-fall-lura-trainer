@@ -109,6 +109,11 @@ export function keepP3PointOnSide(position: Point, side: -1 | 1, center: Point, 
   }
 }
 
+export function constrainP3NpcTargetToSide(position: Point, side: -1 | 1, center: Point, clearance: number, event: string, round: number): Point {
+  if (event === 'p3-sector-move' && round >= 2) return position
+  return keepP3PointOnSide(position, side, center, clearance)
+}
+
 export function isP3RaidMemberVisible(playerPosition: Point, memberPosition: Point, center: Point, phaseThree: boolean): boolean {
   return !phaseThree || p3SideForPosition(playerPosition, center) === p3SideForPosition(memberPosition, center)
 }

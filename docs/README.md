@@ -181,6 +181,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-043` | Implemented | Initialize every Phase 3 ground Soak from the configured `P3_POOL_HEALTH` value instead of silently resetting all six pools to 100 HP at the start of an attempt. |
 | `BUG-044` | Implemented | Ensure every P3 Stars orb has at least one visible closest-neighbour connection and key the rendered edge cache by the randomized Soak layout consumed by collision checks, preventing invisible-beam wipes. Evidence: [`screen-p3-bug26.png`](../images/screen-p3-bug26.png). |
 | `BUG-045` | Implemented | Let both Phase 3 raid halves finish the final movement at the exact shared Phase 4 north stack instead of stopping at their former divider-side clearance. Evidence: [`screen-p3-bug27.png`](../images/screen-p3-bug27.png). |
+| `BUG-046` | Implemented | During Intermission, wipe when the controlled player’s resolving Starsplinter hits an NPC who is currently carrying a crystal; an NPC whose crystal is visibly on the ground is not treated as still carrying it. |
 
 ## Implemented feature inventory
 

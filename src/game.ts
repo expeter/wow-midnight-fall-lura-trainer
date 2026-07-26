@@ -956,6 +956,36 @@ export function personalCircleHitsCrystal(circleCenter: Point, crystals: Point[]
 export function personalCircleHitsPlayer(circleCenter: Point, players: Point[], radius = P2_PERSONAL_CIRCLE_OUTER_RADIUS): boolean {
   return players.some(player => distance(circleCenter, player) < radius)
 }
+export function starsplinterHitsCrystalCarrier(
+  npcPositions: Point[],
+  crystalAssignments: number[],
+  playerAssignment: number,
+  origin: Point,
+  rotation = 0,
+  minimumLength = 10,
+  maximumLength = P1_STAR_LENGTH,
+  excludedNpcOrdinals: number[] = [],
+): boolean {
+  const npcAssignments = Array.from({ length: npcPositions.length + 1 }, (_, index) => index)
+    .filter(index => index !== playerAssignment)
+  return crystalAssignments.some(crystalAssignment => {
+    const npcOrdinal = npcAssignments.indexOf(crystalAssignment)
+    if (excludedNpcOrdinals.includes(npcOrdinal)) return false
+    const target = npcPositions[npcOrdinal]
+    if (!target) return false
+    const dx = target.x - origin.x
+    const dy = target.y - origin.y
+    const length = Math.hypot(dx, dy)
+    if (length < minimumLength || length > maximumLength) return false
+    const angle = Math.atan2(dy, dx)
+    return Array.from({ length: 6 }, (_, index) =>
+      Math.abs(Math.atan2(
+        Math.sin(angle - rotation - index * Math.PI / 3),
+        Math.cos(angle - rotation - index * Math.PI / 3),
+      )) < .12,
+    ).some(Boolean)
+  })
+}
 export function walkTowards(origin: Point, target: Point, seconds: number, speed: number): Point {
   const dx = target.x - origin.x
   const dy = target.y - origin.y

@@ -22,8 +22,14 @@
 .map-player { position: absolute; z-index: 4; transform: translate(-50%, -50%); width: 21px; height: 21px; padding: 0; display: grid; place-items: center; border-radius: 50%; color: #b7c3df; background: #6479b8; font: 10px 'DM Mono', monospace; cursor: grab; touch-action: none; }
 .map-player:active { cursor: grabbing; }
 .p3-position-map {
+  background-repeat: no-repeat;
+  background-size: 325%;
+  background-position-x: 1024px;
+  background-position-y: 1000px;
   touch-action: none;
 }
+.p3-position-map::before { width: 33%; }
+.p3-position-map::after { display: none; }
 .p3-position-map::before,
 .p3-position-map::after { top: var(--p3-arena-center-top); }
 .p3-position-map.placing-group { cursor: crosshair; }

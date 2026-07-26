@@ -1563,7 +1563,7 @@ function P3PositionMap({ assignment, positions, bossPositions, profiles, onChang
     height: `${Math.abs(selectionEnd.y - selectionStart.y)}%`,
   } : undefined
   const arenaCenterTop = 50 + (WORLD.center.y - P3_PLANNER_CENTER.y) / scale
-  return <div className={`position-map p2-position-map p3-position-map${selected.length ? ' placing-group' : ''}`} data-planner-scale={scale} aria-label="Phase 3 initial position map" onPointerDownCapture={placeSelection} onPointerDown={beginSelection} onPointerMove={move} onPointerUp={finishSelection} onPointerLeave={() => { if (!selectionStart) setDragging(null) }} style={{ backgroundImage: `linear-gradient(rgba(7,9,22,.38), rgba(7,9,22,.38)), url(${ARENA_BACKGROUND})`, '--p3-arena-center-top': `${arenaCenterTop}%` } as CSSProperties}>
+  return <div className={`position-map p3-position-map${selected.length ? ' placing-group' : ''}`} data-planner-scale={scale} data-background-zoom="325%" aria-label="Phase 3 initial position map" onPointerDownCapture={placeSelection} onPointerDown={beginSelection} onPointerMove={move} onPointerUp={finishSelection} onPointerLeave={() => { if (!selectionStart) setDragging(null) }} style={{ backgroundImage: `linear-gradient(rgba(7,9,22,.38), rgba(7,9,22,.38)), url(${ARENA_BACKGROUND})`, '--p3-arena-center-top': `${arenaCenterTop}%` } as CSSProperties}>
     <span className="p2-cross vertical" />
     <span className="p3-group-help">{selected.length ? `${selected.length} selected · click their destination` : 'Drag empty space to select a group'}</span>
     {selectionBox && <span className="p3-selection-box" style={selectionBox} />}

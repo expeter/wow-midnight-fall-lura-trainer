@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { P2_BEAM_SECONDS, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P3_POOL_HEALTH, P4_SPLINTER_DETONATION_SECONDS, p4SplinterStartSeconds } from './game'
-import { ARCHANGEL_SOUND_DELAY_SECONDS, encounterSoundCuesForState, ENCOUNTER_SOUND_SPECS, INTERMISSION_BEAM_FIRE_SECONDS, LASER_CHARGE_SOUND_SECONDS, ORB_RETURN_SOUND_DELAY_SECONDS } from './encounterSounds'
+import { ARCHANGEL_SOUND_DELAY_SECONDS, encounterSoundCuesForState, ENCOUNTER_SOUND_SPECS, INTERMISSION_BEAM_FIRE_SECONDS, LASER_CHARGE_SOUND_SECONDS, ORB_RETURN_SOUND_DELAY_SECONDS, SPLINTER_SOUND_LEAD_SECONDS } from './encounterSounds'
 
 const base = {
   event: 'countdown',
@@ -32,7 +32,16 @@ describe('encounter sound cues', () => {
     const start = INTERMISSION_BEAM_FIRE_SECONDS - LASER_CHARGE_SOUND_SECONDS
     expect(encounterSoundCuesForState({ ...base, event: 'beam', eventTime: start - .01 })).toEqual([])
     expect(encounterSoundCuesForState({ ...base, event: 'beam', eventTime: start })).toContainEqual(expect.objectContaining({ sound: 'laser-charge' }))
-    expect(encounterSoundCuesForState({ ...base, event: 'splinter', eventTime: 2.65 }).map(cue => cue.sound)).toEqual(['splinter-detonate'])
+  })
+
+  it('starts Intermission and P4 Starsplinter sounds one tenth before their visual detonation', () => {
+    const intermissionSoundAt = 2.65 - SPLINTER_SOUND_LEAD_SECONDS
+    expect(encounterSoundCuesForState({ ...base, event: 'splinter', eventTime: intermissionSoundAt - .01 })).toEqual([])
+    expect(encounterSoundCuesForState({ ...base, event: 'splinter', eventTime: intermissionSoundAt }).map(cue => cue.sound)).toEqual(['splinter-detonate'])
+
+    const p4SoundAt = p4SplinterStartSeconds(1) + P4_SPLINTER_DETONATION_SECONDS - SPLINTER_SOUND_LEAD_SECONDS
+    expect(encounterSoundCuesForState({ ...base, event: 'p4-cycle', eventTime: p4SoundAt - .01 }).some(cue => cue.sound === 'splinter-detonate')).toBe(false)
+    expect(encounterSoundCuesForState({ ...base, event: 'p4-cycle', eventTime: p4SoundAt }).filter(cue => cue.sound === 'splinter-detonate')).toHaveLength(1)
   })
 
   it('ends the doubled P2 beam charge at cross-beam resolution instead of its appearance', () => {

@@ -53,7 +53,7 @@ with a separate `SOAK CRYSTAL` instruction.
 | `laser-fire` | Reserved / currently silent | A separate discharge duplicated the charge cue and is disabled while the revised mix is reviewed | — | Intermission and P2 |
 | `stars-connect` | P3 Stars lattice connects | Very short Rift laser buzz synchronized to beam appearance | ~0.28s | P3 only |
 | `splinter-mark` | Starsplinter assigned | Short crystalline warning/chime | 0.4–0.8s | Intermission and P4 |
-| `splinter-detonate` | Starsplinter rays resolve | Sharp six-way energy burst | 0.5–1s | Intermission and P4 |
+| `splinter-detonate` | 0.1s before Starsplinter rays resolve | Sharp six-way energy burst; the small lead compensates for the source transient | 0.5–1s | Intermission and P4 |
 | `orb-charge` | P2 returning orbs start glowing | Pulsing magical charge | 0.8–1.2s | P2 |
 | `orb-return` | P2 orbs approach L’ura | Arcane motion cue delayed one second after inward flight begins so it lands closer to the boss impact | 1.18s | P2 |
 | `pull` | P2 raid pull begins | Sustained suction/wind rise | 2–4s loop | P2 |

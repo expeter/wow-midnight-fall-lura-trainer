@@ -44,6 +44,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `FR-003` | Implemented | Make the bottom-left recent-failure text selectable and add a compact clipboard button for copying its visible entries. |
 | `FR-004` | Implemented | Add a persistent player-name override for the controlled character and result certificate while retaining the raid-plan name and spot as smaller played-position information. |
 | `FR-005` | Implemented | Give the non-Hard memory-game partner a seeded random reaction delay between one and six seconds before it starts moving to help the player. |
+| `FR-006` | Implemented | Let P2 NPCs roam around their cross-beam assignments and avoid returning orbs during downtime, then walk back to their exact soak positions for the final three seconds before the next beam. |
 | `CR-002` | Implemented | Randomize the two P3 landing impacts per attempt and make a valid three-player Soak glow without revealing remaining progress outside Test/Easy. |
 | `CR-003` | Implemented | Generate the two P3 landing impacts independently within their group area; the crystal carrier takes the nearer impact and the helper takes the farther one. |
 | `CR-004` | Implemented | Add a subtle top-left version indicator with the package version and UTC build timestamp on every screen. |

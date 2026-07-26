@@ -25,6 +25,7 @@ export const P2_ORB_RETURN_SECONDS = 13
 export const P2_ORB_RETURN_GLOW_SECONDS = 1
 export const P2_ORB_RETURN_TRAVEL_SECONDS = 1
 export const P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS = P2_BEAM_CADENCE_SECONDS - P2_BEAM_SECONDS
+export const P2_NPC_PREPOSITION_SECONDS = 3
 export const P2_ORBIT_SPEED = .12
 export const P1_STAR_LENGTH = 38.8
 export const P3_OUTER_RADIUS = 199
@@ -702,6 +703,29 @@ export function p2ReturningOrbPositions(age: number, cycle: number, time: number
     const angle = index * Math.PI / 2 + (cycle - 1) * Math.PI / 6 + time * P2_ORBIT_SPEED
     return { x: center.x + Math.cos(angle) * state.radius, y: center.y + Math.sin(angle) * state.radius }
   })
+}
+export function p2NpcShouldReturnToSoak(orbReturnAge: number): boolean {
+  return orbReturnAge >= P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS - P2_NPC_PREPOSITION_SECONDS
+}
+export function p2NpcRoamingPosition(base: Point, index: number, time: number, orbs: Point[], center: Point, maximumRadius: number): Point {
+  const clampToArena = (point: Point): Point => {
+    const dx = point.x - center.x
+    const dy = point.y - center.y
+    const radius = Math.hypot(dx, dy)
+    return radius <= maximumRadius ? point : { x: center.x + dx / radius * maximumRadius, y: center.y + dy / radius * maximumRadius }
+  }
+  const phase = time * (.36 + index % 4 * .025) + index * 1.73
+  const preferred = clampToArena({ x: base.x + Math.cos(phase) * 8, y: base.y + Math.sin(phase * .91) * 8 })
+  if (!orbs.length) return preferred
+  const candidates = [preferred, ...Array.from({ length: 12 }, (_, ordinal) => {
+    const angle = phase + ordinal * Math.PI / 6
+    return clampToArena({ x: base.x + Math.cos(angle) * 9, y: base.y + Math.sin(angle) * 9 })
+  })]
+  return candidates.reduce((best, candidate) => {
+    const clearance = Math.min(...orbs.map(orb => distance(candidate, orb)))
+    const bestClearance = Math.min(...orbs.map(orb => distance(best, orb)))
+    return clearance - distance(candidate, preferred) * .08 > bestClearance - distance(best, preferred) * .08 ? candidate : best
+  }, preferred)
 }
 export function personalCircleHitsCrystal(circleCenter: Point, crystals: Point[], radius = P2_PERSONAL_CIRCLE_OUTER_RADIUS): boolean {
   return crystals.some(crystal => distance(circleCenter, crystal) < radius)

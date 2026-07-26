@@ -23,7 +23,10 @@ phase, and the expected behavior.
 
 After an implemented request passes its relevant tests and build checks, commit
 it as a focused Git commit. Leave verified work uncommitted only when explicitly
-requested.
+requested. Every incoming `BUG`, `CR`, or `FR` must be recorded as **Planned**
+before implementation begins, even when several requests arrive in one message.
+It may only move to **Implemented** after a focused automated regression test
+has been added or updated for that request.
 
 Example:
 
@@ -83,6 +86,11 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-035` | Implemented | Let player and NPC Starsplinters destroy any Phase 4 floor add crossed by one of their six rays. |
 | `CR-036` | Implemented | Give players ten seconds after the P3 landing Soaks to reach their assigned side; being across the divider at resolution costs 50 points, while exact marker distance is not scored. |
 | `FR-018` | Implemented | Allow five consecutive seconds outside P3 safe-zone protection, then deduct 10 points for every additional full second until the player returns to protection and resets the grace period. |
+| `FR-019` | Implemented | Add a one-click “Load I Asgard I raid plan” action backed by the stable `lura-trainer-iasgardi-v3` TinyURL; its resulting shared hash uses the standard normalized loader and immediately replaces and persists the current local plan. |
+| `FR-020` | Implemented | Emit Git-derived version metadata from every local or CI Vite build, periodically detect a newer deployed revision, offer an in-page reload prompt, display the running Git revision, and link a tracked changelog beneath the version. |
+| `CR-037` | Implemented | Add a compact Discord chat entry for `pestivator` (legacy `pestivator#0757`) without increasing the creator card’s link-row count. |
+| `CR-038` | Implemented | Link the displayed BattleTag to Pestivator’s Raider.IO profile because Battle.net has no stable public friend-add URL for a BattleTag. |
+| `CR-039` | Implemented | Record every tagged request before implementation and require focused automated regression coverage before marking it implemented. |
 | `BUG-008` | Implemented | Remove the premature 20-second P3 Soak failure; unfinished pools are now checked only when Big Boom resolves at 40 seconds. |
 | `BUG-009` | Implemented | Enforce P3 Stars orb spacing and isolate the southwest/southeast fields with clearance from the room divider. |
 | `BUG-010` | Implemented | Use the NPC protection bubble when the player's crystal duty belongs to the other Dark Archangel set; only consume the player's crystal on its assigned set. |
@@ -232,6 +240,8 @@ multiplier scales the complete simulation uniformly.
   Easy/Normal, and immediate terminal behavior in Hard.
 - Optional health potion, shield, and one-second main-ability gameplay.
 - Per-phase score and time tracking.
+- Git-revision build identification, a tracked GitHub changelog, and a
+  five-minute deployed-version check with an explicit reload prompt.
 - A full-run “L'ura Movement Master” completion card with total score, time,
   mistakes, attempt number, optional challenges, and phase breakdown.
 - Copyable result text and a generated result image for guild sharing.
@@ -244,7 +254,8 @@ multiplier scales the complete simulation uniformly.
 - Production build validation through Vite.
 - GitHub Pages deployment workflow.
 - MIT license, unofficial fan-project notice, creator card, Twitch/BattleTag
-  contact details, optional Solana support link, and Pixabay music credits.
+  and Discord contact details, optional Solana support link, and Pixabay music
+  credits.
 
 ## Historical issue groups
 

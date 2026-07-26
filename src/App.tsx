@@ -16,6 +16,7 @@ interface PhaseStart { key: PhaseKey; score: number; time: number }
 type RecoveryStatus = 'disabled' | 'pending' | 'passed' | 'missed'
 interface PhaseCrystalAssignments { intermission: number[]; p2: number[]; p3: number[] }
 interface RaidPlan { positions: Assignment[]; p2Positions: Assignment[]; p2SpreadPositions: Assignment[]; p3Positions: Assignment[]; p3BossPositions: Assignment[]; startSlots: Assignment[]; profiles: PlayerProfile[]; crystalAssignments: PhaseCrystalAssignments }
+interface VersionManifest { version: string; revision: string; builtAt: string }
 interface KeyBindings { forward: string; backward: string; left: string; right: string; turnLeft: string; turnRight: string; jump: string; crystal: string; pause: string; healthPot: string; shield: string; mainAbility: string }
 type HudElement = 'mechanic' | 'beam' | 'crystal' | 'playerHealth' | 'bossHealth' | 'castbar'
 type HudLayout = Record<HudElement, Point>
@@ -29,6 +30,11 @@ const P2_PLANNER_CIRCLE_DIAMETER = P2_PERSONAL_CIRCLE_OUTER_RADIUS * 2 / P2_MAP_
 const STAR_LENGTH = P1_STAR_LENGTH
 const CREATOR_AVATAR = new URL('../images/pestivator-avatar.jpg', import.meta.url).href
 const SOLANA_ADDRESS = 'E684K1q1gzodtZK3xgdBXfTeRQbWWhSu8kVbzZNiw9Cz'
+const PROJECT_URL = 'https://github.com/expeter/wow-midnight-fall-lura-trainer'
+const CHANGELOG_URL = `${PROJECT_URL}/blob/main/CHANGELOG.md`
+const RAIDER_IO_PROFILE = 'https://raider.io/characters/eu/antonidas/Pestivator'
+const ASGARD_RAID_PLAN_URL = 'https://tinyurl.com/lura-trainer-iasgardi-v3'
+const DISCORD_MESSAGES_URL = 'https://discord.com/channels/@me'
 const MUSIC_TRACKS = [
   { id: 'panic', label: 'Panic Again Pulse · 1:19', src: new URL('../sounds/pixabay/oceanframemusic-panic-again-pulse-no-copyright-suspense-music-568851.mp3', import.meta.url).href },
   { id: 'dominion', label: 'Dominion · 1:16', src: new URL('../sounds/pixabay/ancient_echoes-dominion-519384.mp3', import.meta.url).href },
@@ -40,6 +46,7 @@ const DEFAULT_MUSIC_TRACK: MusicTrackId = 'panic'
 const DEFAULT_MUSIC_VOLUME = .2
 const APP_VERSION = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : '0.1.0'
 const APP_BUILD_TIME = typeof __BUILD_TIME__ === 'string' ? __BUILD_TIME__ : new Date().toISOString()
+const APP_GIT_REVISION = typeof __GIT_REVISION__ === 'string' ? __GIT_REVISION__ : 'unknown'
 const PERSONAL_JUMP_SECONDS = .65
 const DEFAULT_ASSIGNMENTS: Assignment[] = [
   ...Array.from({ length: 8 }, (_, i) => { const a = -Math.PI / 2 + i * Math.PI * 2 / 8; return { x: WORLD.center.x + Math.cos(a) * 125, y: WORLD.center.y + Math.sin(a) * 125 } }),
@@ -1520,7 +1527,7 @@ export default function App() {
     <section className="menu-grid setup-grid">
       <fieldset><legend>Difficulty & movement</legend><div className="difficulty-row">{(['test', 'easy', 'normal', 'hard'] as Difficulty[]).map(value => <button key={value} className={difficulty === value ? 'selected compact' : 'compact'} onClick={() => setDifficulty(value)}>{value}</button>)}</div><label className="profile-control">Your player name<input aria-label="Your player name" maxLength={18} value={playerName} onChange={event => setPlayerName(event.target.value)} placeholder={profiles[assignment].name} /></label><label className="speed-control">Movement speed <strong>{movementSpeed}</strong><input aria-label="Movement speed" type="range" min="8" max="35" step="1" value={movementSpeed} onChange={e => setMovementSpeed(Number(e.target.value))} /></label><label className="speed-control">Global timing <strong>{gameSpeed.toFixed(2)}×</strong><input aria-label="Global game speed" type="range" min="1" max="2.5" step=".25" value={gameSpeed} onChange={e => setGameSpeed(Number(e.target.value))} /></label><label className="checkbox-control"><input aria-label="Opening movement bonus" type="checkbox" checked={movementBonus} onChange={event => setMovementBonus(event.target.checked)} /><span>40% opening boost<span>First 5s of the 10s positioning timer.</span></span></label><p className="hint">{difficultySettings(difficulty).helper ? 'Full assignment guides enabled.' : difficulty === 'normal' ? 'Target ring appears within 45 yards; no guide arrow.' : 'Target ring appears within 22 yards; no guide arrow.'} {difficulty === 'test' ? 'Mechanics and penalties are recorded, but wipes never stop the run.' : difficulty === 'hard' ? 'A wipe ends the attempt immediately.' : 'The first wipe costs 500 points and the current sequence continues; the second ends it.'}</p></fieldset>
       <fieldset><legend>Selected assignment</legend><p className="assignment">Spot {assignment + 1}<span>Drag a player below or use the position slider.</span></p><input aria-label="Assignment position" type="range" min="0" max="19" value={assignment} onChange={e => setAssignment(Number(e.target.value))} /><label className="profile-control">Raid position name<input aria-label="Raid position name" maxLength={18} value={profiles[assignment].name} onChange={event => updateProfile({ name: event.target.value })} /></label><label className="profile-control">WoW class / color<select aria-label="Player class and color" value={profiles[assignment].playerClass} onChange={event => updateProfile({ playerClass: event.target.value as PlayerClass })}>{CLASS_OPTIONS.map(option => <option value={option.value} key={option.value}>{option.label}</option>)}</select></label></fieldset>
-      <fieldset><legend>Layout</legend><p className="assignment">Raid-plan sharing<span>Names, classes, Intermission/P2/P3 positions, and start slots are included.</span></p><div className="editor-actions"><button onClick={savePositions}>Save layout</button><button onClick={resetPositions}>Reset</button></div><label className="profile-control">Share link or code<input aria-label="Raid plan share code" value={shareInput} onChange={event => setShareInput(event.target.value)} placeholder="Paste a shared plan here" /></label><div className="editor-actions"><button onClick={copyRaidPlan}>Copy share link</button><button onClick={applyRaidPlan}>Load shared plan</button></div>{shareStatus && <p className="share-status" role="status">{shareStatus}</p>}</fieldset>
+      <fieldset><legend>Layout</legend><p className="assignment">Raid-plan sharing<span>Names, classes, Intermission/P2/P3 positions, and start slots are included.</span></p><div className="editor-actions"><button onClick={savePositions}>Save layout</button><button onClick={resetPositions}>Reset</button></div><a className="asgard-plan-link" href={ASGARD_RAID_PLAN_URL}>Load I Asgard I raid plan<span>Maintained guild layout · replaces and saves your current plan</span></a><label className="profile-control">Share link or code<input aria-label="Raid plan share code" value={shareInput} onChange={event => setShareInput(event.target.value)} placeholder="Paste a shared plan here" /></label><div className="editor-actions"><button onClick={copyRaidPlan}>Copy share link</button><button onClick={applyRaidPlan}>Load shared plan</button></div>{shareStatus && <p className="share-status" role="status">{shareStatus}</p>}</fieldset>
     </section>
     <section className="practice-settings">
       <fieldset><legend>Background music</legend><p className="hint">Optional Pixabay ambience. It restarts with each attempt and loops if the run lasts longer than the selected track.</p><label className="profile-control">Track<select aria-label="Background music track" value={musicTrack} onChange={event => setMusicTrack(event.target.value as MusicTrackId)}>{MUSIC_TRACKS.map(track => <option value={track.id} key={track.id}>{track.label}</option>)}</select></label><button type="button" className="music-preview" disabled={musicMuted} onClick={toggleMusicPreview}>{musicMuted ? 'Unmute to preview' : musicPreviewing ? '■ Stop preview' : '▶ Play preview'}</button><label className="speed-control">Volume <strong>{Math.round(musicVolume * 100)}%</strong><input aria-label="Background music volume" type="range" min="0" max="1" step=".05" value={musicVolume} onChange={event => setMusicVolume(Number(event.target.value))} /></label><label className="checkbox-control"><input aria-label="Mute background music" type="checkbox" checked={musicMuted} onChange={event => { setMusicMuted(event.target.checked); if (event.target.checked) setMusicPreviewing(false) }} /><span>Mute music<span>Can also be toggled inside the arena.</span></span></label></fieldset>
@@ -1717,19 +1724,42 @@ function P3PositionMap({ assignment, positions, bossPositions, profiles, onChang
 
 function CreatorCard() {
   return <aside className="creator-card" aria-label="About Pestivator">
-    <a className="creator-avatar-link" href="https://raider.io/characters/eu/antonidas/Pestivator" target="_blank" rel="noreferrer" aria-label="Pestivator on Raider.IO"><img src={CREATOR_AVATAR} alt="Pestivator's gnome avatar" /></a>
-    <div><span>Created by</span><strong>Pestivator</strong><code>pestivator#2515</code>
-      <nav aria-label="Pestivator links"><a href="https://raider.io/characters/eu/antonidas/Pestivator" target="_blank" rel="noreferrer">Raider.IO ↗</a><a href="https://twitch.tv/pestivator" target="_blank" rel="noreferrer">Twitch</a><a className="coffee-link" href={`solana:${SOLANA_ADDRESS}?label=Pestivator&message=Thanks%20for%20the%20Lura%20Trainer`} title={`Send SOL to ${SOLANA_ADDRESS}`}>☕ Buy me a coffee</a></nav>
+    <a className="creator-avatar-link" href={RAIDER_IO_PROFILE} target="_blank" rel="noreferrer" aria-label="Pestivator on Raider.IO"><img src={CREATOR_AVATAR} alt="Pestivator's gnome avatar" /></a>
+    <div><span>Created by</span><strong>Pestivator</strong><a className="battle-tag-link" href={RAIDER_IO_PROFILE} target="_blank" rel="noreferrer" title="BattleTag · open Pestivator on Raider.IO">pestivator#2515</a>
+      <nav aria-label="Pestivator links"><a href={RAIDER_IO_PROFILE} target="_blank" rel="noreferrer">Raider.IO</a><a href="https://twitch.tv/pestivator" target="_blank" rel="noreferrer" aria-label="Pestivator on Twitch" title="Twitch · Pestivator">Twitch</a><a href={DISCORD_MESSAGES_URL} target="_blank" rel="noreferrer" aria-label="Chat with pestivator on Discord, legacy tag pestivator#0757" title="Discord · pestivator · legacy pestivator#0757">Discord</a><a className="coffee-link" href={`solana:${SOLANA_ADDRESS}?label=Pestivator&message=Thanks%20for%20the%20Lura%20Trainer`} title={`Send SOL to ${SOLANA_ADDRESS}`}>☕ Buy me a coffee</a></nav>
     </div>
   </aside>
 }
 
 function BuildIndicator({ inGame = false }: { inGame?: boolean }) {
+  const [availableVersion, setAvailableVersion] = useState<VersionManifest | null>(null)
+  const [dismissedRevision, setDismissedRevision] = useState('')
   const built = new Date(APP_BUILD_TIME)
   const timestamp = Number.isNaN(built.getTime())
     ? APP_BUILD_TIME
     : `${built.toISOString().slice(0, 16).replace('T', ' ')} UTC`
-  return <aside className={`build-indicator${inGame ? ' game-build-indicator' : ''}`} aria-label="Build information" title={`Built ${built.toISOString()}`}><a href="https://github.com/expeter/wow-midnight-fall-lura-trainer" target="_blank" rel="noreferrer">v{APP_VERSION} · {timestamp} · GitHub ↗</a></aside>
+  useEffect(() => {
+    let active = true
+    async function checkForUpdate() {
+      try {
+        const response = await fetch(new URL('version.json', document.baseURI), { cache: 'no-store' })
+        if (!response.ok) return
+        const manifest = await response.json() as VersionManifest
+        if (active && manifest.revision && manifest.revision !== 'unknown' && manifest.revision !== APP_GIT_REVISION) setAvailableVersion(manifest)
+      } catch { /* development, offline use, and tests may not expose a manifest */ }
+    }
+    void checkForUpdate()
+    const timer = window.setInterval(checkForUpdate, 5 * 60 * 1000)
+    return () => { active = false; window.clearInterval(timer) }
+  }, [])
+  const showUpdate = availableVersion && availableVersion.revision !== dismissedRevision
+  return <>
+    {showUpdate && <aside className="update-banner" role="alert"><span><strong>New trainer version available</strong> · {availableVersion.revision}</span><button onClick={() => window.location.reload()}>Load new version</button><button className="secondary" onClick={() => setDismissedRevision(availableVersion.revision)}>Later</button></aside>}
+    <aside className={`build-indicator${inGame ? ' game-build-indicator' : ''}`} aria-label="Build information" title={`Built ${Number.isNaN(built.getTime()) ? APP_BUILD_TIME : built.toISOString()}`}>
+      <a href={PROJECT_URL} target="_blank" rel="noreferrer">v{APP_VERSION} · {APP_GIT_REVISION} · {timestamp} · GitHub ↗</a>
+      <a className="changelog-link" href={CHANGELOG_URL} target="_blank" rel="noreferrer">Changelog ↗</a>
+    </aside>
+  </>
 }
 
 function HudLayoutEditor({ layout, onChange, onReset }: { layout: HudLayout; onChange: (counter: HudElement, point: Point) => void; onReset: () => void }) {

@@ -103,7 +103,8 @@ For a public GitHub repository:
 
 Created by **Pestivator**, proud gnome.
 
-- BattleTag: `pestivator#2515`
+- BattleTag: [`pestivator#2515`](https://raider.io/characters/eu/antonidas/Pestivator)
+- Discord: `pestivator` (legacy `pestivator#0757`)
 - Twitch: [twitch.tv/pestivator](https://www.twitch.tv/pestivator)
 - Solana: `E684K1q1gzodtZK3xgdBXfTeRQbWWhSu8kVbzZNiw9Cz`
 

@@ -366,7 +366,9 @@
   border-radius: 7px;
   color: #e7eaf2;
   background: rgba(0, 0, 0, .82);
-  pointer-events: none;
+  pointer-events: auto;
+  user-select: text;
+  -webkit-user-select: text;
 }
 .test-failure-log header {
   display: flex;
@@ -379,6 +381,22 @@
 .test-failure-log li { display: grid; grid-template-columns: 42px 1fr; gap: 6px; padding-top: 3px; font-size: 10px; line-height: 1.2; }
 .test-failure-log li time { color: #8190ad; font: 9px 'DM Mono', monospace; }
 .test-failure-log p { margin: 5px 0 0; color: #8190ad; font-size: 10px; }
+.failure-log-actions { display: flex; align-items: center; gap: 7px; }
+.failure-log-actions button {
+  width: 23px;
+  height: 21px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-color: rgba(255,156,171,.36);
+  border-radius: 4px;
+  color: #ffd1d8;
+  background: rgba(38,12,20,.8);
+  font-size: 12px;
+  line-height: 1;
+  user-select: none;
+}
+.failure-log-actions button:hover { border-color: #ff9cab; background: rgba(70,20,32,.9); }
 .soft-wipe-notice {
   position: absolute;
   z-index: 7;

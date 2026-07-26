@@ -41,6 +41,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-001` | Implemented | Adopt `CR`, `BUG`, and `FR` prefixes and maintain this project record. |
 | `FR-001` | Implemented | Publish a comprehensive inventory of the implemented trainer behavior. |
 | `FR-002` | Implemented | Add a Test-mode shortcut to inspect the full completion card without replaying the complete encounter. Preview exports are visibly marked as non-completions. |
+| `FR-003` | Implemented | Make the bottom-left recent-failure text selectable and add a compact clipboard button for copying its visible entries. |
 | `CR-002` | Implemented | Randomize the two P3 landing impacts per attempt and make a valid three-player Soak glow without revealing remaining progress outside Test/Easy. |
 | `CR-003` | Implemented | Generate the two P3 landing impacts independently within their group area; the crystal carrier takes the nearer impact and the helper takes the farther one. |
 | `CR-004` | Implemented | Add a subtle top-left version indicator with the package version and UTC build timestamp on every screen. |

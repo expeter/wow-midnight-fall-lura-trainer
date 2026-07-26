@@ -1609,7 +1609,18 @@ function HudLayoutEditor({ layout, onChange, onReset }: { layout: HudLayout; onC
 function GameArena(props: { mainAbilityEnabled: boolean; bossHealth: number; mainCastRemaining: number; personalJumpProgress: number; musicMuted: boolean; softWipeNotice: string; hudLayout: HudLayout; positions: Assignment[]; intermissionPositions: Assignment[]; p2SoakPositions: Assignment[]; p2SpreadPositions: Assignment[]; p3Positions: Assignment[]; profiles: PlayerProfile[]; raidStart: Point; movementSpeed: number; movementBonus: boolean; gameSpeed: number; p2Cycle: number; p2Soaked: boolean; p2OrbReturnAge: number; p3Round: number; p3ArchangelDuty: 1 | 2 | null; crystalSpent: boolean; p4Cycle: number; p4PatternSeed: number; p3PoolHealth: number[]; onP3PoolOccupancy: (occupancy: number[]) => void; onP3RuneContacts: (runes: RuneSymbol[]) => void; p3RuneOrder: RuneSymbol[]; p3RuneStep: number; p3ResolvedRunes: RuneSymbol[]; health: number; criticalRemaining: number; healthPotEnabled: boolean; shieldEnabled: boolean; healthPotUsed: boolean; shieldUsed: boolean; keyBindings: KeyBindings; crystalCarriers: number[]; beamPattern: 'line' | 'gap'; failureFlash: boolean; wipeReason: string; player: Point; crystal: Point | null; npcCrystals: Point[]; npcCarrier: number | null; npcCrystalAge: number; playerSplinterRotation: number; crystalAge: number; role: Role; difficulty: Difficulty; assignment: number; stats: GameStats; mistakes: Mistake[]; startSlotName: string; paused: boolean; event: EventKind; eventTime: number; beamAngles: number[]; npcSplinters: number[]; cycle: number; setPaused: (p: boolean) => void; setMusicMuted: (muted: boolean) => void; onRetry: () => void; onExit: () => void; onDrop: () => void; onCameraDirection: (direction: Point) => void }) {
   const [zoomDisplay, setZoomDisplay] = useState(16)
   const [wipeMinimized, setWipeMinimized] = useState(false)
+  const [failureLogCopied, setFailureLogCopied] = useState(false)
   useEffect(() => { if (props.wipeReason) setWipeMinimized(false) }, [props.wipeReason])
+  async function copyFailureLog() {
+    const text = props.mistakes.length
+      ? props.mistakes.slice(0, 5).map(mistake => `${mistake.time.toFixed(1)}s · ${mistake.label}`).join('\n')
+      : 'No failures yet.'
+    try {
+      await navigator.clipboard.writeText(text)
+      setFailureLogCopied(true)
+      window.setTimeout(() => setFailureLogCopied(false), 1800)
+    } catch { setFailureLogCopied(false) }
+  }
   const countdown = props.event === 'countdown'
   const positioning = props.event === 'positioning'
   const finalRecovery = props.event === 'p1-recover'
@@ -1710,8 +1721,8 @@ function GameArena(props: { mainAbilityEnabled: boolean; bossHealth: number; mai
           onZoomChange={setZoomDisplay}
         />
         <div className="score-overlay"><span>Points</span><strong>{Math.round(props.stats.score)}</strong></div>
-        <aside className="test-failure-log" aria-label={props.difficulty === 'test' ? 'Test mode recent failures' : 'Recent failures'}>
-          <header><span>{props.difficulty === 'test' ? 'TEST FAILURES' : 'RECENT FAILURES'}</span><time>{props.stats.time.toFixed(1)}s</time></header>
+        <aside className="test-failure-log selectable-log" aria-label={props.difficulty === 'test' ? 'Test mode recent failures' : 'Recent failures'}>
+          <header><span>{props.difficulty === 'test' ? 'TEST FAILURES' : 'RECENT FAILURES'}</span><span className="failure-log-actions"><time>{props.stats.time.toFixed(1)}s</time><button type="button" aria-label={failureLogCopied ? 'Failures copied' : 'Copy recent failures'} title="Copy recent failures" onClick={copyFailureLog}>{failureLogCopied ? '✓' : '📋'}</button></span></header>
           {props.mistakes.length ? <ol>{props.mistakes.slice(0, 5).map(mistake => <li key={mistake.id}><time>{mistake.time.toFixed(1)}s</time><span>{mistake.label}</span></li>)}</ol> : <p>No failures yet.</p>}
         </aside>
         {props.softWipeNotice && <div className="soft-wipe-notice" role="status"><span>{props.difficulty === 'test' ? 'Test mode · run continues' : 'Strike 1 / 2 · −500 points'}</span><strong>{props.softWipeNotice}</strong><small>Practice continues</small></div>}

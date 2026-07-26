@@ -193,13 +193,10 @@ function loadP2SpreadPositions(): Assignment[] {
   } catch { /* use defaults */ }
   return DEFAULT_P2_SPREAD_ASSIGNMENTS.map(point => ({ ...point }))
 }
-function clampToP3Arena(point: Assignment, index: number): Assignment {
-  const side: -1 | 1 = index < 10 ? -1 : 1
+function clampToP3Arena(point: Assignment): Assignment {
   const margin = 8
   return {
-    x: side < 0
-      ? Math.max(WORLD.center.x - P3_OUTER_RADIUS + margin, Math.min(WORLD.center.x - 2, point.x))
-      : Math.min(WORLD.center.x + P3_OUTER_RADIUS - margin, Math.max(WORLD.center.x + 2, point.x)),
+    x: Math.max(WORLD.center.x - P3_OUTER_RADIUS + margin, Math.min(WORLD.center.x + P3_OUTER_RADIUS - margin, point.x)),
     y: Math.max(WORLD.center.y - P3_OUTER_RADIUS + margin, Math.min(WORLD.center.y + P3_OUTER_RADIUS - margin, point.y)),
   }
 }
@@ -1489,7 +1486,7 @@ export default function App() {
     <div className="plan-heading"><p className="eyebrow">PHASE 2 PERSONAL CIRCLES</p><h2>Spread positioning</h2><p className="hint">After the center pull, each player moves to this second P2 assignment before their personal circle resolves. The blue rings use the same 12.16-yard outer radius as the in-game simulation.</p></div>
     <P2PositionMap showPersonalCircles mapLabel="Phase 2 spread position map" buttonLabel="P2 spread" assignment={assignment} positions={p2SpreadPositions} profiles={p2Profiles} onChange={(index, point) => { setAssignment(index); setP2SpreadPositions(current => current.map((position, positionIndex) => positionIndex === index ? clampToP2Arena(point) : position)) }} />
     <div className="plan-heading"><p className="eyebrow">PHASE 3 ASSIGNMENT</p><h2>Initial sector positioning</h2><p className="hint">The enlarged planner keeps your saved world coordinates unchanged. Drag each half-raid freely within its room half, including the planner’s inner area, to compensate for perspective and translation. The actual in-game center dome remains lethal. In sector two, these positions rotate toward the south.</p></div>
-    <P3PositionMap assignment={assignment} positions={p3Positions} bossPositions={p3BossPositions} profiles={p3Profiles} onChange={(index, point) => { setAssignment(index); setP3Positions(current => current.map((position, positionIndex) => positionIndex === index ? clampToP3Arena(point, index) : position)) }} onBossChange={(index, point) => setP3BossPositions(current => current.map((position, positionIndex) => positionIndex === index ? point : position))} />
+    <P3PositionMap assignment={assignment} positions={p3Positions} bossPositions={p3BossPositions} profiles={p3Profiles} onChange={(index, point) => { setAssignment(index); setP3Positions(current => current.map((position, positionIndex) => positionIndex === index ? clampToP3Arena(point) : position)) }} onBossChange={(index, point) => setP3BossPositions(current => current.map((position, positionIndex) => positionIndex === index ? point : position))} />
     <CrystalAssignmentEditor phaseLabel="Phase 3" assignments={p3CrystalAssignments} profiles={profiles} onChange={(slot, playerIndex) => setP3CrystalAssignments(current => updateCrystalAssignmentSlot(current, slot, playerIndex))} />
     <p className="scope-note">{entryMode === 'arena4' ? 'Start at the Phase 4 north regroup.' : entryMode === 'arena3' ? 'Start with the Phase 3 outward flight.' : entryMode === 'arena2' ? 'Start stacked in Phase 2, then transition into Phase 3.' : 'Positioning opener → Intermission → Phase 2 → Phase 3 → Phase 4.'} · {keyLabel(keyBindings.forward)}/{keyLabel(keyBindings.left)}/{keyLabel(keyBindings.backward)}/{keyLabel(keyBindings.right)} move · {keyLabel(keyBindings.pause)} pause</p>
   </main>

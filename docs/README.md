@@ -89,6 +89,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-018` | Implemented | Reset the mechanic clock and restack the raid in the middle before the P2-to-P3 flight, restoring the visible two-second outward knockback instead of teleporting actors to their landing positions. |
 | `BUG-019` | Implemented | Resolve P2 personal-circle player hits against NPCs’ actual spread positions and the visible circle radius; another player is hit only when their center is inside the controlled player’s circle. |
 | `BUG-020` | Implemented | Evaluate P3 light protection against the crystal NPCs’ actual rendered positions instead of their static planning anchors, keeping health behavior aligned with the visible yellow safe areas. |
+| `BUG-021` | Implemented | Remove the invisible Phase 3 planner side-ownership clamp so players may be dragged across the visible divider while the divider and arena rings remain planning guides. |
 
 ## Implemented feature inventory
 

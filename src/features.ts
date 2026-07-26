@@ -1,3 +1,5 @@
 export const FEATURE_FLAGS = {
-  backgroundMusic: false,
+  backgroundMusic: true,
+  encounterSounds: false,
+  textToSpeech: false,
 } as const

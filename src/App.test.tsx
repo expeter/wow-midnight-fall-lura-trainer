@@ -130,7 +130,25 @@ describe('player menu', () => {
   it('casts the optional main ability once per second for points without killing the boss', async () => { const user = userEvent.setup(); render(<App />); await user.click(screen.getByLabelText(/enable main ability/i)); await user.click(screen.getByRole('button', { name: /enter arena/i })); fireEvent.keyDown(window, { code: 'KeyF', key: 'f' }); expect(screen.getByText(/L’URA · 99\.5%/i)).toBeInTheDocument(); expect(screen.getByText(/MAIN ABILITY · 1\.0s/i)).toBeInTheDocument(); expect(screen.getByText('Points').nextElementSibling).toHaveTextContent('1001'); fireEvent.keyDown(window, { code: 'KeyF', key: 'f' }); expect(screen.getByText('Points').nextElementSibling).toHaveTextContent('1001') })
   it('moves newly assigned Phase 2 crystal carriers onto an inner spread spot', async () => { const user = userEvent.setup(); render(<App />); await user.selectOptions(screen.getByLabelText(/phase 2 crystal 1/i), '0'); await user.click(screen.getByRole('button', { name: /save layout/i })); const [spot] = JSON.parse(localStorage.getItem('lura-p2-spread-positions') || '[]'); expect(Math.hypot(spot.x - 480, spot.y - 270)).toBeLessThanOrEqual(46.01); expect(JSON.parse(localStorage.getItem('lura-p2-crystal-assignments') || '[]')).toContain(0); expect(JSON.parse(localStorage.getItem('lura-intermission-crystal-assignments') || '[]')).not.toContain(0) })
   it('can enter P2 directly with its own countdown and compact arena HUD', async () => { const user = userEvent.setup(); render(<App />); await user.click(screen.getByRole('button', { name: /^P2$/ })); await user.click(screen.getByRole('button', { name: /enter p2/i })); expect(screen.getByText(/Get ready for Phase 2/i)).toBeInTheDocument(); expect(screen.getByText(/PHASE 2 · CYCLE 1 \/ 3/i)).toBeInTheDocument(); expect(screen.getByText(/raid begins stacked in the middle/i)).toBeInTheDocument(); expect(screen.getByText('Points')).toBeInTheDocument() })
-  it('keeps background music hidden while its feature flag is disabled', async () => { const user = userEvent.setup(); render(<App />); expect(screen.queryByRole('group', { name: /background music/i })).not.toBeInTheDocument(); expect(screen.queryByLabelText(/background music volume/i)).not.toBeInTheDocument(); await user.click(screen.getByRole('button', { name: /enter arena/i })); expect(screen.queryByRole('button', { name: /music/i })).not.toBeInTheDocument() })
+  it('offers two opt-in music tracks while encounter sounds and TTS remain disabled', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    const music = screen.getByRole('group', { name: /music settings/i })
+    const enabled = within(music).getByLabelText(/enable background music/i)
+    expect(enabled).not.toBeChecked()
+    expect(within(music).getByRole('button', { name: /enable music to preview/i })).toBeDisabled()
+    expect(within(music).getAllByRole('option').map(option => option.textContent)).toEqual([
+      'Criminal Dark Tech · 8:03',
+      'GYM · Beast Mode ON · 8:07',
+    ])
+    expect(screen.getByLabelText(/enable encounter sounds/i)).toBeDisabled()
+    expect(screen.getByLabelText(/enable raid lead tts/i)).toBeDisabled()
+    await user.click(enabled)
+    await waitFor(() => expect(localStorage.getItem('lura-music-enabled')).toBe('true'))
+    expect(within(music).getByRole('button', { name: /play preview/i })).toBeEnabled()
+    await user.click(screen.getByRole('button', { name: /enter arena/i }))
+    expect(screen.getByRole('button', { name: /disable music/i })).toHaveTextContent('Music on')
+  })
   it('defaults the global player movement speed to 18', () => { render(<App />); expect(screen.getByLabelText(/movement speed/i)).toHaveValue('18') })
   it('migrates legacy action conflicts when adding Q/E turning', () => { localStorage.setItem('lura-keybindings', JSON.stringify({ forward: 'KeyW', backward: 'KeyS', left: 'KeyA', right: 'KeyD', crystal: 'KeyE', pause: 'Space', healthPot: 'KeyQ', shield: 'KeyR', mainAbility: 'KeyF' })); render(<App />); expect(screen.getByLabelText(/\(un\)pause keybind/i)).toHaveValue('P'); expect(screen.getByLabelText(/jump keybind/i)).toHaveValue('Space'); expect(screen.getByLabelText(/rotate left keybind/i)).toHaveValue('Q'); expect(screen.getByLabelText(/rotate right keybind/i)).toHaveValue('E'); expect(screen.getByLabelText(/drop crystal keybind/i)).toHaveValue('C'); expect(screen.getByLabelText(/health potion keybind/i)).toHaveValue('Num Del'); expect(screen.getByLabelText(/shield keybind/i)).toHaveValue('Num 7') })
 })

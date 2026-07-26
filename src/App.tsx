@@ -41,14 +41,13 @@ const PROJECT_URL = 'https://github.com/expeter/wow-midnight-fall-lura-trainer'
 const CHANGELOG_URL = `${PROJECT_URL}/blob/main/CHANGELOG.md`
 const RAIDER_IO_PROFILE = 'https://raider.io/characters/eu/antonidas/Pestivator'
 const ASGARD_RAID_PLAN_URL = 'https://tinyurl.com/lura-trainer-iasgardi-v3'
+const AUDIO_CUES_URL = `${PROJECT_URL}/blob/main/docs/audio-cues.md`
 const MUSIC_TRACKS = [
-  { id: 'panic', label: 'Panic Again Pulse · 1:19', src: new URL('../sounds/pixabay/oceanframemusic-panic-again-pulse-no-copyright-suspense-music-568851.mp3', import.meta.url).href },
-  { id: 'dominion', label: 'Dominion · 1:16', src: new URL('../sounds/pixabay/ancient_echoes-dominion-519384.mp3', import.meta.url).href },
-  { id: 'breath', label: 'Breath · 1:39', src: new URL('../sounds/pixabay/oceanframemusic-breath-no-copyright-suspense-music-568847.mp3', import.meta.url).href },
-  { id: 'cinematic', label: 'Cinematic Background · 2:46', src: new URL('../sounds/pixabay/the_mountain-cinematic-background-487010.mp3', import.meta.url).href },
+  { id: 'criminal', label: 'Criminal Dark Tech · 8:03', src: new URL('../sounds/pixabay/voldemarsf-criminal-dark-tech-surveillance-police-patrol-454563.mp3', import.meta.url).href },
+  { id: 'beast', label: 'GYM · Beast Mode ON · 8:07', src: new URL('../sounds/pixabay/ejah_music-gym-beast-mode-on-438605.mp3', import.meta.url).href },
 ] as const
 type MusicTrackId = typeof MUSIC_TRACKS[number]['id']
-const DEFAULT_MUSIC_TRACK: MusicTrackId = 'panic'
+const DEFAULT_MUSIC_TRACK: MusicTrackId = 'criminal'
 const DEFAULT_MUSIC_VOLUME = .2
 const APP_VERSION = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : '0.1.0'
 const APP_BUILD_TIME = typeof __BUILD_TIME__ === 'string' ? __BUILD_TIME__ : new Date().toISOString()
@@ -394,7 +393,7 @@ export default function App() {
   const [mainAbilityEnabled, setMainAbilityEnabled] = useState(() => loadBoolean('lura-main-ability-enabled', false))
   const [musicTrack, setMusicTrack] = useState<MusicTrackId>(loadMusicTrack)
   const [musicVolume, setMusicVolume] = useState(loadMusicVolume)
-  const [musicMuted, setMusicMuted] = useState(() => loadBoolean('lura-music-muted', false))
+  const [musicMuted, setMusicMuted] = useState(() => !loadBoolean('lura-music-enabled', false))
   const [musicPreviewing, setMusicPreviewing] = useState(false)
   const [keyBindings, setKeyBindings] = useState<KeyBindings>(loadKeyBindings)
   const [assignment, setAssignment] = useState(loadAssignment)
@@ -532,7 +531,10 @@ export default function App() {
   useEffect(() => { localStorage.setItem('lura-main-ability-enabled', String(mainAbilityEnabled)) }, [mainAbilityEnabled])
   useEffect(() => { localStorage.setItem('lura-music-track', musicTrack) }, [musicTrack])
   useEffect(() => { localStorage.setItem('lura-music-volume', String(musicVolume)) }, [musicVolume])
-  useEffect(() => { localStorage.setItem('lura-music-muted', String(musicMuted)) }, [musicMuted])
+  useEffect(() => {
+    localStorage.setItem('lura-music-enabled', String(!musicMuted))
+    localStorage.removeItem('lura-music-muted')
+  }, [musicMuted])
   useEffect(() => { setP3BossPlan(p3BossPositions) }, [p3BossPositions])
   useEffect(() => { p3ResolvedRunesRef.current = p3ResolvedRunes }, [p3ResolvedRunes])
   useEffect(() => {
@@ -554,7 +556,7 @@ export default function App() {
     if (audio.src !== track.src) { audio.src = track.src; audio.currentTime = 0 }
     audio.volume = musicVolume
     audio.muted = musicMuted
-    if (screen === 'game' || musicPreviewing) void audio.play().catch(() => { /* browser requires another user gesture */ })
+    if ((screen === 'game' || musicPreviewing) && !musicMuted) void audio.play().catch(() => { /* browser requires another user gesture */ })
     else audio.pause()
   }, [musicTrack, musicVolume, musicMuted, musicPreviewing, screen])
   useEffect(() => {
@@ -605,6 +607,7 @@ export default function App() {
     if (!FEATURE_FLAGS.backgroundMusic) return
     const audio = audioRef.current
     if (!audio) return
+    if (musicMuted) { audio.pause(); return }
     const track = MUSIC_TRACKS.find(candidate => candidate.id === musicTrack) ?? MUSIC_TRACKS[0]
     audio.src = track.src
     audio.currentTime = 0
@@ -1574,9 +1577,14 @@ export default function App() {
       <fieldset><legend>Selected assignment</legend><p className="assignment">Spot {assignment + 1}<span>Drag a player below or use the position slider.</span></p><input aria-label="Assignment position" type="range" min="0" max="19" value={assignment} onChange={e => setAssignment(Number(e.target.value))} /><label className="profile-control">Raid position name<input aria-label="Raid position name" maxLength={18} value={profiles[assignment].name} onChange={event => updateProfile({ name: event.target.value })} /></label><label className="profile-control">WoW class / color<select aria-label="Player class and color" value={profiles[assignment].playerClass} onChange={event => updateProfile({ playerClass: event.target.value as PlayerClass })}>{CLASS_OPTIONS.map(option => <option value={option.value} key={option.value}>{option.label}</option>)}</select></label></fieldset>
       <fieldset><legend>Optional combat actions</legend><p className="hint">Health emergencies only occur during active mechanics: once on Normal and twice on Hard across the complete run. Each recovery ability has one use.</p><label className="checkbox-control disabled-on-easy"><input aria-label="Enable health potion" type="checkbox" disabled={difficulty === 'easy'} checked={healthPotEnabled} onChange={event => setHealthPotEnabled(event.target.checked)} /><span>Health potion<span>{keyLabel(keyBindings.healthPot)} · restores full health · one use</span></span></label><label className="checkbox-control disabled-on-easy"><input aria-label="Enable shield" type="checkbox" disabled={difficulty === 'easy'} checked={shieldEnabled} onChange={event => setShieldEnabled(event.target.checked)} /><span>Shield<span>{keyLabel(keyBindings.shield)} · restores full health · one use</span></span></label><label className="checkbox-control"><input aria-label="Enable main ability" type="checkbox" checked={mainAbilityEnabled} onChange={event => setMainAbilityEnabled(event.target.checked)} /><span>Main ability<span>{keyLabel(keyBindings.mainAbility)} · one-second cast · +1 point per hit · available on every difficulty</span></span></label></fieldset>
     </section>
+    <div className="plan-heading audio-settings-heading"><p className="eyebrow">AUDIO</p><h2>Music &amp; encounter assistance</h2><p className="hint">Music is opt-in. Encounter effects and raid-lead speech remain separate so each channel can be enabled independently later.</p></div>
+    <section className="audio-settings-grid">
+      {FEATURE_FLAGS.backgroundMusic && <fieldset aria-label="Music settings"><legend>Music</legend><label className="checkbox-control"><input aria-label="Enable background music" type="checkbox" checked={!musicMuted} onChange={event => { setMusicMuted(!event.target.checked); if (!event.target.checked) setMusicPreviewing(false) }} /><span>Enable music<span>Off by default · loops through the complete attempt.</span></span></label><label className="profile-control">Track<select aria-label="Background music track" value={musicTrack} onChange={event => setMusicTrack(event.target.value as MusicTrackId)}>{MUSIC_TRACKS.map(track => <option value={track.id} key={track.id}>{track.label}</option>)}</select></label><button type="button" className="music-preview" disabled={musicMuted} onClick={toggleMusicPreview}>{musicMuted ? 'Enable music to preview' : musicPreviewing ? '■ Stop preview' : '▶ Play preview'}</button><label className="speed-control">Volume <strong>{Math.round(musicVolume * 100)}%</strong><input aria-label="Background music volume" type="range" min="0" max="1" step=".05" value={musicVolume} onChange={event => setMusicVolume(Number(event.target.value))} /></label></fieldset>}
+      <fieldset aria-label="Encounter sound settings"><legend>Sounds</legend><label className="checkbox-control"><input aria-label="Enable encounter sounds" type="checkbox" checked={false} disabled={!FEATURE_FLAGS.encounterSounds} readOnly /><span>Encounter sound effects<span>Planned: laser, orb, Stars, Starsplinter, impact, and warning effects.</span></span></label><p className="hint">This channel will use short nonverbal effects synchronized to mechanics.</p><a className="audio-cue-link" href={AUDIO_CUES_URL} target="_blank" rel="noreferrer">View sound-file shopping list ↗</a></fieldset>
+      <fieldset aria-label="TTS settings"><legend>TTS</legend><label className="checkbox-control"><input aria-label="Enable raid lead TTS" type="checkbox" checked={false} disabled={!FEATURE_FLAGS.textToSpeech} readOnly /><span>Raid-lead voice cues<span>Deferred while wording and timing are playtested.</span></span></label><p className="hint">Calls include Memory Game, Soak Beam, Drop Crystal, Spread, Dodge, Left/Right/Left, and Move.</p><a className="audio-cue-link" href={AUDIO_CUES_URL} target="_blank" rel="noreferrer">Review proposed calls ↗</a></fieldset>
+    </section>
     <div className="plan-heading setup-section-heading" id="keyboard-settings"><p className="eyebrow">KEYBOARD SETTINGS</p><h2>Keyboard &amp; mouse controls</h2><p className="hint">Configure movement and action bindings, keyboard turning, and mouse-camera behavior.</p><a className="setup-back-to-top" href="#setup-top" aria-label="Back to top from Keyboard settings" onClick={event => scrollToSetupSection(event, 'setup-top')}>↑ Top</a></div>
     <section className="practice-settings">
-      {FEATURE_FLAGS.backgroundMusic && <fieldset><legend>Background music</legend><p className="hint">Optional Pixabay ambience. It restarts with each attempt and loops if the run lasts longer than the selected track.</p><label className="profile-control">Track<select aria-label="Background music track" value={musicTrack} onChange={event => setMusicTrack(event.target.value as MusicTrackId)}>{MUSIC_TRACKS.map(track => <option value={track.id} key={track.id}>{track.label}</option>)}</select></label><button type="button" className="music-preview" disabled={musicMuted} onClick={toggleMusicPreview}>{musicMuted ? 'Unmute to preview' : musicPreviewing ? '■ Stop preview' : '▶ Play preview'}</button><label className="speed-control">Volume <strong>{Math.round(musicVolume * 100)}%</strong><input aria-label="Background music volume" type="range" min="0" max="1" step=".05" value={musicVolume} onChange={event => setMusicVolume(Number(event.target.value))} /></label><label className="checkbox-control"><input aria-label="Mute background music" type="checkbox" checked={musicMuted} onChange={event => { setMusicMuted(event.target.checked); if (event.target.checked) setMusicPreviewing(false) }} /><span>Mute music<span>Can also be toggled inside the arena.</span></span></label></fieldset>}
       <fieldset className="input-settings"><legend>Input bindings</legend><div className="input-settings-layout"><section className="keyboard-settings"><header><h3>Keyboard</h3><p>Click a binding, then press its new key. Reusing a key leaves the previous action unbound.</p></header><label className="speed-control rotation-speed-control">Rotation speed <strong>{rotationSpeed}°/s</strong><input aria-label="Keyboard rotation speed" type="range" min="45" max="270" step="15" value={rotationSpeed} onChange={event => setRotationSpeed(Number(event.target.value))} /></label><div className="keybind-grid">{KEY_BIND_LABELS.map(binding => { const value = keyBindings[binding.action]; return <label className="keybind-control" key={binding.action}><span>{binding.label}</span><input aria-label={`${binding.label} keybind`} aria-invalid={!value} className={!value ? 'missing-keybind' : ''} placeholder="Unbound" readOnly value={value ? keyLabel(value) : ''} onKeyDown={event => { event.preventDefault(); event.stopPropagation(); setKeyBindings(current => assignUniqueKey(current, binding.action, event.code)) }} /></label> })}</div><button className="reset-keys" onClick={() => setKeyBindings({ ...DEFAULT_KEY_BINDINGS })}>Reset keybindings</button></section><section className="mouse-settings"><header><h3>Mouse camera</h3><p>Left-drag looks around. Right-drag changes the view and player facing. The wheel controls zoom.</p></header><div className="camera-invert-controls"><label className="checkbox-control"><input aria-label="Invert camera horizontal" type="checkbox" checked={invertCameraX} onChange={event => setInvertCameraX(event.target.checked)} /><span>Invert camera X<span>Reverse left/right mouse look.</span></span></label><label className="checkbox-control"><input aria-label="Invert camera vertical" type="checkbox" checked={invertCameraY} onChange={event => setInvertCameraY(event.target.checked)} /><span>Invert camera Y<span>Reverse up/down mouse look.</span></span></label></div></section></div></fieldset>
     </section>
     <div className="plan-heading" id="hud-settings"><p className="eyebrow">INTERFACE</p><h2>HUD positions</h2><p className="hint">Drag the mechanic counters, castbar, and player/boss health bars around the Phase 2 preview. Their positions are saved automatically.</p><a className="setup-back-to-top" href="#setup-top" aria-label="Back to top from HUD settings" onClick={event => scrollToSetupSection(event, 'setup-top')}>↑ Top</a></div>
@@ -1916,7 +1924,7 @@ function GameArena(props: { mainAbilityEnabled: boolean; bossHealth: number; mai
     <div className="game-top">
       <p className="eyebrow game-phase-label">{phaseLabel} · {props.gameSpeed.toFixed(2)}×</p>
       <h1>{phaseTitle}</h1>
-      <div className="game-actions">{FEATURE_FLAGS.backgroundMusic && <button aria-label={props.musicMuted ? 'Unmute music' : 'Mute music'} onClick={() => props.setMusicMuted(!props.musicMuted)}>{props.musicMuted ? '🔇 Muted' : '🔊 Music'}</button>}<button disabled={Boolean(props.wipeReason)} onClick={() => props.setPaused(!props.paused)}>{props.wipeReason ? 'Wiped' : props.paused ? 'Resume' : 'Pause'}</button><button className="secondary" onClick={props.onExit}>Exit</button></div>
+      <div className="game-actions">{FEATURE_FLAGS.backgroundMusic && <button aria-label={props.musicMuted ? 'Enable music' : 'Disable music'} onClick={() => props.setMusicMuted(!props.musicMuted)}>{props.musicMuted ? '♫ Music off' : '♫ Music on'}</button>}<button disabled={Boolean(props.wipeReason)} onClick={() => props.setPaused(!props.paused)}>{props.wipeReason ? 'Wiped' : props.paused ? 'Resume' : 'Pause'}</button><button className="secondary" onClick={props.onExit}>Exit</button></div>
     </div>
     <div className="game-layout">
       <div

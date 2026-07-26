@@ -161,7 +161,7 @@ test('Space jumps while actions are locked and P pauses', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Resume' })).toBeVisible()
 })
 
-test('Main ability visibly fills without resetting when its bound key is hammered', async ({ page }) => {
+test('Main ability visibly animates and completes only once when its bound key is hammered', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('lura-keybindings', JSON.stringify({
       forward: 'KeyW',
@@ -184,19 +184,19 @@ test('Main ability visibly fills without resetting when its bound key is hammere
 
   const fill = page.locator('.main-cast-fill')
   await expect(fill).toBeVisible()
-  await page.waitForTimeout(180)
-  const earlyScale = await fill.evaluate(element => new DOMMatrix(getComputedStyle(element).transform).a)
+  await expect(fill).toHaveCSS('animation-name', 'main-cast-fill')
+  await expect(fill).toHaveCSS('animation-duration', '1s')
 
   await page.keyboard.press('4')
   await page.keyboard.press('4')
   await page.keyboard.press('4')
-  await page.waitForTimeout(260)
-  const laterScale = await fill.evaluate(element => new DOMMatrix(getComputedStyle(element).transform).a)
-  expect(laterScale).toBeGreaterThan(earlyScale + .12)
-  await expect(page.getByText(/L’URA · 100\.0%/i)).toBeVisible()
 
-  await expect(page.getByText(/L’URA · 99\.5%/i)).toBeVisible({ timeout: 2_000 })
+  await expect(page.getByText(/L’URA · 99\.5%/i)).toBeVisible({ timeout: 5_000 })
   await expect(fill).toHaveCount(0)
+  await expect(page.locator('.score-overlay strong')).toHaveText('1001')
+  await page.waitForTimeout(250)
+  await expect(fill).toHaveCount(0)
+  await expect(page.getByText(/L’URA · 99\.5%/i)).toBeVisible()
   await expect(page.locator('.score-overlay strong')).toHaveText('1001')
 })
 

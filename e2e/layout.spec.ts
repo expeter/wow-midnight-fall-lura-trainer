@@ -31,4 +31,20 @@ test('raid sharing spans the setup width between HUD settings and raid planning'
   expect(sharingBounds!.y).toBeGreaterThan(hudBounds!.y + hudBounds!.height)
   expect(planBounds!.y).toBeGreaterThan(sharingBounds!.y + sharingBounds!.height)
   expect(sharingBounds!.width).toBeCloseTo(planBounds!.width, 0)
+  await expect(page.getByText('INTERMISSION RAID PLAN')).toBeVisible()
+})
+
+test('game settings use one compact three-card row on desktop', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto('/')
+  const cards = [
+    page.getByRole('group', { name: 'Difficulty & movement' }),
+    page.getByRole('group', { name: 'Selected assignment' }),
+    page.getByRole('group', { name: 'Optional combat actions' }),
+  ]
+  const bounds = await Promise.all(cards.map(card => card.boundingBox()))
+  expect(bounds.every(Boolean)).toBe(true)
+  expect(Math.max(...bounds.map(box => box!.y)) - Math.min(...bounds.map(box => box!.y))).toBeLessThan(2)
+  expect(bounds[0]!.x).toBeLessThan(bounds[1]!.x)
+  expect(bounds[1]!.x).toBeLessThan(bounds[2]!.x)
 })

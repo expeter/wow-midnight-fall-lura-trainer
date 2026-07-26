@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Consolidated Game settings into three desktop cards, reduced setup
+  whitespace, and restored the Intermission raid-plan heading before its map.
 - Moved raid-plan save, load, and sharing controls into a full-width section
   between HUD settings and the raid-planning maps.
 - Prevented the creator card from overflowing its setup column and raised every

@@ -53,3 +53,13 @@ change before implementation.
 - Three Starsplinters begin 1.1 seconds apart and each detonates after 3.5
   seconds.
 - The final Starsplinter detonates exactly one second before Heaven & Hell.
+
+## SPEC-007 · Setup-page hierarchy
+
+- Game settings begin with Difficulty & movement, Selected assignment, and
+  Optional combat actions in one desktop row; responsive layouts may stack
+  these cards.
+- Keyboard & mouse controls follow Game settings, followed by HUD placement.
+- Raid planning begins with its full-width save/load/share controls.
+- Every phase map retains its own visible heading, beginning with
+  `INTERMISSION RAID PLAN`.

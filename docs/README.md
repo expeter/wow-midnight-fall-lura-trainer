@@ -107,6 +107,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `FR-032` | Implemented | Prepare a standalone tested P1 rules module for later integration without changing the live game: interrupts, crystals, reflective expiring glaives, ordered runes, rotating beams, reactive Soaks, and the Intermission transition. |
 | `FR-033` | Implemented | Add a persistent browser-local achievement collection beneath raid planning, including earned and locked difficulty/crystal variants, immutable first-earned timestamps, and a compact top-page badge summary linking to the full catalogue. |
 | `FR-034` | Implemented | Expand the local audio soundboard with spell-effect candidates, mechanic suggestions, a persistent SFX shortlist, and a copyable review export; keep audition choices disconnected from gameplay until explicitly selected. |
+| `FR-035` | In progress | Replace the soundboard shortlist flow with a persistent event-by-event review table containing every planned cue, 3–5 playable candidates, one selected choice, and a reviewer comment. |
 | `CR-037` | Superseded | A direct Discord profile needs a numeric user ID. The generic Discord application link was removed again; Twitch remains the direct creator contact. |
 | `CR-038` | Implemented | Link the displayed BattleTag to Pestivator’s Raider.IO profile because Battle.net has no stable public friend-add URL for a BattleTag. |
 | `CR-039` | Implemented | Record every tagged request before implementation and require focused automated regression coverage before marking it implemented. |
@@ -186,6 +187,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-047` | Implemented | Count entities whose bodies visibly overlap the Phase 3 ground-Soak rim as occupants in Test and all other modes, so a visually valid three-player Soak consistently drains its health. |
 | `BUG-048` | Implemented | Preserve all Main-ability damage when Phase 4 starts, subtract that damage in addition to the scripted Heaven & Hell health loss without ever healing L’ura, grant +50 points for every 10% of player damage, and award a dedicated achievement when L’ura reaches 0% before the final sequence. |
 | `BUG-049` | Implemented | Keep one Main Ability cast progressing visibly from 0–100% across live encounter event changes; only fire, damage, and score at completion, enforce a 0.1-second gap, and collapse repeated input into at most one queued cast. |
+| `BUG-050` | Implemented | Guarantee that one Main Ability key press produces exactly one cast and one projectile: ignore additional input until its 1.0-second cast and 0.1-second recovery finish, and hide the cast bar during recovery instead of visually restarting it. |
 
 ## Implemented feature inventory
 

@@ -6,7 +6,6 @@ export type MainAbilityPhase = 'idle' | 'casting' | 'cooldown'
 export interface MainAbilityCastState {
   phase: MainAbilityPhase
   remaining: number
-  queued: boolean
 }
 
 export interface MainAbilityAdvance {
@@ -15,14 +14,13 @@ export interface MainAbilityAdvance {
 }
 
 export function idleMainAbilityCast(): MainAbilityCastState {
-  return { phase: 'idle', remaining: 0, queued: false }
+  return { phase: 'idle', remaining: 0 }
 }
 
 export function requestMainAbilityCast(state: MainAbilityCastState): MainAbilityCastState {
-  if (state.phase === 'idle') return { phase: 'casting', remaining: MAIN_ABILITY_CAST_SECONDS, queued: false }
-  const queueWindowOpen = state.phase === 'cooldown'
-    || state.phase === 'casting' && state.remaining <= MAIN_ABILITY_COOLDOWN_SECONDS
-  return !queueWindowOpen || state.queued ? state : { ...state, queued: true }
+  return state.phase === 'idle'
+    ? { phase: 'casting', remaining: MAIN_ABILITY_CAST_SECONDS }
+    : state
 }
 
 export function advanceMainAbilityCast(state: MainAbilityCastState, elapsed: number): MainAbilityAdvance {
@@ -38,9 +36,7 @@ export function advanceMainAbilityCast(state: MainAbilityCastState, elapsed: num
     remainingElapsed -= next.remaining
     if (next.phase === 'casting') {
       completed += 1
-      next = { phase: 'cooldown', remaining: MAIN_ABILITY_COOLDOWN_SECONDS, queued: next.queued }
-    } else if (next.queued) {
-      next = { phase: 'casting', remaining: MAIN_ABILITY_CAST_SECONDS, queued: false }
+      next = { phase: 'cooldown', remaining: MAIN_ABILITY_COOLDOWN_SECONDS }
     } else {
       next = idleMainAbilityCast()
     }

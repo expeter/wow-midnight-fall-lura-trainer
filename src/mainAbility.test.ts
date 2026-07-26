@@ -13,19 +13,31 @@ describe('Main Ability cast state', () => {
     expect(mainAbilityCastProgress(completed.state)).toBe(1)
   })
 
-  it('ignores early spam and allows one queued cast in the final 0.1 second window', () => {
+  it('never buffers spam into another cast', () => {
     const casting = requestMainAbilityCast(idleMainAbilityCast())
     const ignoredSpam = requestMainAbilityCast(requestMainAbilityCast(casting))
-    expect(ignoredSpam.queued).toBe(false)
     const queueWindow = advanceMainAbilityCast(ignoredSpam, .91).state
-    const queuedOnce = requestMainAbilityCast(queueWindow)
-    const queuedRepeatedly = requestMainAbilityCast(requestMainAbilityCast(queuedOnce))
-    expect(queuedRepeatedly.queued).toBe(true)
-    const first = advanceMainAbilityCast(queuedRepeatedly, .09)
+    const stillCasting = requestMainAbilityCast(requestMainAbilityCast(queueWindow))
+    const first = advanceMainAbilityCast(stillCasting, .09)
     expect(first.completed).toBe(1)
-    expect(first.state).toMatchObject({ phase: 'cooldown', queued: true })
+    expect(first.state).toMatchObject({ phase: 'cooldown' })
     expect(first.state.remaining).toBeCloseTo(.1)
-    const secondStarted = advanceMainAbilityCast(first.state, .1)
-    expect(secondStarted.state).toMatchObject({ phase: 'casting', remaining: 1, queued: false })
+    const ignoredCooldownSpam = requestMainAbilityCast(requestMainAbilityCast(first.state))
+    const settled = advanceMainAbilityCast(ignoredCooldownSpam, .1)
+    expect(settled.completed).toBe(0)
+    expect(settled.state).toEqual(idleMainAbilityCast())
+  })
+
+  it('fires exactly once per completed press across repeated casts', () => {
+    let state = idleMainAbilityCast()
+    let completed = 0
+    for (let cast = 0; cast < 4; cast += 1) {
+      state = requestMainAbilityCast(state)
+      const result = advanceMainAbilityCast(state, 1.1)
+      completed += result.completed
+      state = result.state
+      expect(state).toEqual(idleMainAbilityCast())
+    }
+    expect(completed).toBe(4)
   })
 })

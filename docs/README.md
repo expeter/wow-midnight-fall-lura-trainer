@@ -101,6 +101,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-042` | Implemented | List completion achievements by difficulty, crystal duty, enabled optional challenges, and flawless status; award Superhuman Flawless only to a flawless full-run crystal player with potion, shield, main ability, and more than 1100 points. |
 | `CR-043` | Implemented | Hide background music and its arena control behind a disabled feature flag until suitable replacement ambience is available. |
 | `CR-044` | Implemented | Resolve Heaven & Hell every 21 seconds, retain the shared 10% Phase 4 movement bonus, and time the third Starsplinter to detonate exactly one second before Heaven & Hell. |
+| `CR-045` | Implemented | Move raid-plan save/load/sharing into its own full-width section after HUD settings and immediately before the raid-planning maps. |
 | `SPEC-001` | Implemented | Define the stable ticket lifecycle: assign an ID, record intent, add focused regression coverage, validate, and commit. |
 | `SPEC-002` | Implemented | Define the creator business card’s stable content, readability, compact layout, and external-link behavior. |
 | `SPEC-003` | Implemented | Define the P3-to-P4 north gather, shared knockup origin, and phase-local HUD boundary. |

@@ -192,6 +192,9 @@
 .creator-card nav a:hover { border-color: #73e0c1; background: #193239; }
 .creator-card .coffee-link { grid-column: 1 / -1; width: 100%; color: #ffe18b; border-color: #756438; background: #1c1b20; }
 .practice-settings { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: -12px 0 24px; }
+.setup-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.raid-share-settings { width: 100%; min-height: 0; margin: 24px 0 36px; }
+.raid-share-settings .editor-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .music-preview { padding: 8px 10px; margin: 10px 0 0; text-align: center; font-size: 11px; }
 .music-preview:disabled { opacity: .45; cursor: not-allowed; }
 .checkbox-control { display: flex; gap: 9px; align-items: flex-start; margin-top: 12px; color: #f6f4ee; font-size: 13px; cursor: pointer; }

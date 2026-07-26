@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Moved raid-plan save, load, and sharing controls into a full-width section
+  between HUD settings and the raid-planning maps.
 - Prevented the creator card from overflowing its setup column and raised every
   visible card label to a minimum of 16 pixels.
 - Added mode-, crystal-duty-, option-, and flawless-aware completion

@@ -17,3 +17,18 @@ test('creator card stays inside the setup layout with readable text', async ({ p
     expect(Math.min(...textSizes)).toBeGreaterThanOrEqual(16)
   }
 })
+
+test('raid sharing spans the setup width between HUD settings and raid planning', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto('/')
+  const hud = page.getByLabel('Phase 2 HUD layout preview')
+  const sharing = page.getByRole('group', { name: 'Raid-plan sharing' })
+  const firstPlan = page.getByLabel('Intermission position map')
+  const [hudBounds, sharingBounds, planBounds] = await Promise.all([hud.boundingBox(), sharing.boundingBox(), firstPlan.boundingBox()])
+  expect(hudBounds).not.toBeNull()
+  expect(sharingBounds).not.toBeNull()
+  expect(planBounds).not.toBeNull()
+  expect(sharingBounds!.y).toBeGreaterThan(hudBounds!.y + hudBounds!.height)
+  expect(planBounds!.y).toBeGreaterThan(sharingBounds!.y + sharingBounds!.height)
+  expect(sharingBounds!.width).toBeCloseTo(planBounds!.width, 0)
+})

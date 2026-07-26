@@ -73,6 +73,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-015` | Implemented | Widen the setup layout and creator card so Raider.IO and Twitch share the first link row while Buy me a coffee remains alone below. |
 | `BUG-016` | Implemented | Correct the Phase 3 planner background to use a negative-1000-pixel vertical focus and remove the breaking explicit horizontal offset. |
 | `BUG-017` | Implemented | Resolve the P1 opening positioning as a wipe when the player has not reached the playable dark annulus between the inner and outer rings; exact assignment accuracy remains advisory. |
+| `BUG-018` | Implemented | Reset the mechanic clock and restack the raid in the middle before the P2-to-P3 flight, restoring the visible two-second outward knockback instead of teleporting actors to their landing positions. |
 
 ## Implemented feature inventory
 

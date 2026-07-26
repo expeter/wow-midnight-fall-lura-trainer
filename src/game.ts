@@ -32,6 +32,7 @@ export const P3_LIGHT_RADIUS = 24
 export const P3_POOL_RADIUS = 10
 export const P3_POOL_HEALTH = 63
 export const P3_LANDING_SOAK_RADIUS = 12
+export const P3_FLIGHT_SECONDS = 2
 export const P3_SECTOR_SECONDS = 40
 export const P3_STARS_START_SECONDS = 5
 export const P3_STARS_TELEGRAPH_SECONDS = 4.5
@@ -99,6 +100,15 @@ export function p3LandingPosition(index: number, center: Point, radius = 176): P
   const offsets = [{ x: -3.5, y: -1.5 }, { x: 3.5, y: -1.5 }, { x: 0, y: 3.5 }, { x: 0, y: -5 }]
   const offset = offsets[member]
   return { x: groupCenter.x + offset.x, y: groupCenter.y + offset.y }
+}
+
+export function p3FlightPosition(origin: Point, target: Point, eventTime: number): Point {
+  const progress = Math.min(1, Math.max(0, eventTime / P3_FLIGHT_SECONDS))
+  const eased = 1 - Math.pow(1 - progress, 3)
+  return {
+    x: origin.x + (target.x - origin.x) * eased,
+    y: origin.y + (target.y - origin.y) * eased,
+  }
 }
 
 function seededUnit(seed: number, salt: number): number {

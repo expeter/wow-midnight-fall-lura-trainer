@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
 import { bossBeamHitsPlayer, canPickupCrystal, canRecoverFromWipe, crystalCarrierPosition, crystalWipeReason, difficultySettings, distance, distanceToSegment, isP3ConsumedSectorLethal, isInSafeAnnulus, isProtectedByP3Bubble, moveRelativeToCamera, moveWithIncreasingPull, nearestRuneEdges, npcEntryPosition, OPENING_BOOST_SECONDS, orientedAssignments, p2NpcCrystalDrops, p2ReturningOrbPositions, P1_STAR_LENGTH, P2_BEAM_SECONDS, P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_POSITIONING_SECONDS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p3ArchangelStackPosition, p3AssignmentForRound, p3BossPosition, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3LightHealthRate, p3PoolCenters, p3PoolSoakRate, p3ProtectionBubbleCenter, p3RuneDeadline, p3RuneOrbs, p3RuneStepAt, p3StarsTiming, p3WrongRuneContact, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_MEMORY_STEP_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, P3_SECTOR_SECONDS, p4BossHealth, p4EncounterBoxStates, p4GroupPosition, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4SplinterStartSeconds, p4StackPosition, P4_CYCLE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, P4_SPLINTER_INTERVAL_SECONDS, personalCircleHitsCrystal, PLAYER_COLLISION_PENALTY, randomCrystalDropDuty, randomizeP3PoolLayout, roamingNpcPosition, setP3BossPlan, translateSelectedPoints, WIPE_PENALTY, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type Role, type RuneSymbol } from './game'
 import { buildPhaseResult, completionShareText, isFullSequenceCompletion, type PhaseKey, type PhaseResult } from './completion'
 import { p4FrontSoakerPosition, p4TankKillsBox } from './game'
@@ -75,6 +75,8 @@ const DEFAULT_P3_ASSIGNMENTS: Assignment[] = Array.from({ length: 20 }, (_, inde
   }
 })
 const DEFAULT_P3_BOSS_POSITIONS: Assignment[] = [{ x: 406, y: 398 }, { x: 554, y: 398 }]
+const P3_PLANNER_SCALE = 2.8
+const P3_PLANNER_CENTER: Point = { x: WORLD.center.x, y: 390 }
 const DEFAULT_START_SLOTS: Assignment[] = [
   { x: WORLD.center.x, y: WORLD.center.y + 222 },
   { x: WORLD.center.x - 222, y: WORLD.center.y },
@@ -1498,7 +1500,7 @@ function P3PositionMap({ assignment, positions, bossPositions, profiles, onChang
   const [selectionStart, setSelectionStart] = useState<Point | null>(null)
   const [selectionEnd, setSelectionEnd] = useState<Point | null>(null)
   const [selected, setSelected] = useState<number[]>([])
-  const scale = 4.3
+  const scale = P3_PLANNER_SCALE
   function mapPercent(event: ReactPointerEvent<HTMLDivElement>): Point {
     const bounds = event.currentTarget.getBoundingClientRect()
     return {
@@ -1507,7 +1509,7 @@ function P3PositionMap({ assignment, positions, bossPositions, profiles, onChang
     }
   }
   function worldPoint(percent: Point): Point {
-    return { x: WORLD.center.x + (percent.x - 50) * scale, y: WORLD.center.y + (percent.y - 50) * scale }
+    return { x: P3_PLANNER_CENTER.x + (percent.x - 50) * scale, y: P3_PLANNER_CENTER.y + (percent.y - 50) * scale }
   }
   function beginSelection(event: ReactPointerEvent<HTMLDivElement>) {
     if (event.target !== event.currentTarget || dragging !== null) return
@@ -1543,7 +1545,7 @@ function P3PositionMap({ assignment, positions, bossPositions, profiles, onChang
     const maxX = Math.max(selectionStart.x, selectionEnd.x)
     const minY = Math.min(selectionStart.y, selectionEnd.y)
     const maxY = Math.max(selectionStart.y, selectionEnd.y)
-    setSelected(positions.map((point, index) => ({ index, x: 50 + (point.x - WORLD.center.x) / scale, y: 50 + (point.y - WORLD.center.y) / scale }))
+    setSelected(positions.map((point, index) => ({ index, x: 50 + (point.x - P3_PLANNER_CENTER.x) / scale, y: 50 + (point.y - P3_PLANNER_CENTER.y) / scale }))
       .filter(point => point.x >= minX && point.x <= maxX && point.y >= minY && point.y <= maxY)
       .map(point => point.index))
     setSelectionStart(null)
@@ -1555,12 +1557,13 @@ function P3PositionMap({ assignment, positions, bossPositions, profiles, onChang
     width: `${Math.abs(selectionEnd.x - selectionStart.x)}%`,
     height: `${Math.abs(selectionEnd.y - selectionStart.y)}%`,
   } : undefined
-  return <div className={`position-map p2-position-map p3-position-map${selected.length ? ' placing-group' : ''}`} aria-label="Phase 3 initial position map" onPointerDownCapture={placeSelection} onPointerDown={beginSelection} onPointerMove={move} onPointerUp={finishSelection} onPointerLeave={() => { if (!selectionStart) setDragging(null) }} style={{ backgroundImage: `linear-gradient(rgba(7,9,22,.38), rgba(7,9,22,.38)), url(${ARENA_BACKGROUND})` }}>
+  const arenaCenterTop = 50 + (WORLD.center.y - P3_PLANNER_CENTER.y) / scale
+  return <div className={`position-map p2-position-map p3-position-map${selected.length ? ' placing-group' : ''}`} data-planner-scale={scale} aria-label="Phase 3 initial position map" onPointerDownCapture={placeSelection} onPointerDown={beginSelection} onPointerMove={move} onPointerUp={finishSelection} onPointerLeave={() => { if (!selectionStart) setDragging(null) }} style={{ backgroundImage: `linear-gradient(rgba(7,9,22,.38), rgba(7,9,22,.38)), url(${ARENA_BACKGROUND})`, '--p3-arena-center-top': `${arenaCenterTop}%` } as CSSProperties}>
     <span className="p2-cross vertical" />
     <span className="p3-group-help">{selected.length ? `${selected.length} selected · click their destination` : 'Drag empty space to select a group'}</span>
     {selectionBox && <span className="p3-selection-box" style={selectionBox} />}
-    {bossPositions.map((boss, index) => <button type="button" aria-label={`Move P3 ${index ? 'image' : 'Lura'} boss`} title={`Drag ${index ? 'the image' : 'L’ura'} to its Phase 3 boss position`} className="map-boss p3-boss-handle" key={index} onPointerDown={event => { event.preventDefault(); setSelected([]); setDragging(20 + index); event.currentTarget.setPointerCapture(event.pointerId) }} style={{ left: `${50 + (boss.x - WORLD.center.x) / scale}%`, top: `${50 + (boss.y - WORLD.center.y) / scale}%` }}><i aria-hidden="true" /><span>{index ? 'IMAGE' : 'L’URA'}</span></button>)}
-    {positions.map((point, index) => <button type="button" aria-label={`Move P3 player ${index + 1}`} title={`${profiles[index].name} · P3 initial sector`} key={index} onPointerDown={event => { event.preventDefault(); setSelected([]); setDragging(index); event.currentTarget.setPointerCapture(event.pointerId) }} className={`${index === assignment ? 'map-player selected-map' : 'map-player'}${profiles[index].crystal ? ' crystal-map-player' : ''}${selected.includes(index) ? ' group-selected' : ''}`} style={{ left: `${50 + (point.x - WORLD.center.x) / scale}%`, top: `${50 + (point.y - WORLD.center.y) / scale}%`, backgroundColor: CLASS_OPTIONS.find(option => option.value === profiles[index].playerClass)?.color }}>{index + 1}</button>)}
+    {bossPositions.map((boss, index) => <button type="button" aria-label={`Move P3 ${index ? 'image' : 'Lura'} boss`} title={`Drag ${index ? 'the image' : 'L’ura'} to its Phase 3 boss position`} className="map-boss p3-boss-handle" key={index} onPointerDown={event => { event.preventDefault(); setSelected([]); setDragging(20 + index); event.currentTarget.setPointerCapture(event.pointerId) }} style={{ left: `${50 + (boss.x - P3_PLANNER_CENTER.x) / scale}%`, top: `${50 + (boss.y - P3_PLANNER_CENTER.y) / scale}%` }}><i aria-hidden="true" /><span>{index ? 'IMAGE' : 'L’URA'}</span></button>)}
+    {positions.map((point, index) => <button type="button" aria-label={`Move P3 player ${index + 1}`} title={`${profiles[index].name} · P3 initial sector`} key={index} onPointerDown={event => { event.preventDefault(); setSelected([]); setDragging(index); event.currentTarget.setPointerCapture(event.pointerId) }} className={`${index === assignment ? 'map-player selected-map' : 'map-player'}${profiles[index].crystal ? ' crystal-map-player' : ''}${selected.includes(index) ? ' group-selected' : ''}`} style={{ left: `${50 + (point.x - P3_PLANNER_CENTER.x) / scale}%`, top: `${50 + (point.y - P3_PLANNER_CENTER.y) / scale}%`, backgroundColor: CLASS_OPTIONS.find(option => option.value === profiles[index].playerClass)?.color }}>{index + 1}</button>)}
   </div>
 }
 

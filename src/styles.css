@@ -22,12 +22,10 @@
 .map-player { position: absolute; z-index: 4; transform: translate(-50%, -50%); width: 21px; height: 21px; padding: 0; display: grid; place-items: center; border-radius: 50%; color: #b7c3df; background: #6479b8; font: 10px 'DM Mono', monospace; cursor: grab; touch-action: none; }
 .map-player:active { cursor: grabbing; }
 .p3-position-map {
-  width: min(calc(100vw - 48px), 1160px);
-  max-width: none;
-  margin-left: 50%;
-  transform: translateX(-50%);
   touch-action: none;
 }
+.p3-position-map::before,
+.p3-position-map::after { top: var(--p3-arena-center-top); }
 .p3-position-map.placing-group { cursor: crosshair; }
 .p3-group-help { position: absolute; z-index: 8; left: 10px; bottom: 9px; padding: 4px 7px; border: 1px solid rgba(119,196,255,.28); border-radius: 5px; color: #d1e9ff; background: rgba(5,10,24,.82); font: 10px 'DM Mono', monospace; pointer-events: none; }
 .p3-selection-box { position: absolute; z-index: 7; border: 1px solid #7bc7ff; background: rgba(82,166,255,.18); box-shadow: 0 0 12px rgba(82,166,255,.22); pointer-events: none; }
@@ -271,7 +269,6 @@
 
 @media (max-width: 850px) {
   .setup-shell { display: block; }
-  .p3-position-map { width: 100%; margin-left: 0; transform: none; }
   .creator-card { position: static; width: 100%; max-width: 360px; margin: 0 0 28px; }
   .game-shell { padding: 10px; }
   .scene-3d { height: 68vh; min-height: 420px; }

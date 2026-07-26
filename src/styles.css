@@ -83,13 +83,26 @@
   justify-content: space-between;
   align-items: start;
 }
-.setup-shell > header { grid-column: 1; grid-row: 1; }
+.setup-shell > header { grid-column: 1; grid-row: 2; }
 .setup-shell > :not(header):not(.creator-card) { grid-column: 1 / -1; }
+.recruitment-banner {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  margin: 0 0 18px;
+  padding: 9px 13px;
+  border: 1px solid rgba(115,224,193,.4);
+  border-radius: 8px;
+  color: #d7e3ed;
+  background: rgba(18,37,50,.86);
+  font-size: 13px;
+  text-align: center;
+}
+.recruitment-banner a { color: #73e0c1; font-weight: 700; }
 .creator-card {
   position: static;
   z-index: 8;
   grid-column: 2;
-  grid-row: 1;
+  grid-row: 2;
   display: flex;
   gap: 12px;
   width: 278px;

@@ -118,7 +118,7 @@ const KEY_BIND_LABELS: { action: keyof KeyBindings; label: string }[] = [
   { action: 'left', label: 'Strafe left' }, { action: 'right', label: 'Strafe right' },
   { action: 'turnLeft', label: 'Rotate left' }, { action: 'turnRight', label: 'Rotate right' },
   { action: 'jump', label: 'Jump' },
-  { action: 'crystal', label: 'Drop crystal' }, { action: 'pause', label: 'Pause / resume' },
+  { action: 'crystal', label: 'Drop crystal' }, { action: 'pause', label: '(Un)pause' },
   { action: 'healthPot', label: 'Health potion' }, { action: 'shield', label: 'Shield' },
   { action: 'mainAbility', label: 'Main ability' },
 ]

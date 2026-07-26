@@ -59,6 +59,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-010` | Implemented | Use the NPC protection bubble when the player's crystal duty belongs to the other Dark Archangel set; only consume the player's crystal on its assigned set. |
 | `BUG-011` | Implemented | Keep the in-game version/build indicator in normal layout flow so it cannot overlap phase headlines. |
 | `BUG-012` | Implemented | Give the failure-log clipboard control a distinct accessible name so it cannot collide with the Recent failures panel label. |
+| `BUG-013` | Implemented | Put the Buy me a coffee action on its own business-card row so it cannot overlap the attribution links. |
 
 ## Implemented feature inventory
 

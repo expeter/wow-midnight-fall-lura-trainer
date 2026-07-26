@@ -128,7 +128,7 @@
 .creator-card > div > span { color: #8190ad; font: 10px 'DM Mono', monospace; text-transform: uppercase; letter-spacing: .1em; }
 .creator-card strong { display: block; margin: 2px 0; font-size: 17px; }
 .creator-card code { color: #b9c4d9; font: 10px 'DM Mono', monospace; }
-.creator-card nav { display: flex; gap: 5px; margin-top: 7px; }
+.creator-card nav { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
 .creator-card nav a {
   display: inline-flex;
   align-items: center;
@@ -142,7 +142,7 @@
   white-space: nowrap;
 }
 .creator-card nav a:hover { border-color: #73e0c1; background: #193239; }
-.creator-card .coffee-link { color: #ffe18b; border-color: #625331; }
+.creator-card .coffee-link { flex-basis: 100%; width: fit-content; color: #ffe18b; border-color: #625331; }
 .practice-settings { display: grid; grid-template-columns: .9fr 1fr 1.35fr; gap: 14px; margin: -12px 0 24px; }
 .music-preview { padding: 8px 10px; margin: 10px 0 0; text-align: center; font-size: 11px; }
 .music-preview:disabled { opacity: .45; cursor: not-allowed; }

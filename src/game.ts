@@ -22,6 +22,7 @@ export const P2_PULL_SECONDS = 5
 export const P2_SPREAD_SECONDS = 5
 export const P2_BEAM_CADENCE_SECONDS = 30
 export const P2_ORB_RETURN_SECONDS = 13
+export const P2_ORB_GLOW_LEAD_SECONDS = 1
 export const P2_ORB_RETURN_GLOW_SECONDS = 1
 export const P2_ORB_RETURN_TRAVEL_SECONDS = 1
 export const P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS = P2_BEAM_CADENCE_SECONDS - P2_BEAM_SECONDS
@@ -828,7 +829,7 @@ export function p2NpcCrystalDrops(center: Point, count: number, radius = 6): Poi
 }
 export function p2OrbReturnState(age: number, orbitRadius = 82): { phase: 'inactive' | 'orbiting' | 'charging' | 'returning' | 'done'; radius: number } {
   if (age < 0) return { phase: 'inactive', radius: orbitRadius }
-  if (age < P2_ORB_RETURN_SECONDS) return { phase: 'orbiting', radius: orbitRadius }
+  if (age < P2_ORB_RETURN_SECONDS - P2_ORB_GLOW_LEAD_SECONDS) return { phase: 'orbiting', radius: orbitRadius }
   if (age < P2_ORB_RETURN_SECONDS + P2_ORB_RETURN_GLOW_SECONDS) return { phase: 'charging', radius: orbitRadius }
   if (age < P2_ORB_RETURN_SECONDS + P2_ORB_RETURN_GLOW_SECONDS + P2_ORB_RETURN_TRAVEL_SECONDS) {
     const progress = (age - P2_ORB_RETURN_SECONDS - P2_ORB_RETURN_GLOW_SECONDS) / P2_ORB_RETURN_TRAVEL_SECONDS
@@ -836,11 +837,13 @@ export function p2OrbReturnState(age: number, orbitRadius = 82): { phase: 'inact
   }
   return { phase: 'done', radius: 0 }
 }
-export function p2ReturningOrbPositions(age: number, cycle: number, time: number, center: Point, orbitRadius = 82): Point[] {
+export function p2ReturningOrbPositions(age: number, _cycle: number, _time: number, center: Point, orbitRadius = 82): Point[] {
   const state = p2OrbReturnState(age, orbitRadius)
   if (state.phase !== 'orbiting' && state.phase !== 'charging' && state.phase !== 'returning') return []
   return Array.from({ length: 4 }, (_, index) => {
-    const angle = index * Math.PI / 2 + (cycle - 1) * Math.PI / 6 + time * P2_ORBIT_SPEED
+    // A resolved set leaves its beam-aligned cardinal position and keeps moving
+    // in the same positive rotational direction while it spirals inward.
+    const angle = index * Math.PI / 2 + age * P2_ORBIT_SPEED
     return { x: center.x + Math.cos(angle) * state.radius, y: center.y + Math.sin(angle) * state.radius }
   })
 }

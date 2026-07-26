@@ -119,7 +119,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-051` | Deferred | In the second Phase 3 sequence, swap the memory-game and ground-Soak ordering. Preserve the first sequence as currently timed and revisit the exact second-sequence overlap before implementation. |
 | `CR-052` | Implemented | Increase the Phase 3 ground-Soak radius by 15% so nearby players can commit to the pool more reliably. |
 | `CR-053` | Implemented | Increase the enlarged Phase 3 ground-Soak radius by another 10%, reduce its health by 15%, and preserve full crystal-light coverage from outside the pool. |
-| `CR-054` | Planned | Preserve the P2 orbs’ existing rotational direction as they transition into their inward return, and begin their glow telegraph one second earlier. |
+| `CR-054` | Implemented | Preserve the P2 orbs’ existing rotational direction as they transition into their inward return, and begin their glow telegraph one second earlier. |
 | `SPEC-001` | Implemented | Define the stable ticket lifecycle: assign an ID, record intent, add focused regression coverage, validate, and commit. |
 | `SPEC-002` | Implemented | Define the creator business card’s stable content, readability, compact layout, and external-link behavior. |
 | `SPEC-003` | Implemented | Define the P3-to-P4 north gather, shared knockup origin, and phase-local HUD boundary. |

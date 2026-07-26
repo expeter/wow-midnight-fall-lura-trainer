@@ -293,19 +293,34 @@
 .game-build-indicator {
   position: static;
   flex: 0 0 auto;
-  align-self: flex-start;
-  margin: 0 0 3px;
+  margin: 0 0 0 auto;
+  padding: 0;
+  background: transparent;
+  white-space: nowrap;
 }
 .game-top {
   flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
   margin-bottom: 10px;
 }
-.game-top .eyebrow { margin-bottom: 6px; }
+.game-top .eyebrow {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .game-top h1 {
   margin: 0;
   font-size: clamp(25px, 3.2vh, 36px);
   line-height: 1;
+  text-align: center;
+  white-space: nowrap;
 }
+.game-actions { justify-self: end; }
 .game-layout {
   flex: 1 1 auto;
   min-height: 0;
@@ -327,7 +342,16 @@
 }
 .controls {
   flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   min-height: 37px;
+}
+.controls-copy {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .score-overlay {
   position: absolute;

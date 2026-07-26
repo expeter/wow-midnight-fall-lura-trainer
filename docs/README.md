@@ -52,6 +52,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-009` | Implemented | Link Pestivator's avatar and business card to Raider.IO and remove the redundant Solana-address copy control. |
 | `CR-010` | Implemented | Link the version/build string to the public GitHub project. |
 | `CR-011` | Implemented | Correct the Phase 3 planner guidance to say the second-sector assignments rotate toward the south. |
+| `CR-012` | Implemented | Reclaim arena height with a three-column game header: phase context left, mechanic title centered, actions right; move the linked build string into the status bar. |
 | `BUG-008` | Implemented | Remove the premature 20-second P3 Soak failure; unfinished pools are now checked only when Big Boom resolves at 40 seconds. |
 | `BUG-009` | Implemented | Enforce P3 Stars orb spacing and isolate the southwest/southeast fields with clearance from the room divider. |
 | `BUG-010` | Implemented | Use the NPC protection bubble when the player's crystal duty belongs to the other Dark Archangel set; only consume the player's crystal on its assigned set. |

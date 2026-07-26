@@ -565,6 +565,8 @@ export default function GameScene(props: SceneProps) {
     let yawOffset = savedCamera.yaw
     let pitch = savedCamera.pitch
     let zoomYards = savedCamera.zoom
+    const invertCameraX = localStorage.getItem('lura-invert-camera-x') === 'true'
+    const invertCameraY = localStorage.getItem('lura-invert-camera-y') === 'true'
     let cameraBaseAngle: number | null = null
     let facingAngle: number | null = null
     let currentCameraForwardAngle = -Math.PI / 2
@@ -596,8 +598,8 @@ export default function GameScene(props: SceneProps) {
       const dx = event.clientX - previousX
       const dy = event.clientY - previousY
       if (leftHeld || rightHeld) {
-        yawOffset += dx * .006
-        pitch = THREE.MathUtils.clamp(pitch - dy * .004, THREE.MathUtils.degToRad(2), THREE.MathUtils.degToRad(80))
+        yawOffset += dx * .006 * (invertCameraX ? -1 : 1)
+        pitch = THREE.MathUtils.clamp(pitch - dy * .004 * (invertCameraY ? -1 : 1), THREE.MathUtils.degToRad(2), THREE.MathUtils.degToRad(80))
       }
       if (rightHeld) {
         applyFacing(horizontalViewAngle())

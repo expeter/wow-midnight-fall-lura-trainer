@@ -99,6 +99,7 @@
 .phase-crystal-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .phase-crystal-grid label { color: #ffe889; font: 11px 'DM Mono', monospace; }
 .phase-crystal-grid select { width: 100%; margin-top: 4px; }
+.camera-invert-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
 .share-status { margin: 9px 0 0; color: #73e0c1; font: 11px 'DM Mono', monospace; }
 .setup-shell {
   max-width: 1040px;

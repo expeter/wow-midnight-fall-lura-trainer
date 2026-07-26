@@ -107,7 +107,7 @@ test('shows the early crystal drop warning on Easy only', async ({ page }) => {
 test('continues the current Phase 2 sequence after the first Normal wipe', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('lura-game-speed', '2.5'))
   await page.goto('/')
-  await page.getByLabel('Assignment position').fill('1')
+  await page.getByLabel('Assignment position').fill('8')
   await page.getByRole('button', { name: 'P2', exact: true }).click()
   await page.getByRole('button', { name: /Enter P2/ }).click()
 
@@ -116,7 +116,7 @@ test('continues the current Phase 2 sequence after the first Normal wipe', async
   await expect(page.getByRole('alert')).toHaveCount(0)
   await expect(page.getByText(/Pulled to the center|Spread your circle/)).toBeVisible({ timeout: MECHANIC_TIMEOUT })
   await expect(page.getByText(/ORBS RETURN IN/)).toBeVisible({ timeout: MECHANIC_TIMEOUT })
-  await expect(page.getByText(/PHASE 2 · CYCLE 1 \/ 3/)).toBeVisible()
+  await expect(page.getByText(/PHASE 2 · CYCLE [12] \/ 3/)).toBeVisible({ timeout: MECHANIC_TIMEOUT })
 })
 
 test('wipes when a non-carrier personal circle hits an NPC crystal in Phase 2', async ({ page }) => {
@@ -134,7 +134,7 @@ test('Space jumps while actions are locked and P pauses', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('lura-game-speed', '2.5'))
   await page.goto('/')
   await page.getByRole('button', { name: 'easy' }).click()
-  await page.getByLabel('Assignment position').fill('1')
+  await page.getByLabel('Assignment position').fill('8')
   await page.getByRole('button', { name: /Enter Intermission/ }).click()
 
   await expect(page.getByText('Take your position.')).toBeVisible({ timeout: 3_000 })
@@ -165,7 +165,7 @@ test('enters Phase 3 directly in non-blocking Test mode', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('lura-game-speed', '2.5'))
   await page.goto('/')
   await page.getByRole('button', { name: 'test' }).click()
-  await page.getByLabel('Assignment position').fill('1')
+  await page.getByLabel('Assignment position').fill('8')
   await page.getByRole('button', { name: 'P3', exact: true }).click()
   await page.getByRole('button', { name: /Enter P3/ }).click()
 

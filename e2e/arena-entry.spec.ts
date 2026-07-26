@@ -7,12 +7,12 @@ const MECHANIC_TIMEOUT = 20_000
 
 test.setTimeout(60_000)
 
-test('a shared hash plan overrides stale storage and survives a clean reload', async ({ page }) => {
+test('a shared hash plan drives every live phase and survives a clean reload', async ({ page }) => {
   const profiles = Array.from({ length: 20 }, (_, index) => ({ name: index === 14 ? 'Zoxzy' : index === 19 ? 'Pestivator' : `Player ${index + 1}`, playerClass: 'mage', crystal: index < 6 }))
   const plan = {
     positions: Array.from({ length: 20 }, (_, index) => ({ x: index < 10 ? 420 : 540, y: 360 })),
-    p2Positions: Array.from({ length: 20 }, () => ({ x: 480, y: 270 })),
-    p2SpreadPositions: Array.from({ length: 20 }, () => ({ x: 480, y: 270 })),
+    p2Positions: Array.from({ length: 20 }, (_, index) => ({ x: index === 14 ? 500 : 480, y: 270 })),
+    p2SpreadPositions: Array.from({ length: 20 }, (_, index) => ({ x: index === 14 ? 480 : 470, y: index === 14 ? 300 : 270 })),
     p3Positions: Array.from({ length: 20 }, (_, index) => index === 14 ? { x: 553, y: 398 } : index === 19 ? { x: 409, y: 421 } : { x: index < 10 ? 420 : 540, y: 400 }),
     p3BossPositions: [{ x: 406, y: 398 }, { x: 554, y: 398 }],
     startSlots: [{ x: 480, y: 510 }, { x: 240, y: 270 }, { x: 720, y: 270 }, { x: 480, y: 30 }],
@@ -23,14 +23,46 @@ test('a shared hash plan overrides stale storage and survives a clean reload', a
   await page.addInitScript(value => {
     if (sessionStorage.getItem('stale-plan-seeded')) return
     localStorage.setItem('lura-p3-player-positions', JSON.stringify(value))
+    localStorage.setItem('lura-selected-position', '14')
     sessionStorage.setItem('stale-plan-seeded', 'true')
   }, stale)
   const code = Buffer.from(encodeURIComponent(JSON.stringify(plan))).toString('base64')
   await page.goto(`/#raidplan=${code}`)
 
   await expect(page.getByText('Shared raid plan loaded')).toBeVisible()
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('lura-p3-player-positions') || '[]')[14])).toEqual({ x: 553, y: 398 })
+  const stored = await page.evaluate(() => ({
+    intermission: JSON.parse(localStorage.getItem('lura-player-positions') || '[]')[14],
+    p2Soak: JSON.parse(localStorage.getItem('lura-p2-player-positions') || '[]')[14],
+    p2Spread: JSON.parse(localStorage.getItem('lura-p2-spread-positions') || '[]')[14],
+    p3: JSON.parse(localStorage.getItem('lura-p3-player-positions') || '[]')[14],
+  }))
+  expect(stored.p3).toEqual({ x: 553, y: 398 })
   expect(await page.getByRole('button', { name: 'Move P3 player 15' }).evaluate(element => parseFloat((element as HTMLElement).style.left))).toBeGreaterThan(50)
+
+  const expectedPoint = (point: { x: number; y: number }) => `${point.x},${point.y}`
+  const enterAndInspect = async (phase: 'Intermission' | 'P2' | 'P3' | 'P4') => {
+    if (phase !== 'Intermission') await page.getByRole('button', { name: phase, exact: true }).click()
+    await page.getByRole('button', { name: phase === 'Intermission' ? /Enter Arena/ : new RegExp(`Enter ${phase}`) }).click()
+    const arena = page.locator('.arena-wrap')
+    await expect(arena).toHaveAttribute('data-player-profile', 'Zoxzy|mage')
+    await expect(arena).toHaveAttribute('data-intermission-assignment', expectedPoint(stored.intermission))
+    await expect(arena).toHaveAttribute('data-p2-soak-assignment', expectedPoint(stored.p2Soak))
+    await expect(arena).toHaveAttribute('data-p2-spread-assignment', expectedPoint(stored.p2Spread))
+    await expect(arena).toHaveAttribute('data-p3-assignment', expectedPoint(stored.p3))
+    if (phase === 'Intermission') await expect(arena).toHaveAttribute('data-active-assignment', expectedPoint(stored.intermission))
+    if (phase === 'P2') await expect(arena).toHaveAttribute('data-active-assignment', expectedPoint(stored.p2Soak))
+    if (phase === 'P3') {
+      await expect(arena).toHaveAttribute('data-active-assignment', expectedPoint(stored.p3))
+      await expect(page.getByText(/PHASE 3 · SECTOR 1 \/ 2 · IMAGE SIDE/)).toBeVisible()
+    }
+    await page.getByRole('button', { name: 'Exit' }).click()
+  }
+
+  await page.getByRole('button', { name: 'easy' }).click()
+  await enterAndInspect('Intermission')
+  await enterAndInspect('P2')
+  await enterAndInspect('P3')
+  await enterAndInspect('P4')
 
   await page.goto('/')
   expect(await page.getByRole('button', { name: 'Move P3 player 15' }).evaluate(element => parseFloat((element as HTMLElement).style.left))).toBeGreaterThan(50)

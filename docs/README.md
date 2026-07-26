@@ -117,7 +117,8 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-031` | Implemented | Resolve a player’s P4 Starsplinter against the stack, front soaker, and both other active splinter players so hitting any player—not only the abstract stack center—wipes the attempt. |
 | `BUG-032` | Implemented | Preserve interpolated actor movement after the initial P3 landing Soaks and fade the completed yellow indicators out over 250 ms instead of abruptly clearing and visually flashing the scene. |
 | `BUG-033` | Implemented | Render active P3 crystal-carrier safe zones above the opaque blue Soaks so all three local carrier lights remain visible, and give NPCs a 50% opening approach-speed bonus. | [`screen-p3-bug24.png`](../images/screen-p3-bug24.png) |
-| `BUG-034` | Implemented | Normalize and immediately persist every hash or manually loaded raid plan so a shared guild link fully replaces stale local positions, profiles, bosses, start slots, and per-phase crystal assignments across refreshes. |
+| `BUG-034` | Implemented | Load, normalize, and persist shared hash plans before the first render so stale browser state cannot leak into the live Intermission snapshot. Intermission, both P2 maps, P3, P4’s shared roster, bosses, start slots, and per-phase crystals now receive the same loaded plan; mixed-roster P3 landing groups also follow the plan side instead of roster order. A browser regression enters all four phases from a stale-local/shared-hash scenario. |
+| `BUG-035` | Implemented | Replace the misleading Discord `channels/@me` destination with Discord’s application page and use compact, readable SVG icon links for Discord and Twitch. The Discord icon’s accessible label and tooltip retain `pestivator` and the legacy `pestivator#0757` tag. |
 
 ## Implemented feature inventory
 

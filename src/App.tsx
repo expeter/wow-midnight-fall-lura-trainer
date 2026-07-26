@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
-import { bossBeamHitsPlayer, canPickupCrystal, canRecoverFromWipe, crystalCarrierPosition, crystalWipeReason, difficultySettings, distance, distanceToSegment, isOnAssignedP3Side, isP3ConsumedSectorLethal, isInSafeAnnulus, isP3ProtectionCrystalPlaced, isProtectedByP3Bubble, isProtectedByP3Light, moveRelativeToCamera, moveWithIncreasingPull, npcEntryPosition, OPENING_BOOST_SECONDS, orientedAssignments, p1PositioningWipeReason, p2NpcCrystalDrops, p2ReturningOrbPositions, P1_STAR_LENGTH, P2_BEAM_SECONDS, P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_POSITIONING_SECONDS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p3ActiveCrystalAssignments, P3_APPROACH_SECONDS, p3ArchangelStackPosition, p3AssignmentForRound, p3BossPosition, p3FlightPosition, P3_FLIGHT_SECONDS, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3LightHealthRate, p3MemoryResolved, p3PoolCenters, p3PoolSoakRate, p3ProtectionBubbleCenter, p3RuneDeadline, p3RuneEdges, p3RuneOrbs, p3RuneStepAt, p3SideForPosition, p3StarsTiming, p3UnsafePenaltyTicks, p3WrongRuneContact, P3_LANDING_SOAK_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_MEMORY_STEP_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, P3_SAFE_ZONE_PENALTY_PER_SECOND, P3_SECTOR_SECONDS, p4BossHealth, p4EncounterBoxStates, p4GroupPosition, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4SplinterStartSeconds, p4StackPosition, P4_CYCLE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, P4_SPLINTER_INTERVAL_SECONDS, personalCircleHitsCrystal, personalCircleHitsPlayer, PLAYER_COLLISION_PENALTY, randomCrystalDropDuty, randomizeP3PoolLayout, roamingNpcPosition, setP3BossPlan, translateSelectedPoints, walkTowards, WIPE_PENALTY, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type Role, type RuneSymbol } from './game'
+import { bossBeamHitsPlayer, canPickupCrystal, canRecoverFromWipe, crystalCarrierPosition, crystalWipeReason, difficultySettings, distance, distanceToSegment, isOnAssignedP3Side, isP3ConsumedSectorLethal, isInSafeAnnulus, isP3ProtectionCrystalPlaced, isProtectedByP3Bubble, isProtectedByP3Light, moveRelativeToCamera, moveWithIncreasingPull, npcEntryPosition, OPENING_BOOST_SECONDS, orientedAssignments, p1PositioningWipeReason, p2NpcCrystalDrops, p2ReturningOrbPositions, P1_STAR_LENGTH, P2_BEAM_SECONDS, P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_POSITIONING_SECONDS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p3ActiveCrystalAssignments, P3_APPROACH_SECONDS, p3ArchangelStackPosition, p3AssignmentForRound, p3BossPosition, p3FlightPosition, P3_FLIGHT_SECONDS, p3LandingPlanIndex, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3LightHealthRate, p3MemoryResolved, p3PoolCenters, p3PoolSoakRate, p3ProtectionBubbleCenter, p3RuneDeadline, p3RuneEdges, p3RuneOrbs, p3RuneStepAt, p3SideForPosition, p3StarsTiming, p3UnsafePenaltyTicks, p3WrongRuneContact, P3_LANDING_SOAK_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_MEMORY_STEP_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, P3_SAFE_ZONE_PENALTY_PER_SECOND, P3_SECTOR_SECONDS, p4BossHealth, p4EncounterBoxStates, p4GroupPosition, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4SplinterStartSeconds, p4StackPosition, P4_CYCLE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, P4_SPLINTER_INTERVAL_SECONDS, personalCircleHitsCrystal, personalCircleHitsPlayer, PLAYER_COLLISION_PENALTY, randomCrystalDropDuty, randomizeP3PoolLayout, roamingNpcPosition, setP3BossPlan, translateSelectedPoints, walkTowards, WIPE_PENALTY, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type Role, type RuneSymbol } from './game'
 import { buildPhaseResult, completionShareText, isFullSequenceCompletion, type PhaseKey, type PhaseResult } from './completion'
 import { p4FrontSoakerPosition, p4TankKillsBox } from './game'
 import GameScene from './GameScene'
@@ -34,7 +34,7 @@ const PROJECT_URL = 'https://github.com/expeter/wow-midnight-fall-lura-trainer'
 const CHANGELOG_URL = `${PROJECT_URL}/blob/main/CHANGELOG.md`
 const RAIDER_IO_PROFILE = 'https://raider.io/characters/eu/antonidas/Pestivator'
 const ASGARD_RAID_PLAN_URL = 'https://tinyurl.com/lura-trainer-iasgardi-v3'
-const DISCORD_MESSAGES_URL = 'https://discord.com/channels/@me'
+const DISCORD_APP_URL = 'https://discord.com/app'
 const MUSIC_TRACKS = [
   { id: 'panic', label: 'Panic Again Pulse · 1:19', src: new URL('../sounds/pixabay/oceanframemusic-panic-again-pulse-no-copyright-suspense-music-568851.mp3', import.meta.url).href },
   { id: 'dominion', label: 'Dominion · 1:16', src: new URL('../sounds/pixabay/ancient_echoes-dominion-519384.mp3', import.meta.url).href },
@@ -356,10 +356,20 @@ function phaseForEntry(entryMode: EntryMode): PhaseKey {
   return 'intermission'
 }
 
+function loadInitialSharedRaidPlan(): RaidPlan | null {
+  if (!window.location.hash.startsWith('#raidplan=')) return null
+  const decoded = decodeRaidPlan(window.location.hash)
+  if (!decoded) return null
+  const plan = normalizeRaidPlanForUse(decoded)
+  persistRaidPlan(plan)
+  return plan
+}
+
 export default function App() {
   const [screen, setScreen] = useState<Screen>('menu')
   const [difficulty, setDifficulty] = useState<Difficulty>('normal')
   const [entryMode, setEntryMode] = useState<EntryMode>('arena1')
+  const [initialSharedPlan] = useState(loadInitialSharedRaidPlan)
   const [movementSpeed, setMovementSpeed] = useState(18)
   const [gameSpeed, setGameSpeed] = useState(() => {
     const saved = Number(localStorage.getItem('lura-game-speed'))
@@ -383,20 +393,20 @@ export default function App() {
   const [keyBindings, setKeyBindings] = useState<KeyBindings>(loadKeyBindings)
   const [assignment, setAssignment] = useState(loadAssignment)
   const [playerName, setPlayerName] = useState(() => localStorage.getItem('lura-player-name') || '')
-  const [positions, setPositions] = useState<Assignment[]>(loadPositions)
+  const [positions, setPositions] = useState<Assignment[]>(() => initialSharedPlan?.positions ?? loadPositions())
   const [phasePositions, setPhasePositions] = useState<Assignment[]>(positions)
-  const [p2Positions, setP2Positions] = useState<Assignment[]>(loadP2Positions)
-  const [p2SpreadPositions, setP2SpreadPositions] = useState<Assignment[]>(loadP2SpreadPositions)
-  const [p3Positions, setP3Positions] = useState<Assignment[]>(loadP3Positions)
-  const [p3BossPositions, setP3BossPositions] = useState<Assignment[]>(loadP3BossPositions)
-  const [startSlots, setStartSlots] = useState<Assignment[]>(loadStartSlots)
-  const [profiles, setProfiles] = useState<PlayerProfile[]>(loadProfiles)
+  const [p2Positions, setP2Positions] = useState<Assignment[]>(() => initialSharedPlan?.p2Positions ?? loadP2Positions())
+  const [p2SpreadPositions, setP2SpreadPositions] = useState<Assignment[]>(() => initialSharedPlan?.p2SpreadPositions ?? loadP2SpreadPositions())
+  const [p3Positions, setP3Positions] = useState<Assignment[]>(() => initialSharedPlan?.p3Positions ?? loadP3Positions())
+  const [p3BossPositions, setP3BossPositions] = useState<Assignment[]>(() => initialSharedPlan?.p3BossPositions ?? loadP3BossPositions())
+  const [startSlots, setStartSlots] = useState<Assignment[]>(() => initialSharedPlan?.startSlots ?? loadStartSlots())
+  const [profiles, setProfiles] = useState<PlayerProfile[]>(() => initialSharedPlan?.profiles ?? loadProfiles())
   const legacyCrystalAssignments = profiles.map((profile, index) => profile.crystal ? index : -1).filter(index => index >= 0)
-  const [intermissionCrystalAssignments, setIntermissionCrystalAssignments] = useState(() => loadPhaseCrystalAssignments('intermission', legacyCrystalAssignments))
-  const [p2CrystalAssignments, setP2CrystalAssignments] = useState(() => loadPhaseCrystalAssignments('p2', legacyCrystalAssignments))
-  const [p3CrystalAssignments, setP3CrystalAssignments] = useState(() => loadPhaseCrystalAssignments('p3', legacyCrystalAssignments))
-  const [shareInput, setShareInput] = useState('')
-  const [shareStatus, setShareStatus] = useState('')
+  const [intermissionCrystalAssignments, setIntermissionCrystalAssignments] = useState(() => initialSharedPlan?.crystalAssignments.intermission ?? loadPhaseCrystalAssignments('intermission', legacyCrystalAssignments))
+  const [p2CrystalAssignments, setP2CrystalAssignments] = useState(() => initialSharedPlan?.crystalAssignments.p2 ?? loadPhaseCrystalAssignments('p2', legacyCrystalAssignments))
+  const [p3CrystalAssignments, setP3CrystalAssignments] = useState(() => initialSharedPlan?.crystalAssignments.p3 ?? loadPhaseCrystalAssignments('p3', legacyCrystalAssignments))
+  const [shareInput, setShareInput] = useState(() => initialSharedPlan ? window.location.href : '')
+  const [shareStatus, setShareStatus] = useState(() => initialSharedPlan ? 'Shared raid plan loaded' : '')
   const [stats, setStats] = useState<GameStats>({ score: 1000, hits: 0, crystalDropped: false, time: 0 })
   const [phaseResults, setPhaseResults] = useState<PhaseResult[]>([])
   const [completionCopyStatus, setCompletionCopyStatus] = useState('')
@@ -830,7 +840,7 @@ export default function App() {
       updateHealth(dt)
       if (crystal) setCrystalAge(age => { const next = age + dt; crystalAgeRef.current = next; return next })
       if (npcCrystals.length) setNpcCrystalAge(age => age + dt)
-      setPlayer(p => { const speedBonusActive = movementBonus && event === 'positioning' && eventTimeRef.current <= OPENING_BOOST_SECONDS; const openingSpeed = movementSpeed * (speedBonusActive ? 1.4 : 1); const p4Speed = event === 'p4-cycle' ? openingSpeed * P4_MOVEMENT_MULTIPLIER : openingSpeed; const activeMovementSpeed = event === 'p3-sector-move' ? openingSpeed * 2 : event === 'p3-approach' && eventTimeRef.current < 5 ? openingSpeed * 1.4 : p4Speed; const backwardMultiplier = difficulty === 'hard' ? .5 : 1; const bounds = { minX: 30, maxX: WORLD.width - 30, minY: 30, maxY: WORLD.height - 30 }; const movementKeys = scriptedP4Jump ? new Set<string>() : jumping ? jumpKeysRef.current : keys; const movementForward = jumping ? jumpCameraForwardRef.current : cameraForward.current; let next: Point; if (event === 'countdown' || event === 'p2-countdown' || event === 'p3-countdown' || event === 'p4-countdown') next = p; else if (event === 'p2-jump') { const progress = Math.min(1, eventTimeRef.current / 1.4); const eased = 1 - Math.pow(1 - progress, 3); next = { x: jumpOriginRef.current.x + (WORLD.center.x - jumpOriginRef.current.x) * eased, y: jumpOriginRef.current.y + (WORLD.center.y - jumpOriginRef.current.y) * eased } } else if (event === 'p3-flight') next = p3FlightPosition(p3FlightOriginRef.current, p3LandingPosition(assignment, WORLD.center), eventTimeRef.current); else if (event === 'p2-pull') next = moveWithIncreasingPull(p, movementKeys, activeMovementSpeed, dt, movementForward, bounds, WORLD.center, eventTimeRef.current / P2_PULL_SECONDS, backwardMultiplier); else next = moveRelativeToCamera(p, movementKeys, activeMovementSpeed, dt, movementForward, bounds, backwardMultiplier); playerRef.current = next; if (event === 'p2-orbs' && eventTimeRef.current >= P2_BEAM_SECONDS - 1 && distance(next, p2Positions[assignment]) <= 8) setP2Soaked(true); if (crystal && event !== 'p3-archangel' && canPickupCrystal(next, crystal, crystalAgeRef.current)) { setCrystal(null); setCrystalAge(0); crystalAgeRef.current = 0; setStats(s => ({ ...s, crystalDropped: false })) } updateP3Pools(next, dt); updateP3PositionHealth(next, dt); checkHazards(next, now / 1000, dt); return next })
+      setPlayer(p => { const speedBonusActive = movementBonus && event === 'positioning' && eventTimeRef.current <= OPENING_BOOST_SECONDS; const openingSpeed = movementSpeed * (speedBonusActive ? 1.4 : 1); const p4Speed = event === 'p4-cycle' ? openingSpeed * P4_MOVEMENT_MULTIPLIER : openingSpeed; const activeMovementSpeed = event === 'p3-sector-move' ? openingSpeed * 2 : event === 'p3-approach' && eventTimeRef.current < 5 ? openingSpeed * 1.4 : p4Speed; const backwardMultiplier = difficulty === 'hard' ? .5 : 1; const bounds = { minX: 30, maxX: WORLD.width - 30, minY: 30, maxY: WORLD.height - 30 }; const movementKeys = scriptedP4Jump ? new Set<string>() : jumping ? jumpKeysRef.current : keys; const movementForward = jumping ? jumpCameraForwardRef.current : cameraForward.current; let next: Point; if (event === 'countdown' || event === 'p2-countdown' || event === 'p3-countdown' || event === 'p4-countdown') next = p; else if (event === 'p2-jump') { const progress = Math.min(1, eventTimeRef.current / 1.4); const eased = 1 - Math.pow(1 - progress, 3); next = { x: jumpOriginRef.current.x + (WORLD.center.x - jumpOriginRef.current.x) * eased, y: jumpOriginRef.current.y + (WORLD.center.y - jumpOriginRef.current.y) * eased } } else if (event === 'p3-flight') next = p3FlightPosition(p3FlightOriginRef.current, p3LandingPosition(p3LandingPlanIndex(assignment, p3Positions, WORLD.center), WORLD.center), eventTimeRef.current); else if (event === 'p2-pull') next = moveWithIncreasingPull(p, movementKeys, activeMovementSpeed, dt, movementForward, bounds, WORLD.center, eventTimeRef.current / P2_PULL_SECONDS, backwardMultiplier); else next = moveRelativeToCamera(p, movementKeys, activeMovementSpeed, dt, movementForward, bounds, backwardMultiplier); playerRef.current = next; if (event === 'p2-orbs' && eventTimeRef.current >= P2_BEAM_SECONDS - 1 && distance(next, p2Positions[assignment]) <= 8) setP2Soaked(true); if (crystal && event !== 'p3-archangel' && canPickupCrystal(next, crystal, crystalAgeRef.current)) { setCrystal(null); setCrystalAge(0); crystalAgeRef.current = 0; setStats(s => ({ ...s, crystalDropped: false })) } updateP3Pools(next, dt); updateP3PositionHealth(next, dt); checkHazards(next, now / 1000, dt); return next })
       frame = requestAnimationFrame(tick)
     }
     frame = requestAnimationFrame(tick)
@@ -931,12 +941,12 @@ export default function App() {
     } else if (event === 'p3-countdown') {
       beginP3(false)
     } else if (event === 'p3-flight') {
-      const target = p3LandingPosition(assignment, WORLD.center)
+      const target = p3LandingPosition(p3LandingPlanIndex(assignment, p3Positions, WORLD.center), WORLD.center)
       playerRef.current = target
       setPlayer(target)
       setEvent('p3-landing')
     } else if (event === 'p3-landing') {
-      const soaks = p3LandingSoakPositions(assignment, WORLD.center, p4PatternSeed)
+      const soaks = p3LandingSoakPositions(p3LandingPlanIndex(assignment, p3Positions, WORLD.center), WORLD.center, p4PatternSeed)
       const playerSoak = soaks[activeCrystalAssignments.includes(assignment) ? 1 : 0]
       if (p3LandingRequiredRef.current && distance(player, playerSoak) > P3_LANDING_SOAK_RADIUS) {
         if (triggerWipe('Missed the initial yellow landing soak')) return
@@ -1590,7 +1600,7 @@ export default function App() {
   </main>
   function updateProfile(update: Partial<PlayerProfile>) { setProfiles(current => current.map((profile, index) => index === assignment ? { ...profile, ...update } : profile)) }
   function currentRaidPlan(): RaidPlan { return normalizeRaidPlanForUse({ positions, p2Positions, p2SpreadPositions, p3Positions, p3BossPositions, startSlots, profiles, crystalAssignments: phaseCrystalAssignments }) }
-  function loadRaidPlanIntoApp(sourcePlan: RaidPlan) { const plan = normalizeRaidPlanForUse(sourcePlan); persistRaidPlan(plan); setPositions(plan.positions); setP2Positions(plan.p2Positions); setP2SpreadPositions(plan.p2SpreadPositions); setP3Positions(plan.p3Positions); setP3BossPositions(plan.p3BossPositions); setStartSlots(plan.startSlots); setProfiles(plan.profiles); setIntermissionCrystalAssignments(plan.crystalAssignments.intermission); setP2CrystalAssignments(plan.crystalAssignments.p2); setP3CrystalAssignments(plan.crystalAssignments.p3) }
+  function loadRaidPlanIntoApp(sourcePlan: RaidPlan) { const plan = normalizeRaidPlanForUse(sourcePlan); persistRaidPlan(plan); setPositions(plan.positions); setPhasePositions(plan.positions); setP2Positions(plan.p2Positions); setP2SpreadPositions(plan.p2SpreadPositions); setP3Positions(plan.p3Positions); setP3BossPositions(plan.p3BossPositions); setStartSlots(plan.startSlots); setProfiles(plan.profiles); setIntermissionCrystalAssignments(plan.crystalAssignments.intermission); setP2CrystalAssignments(plan.crystalAssignments.p2); setP3CrystalAssignments(plan.crystalAssignments.p3) }
   function savePositions() { persistRaidPlan(currentRaidPlan()); setShareStatus('Layout saved') }
   function resetPositions() { const defaults = DEFAULT_ASSIGNMENTS.map(point => ({ ...point })); const defaultP2 = DEFAULT_P2_ASSIGNMENTS.map(point => ({ ...point })); const defaultP2Spread = DEFAULT_P2_SPREAD_ASSIGNMENTS.map(point => ({ ...point })); const defaultP3 = DEFAULT_P3_ASSIGNMENTS.map(point => ({ ...point })); const defaultStarts = DEFAULT_START_SLOTS.map(point => ({ ...point })); const defaultProfiles = DEFAULT_PROFILES.map(profile => ({ ...profile })); const defaultCrystals = normalizeCrystalAssignments(DEFAULT_PROFILES.map((profile, index) => profile.crystal ? index : -1)); setPositions(defaults); setP2Positions(defaultP2); setP2SpreadPositions(defaultP2Spread); setP3Positions(defaultP3); setStartSlots(defaultStarts); setProfiles(defaultProfiles); setIntermissionCrystalAssignments(defaultCrystals); setP2CrystalAssignments(defaultCrystals); setP3CrystalAssignments(defaultCrystals); localStorage.setItem('lura-player-positions', JSON.stringify(defaults)); localStorage.setItem('lura-p2-player-positions', JSON.stringify(defaultP2)); localStorage.setItem('lura-p2-spread-positions', JSON.stringify(defaultP2Spread)); localStorage.setItem('lura-p3-player-positions', JSON.stringify(defaultP3)); localStorage.setItem('lura-player-profiles', JSON.stringify(defaultProfiles)); localStorage.setItem('lura-intermission-crystal-assignments', JSON.stringify(defaultCrystals)); localStorage.setItem('lura-p2-crystal-assignments', JSON.stringify(defaultCrystals)); localStorage.setItem('lura-p3-crystal-assignments', JSON.stringify(defaultCrystals)); localStorage.setItem('lura-start-slots', JSON.stringify(defaultStarts)); setShareStatus('Default layout restored') }
   function raidPlanCode() { return encodeRaidPlan(currentRaidPlan()) }
@@ -1726,7 +1736,7 @@ function CreatorCard() {
   return <aside className="creator-card" aria-label="About Pestivator">
     <a className="creator-avatar-link" href={RAIDER_IO_PROFILE} target="_blank" rel="noreferrer" aria-label="Pestivator on Raider.IO"><img src={CREATOR_AVATAR} alt="Pestivator's gnome avatar" /></a>
     <div><span>Created by</span><strong>Pestivator</strong><a className="battle-tag-link" href={RAIDER_IO_PROFILE} target="_blank" rel="noreferrer" title="BattleTag · open Pestivator on Raider.IO">pestivator#2515</a>
-      <nav aria-label="Pestivator links"><a href={RAIDER_IO_PROFILE} target="_blank" rel="noreferrer">Raider.IO</a><a href="https://twitch.tv/pestivator" target="_blank" rel="noreferrer" aria-label="Pestivator on Twitch" title="Twitch · Pestivator">Twitch</a><a href={DISCORD_MESSAGES_URL} target="_blank" rel="noreferrer" aria-label="Chat with pestivator on Discord, legacy tag pestivator#0757" title="Discord · pestivator · legacy pestivator#0757">Discord</a><a className="coffee-link" href={`solana:${SOLANA_ADDRESS}?label=Pestivator&message=Thanks%20for%20the%20Lura%20Trainer`} title={`Send SOL to ${SOLANA_ADDRESS}`}>☕ Buy me a coffee</a></nav>
+      <nav aria-label="Pestivator links"><a href={RAIDER_IO_PROFILE} target="_blank" rel="noreferrer">Raider.IO</a><a className="creator-icon-link twitch" href="https://twitch.tv/pestivator" target="_blank" rel="noreferrer" aria-label="Pestivator on Twitch" title="Twitch · Pestivator"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 4h14v11l-4 4h-4l-3 2v-2H5V4Z" /><path d="M10 8v5M14 8v5" /></svg></a><a className="creator-icon-link discord" href={DISCORD_APP_URL} target="_blank" rel="noreferrer" aria-label="Open Discord for pestivator, legacy tag pestivator#0757" title="Discord · pestivator · legacy pestivator#0757"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 6.5c3.8-2 8.2-2 12 0l1.5 9.5c-2 1.5-3.7 2.3-5.2 2.7l-1.1-1.5h-2.4l-1.1 1.5C8.2 18.3 6.5 17.5 4.5 16L6 6.5Z" /><circle cx="9.5" cy="12.5" r="1.2" /><circle cx="14.5" cy="12.5" r="1.2" /></svg></a><a className="coffee-link" href={`solana:${SOLANA_ADDRESS}?label=Pestivator&message=Thanks%20for%20the%20Lura%20Trainer`} title={`Send SOL to ${SOLANA_ADDRESS}`}>☕ Buy me a coffee</a></nav>
     </div>
   </aside>
 }
@@ -1869,7 +1879,17 @@ function GameArena(props: { mainAbilityEnabled: boolean; bossHealth: number; mai
       <div className="game-actions"><button aria-label={props.musicMuted ? 'Unmute music' : 'Mute music'} onClick={() => props.setMusicMuted(!props.musicMuted)}>{props.musicMuted ? '🔇 Muted' : '🔊 Music'}</button><button disabled={Boolean(props.wipeReason)} onClick={() => props.setPaused(!props.paused)}>{props.wipeReason ? 'Wiped' : props.paused ? 'Resume' : 'Pause'}</button><button className="secondary" onClick={props.onExit}>Exit</button></div>
     </div>
     <div className="game-layout">
-      <div className={`arena-wrap${props.failureFlash ? ' failure-flash' : ''}${props.personalJumpProgress > 0 ? ' personal-jump' : ''}`} data-personal-jump={props.personalJumpProgress > 0} data-event-time={props.eventTime.toFixed(2)}>
+      <div
+        className={`arena-wrap${props.failureFlash ? ' failure-flash' : ''}${props.personalJumpProgress > 0 ? ' personal-jump' : ''}`}
+        data-personal-jump={props.personalJumpProgress > 0}
+        data-event-time={props.eventTime.toFixed(2)}
+        data-active-assignment={`${props.positions[props.assignment].x},${props.positions[props.assignment].y}`}
+        data-intermission-assignment={`${props.intermissionPositions[props.assignment].x},${props.intermissionPositions[props.assignment].y}`}
+        data-p2-soak-assignment={`${props.p2SoakPositions[props.assignment].x},${props.p2SoakPositions[props.assignment].y}`}
+        data-p2-spread-assignment={`${props.p2SpreadPositions[props.assignment].x},${props.p2SpreadPositions[props.assignment].y}`}
+        data-p3-assignment={`${props.p3Positions[props.assignment].x},${props.p3Positions[props.assignment].y}`}
+        data-player-profile={`${props.profiles[props.assignment].name}|${props.profiles[props.assignment].playerClass}`}
+      >
         <GameScene
           positions={props.positions}
           intermissionPositions={props.intermissionPositions}

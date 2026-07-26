@@ -185,6 +185,11 @@
   white-space: nowrap;
 }
 .creator-card nav a:hover { border-color: #73e0c1; background: #193239; }
+.creator-card .creator-icon-link { min-height: 28px; padding: 3px; }
+.creator-card .creator-icon-link svg { width: 18px; height: 18px; overflow: visible; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.creator-card .creator-icon-link.twitch { color: #bf94ff; }
+.creator-card .creator-icon-link.discord { color: #aeb8ff; }
+.creator-card .creator-icon-link.discord svg circle { fill: currentColor; stroke: none; }
 .creator-card .coffee-link { grid-column: 1 / -1; width: 100%; color: #ffe18b; border-color: #625331; }
 .practice-settings { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: -12px 0 24px; }
 .music-preview { padding: 8px 10px; margin: 10px 0 0; text-align: center; font-size: 11px; }

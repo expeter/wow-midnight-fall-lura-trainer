@@ -108,6 +108,16 @@ export function p3LandingGroupIndex(index: number): number {
   return (index < 10 ? 0 : 3) + Math.min(2, Math.floor(index % 10 / 3))
 }
 
+export function p3LandingPlanIndex(index: number, positions: Point[], center: Point): number {
+  const side = p3SideForPosition(positions[index], center)
+  const sideMembers = positions
+    .map((position, profileIndex) => ({ position, profileIndex }))
+    .filter(candidate => p3SideForPosition(candidate.position, center) === side)
+    .map(candidate => candidate.profileIndex)
+  const sideOrdinal = Math.max(0, sideMembers.indexOf(index))
+  return (side < 0 ? 0 : 10) + Math.min(9, sideOrdinal)
+}
+
 export function p3LandingGroupCenter(index: number, center: Point, radius = 176): Point {
   const side = index < 10 ? -1 : 1
   const sideIndex = index % 10

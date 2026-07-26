@@ -14,4 +14,9 @@ describe('shared visual rules', () => {
     expect(styles).toContain('.main-cast .main-cast-fill { width: 100%; transform: scaleX(0); transform-origin: left center; animation: main-cast-fill 1s linear forwards; }')
     expect(styles).toContain('@keyframes main-cast-fill { to { transform: scaleX(1); } }')
   })
+
+  it('keeps achievement unlock cards visible before fading after five seconds', () => {
+    expect(styles).toContain('animation: achievement-popup-life 5s ease both')
+    expect(styles).toContain('@keyframes achievement-popup-life')
+  })
 })

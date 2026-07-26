@@ -1,4 +1,4 @@
-import { achievementCatalog, type AchievementCluster, type AchievementCollectionData } from './achievementCollection'
+import { achievementCatalog, type AchievementCluster, type AchievementCollectionData, type AchievementDefinition } from './achievementCollection'
 
 interface AchievementCollectionProps {
   collection: AchievementCollectionData
@@ -25,6 +25,20 @@ export function AchievementBadgeSummary({ collection }: AchievementCollectionPro
     <strong>{earned}/{available.length}</strong>
     <small>Achievements</small>
   </a>
+}
+
+export function AchievementUnlockPopups({ achievements }: { achievements: AchievementDefinition[] }) {
+  if (!achievements.length) return null
+  return <aside className="achievement-unlock-popups" aria-label="New achievements" aria-live="polite">
+    {achievements.map(achievement => <article className="achievement-unlock-popup" key={achievement.key}>
+      <span className="achievement-icon" aria-hidden="true">{achievement.icon}</span>
+      <div>
+        <small>Achievement unlocked</small>
+        <strong>{achievement.label}</strong>
+        <p>{achievement.flavor}</p>
+      </div>
+    </article>)}
+  </aside>
 }
 
 export default function AchievementCollection({ collection }: AchievementCollectionProps) {

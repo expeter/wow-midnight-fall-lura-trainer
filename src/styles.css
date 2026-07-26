@@ -347,6 +347,14 @@
 .achievement-summary-link > span { font-size: 16px; line-height: 1; }
 .achievement-summary-link strong { font: 700 16px 'DM Mono', monospace; }
 .achievement-summary-link small { color: #aeb8d0; font-size: 16px; }
+.achievement-unlock-popups { position: fixed; z-index: 30; top: 18px; left: 50%; display: grid; width: min(430px, calc(100vw - 28px)); gap: 8px; transform: translateX(-50%); pointer-events: none; }
+.achievement-unlock-popup { --badge-accent: #ffd369; display: flex; align-items: center; gap: 13px; padding: 13px 15px; border: 1px solid rgba(255,211,105,.62); border-radius: 11px; background: radial-gradient(circle at 90% 10%, rgba(255,211,105,.18), transparent 40%), rgba(8,12,23,.96); box-shadow: 0 16px 48px rgba(0,0,0,.58), inset 0 0 30px rgba(255,211,105,.04); animation: achievement-popup-life 5s ease both; }
+.achievement-unlock-popup > div { min-width: 0; }
+.achievement-unlock-popup small, .achievement-unlock-popup strong { display: block; }
+.achievement-unlock-popup small { color: #d6bc70; font: 700 10px 'DM Mono', monospace; letter-spacing: .11em; text-transform: uppercase; }
+.achievement-unlock-popup strong { margin-top: 2px; color: #fff1bd; font-size: 17px; }
+.achievement-unlock-popup p { margin: 3px 0 0; color: #b4bed2; font-size: 14px; line-height: 1.35; }
+@keyframes achievement-popup-life { 0% { opacity: 0; transform: translateY(-28px) scale(.97); } 8%, 82% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-8px) scale(.985); } }
 .achievement-collection {
   width: 100%;
   margin-top: 42px;

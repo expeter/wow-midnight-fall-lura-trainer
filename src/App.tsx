@@ -3,8 +3,8 @@ import { bossBeamHitsPlayer, canPickupCrystal, canRecoverFromWipe, crystalCarrie
 import { buildPhaseResult, completionShareText, isFullSequenceCompletion, type PhaseKey, type PhaseResult } from './completion'
 import { bossDamageScoreBonus, isInsideP3Pool, p4BossHealthWithPlayerDamage, p4FrontSoakerPosition, p4TankKillsBox, starsplinterHitsCrystalCarrier } from './game'
 import { p4TimedVoiceCues, timedVoiceDelaySeconds, ttsCuesForState, type P4VoiceClip } from './audio'
-import AchievementCollection, { AchievementBadgeSummary } from './AchievementCollection'
-import { ACHIEVEMENT_STORAGE_KEY, collectibleAchievements, mergeEarnedAchievements, parseAchievementCollection, serializeAchievementCollection } from './achievementCollection'
+import AchievementCollection, { AchievementBadgeSummary, AchievementUnlockPopups } from './AchievementCollection'
+import { ACHIEVEMENT_STORAGE_KEY, collectibleAchievements, mergeEarnedAchievements, parseAchievementCollection, serializeAchievementCollection, type AchievementDefinition } from './achievementCollection'
 import { FEATURE_FLAGS } from './features'
 import GameScene from './GameScene'
 import { advanceMainAbilityCast, idleMainAbilityCast, mainAbilityElapsedSeconds, MAIN_ABILITY_CAST_SECONDS, requestMainAbilityCast, type MainAbilityCastState } from './mainAbility'
@@ -429,6 +429,7 @@ export default function App() {
   const [completionCopyStatus, setCompletionCopyStatus] = useState('')
   const [completionPreview, setCompletionPreview] = useState(false)
   const [achievementCollection, setAchievementCollection] = useState(() => parseAchievementCollection(localStorage.getItem(ACHIEVEMENT_STORAGE_KEY)))
+  const [achievementPopups, setAchievementPopups] = useState<AchievementDefinition[]>([])
   const [attemptNumber, setAttemptNumber] = useState(() => Math.max(0, Number(localStorage.getItem('lura-attempt-count')) || 0))
   const [paused, setPaused] = useState(false)
   const [player, setPlayer] = useState<Point>(positions[0])
@@ -1667,9 +1668,11 @@ export default function App() {
   }
   const collectibleAwards = collectibleAchievements(achievementSummary, achievementCollection, attemptNumber)
   const achievements = collectibleAwards
-  const collectibleAwardSignature = collectibleAwards.map(achievement => achievement.key).join('|')
+  const newCollectibleAwards = collectibleAwards.filter(achievement => !achievementCollection.records.some(record => record.key === achievement.key))
+  const collectibleAwardSignature = newCollectibleAwards.map(achievement => achievement.key).join('|')
   useEffect(() => {
     if (screen !== 'results' || completionPreview || !collectibleAwardSignature) return
+    setAchievementPopups(newCollectibleAwards)
     setAchievementCollection(current => {
       const updated = mergeEarnedAchievements(current, collectibleAwards, new Date().toISOString(), {
         attempt: attemptNumber,
@@ -1680,6 +1683,11 @@ export default function App() {
       return updated
     })
   }, [screen, completionPreview, collectibleAwardSignature])
+  useEffect(() => {
+    if (!achievementPopups.length) return
+    const timeout = window.setTimeout(() => setAchievementPopups([]), 5000)
+    return () => window.clearTimeout(timeout)
+  }, [achievementPopups])
   const primaryAchievement = achievements.find(achievement => achievement.id === 'superhuman-both-duties')
     ?? achievements.find(achievement => achievement.id === 'hard-score-flawless')
     ?? achievements.find(achievement => achievement.id === 'not-a-scratch')
@@ -1826,6 +1834,7 @@ export default function App() {
   </main>
   if (screen === 'results') return <main className="shell results">
     <BuildIndicator />
+    <AchievementUnlockPopups achievements={achievementPopups} />
     <section className={`completion-card ${fullSequenceComplete ? 'achievement-unlocked' : ''} ${completionPreview ? 'result-preview' : ''}`}>
       <div className="completion-glow" aria-hidden="true">✦</div>
       <p className="eyebrow">{completionPreview ? 'RESULT SCREEN PREVIEW' : fullSequenceComplete ? 'FULL RUN COMPLETE · ACHIEVEMENT UNLOCKED' : 'PRACTICE COMPLETE'}</p>

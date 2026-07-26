@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import AchievementCollection, { AchievementBadgeSummary } from './AchievementCollection'
-import type { AchievementCollectionData } from './achievementCollection'
+import AchievementCollection, { AchievementBadgeSummary, AchievementUnlockPopups } from './AchievementCollection'
+import { achievementCatalog, type AchievementCollectionData } from './achievementCollection'
 
 const collection: AchievementCollectionData = {
   version: 2,
@@ -31,5 +31,15 @@ describe('achievement collection UI', () => {
   it('links the compact one-of-twenty summary to the ledger', () => {
     render(<AchievementBadgeSummary collection={collection} />)
     expect(screen.getByRole('link', { name: 'Achievements 1 of 20 earned' })).toHaveAttribute('href', '#achievements')
+  })
+
+  it('shows newly earned achievements as compact live cards with title and flavor text', () => {
+    const achievement = achievementCatalog().find(entry => entry.key === 'always-be-casting')!
+    render(<AchievementUnlockPopups achievements={[achievement]} />)
+    const popups = screen.getByLabelText('New achievements')
+    expect(popups).toHaveAttribute('aria-live', 'polite')
+    expect(within(popups).getByText('Achievement unlocked')).toBeInTheDocument()
+    expect(within(popups).getByText('Always Be Casting')).toBeInTheDocument()
+    expect(within(popups).getByText(/perfect footwork leaves room/i)).toBeInTheDocument()
   })
 })

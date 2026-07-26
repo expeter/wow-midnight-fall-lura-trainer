@@ -56,6 +56,8 @@ change before implementation.
 - Every NPC remains inside the moving yellow protection zone. Active
   Starsplinter NPCs move to safe left/right/left positions within its edge,
   hold until detonation, and return to the stack before the next detonation.
+- Pause/resume preserves the authoritative quarter and mechanic clock exactly;
+  render timing must never infer a Phase 4 quarter transition.
 
 ## SPEC-007 · Setup-page hierarchy
 

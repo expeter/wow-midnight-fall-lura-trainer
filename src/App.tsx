@@ -587,7 +587,7 @@ export default function App() {
   useEffect(() => {
     if (screen !== 'game') return
     const togglePause = (event: KeyboardEvent) => {
-      if (event.code !== keyBindings.pause || wipeRef.current) return
+      if (event.code !== keyBindings.pause || event.repeat || wipeRef.current) return
       event.preventDefault()
       keysHeld.current.clear()
       setPaused(current => !current)
@@ -1944,6 +1944,7 @@ function GameArena(props: { mainAbilityEnabled: boolean; bossHealth: number; mai
           p2OrbReturnAge={props.p2OrbReturnAge}
           p3Round={props.p3Round}
           p3ArchangelDuty={props.p3ArchangelDuty}
+          p4Cycle={props.p4Cycle}
           p4PatternSeed={props.p4PatternSeed}
           p3PoolHealth={props.p3PoolHealth}
           onP3PoolOccupancy={props.onP3PoolOccupancy}

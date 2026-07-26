@@ -19,6 +19,7 @@ interface SceneProps {
   p2OrbReturnAge: number
   p3Round: number
   p3ArchangelDuty: 1 | 2 | null
+  p4Cycle: number
   p4PatternSeed: number
   p3PoolHealth: number[]
   onP3PoolOccupancy: (occupancy: number[]) => void
@@ -557,8 +558,6 @@ export default function GameScene(props: SceneProps) {
     let orbitSoakStart = 0
     let orbitSoakTarget = 0
     let previousEvent: SceneProps['event'] = initial.event
-    let previousEventTime = initial.eventTime
-    let p4VisualCycle = 1
     const destroyedP4BoxIds = new Set<number>()
     const resolvedP4VisualSplinters = new Set<number>()
     const resize = () => {
@@ -661,12 +660,11 @@ export default function GameScene(props: SceneProps) {
 
     const render = () => {
       const state = latest.current
+      const p4VisualCycle = state.p4Cycle
+      renderer.domElement.dataset.p4Cycle = String(p4VisualCycle)
       const p3SideOf = (profileIndex: number) => p3SideForPosition(state.positions[profileIndex], WORLD.center)
       const p3LandingIndexOf = (profileIndex: number) => p3LandingPlanIndex(profileIndex, state.positions, WORLD.center)
       const playerP3Side = p3SideOf(state.assignment)
-      if (state.event === 'p4-cycle' && previousEvent === 'p4-cycle' && state.eventTime < previousEventTime) p4VisualCycle = Math.min(5, p4VisualCycle + 1)
-      if (state.event === 'p4-countdown' || state.event === 'p4-transition') p4VisualCycle = 1
-      previousEventTime = state.eventTime
       if (state.time < previousSimulationTime) {
         renderedNpcPositions.fill(null)
         p3OpeningReached = false

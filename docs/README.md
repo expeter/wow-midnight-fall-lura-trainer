@@ -158,7 +158,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-039` | Implemented | Keep every Phase 4 NPC—including active Starsplinter players and the front soaker—inside the moving yellow protection zone, and keep collision positions aligned with their visible return to the stack. |
 | `BUG-040` | Implemented | Keep a short Phase 4 pause/resume from being mistaken for a completed quarter when a queued clock render is slightly older than the previous frame. |
 | `BUG-041` | Implemented | After the final Phase 2 orb return has resolved, replace the misleading next-beam countdown with a countdown toward the Phase 3 transition. |
-| `BUG-042` | Planned | During Phase 3 Soaks, let nearby assisting NPCs close the final gap into an active pool instead of holding spread spacing just outside it. |
+| `BUG-042` | Implemented | During Phase 3 Soaks, let nearby assisting NPCs close the final gap into an active pool instead of holding spread spacing just outside it. Evidence: [`screen-p3-bug-25.png`](../images/screen-p3-bug-25.png). |
 
 ## Implemented feature inventory
 

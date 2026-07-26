@@ -215,6 +215,16 @@ export function p3PoolSoakRate(occupants: number): number {
   return occupants >= 3 ? occupants : 0
 }
 
+export function keepP3NpcInSoak(target: Point, pool: Point, padding = 1): Point {
+  const dx = target.x - pool.x
+  const dy = target.y - pool.y
+  const currentDistance = Math.hypot(dx, dy)
+  const maximumDistance = Math.max(0, P3_POOL_RADIUS - padding)
+  if (currentDistance <= maximumDistance) return target
+  const scale = maximumDistance / (currentDistance || 1)
+  return { x: pool.x + dx * scale, y: pool.y + dy * scale }
+}
+
 export function keepP3CrystalPoolCovered(target: Point, pool: Point): Point {
   const dx = target.x - pool.x
   const dy = target.y - pool.y

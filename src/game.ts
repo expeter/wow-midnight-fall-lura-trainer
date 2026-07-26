@@ -215,6 +215,43 @@ export function p3PoolSoakRate(occupants: number): number {
   return occupants >= 3 ? occupants : 0
 }
 
+export function keepP3CrystalPoolCovered(target: Point, pool: Point): Point {
+  const dx = target.x - pool.x
+  const dy = target.y - pool.y
+  const currentDistance = Math.hypot(dx, dy)
+  const minimumDistance = P3_POOL_RADIUS + 2
+  const maximumDistance = P3_LIGHT_RADIUS - P3_POOL_RADIUS
+  const direction = currentDistance > .001 ? { x: dx / currentDistance, y: dy / currentDistance } : { x: 0, y: -1 }
+  const coveredDistance = Math.max(minimumDistance, Math.min(maximumDistance, currentDistance))
+  return { x: pool.x + direction.x * coveredDistance, y: pool.y + direction.y * coveredDistance }
+}
+
+export function p3CrystalPoolCoverageTargets(pools: Point[], crystalAnchors: Point[], existingLights: Point[] = []): Point[] {
+  const uncovered = pools.filter(pool => !existingLights.some(light => distance(light, pool) + P3_POOL_RADIUS <= P3_LIGHT_RADIUS))
+  const occupiedLights = [...existingLights]
+  return crystalAnchors.map(anchor => {
+    const candidates = uncovered.length ? uncovered : pools
+    if (!candidates.length) return anchor
+    const pool = candidates.reduce((nearest, candidate) => distance(anchor, candidate) < distance(anchor, nearest) ? candidate : nearest)
+    const assignedPoolIndex = uncovered.indexOf(pool)
+    if (assignedPoolIndex >= 0) uncovered.splice(assignedPoolIndex, 1)
+    const supportRadius = (P3_POOL_RADIUS + 2 + P3_LIGHT_RADIUS - P3_POOL_RADIUS) / 2
+    const positions = Array.from({ length: 24 }, (_, index) => {
+      const angle = index * Math.PI * 2 / 24
+      const point = { x: pool.x + Math.cos(angle) * supportRadius, y: pool.y + Math.sin(angle) * supportRadius }
+      const outsideOtherPools = pools.every(other => other === pool || distance(point, other) >= P3_POOL_RADIUS + 2)
+      const nearestLight = occupiedLights.length ? Math.min(...occupiedLights.map(light => distance(point, light))) : P3_LIGHT_RADIUS * 2
+      return { point, score: (outsideOtherPools ? 1000 : 0) + Math.min(P3_LIGHT_RADIUS * 2, nearestLight) * 10 - distance(point, anchor) }
+    })
+    const target = positions.reduce((best, candidate) => candidate.score > best.score ? candidate : best).point
+    occupiedLights.push(target)
+    for (let index = uncovered.length - 1; index >= 0; index -= 1) {
+      if (distance(target, uncovered[index]) + P3_POOL_RADIUS <= P3_LIGHT_RADIUS) uncovered.splice(index, 1)
+    }
+    return target
+  })
+}
+
 export function p3LightCenters(side: -1 | 1, center: Point, round: number): Point[] {
   const boss = p3BossPosition(side, center, round)
   const dx = boss.x - center.x

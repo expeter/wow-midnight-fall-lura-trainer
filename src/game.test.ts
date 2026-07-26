@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { angleToward, ARENA, assignmentRevealDistance, bossBeamHitsPlayer, canPickupCrystal, canRecoverFromWipe, crystalCarrierPosition, crystalWipeReason, difficultySettings, distance, distanceToSegment, hasActiveP3CrystalLight, healthResponsesPerPhase, INTERMISSION_SEQUENCE, isOnAssignedP3Side, isInP3ConsumedSector, isP3ConsumedSectorLethal, isP3ProtectionCrystalPlaced, isP3RuneTurn, isInSafeAnnulus, isInsideArena, isProtectedByP3Bubble, isProtectedByP3Light, jumpHeights, keepP3PointOnSide, moveInBounds, movePlayer, moveRelativeToCamera, moveWithIncreasingPull, nearestRuneEdges, npcEntryPosition, OPENING_BOOST_SECONDS, orientedAssignments, p1PositioningWipeReason, P2_BEAM_CADENCE_SECONDS, P2_BEAM_SECONDS, P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS, p2NpcCrystalDrops, P2_NPC_PREPOSITION_SECONDS, p2NpcRoamingPosition, p2NpcShouldReturnToSoak, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, p2OrbReturnState, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_POSITIONING_SECONDS, P2_PULL_SECONDS, p2ReturningOrbPositions, P2_SPREAD_SECONDS, p3ArchangelStackPosition, p3AssignmentForRound, p3BossPosition, p3FlightPosition, P3_FLIGHT_SECONDS, p3LandingGroupCenter, p3LandingGroupIndex, p3LandingPlanIndex, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3LightHealthRate, p3MemoryResolved, p3NpcPoolAssignment, p3NpcRuneReactionDelay, p3NpcSoaksActive, p3PoolCenters, p3PoolSoakRate, p3RuneDeadline, p3RuneEdges, p3RuneOrbs, P3_LANDING_SOAK_RADIUS, P3_RUNE_ORB_MIN_GAP, p3StarsTiming, p3WrongRuneContact, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, P3_SECOND_SOAK_NPC_DELAY_SECONDS, p4BossHealth, p4BoxStates, p4EncounterBoxStates, p4FrontSoakerPosition, p4GroupPosition, P4_GROUP_HIT_RADIUS, p4NpcRelocationPace, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4SplinterStartSeconds, p4StackPosition, p4TankConeActive, p4TransitionStartPosition, P4_BOX_COUNT, P4_BOX_MIN_SEPARATION, P4_BOX_SPEED, P4_CYCLE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, P4_SPLINTER_INTERVAL_SECONDS, P4_TANK_CONE_DURATION_SECONDS, P4_TANK_CONE_INTERVAL_SECONDS, personalCircleHitsCrystal, personalCircleHitsPlayer, PLAYER_COLLISION_PENALTY, randomCrystalDropDuty, randomizeP3PoolLayout, roamingNpcPosition, seededStars, separateP3NpcTarget, setP3BossPlan, shouldShowP2OrbReturnCounter, translateSelectedPoints, walkTowards, WIPE_PENALTY } from './game'
-import { keepP4NpcInProtection, P3_APPROACH_NPC_SPEED_MULTIPLIER, P3_APPROACH_SECONDS, P3_MEMORY_START_SECONDS, P3_RUNE_HALF_CLEARANCE, P3_SAFE_ZONE_GRACE_SECONDS, P3_SAFE_ZONE_PENALTY_PER_SECOND, P3_SECTOR_SECONDS, p3UnsafePenaltyTicks, P4_SPLINTER_RETURN_SECONDS } from './game'
+import { keepP3CrystalPoolCovered, keepP4NpcInProtection, p3CrystalPoolCoverageTargets, P3_APPROACH_NPC_SPEED_MULTIPLIER, P3_APPROACH_SECONDS, P3_MEMORY_START_SECONDS, P3_RUNE_HALF_CLEARANCE, P3_SAFE_ZONE_GRACE_SECONDS, P3_SAFE_ZONE_PENALTY_PER_SECOND, P3_SECTOR_SECONDS, p3UnsafePenaltyTicks, P4_SPLINTER_RETURN_SECONDS } from './game'
 import { p3ProtectionBubbleCenter } from './game'
 import type { Point } from './game'
 import { P3_LIGHT_RADIUS, p3SpreadPosition, p4TankKillsBox, P4_TANK_KILL_RADIUS } from './game'
@@ -112,6 +112,22 @@ describe('Intermission game rules', () => {
     expect(p3NpcPoolAssignment(0, true, 0, [0, 42, 42], [0, 5, 5])).toBeNull()
   })
   it('holds first-round NPC Soak movement for the player and guarantees delayed help in round two', () => { expect(p3NpcSoaksActive(false, 1, 15)).toBe(false); expect(p3NpcSoaksActive(true, 1, 0)).toBe(true); expect(p3NpcSoaksActive(false, 2, P3_SECOND_SOAK_NPC_DELAY_SECONDS - .01)).toBe(false); expect(p3NpcSoaksActive(false, 2, P3_SECOND_SOAK_NPC_DELAY_SECONDS)).toBe(true); expect(p3NpcSoaksActive(true, 2, 0)).toBe(true) })
+  it('places crystal carriers outside Phase 3 Soaks while their lights cover every possible pool', () => {
+    const center = { x: 480, y: 270 }
+    for (const side of [-1, 1] as const) {
+      const pools = p3PoolCenters(side, center, 1)
+      const anchors = p3LightCenters(side, center, 1)
+      const targets = p3CrystalPoolCoverageTargets(pools, anchors)
+      expect(targets).toHaveLength(3)
+      expect(pools.every(pool => targets.some(target => distance(target, pool) + P3_POOL_RADIUS <= P3_LIGHT_RADIUS))).toBe(true)
+      expect(targets.every(target => pools.every(pool => distance(target, pool) >= P3_POOL_RADIUS + 2))).toBe(true)
+      const separated = separateP3NpcTarget(targets[0], true, [{ point: targets[1], crystal: true }])
+      const assignedPool = pools.reduce((nearest, pool) => distance(targets[0], pool) < distance(targets[0], nearest) ? pool : nearest)
+      const coveragePriority = keepP3CrystalPoolCovered(separated, assignedPool)
+      expect(distance(coveragePriority, assignedPool)).toBeGreaterThan(P3_POOL_RADIUS)
+      expect(distance(coveragePriority, assignedPool) + P3_POOL_RADIUS).toBeLessThanOrEqual(P3_LIGHT_RADIUS)
+    }
+  })
   it('covers the P3 formation with twenty irregular orbs and non-crossing links', () => {
     const center = { x: 480, y: 270 }
     const side = -1 as const

@@ -112,6 +112,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-047` | Implemented | Standardize the setup-page hierarchy: add explicit Game settings and Keyboard settings sections, keep keyboard and mouse controls together beneath the latter, and remove spacing workarounds between topics. |
 | `CR-048` | Implemented | Remove the Opening movement bonus option and make its existing 40% first-five-seconds positioning boost permanently active, ignoring and deleting the retired browser preference. |
 | `CR-049` | Implemented | Restyle the setup jump menu as quiet inline “On this page” navigation, smoothly scroll between sections while respecting reduced-motion preferences, and add a compact Back to top link to each top-level setup section without adding links to phase subsections. |
+| `CR-050` | Implemented | Position a Phase 3 crystal NPC beside each otherwise-uncovered ground Soak where possible, keeping the carrier outside the puddle while its yellow safe zone covers the players inside and preserving raid separation. |
 | `SPEC-001` | Implemented | Define the stable ticket lifecycle: assign an ID, record intent, add focused regression coverage, validate, and commit. |
 | `SPEC-002` | Implemented | Define the creator business card’s stable content, readability, compact layout, and external-link behavior. |
 | `SPEC-003` | Implemented | Define the P3-to-P4 north gather, shared knockup origin, and phase-local HUD boundary. |
@@ -119,6 +120,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `SPEC-005` | Implemented | Define background audio as a feature-flagged component with no controls or playback while disabled. |
 | `SPEC-006` | Implemented | Define Phase 4 movement parity and the 21-second Starsplinter/Heaven & Hell cadence. |
 | `SPEC-007` | Implemented | Define the setup-page hierarchy and responsive grouping for game, input, HUD, sharing, and phase planning. Every top-level topic uses the same eyebrow, title, and helper-text pattern: Game settings / Practice configuration, Keyboard settings / Keyboard & mouse controls, Interface / HUD positions, Raid planning / Layouts and sharing, followed by an individually titled section for every phase map. The top setup menu links only to the four top-level topics and scrolls without replacing a shared raid-plan hash. |
+| `SPEC-008` | Implemented | Define Phase 3 ground-Soak light coverage: crystal NPCs support from outside the puddle, coverage takes priority over ideal separation, and non-crystal players perform the Soak. |
 | `BUG-008` | Implemented | Remove the premature 20-second P3 Soak failure; unfinished pools are now checked only when Big Boom resolves at 40 seconds. |
 | `BUG-009` | Implemented | Enforce P3 Stars orb spacing and isolate the southwest/southeast fields with clearance from the room divider. |
 | `BUG-010` | Implemented | Use the NPC protection bubble when the player's crystal duty belongs to the other Dark Archangel set; only consume the player's crystal on its assigned set. |

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
-import { angleToward, assignmentRevealDistance, crystalCarrierPosition, distance, distanceToSegment, hasActiveP3CrystalLight, jumpHeights, keepP3PointOnSide, keepP4NpcInProtection, npcEntryPosition, OPENING_BOOST_SECONDS, P1_STAR_LENGTH, P2_BEAM_SECONDS, P2_ORBIT_SPEED, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_INNER_RADIUS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p2NpcRoamingPosition, p2NpcShouldReturnToSoak, p2OrbReturnState, p2ReturningOrbPositions, p3ActiveCrystalAssignments, P3_APPROACH_NPC_SPEED_MULTIPLIER, p3ArchangelStackPosition, p3BossPosition, p3FlightPosition, P3_FLIGHT_SECONDS, p3LandingGroupIndex, p3LandingPlanIndex, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3NpcPoolAssignment, p3NpcRuneReactionDelay, p3NpcSoaksActive, p3PoolCenters, p3ProtectionBubbleCenter, p3RuneEdges, p3RuneOrbs, p3RunePartnerPosition, p3SideForPosition, p3StarsTiming, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, p4EncounterBoxStates, p4FrontSoakerPosition, p4GroupPosition, p4NpcRelocationPace, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4StackPosition, p4TankConeActive, p4TransitionStartPosition, P4_FRONT_CONE_RANGE, P4_HEAVEN_MOVE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, roamingNpcPosition, separateP3NpcTarget, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type RuneSymbol } from './game'
+import { angleToward, assignmentRevealDistance, crystalCarrierPosition, distance, distanceToSegment, hasActiveP3CrystalLight, jumpHeights, keepP3CrystalPoolCovered, keepP3PointOnSide, keepP4NpcInProtection, npcEntryPosition, OPENING_BOOST_SECONDS, P1_STAR_LENGTH, P2_BEAM_SECONDS, P2_ORBIT_SPEED, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_INNER_RADIUS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p2NpcRoamingPosition, p2NpcShouldReturnToSoak, p2OrbReturnState, p2ReturningOrbPositions, p3ActiveCrystalAssignments, P3_APPROACH_NPC_SPEED_MULTIPLIER, p3ArchangelStackPosition, p3BossPosition, p3CrystalPoolCoverageTargets, p3FlightPosition, P3_FLIGHT_SECONDS, p3LandingGroupIndex, p3LandingPlanIndex, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3NpcPoolAssignment, p3NpcRuneReactionDelay, p3NpcSoaksActive, p3PoolCenters, p3ProtectionBubbleCenter, p3RuneEdges, p3RuneOrbs, p3RunePartnerPosition, p3SideForPosition, p3StarsTiming, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, p4EncounterBoxStates, p4FrontSoakerPosition, p4GroupPosition, p4NpcRelocationPace, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4StackPosition, p4TankConeActive, p4TransitionStartPosition, P4_FRONT_CONE_RANGE, P4_HEAVEN_MOVE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, roamingNpcPosition, separateP3NpcTarget, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type RuneSymbol } from './game'
 import { p3SpreadPosition, p4TankKillsBox } from './game'
 import { isP3RaidMemberVisible } from './game'
 
@@ -768,6 +768,22 @@ export default function GameScene(props: SceneProps) {
         ? activeP3Crystals.includes(state.assignment)
         : hasActiveP3CrystalLight(state.playerIsCrystal, state.playerCrystalSpent)
       const plannedP3Targets: Array<{ point: Point; crystal: boolean }> = [{ point: state.player, crystal: playerLightActive }]
+      const p3CrystalPoolSupport = new Map<number, { pool: Point; target: Point }>()
+      if (state.event === 'p3-light-pools') {
+        for (const side of [-1, 1] as const) {
+          const sidePoolHealth = state.p3PoolHealth.slice(side < 0 ? 0 : 3, side < 0 ? 3 : 6)
+          const activePools = p3PoolCenters(side, WORLD.center, state.p3Round).filter((_, poolIndex) => sidePoolHealth[poolIndex] > .5)
+          if (!activePools.length) continue
+          const npcCarriers = activeP3Crystals.filter(profileIndex => profileIndex !== state.assignment && p3SideOf(profileIndex) === side)
+          const playerLights = playerLightActive && playerP3Side === side ? [state.player] : []
+          const supportTargets = p3CrystalPoolCoverageTargets(activePools, npcCarriers.map(profileIndex => state.positions[profileIndex]), playerLights)
+          npcCarriers.forEach((profileIndex, carrierIndex) => {
+            const target = supportTargets[carrierIndex]
+            const pool = activePools.reduce((nearest, candidate) => distance(target, candidate) < distance(target, nearest) ? candidate : nearest)
+            p3CrystalPoolSupport.set(profileIndex, { pool, target })
+          })
+        }
+      }
       const npcPositions = npcs.map((sprite, index) => {
         const baseIndex = npcProfileIndices[index]
         const npcP3Side = p3SideOf(baseIndex)
@@ -839,11 +855,14 @@ export default function GameScene(props: SceneProps) {
           const sidePoolHealth = state.p3PoolHealth.slice(side < 0 ? 0 : 3, side < 0 ? 3 : 6)
           const npcSoaksActive = p3NpcSoaksActive(p3PlayerSoakEngagedRound === state.p3Round, state.p3Round, state.eventTime)
           const plannedCounts = plannedP3Pools[side < 0 ? 0 : 1]
-          const poolIndex = npcSoaksActive ? p3NpcPoolAssignment(sideOrdinal, playerSide, requiredPlayerPool, sidePoolHealth, plannedCounts) : null
+          const crystalSupport = p3CrystalPoolSupport.get(baseIndex)
+          const poolIndex = !npcP3CrystalActive && npcSoaksActive ? p3NpcPoolAssignment(sideOrdinal, playerSide, requiredPlayerPool, sidePoolHealth, plannedCounts) : null
           if (poolIndex !== null) plannedCounts[poolIndex] += 1
           const poolCenter = poolIndex === null ? null : p3PoolCenters(side, WORLD.center, state.p3Round)[poolIndex]
           const spreadAngle = Math.max(0, sideOrdinal) * 2.399963
-          p3Target = poolCenter
+          p3Target = crystalSupport
+            ? crystalSupport.target
+            : poolCenter
             ? { x: poolCenter.x + Math.cos(spreadAngle) * 6, y: poolCenter.y + Math.sin(spreadAngle) * 6 }
             : p3NpcTarget(baseIndex, npcP3CrystalActive, state.p3Round, state.event, state.eventTime, state.p4PatternSeed, crystalSlot, npcP3Side)
         }
@@ -891,6 +910,8 @@ export default function GameScene(props: SceneProps) {
           && !p3RunePartnerApproach
           && !p3RunePairApproach
         if (keepP3Formation) p3Target = separateP3NpcTarget(p3Target, npcP3CrystalActive, plannedP3Targets, baseIndex)
+        const crystalPoolSupport = p3CrystalPoolSupport.get(baseIndex)
+        if (crystalPoolSupport && !p3RunePartnerApproach && !p3RunePairApproach) p3Target = keepP3CrystalPoolCovered(p3Target, crystalPoolSupport.pool)
         if (phaseThree) plannedP3Targets.push({ point: p3Target, crystal: npcP3CrystalActive })
         if (state.event === 'p3-light-pools') {
           const stars = p3StarsTiming(state.eventTime)

@@ -68,3 +68,15 @@ change before implementation.
 - Raid planning begins with its full-width save/load/share controls.
 - Every phase map retains its own visible heading, beginning with
   `INTERMISSION RAID PLAN`.
+
+## SPEC-008 · Phase 3 Soak protection
+
+- Where the active crystal roster permits it, every unfinished blue ground
+  Soak has a crystal NPC positioned beside it.
+- The carrier stays outside the puddle while its complete yellow light covers
+  the puddle and its soaking players.
+- Crystal NPCs attempt to preserve player and crystal-light separation, but
+  guaranteed Soak coverage takes priority when the random layout cannot
+  satisfy both.
+- Crystal NPCs do not count as ground-Soak occupants. Rune-pair movement may
+  temporarily override their support position during the memory game.

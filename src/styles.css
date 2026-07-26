@@ -153,39 +153,40 @@
   grid-column: 2;
   grid-row: 2;
   display: flex;
-  gap: 12px;
-  width: 320px;
-  padding: 11px;
+  gap: 14px;
+  width: 344px;
+  padding: 14px;
   border: 1px solid #354361;
   border-radius: 12px;
   background: linear-gradient(145deg, rgba(24,34,59,.96), rgba(11,16,31,.96));
   box-shadow: 0 12px 34px rgba(0,0,0,.28);
 }
-.creator-card img { width: 72px; height: 72px; flex: 0 0 auto; border: 2px solid #73e0c1; border-radius: 10px; object-fit: cover; }
+.creator-card img { width: 82px; height: 82px; flex: 0 0 auto; border: 2px solid #73e0c1; border-radius: 11px; object-fit: cover; }
 .creator-avatar-link { display: block; flex: 0 0 auto; border-radius: 10px; line-height: 0; }
 .creator-avatar-link:hover img { border-color: #c9fff1; box-shadow: 0 0 14px rgba(115,224,193,.38); }
 .creator-card > div { min-width: 0; }
 .creator-card span, .creator-card code { display: block; }
-.creator-card > div > span { color: #8190ad; font: 10px 'DM Mono', monospace; text-transform: uppercase; letter-spacing: .1em; }
-.creator-card strong { display: block; margin: 2px 0; font-size: 17px; }
-.creator-card .battle-tag-link { display: block; color: #b9c4d9; font: 10px 'DM Mono', monospace; text-decoration: none; }
+.creator-card > div > span { color: #9eabc2; font: 12px 'DM Mono', monospace; text-transform: uppercase; letter-spacing: .1em; }
+.creator-card strong { display: block; margin: 3px 0; font-size: 20px; line-height: 1.05; }
+.creator-card .battle-tag-link { display: block; color: #c7d1e3; font: 12px 'DM Mono', monospace; line-height: 1.35; text-decoration: none; }
 .creator-card .battle-tag-link:hover { color: #c9fff1; }
-.creator-card nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; margin-top: 7px; }
+.creator-card nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 9px; }
 .creator-card nav a {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 4px 7px;
+  min-height: 28px;
+  padding: 5px 8px;
   border: 1px solid #3a4a68;
   border-radius: 5px;
   color: #c9fff1;
   background: #121d32;
-  font: 9px 'DM Mono', monospace;
+  font: 12px 'DM Mono', monospace;
   text-decoration: none;
   white-space: nowrap;
 }
 .creator-card nav a:hover { border-color: #73e0c1; background: #193239; }
-.creator-card .coffee-link { grid-column: 1 / -1; width: 100%; color: #ffe18b; border-color: #625331; }
+.creator-card .coffee-link { grid-column: 1 / -1; width: 100%; color: #ffe18b; border-color: #756438; background: #1c1b20; }
 .practice-settings { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: -12px 0 24px; }
 .music-preview { padding: 8px 10px; margin: 10px 0 0; text-align: center; font-size: 11px; }
 .music-preview:disabled { opacity: .45; cursor: not-allowed; }

@@ -1735,7 +1735,7 @@ function CreatorCard() {
   return <aside className="creator-card" aria-label="About Pestivator">
     <a className="creator-avatar-link" href={RAIDER_IO_PROFILE} target="_blank" rel="noreferrer" aria-label="Pestivator on Raider.IO"><img src={CREATOR_AVATAR} alt="Pestivator's gnome avatar" /></a>
     <div><span>Created by</span><strong>Pestivator</strong><a className="battle-tag-link" href={RAIDER_IO_PROFILE} target="_blank" rel="noreferrer" title="BattleTag · open Pestivator on Raider.IO">pestivator#2515</a>
-      <nav aria-label="Pestivator links"><a href={RAIDER_IO_PROFILE} target="_blank" rel="noreferrer">Raider.IO</a><a href="https://twitch.tv/pestivator" target="_blank" rel="noreferrer" aria-label="Pestivator on Twitch">Twitch.tv →</a><a className="coffee-link" href={`solana:${SOLANA_ADDRESS}?label=Pestivator&message=Thanks%20for%20the%20Lura%20Trainer`} title={`Send SOL to ${SOLANA_ADDRESS}`}>☕ Buy me a coffee</a></nav>
+      <nav aria-label="Pestivator links"><a href={RAIDER_IO_PROFILE} target="_blank" rel="noreferrer">Raider.IO ↗</a><a href="https://twitch.tv/pestivator" target="_blank" rel="noreferrer" aria-label="Pestivator on Twitch">Twitch.tv ↗</a><a className="coffee-link" href={`solana:${SOLANA_ADDRESS}?label=Pestivator&message=Thanks%20for%20the%20Lura%20Trainer`} title={`Send SOL to ${SOLANA_ADDRESS}`}>☕ Buy me a coffee</a></nav>
     </div>
   </aside>
 }

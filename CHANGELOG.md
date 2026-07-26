@@ -9,6 +9,8 @@
 - Restored a clearly labeled Twitch profile link alongside the Raider.IO and
   support links in Pestivator's creator card. The generic Discord application
   link was removed because it did not identify Pestivator's profile.
+- Improved the creator card with larger readable typography, a stronger avatar,
+  balanced spacing, and consistent external-link marks.
 - Shared raid plans now replace stale locally saved assignments before the
   first render and remain active after a clean reload. The same loaded plan is
   passed into live Intermission, both Phase 2 assignments, Phase 3, and the

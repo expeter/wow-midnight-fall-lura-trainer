@@ -185,7 +185,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-046` | Implemented | During Intermission, wipe when the controlled player’s resolving Starsplinter hits an NPC who is currently carrying a crystal; an NPC whose crystal is visibly on the ground is not treated as still carrying it. |
 | `BUG-047` | Implemented | Count entities whose bodies visibly overlap the Phase 3 ground-Soak rim as occupants in Test and all other modes, so a visually valid three-player Soak consistently drains its health. |
 | `BUG-048` | Implemented | Preserve all Main-ability damage when Phase 4 starts, subtract that damage in addition to the scripted Heaven & Hell health loss without ever healing L’ura, grant +50 points for every 10% of player damage, and award a dedicated achievement when L’ura reaches 0% before the final sequence. |
-| `BUG-049` | Implemented | Keep the one-second Main Ability cast progressing across live encounter event changes; only fire the projectile, damage the boss, and award its point after the castbar completes. |
+| `BUG-049` | Implemented | Keep one Main Ability cast progressing visibly from 0–100% across live encounter event changes; only fire, damage, and score at completion, enforce a 0.1-second gap, and collapse repeated input into at most one queued cast. |
 
 ## Implemented feature inventory
 

@@ -31,6 +31,7 @@ export const P1_STAR_LENGTH = 38.8
 export const P3_OUTER_RADIUS = 199
 export const P3_LIGHT_RADIUS = 24
 export const P3_APPROACH_NPC_SPEED_MULTIPLIER = 1.5
+export const P3_APPROACH_SECONDS = 10
 export const P3_POOL_RADIUS = 10
 export const P3_POOL_HEALTH = 35
 export const P3_LANDING_SOAK_RADIUS = 12
@@ -84,6 +85,10 @@ export function assignmentRevealDistance(difficulty: Difficulty): number {
 
 export function p3SideForPosition(position: Point, center: Point): -1 | 1 {
   return position.x < center.x ? -1 : 1
+}
+
+export function isOnAssignedP3Side(position: Point, assignment: Point, center: Point): boolean {
+  return p3SideForPosition(position, center) === p3SideForPosition(assignment, center)
 }
 
 export function keepP3PointOnSide(position: Point, side: -1 | 1, center: Point, clearance = 0): Point {

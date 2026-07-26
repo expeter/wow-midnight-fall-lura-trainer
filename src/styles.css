@@ -82,10 +82,11 @@
 .profile-control input, .profile-control select { display: block; width: 100%; margin-top: 5px; padding: 8px 9px; border: 1px solid #354361; border-radius: 6px; color: #f6f4ee; background: #10182b; font: 13px Manrope, sans-serif; }
 .share-status { margin: 9px 0 0; color: #73e0c1; font: 11px 'DM Mono', monospace; }
 .setup-shell {
+  max-width: 1040px;
   padding-top: 4vh;
   display: grid;
-  grid-template-columns: minmax(0, 630px) 278px;
-  column-gap: 8px;
+  grid-template-columns: minmax(0, 630px) 320px;
+  column-gap: 26px;
   justify-content: space-between;
   align-items: start;
 }
@@ -111,7 +112,7 @@
   grid-row: 2;
   display: flex;
   gap: 12px;
-  width: 278px;
+  width: 320px;
   padding: 11px;
   border: 1px solid #354361;
   border-radius: 12px;

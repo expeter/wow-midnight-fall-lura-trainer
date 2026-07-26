@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ttsCuesForState, type TtsCueState } from './audio'
-import { P2_BEAM_SECONDS, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P3_MEMORY_START_SECONDS, P4_SPLINTER_DETONATION_SECONDS, P4_SPLINTER_INTERVAL_SECONDS, p4PlayerSplinterDuty, p4SplinterStartSeconds } from './game'
+import { P1_FINAL_RECOVERY_SECONDS, P2_BEAM_SECONDS, P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PULL_SECONDS, P3_FINAL_SECTOR_MOVE_SECONDS, P3_MEMORY_START_SECONDS, P4_SPLINTER_DETONATION_SECONDS, P4_SPLINTER_INTERVAL_SECONDS, p4PlayerSplinterDuty, p4SplinterStartSeconds } from './game'
 
 const base: TtsCueState = {
   event: 'countdown',
@@ -10,6 +10,8 @@ const base: TtsCueState = {
   p2OrbReturnAge: -1,
   p3Round: 1,
   p3ArchangelDuty: null,
+  p3SoaksCleared: false,
+  p3MemoryComplete: false,
   p4Cycle: 1,
   p4PatternSeed: 123,
   assignment: 0,
@@ -37,10 +39,29 @@ describe('raid-lead TTS cues', () => {
     expect(ttsCuesForState({ ...base, event: 'p4-transition' })).toEqual([])
   })
 
+  it('announces each seamless phase transition exactly one second beforehand', () => {
+    expect(ttsCuesForState({ ...base, event: 'p1-recover', eventTime: P1_FINAL_RECOVERY_SECONDS - 1.01 })).toEqual([])
+    expect(ttsCuesForState({ ...base, event: 'p1-recover', eventTime: P1_FINAL_RECOVERY_SECONDS - 1 })).toContainEqual({ id: 'transition-p2', text: 'Phase 2' })
+
+    const p3At = P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS - 1
+    expect(ttsCuesForState({ ...base, event: 'p2-wait', p2Cycle: 3, p2OrbReturnAge: p3At - .01 }).map(cue => cue.text)).not.toContain('Phase 3')
+    const p3Transition = ttsCuesForState({ ...base, event: 'p2-wait', p2Cycle: 3, p2OrbReturnAge: p3At })
+    expect(p3Transition).toContainEqual({ id: 'transition-p3', text: 'Phase 3' })
+    expect(p3Transition).toContainEqual({ id: 'transition-p3-soak-crystal', text: 'Soak crystal' })
+    expect(ttsCuesForState({ ...base, event: 'p2-wait', p2Cycle: 2, p2OrbReturnAge: p3At })).not.toContainEqual({ id: 'transition-p3', text: 'Phase 3' })
+
+    const p4At = P3_FINAL_SECTOR_MOVE_SECONDS - 1
+    expect(ttsCuesForState({ ...base, event: 'p3-sector-move', p3Round: 2, eventTime: p4At - .01 }).map(cue => cue.text)).not.toContain('Phase 4 stack')
+    expect(ttsCuesForState({ ...base, event: 'p3-sector-move', p3Round: 2, eventTime: p4At })).toContainEqual({ id: 'transition-p4-stack', text: 'Phase 4 stack' })
+    expect(ttsCuesForState({ ...base, event: 'p3-sector-move', p3Round: 1, eventTime: p4At }).map(cue => cue.text)).not.toContain('Phase 4 stack')
+  })
+
   it('times P2 soak, carrier drop, spread, and orb-return dodge calls', () => {
     expect(ttsCuesForState({ ...base, event: 'p2-orbs' }).map(cue => cue.text)).toEqual(['Soak beam'])
     expect(ttsCuesForState({ ...base, event: 'p2-orbs', eventTime: P2_BEAM_SECONDS - 3, role: 'carrier' }).map(cue => cue.text)).toEqual(['Soak beam', 'Drop crystal'])
-    expect(ttsCuesForState({ ...base, event: 'p2-spread' }).map(cue => cue.text)).toContain('Spread')
+    expect(ttsCuesForState({ ...base, event: 'p2-pull', eventTime: P2_PULL_SECONDS - 1.01 }).map(cue => cue.text)).not.toContain('Spread')
+    expect(ttsCuesForState({ ...base, event: 'p2-pull', eventTime: P2_PULL_SECONDS - 1 }).map(cue => cue.text)).toContain('Spread')
+    expect(ttsCuesForState({ ...base, event: 'p2-spread' }).map(cue => cue.text)).not.toContain('Spread')
     const dodgeAt = P2_ORB_RETURN_SECONDS + P2_ORB_RETURN_GLOW_SECONDS + P2_ORB_RETURN_TRAVEL_SECONDS - 3
     expect(ttsCuesForState({ ...base, event: 'p2-fetch', p2OrbReturnAge: dodgeAt - .01 }).map(cue => cue.text)).not.toContain('Dodge')
     expect(ttsCuesForState({ ...base, event: 'p2-fetch', p2OrbReturnAge: dodgeAt }).map(cue => cue.text)).toContain('Dodge')
@@ -48,10 +69,19 @@ describe('raid-lead TTS cues', () => {
 
   it('calls P3 Soaks, memory, assigned crystal drop, and movement', () => {
     expect(ttsCuesForState({ ...base, event: 'p3-light-pools' }).map(cue => cue.text)).toEqual(['Soaks'])
-    expect(ttsCuesForState({ ...base, event: 'p3-light-pools', eventTime: P3_MEMORY_START_SECONDS }).map(cue => cue.text)).toEqual(['Soaks', 'Memory game'])
+    expect(ttsCuesForState({ ...base, event: 'p3-light-pools', eventTime: P3_MEMORY_START_SECONDS - 1.01 }).map(cue => cue.text)).toEqual(['Soaks'])
+    expect(ttsCuesForState({ ...base, event: 'p3-light-pools', eventTime: P3_MEMORY_START_SECONDS - 1 }).map(cue => cue.text)).toEqual(['Soaks', 'Memory game'])
     expect(ttsCuesForState({ ...base, event: 'p3-archangel', role: 'carrier', p3ArchangelDuty: 1 }).map(cue => cue.text)).toEqual(['Drop crystal'])
     expect(ttsCuesForState({ ...base, event: 'p3-archangel', role: 'carrier', p3ArchangelDuty: 2 })).toEqual([])
-    expect(ttsCuesForState({ ...base, event: 'p3-sector-move' }).map(cue => cue.text)).toEqual(['Move'])
+    expect(ttsCuesForState({ ...base, event: 'p3-archangel', eventTime: 4.99 }).map(cue => cue.text)).not.toContain('Move')
+    expect(ttsCuesForState({ ...base, event: 'p3-archangel', eventTime: 5 }).map(cue => cue.text)).toContain('Move')
+  })
+
+  it('confirms completed P3 mechanics and calls the stack three seconds before Archangel', () => {
+    expect(ttsCuesForState({ ...base, event: 'p3-light-pools', p3SoaksCleared: true }).map(cue => cue.text)).toEqual(['Soaks', 'Soaks cleared'])
+    expect(ttsCuesForState({ ...base, event: 'p3-light-pools', p3MemoryComplete: true }).map(cue => cue.text)).toEqual(['Soaks', 'Memory game done'])
+    expect(ttsCuesForState({ ...base, event: 'p3-archangel-position', eventTime: .99 }).map(cue => cue.text)).not.toContain('Stack')
+    expect(ttsCuesForState({ ...base, event: 'p3-archangel-position', eventTime: 1 }).map(cue => cue.text)).toContain('Stack')
   })
 
   it('calls only the player P4 splinter direction and movement after the final detonation', () => {

@@ -122,6 +122,11 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-054` | Implemented | Preserve the P2 orbs’ existing rotational direction as they transition into their inward return, and begin their glow telegraph one second earlier. |
 | `CR-055` | Implemented | Speak the visible 3, 2, 1 countdown when TTS is enabled and a phase is entered directly; do not announce another countdown during seamless phase transitions. |
 | `CR-056` | Implemented | Limit the Intermission `Dodge` and carrier `Drop crystal` TTS coaching calls to Easy mode; do not provide those two mechanic hints in Test, Normal, or Hard. |
+| `CR-057` | Implemented | Announce `Phase 2`, `Phase 3`, and `Phase 4 stack` one second before their seamless transitions, independently from direct-entry countdown speech. |
+| `CR-058` | Implemented | Follow the P2-to-P3 `Phase 3` transition announcement with a separate `Soak crystal` call for the opening landing mechanic. |
+| `CR-059` | Implemented | Move the P3 `Memory game` and P2 personal-circle `Spread` TTS calls one second earlier so the spoken warning arrives before player movement is required. |
+| `CR-060` | Implemented | Confirm completed P3 Soaks and memory games with state-driven TTS, and announce `Stack` three seconds before Dark Archangel begins. |
+| `CR-061` | Implemented | Move the P3 `Move` TTS call one second earlier, from the start of sector movement to one second before Dark Archangel finishes. |
 | `SPEC-001` | Implemented | Define the stable ticket lifecycle: assign an ID, record intent, add focused regression coverage, validate, and commit. |
 | `SPEC-002` | Implemented | Define the creator business card’s stable content, readability, compact layout, and external-link behavior. |
 | `SPEC-003` | Implemented | Define the P3-to-P4 north gather, shared knockup origin, and phase-local HUD boundary. |

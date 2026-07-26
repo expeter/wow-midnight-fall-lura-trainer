@@ -22,9 +22,12 @@ Keep the channels independent:
 | P2 | `SPREAD` | The pull finishes with the raid in the middle | Move to the personal-circle assignment |
 | P2 | `DODGE` | Returning orbs are 3 seconds from reaching the middle | Clear the return path and recover the crystal |
 | P3 | `SOAKS` | The three ground Soaks appear | Begin the group Soak assignment |
+| P3 | `SOAKS CLEARED` | Every active ground Soak is complete | Confirm that the raid can focus on the remaining mechanics |
 | P3 | `MEMORY GAME` | The full rune-order panel is visible | Read and retain the T/X/O order |
+| P3 | `MEMORY GAME DONE` | Every ordered rune pair is resolved | Confirm successful completion |
+| P3 | `STACK` | Dark Archangel is three seconds away | Gather at the protection position |
 | P3 | `DROP CRYSTAL` | Dark Archangel begins and the player owns this drop | Create the protection bubble |
-| P3 | `MOVE` | Dark Archangel protection ends | Rotate south into the next sector |
+| P3 | `MOVE` | Dark Archangel has one second remaining | Prepare to rotate south into the next sector |
 | P4 | `LEFT` | Player receives Starsplinter slot 1 | Take the first splinter left |
 | P4 | `RIGHT` | Player receives Starsplinter slot 2 | Take the second splinter right |
 | P4 | `LEFT` | Player receives Starsplinter slot 3 | Take the third splinter left |
@@ -35,7 +38,9 @@ without a P4 Starsplinter should not hear `LEFT` or `RIGHT`.
 
 Direct Intermission, P2, P3, and P4 entries also speak the visible `3`, `2`,
 `1` countdown. Seamless transitions between phases do not add another spoken
-countdown.
+countdown. Instead, they announce `PHASE 2`, `PHASE 3`, or `PHASE 4 STACK`
+one second before the handoff. The `PHASE 3` transition immediately follows
+with a separate `SOAK CRYSTAL` instruction.
 
 ## Sound-effect shopping list
 

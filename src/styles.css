@@ -85,11 +85,20 @@
 .coordinate-control input { display: block; margin-top: 4px; }
 .profile-control { display: block; margin-top: 11px; color: #aeb8d0; font-size: 12px; }
 .profile-control input, .profile-control select { display: block; width: 100%; margin-top: 5px; padding: 8px 9px; border: 1px solid #354361; border-radius: 6px; color: #f6f4ee; background: #10182b; font: 13px Manrope, sans-serif; }
-.crystal-assignment-list { margin-top: 9px; }
-.crystal-assignment-list > span { color: #8190ad; font-size: 12px; }
-.crystal-assignment-list > div { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
-.crystal-assignment-list button { width: auto; margin: 0; padding: 5px 7px; color: #ffe889; border-color: rgba(255,224,79,.42); background: rgba(74,60,17,.36); font: 10px 'DM Mono', monospace; }
-.crystal-assignment-list button b { color: #fff3b0; }
+.phase-crystal-editor {
+  width: min(100%, 952px);
+  margin: -10px 0 28px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255,224,79,.28);
+  border-radius: 10px;
+  background: rgba(42,35,12,.32);
+}
+.phase-crystal-editor header { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 11px; }
+.phase-crystal-editor header h3 { margin: 2px 0 0; font-size: 17px; }
+.phase-crystal-editor header p:last-child { max-width: 470px; margin: 0; color: #9ba8c2; font-size: 13px; text-align: right; }
+.phase-crystal-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.phase-crystal-grid label { color: #ffe889; font: 11px 'DM Mono', monospace; }
+.phase-crystal-grid select { width: 100%; margin-top: 4px; }
 .share-status { margin: 9px 0 0; color: #73e0c1; font: 11px 'DM Mono', monospace; }
 .setup-shell {
   max-width: 1040px;
@@ -464,6 +473,24 @@
   font-size: 14px;
 }
 .soft-wipe-notice small { color: #73e0c1; }
+.crystal-duty-notice {
+  position: absolute;
+  z-index: 7;
+  left: 50%;
+  top: 15%;
+  transform: translateX(-50%);
+  min-width: 280px;
+  padding: 10px 16px;
+  border: 1px solid rgba(255,224,79,.7);
+  border-radius: 8px;
+  color: #fff8c8;
+  background: rgba(35,29,8,.92);
+  box-shadow: 0 0 22px rgba(255,215,70,.2);
+  text-align: center;
+  pointer-events: none;
+}
+.crystal-duty-notice span { display: block; color: #ffe16f; font: 9px 'DM Mono', monospace; letter-spacing: .11em; }
+.crystal-duty-notice strong { display: block; margin-top: 4px; font-size: 15px; }
 .splinter-counter {
   top: 50%;
   transform: translate(-50%, -132px);

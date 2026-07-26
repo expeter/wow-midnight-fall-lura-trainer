@@ -72,6 +72,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-026` | Implemented | Reduce P3 render overhead without mechanic changes by caching deterministic Stars fields, reusing Stars laser/orb geometry across frames, and removing repeated NPC raid-index array construction. |
 | `CR-027` | Implemented | Show the assigned crystal-player roster directly beneath the spot selector as compact clickable spot/name chips for quick review and selection. |
 | `CR-028` | Implemented | Keep the existing WoW-inspired class palette and change Monk from bright green to a darker petrol-jade color for clearer arena distinction. |
+| `CR-029` | Implemented | Configure six independent crystal carriers beneath each Intermission, Phase 2, and Phase 3 raid plan; switch ownership on phase transitions with a short player notice and preserve legacy shared plans. |
 | `BUG-008` | Implemented | Remove the premature 20-second P3 Soak failure; unfinished pools are now checked only when Big Boom resolves at 40 seconds. |
 | `BUG-009` | Implemented | Enforce P3 Stars orb spacing and isolate the southwest/southeast fields with clearance from the room divider. |
 | `BUG-010` | Implemented | Use the NPC protection bubble when the player's crystal duty belongs to the other Dark Archangel set; only consume the player's crystal on its assigned set. |

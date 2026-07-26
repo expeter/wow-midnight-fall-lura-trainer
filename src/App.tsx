@@ -8,6 +8,7 @@ import { ACHIEVEMENT_STORAGE_KEY, collectibleAchievements, mergeEarnedAchievemen
 import { FEATURE_FLAGS } from './features'
 import GameScene from './GameScene'
 import { advanceMainAbilityCast, idleMainAbilityCast, mainAbilityElapsedSeconds, MAIN_ABILITY_CAST_SECONDS, requestMainAbilityCast, type MainAbilityCastState } from './mainAbility'
+import { encounterSoundCuesForState, playEncounterSound } from './encounterSounds'
 import './styles.css'
 
 type Screen = 'menu' | 'game' | 'results'
@@ -58,6 +59,7 @@ const MUSIC_TRACKS = [
 type MusicTrackId = typeof MUSIC_TRACKS[number]['id']
 const DEFAULT_MUSIC_TRACK: MusicTrackId = 'criminal'
 const DEFAULT_MUSIC_VOLUME = .2
+const DEFAULT_ENCOUNTER_SOUND_VOLUME = .65
 const APP_VERSION = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : '0.1.0'
 const APP_BUILD_TIME = typeof __BUILD_TIME__ === 'string' ? __BUILD_TIME__ : new Date().toISOString()
 const APP_GIT_REVISION = typeof __GIT_REVISION__ === 'string' ? __GIT_REVISION__ : 'unknown'
@@ -187,6 +189,12 @@ function loadMusicVolume() {
   if (stored === null) return DEFAULT_MUSIC_VOLUME
   const saved = Number(stored)
   return Number.isFinite(saved) && saved >= 0 && saved <= 1 ? saved : DEFAULT_MUSIC_VOLUME
+}
+function loadEncounterSoundVolume() {
+  const stored = localStorage.getItem('lura-encounter-sounds-volume')
+  if (stored === null) return DEFAULT_ENCOUNTER_SOUND_VOLUME
+  const saved = Number(stored)
+  return Number.isFinite(saved) && saved >= 0 && saved <= 1 ? saved : DEFAULT_ENCOUNTER_SOUND_VOLUME
 }
 function keyLabel(code: string) {
   if (!code) return 'Unbound'
@@ -406,6 +414,7 @@ export default function App() {
   const [musicMuted, setMusicMuted] = useState(() => !loadBoolean('lura-music-enabled', false))
   const [musicPreviewing, setMusicPreviewing] = useState(false)
   const [encounterSoundsEnabled, setEncounterSoundsEnabled] = useState(() => FEATURE_FLAGS.encounterSounds && loadBoolean('lura-encounter-sounds-enabled', false))
+  const [encounterSoundVolume, setEncounterSoundVolume] = useState(loadEncounterSoundVolume)
   const [ttsEnabled, setTtsEnabled] = useState(() => loadBoolean('lura-tts-enabled', false))
   const [timedVoiceReady, setTimedVoiceReady] = useState(false)
   const [keyBindings, setKeyBindings] = useState<KeyBindings>(loadKeyBindings)
@@ -457,6 +466,7 @@ export default function App() {
   const [p3Round, setP3Round] = useState(1)
   const [p4Cycle, setP4Cycle] = useState(1)
   const [p4PatternSeed, setP4PatternSeed] = useState(() => Math.floor(Math.random() * 2147483647))
+  const [p4DestroyedBoxCount, setP4DestroyedBoxCount] = useState(0)
   const [p3ArchangelDuty, setP3ArchangelDuty] = useState<1 | 2>(randomCrystalDropDuty)
   const [p3PoolHealth, setP3PoolHealth] = useState(Array(6).fill(P3_POOL_HEALTH))
   const [p3RuneOrder, setP3RuneOrder] = useState<RuneSymbol[]>(['T', 'X', 'O'])
@@ -511,6 +521,8 @@ export default function App() {
   const jumpCameraForwardRef = useRef<Point>({ x: 0, y: -1 })
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const ttsSpokenRef = useRef(new Set<string>())
+  const encounterSoundPlayedRef = useRef(new Set<string>())
+  const activeEncounterSoundsRef = useRef(new Set<HTMLAudioElement>())
   const timedVoiceContextRef = useRef<AudioContext | null>(null)
   const timedVoiceBuffersRef = useRef<Partial<Record<P4VoiceClip, AudioBuffer>>>({})
   const timedVoiceSourcesRef = useRef<AudioBufferSourceNode[]>([])
@@ -573,6 +585,9 @@ export default function App() {
   useEffect(() => {
     if (FEATURE_FLAGS.encounterSounds) localStorage.setItem('lura-encounter-sounds-enabled', String(encounterSoundsEnabled))
   }, [encounterSoundsEnabled])
+  useEffect(() => {
+    if (FEATURE_FLAGS.encounterSounds) localStorage.setItem('lura-encounter-sounds-volume', String(encounterSoundVolume))
+  }, [encounterSoundVolume])
   useEffect(() => { setP3BossPlan(p3BossPositions) }, [p3BossPositions])
   useEffect(() => { p3ResolvedRunesRef.current = p3ResolvedRunes }, [p3ResolvedRunes])
   useEffect(() => {
@@ -683,12 +698,48 @@ export default function App() {
       window.speechSynthesis.speak(utterance)
     })
   }, [ttsAvailable, ttsEnabled, screen, paused, wipeReason, event, eventTime, cycle, p2Cycle, p2OrbReturnAge, p3Round, p3ArchangelDuty, p3PoolHealth, p3RuneOrder, p3ResolvedRunes, p4Cycle, p4PatternSeed, assignment, activeCrystalAssignments, difficulty, gameSpeed])
+  useEffect(() => {
+    const stopActiveSounds = () => {
+      activeEncounterSoundsRef.current.forEach(audio => {
+        audio.pause()
+        audio.currentTime = 0
+      })
+      activeEncounterSoundsRef.current.clear()
+    }
+    if (!FEATURE_FLAGS.encounterSounds || !encounterSoundsEnabled || screen !== 'game' || paused && !wipeReason) {
+      stopActiveSounds()
+      return
+    }
+    const cues = encounterSoundCuesForState({
+      event,
+      eventTime,
+      cycle,
+      p2Cycle,
+      p2OrbReturnAge,
+      p3Round,
+      p3PoolHealth,
+      p3ResolvedRunes,
+      p4Cycle,
+      p4DestroyedBoxCount,
+      crystalOnGround: crystal !== null,
+      latestMistakeId: mistakes[0]?.id ?? null,
+      wipeReason,
+    }).filter(cue => !encounterSoundPlayedRef.current.has(cue.id))
+    cues.forEach(cue => {
+      encounterSoundPlayedRef.current.add(cue.id)
+      const audio = playEncounterSound(cue.sound, encounterSoundVolume)
+      activeEncounterSoundsRef.current.add(audio)
+      audio.addEventListener('ended', () => activeEncounterSoundsRef.current.delete(audio), { once: true })
+    })
+  }, [encounterSoundsEnabled, encounterSoundVolume, screen, paused, wipeReason, event, eventTime, cycle, p2Cycle, p2OrbReturnAge, p3Round, p3PoolHealth, p3ResolvedRunes, p4Cycle, p4DestroyedBoxCount, crystal, mistakes])
   useEffect(() => () => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel()
     timedVoiceSourcesRef.current.forEach(source => {
       try { source.stop() } catch { /* source already stopped */ }
     })
     void timedVoiceContextRef.current?.close()
+    activeEncounterSoundsRef.current.forEach(audio => audio.pause())
+    activeEncounterSoundsRef.current.clear()
   }, [])
   useEffect(() => {
     setP2SpreadPositions(current => {
@@ -839,6 +890,10 @@ export default function App() {
     p4CycleRef.current = 1
     p4NpcSplinterCheckedRef.current.clear()
     ttsSpokenRef.current.clear()
+    encounterSoundPlayedRef.current.clear()
+    activeEncounterSoundsRef.current.forEach(audio => audio.pause())
+    activeEncounterSoundsRef.current.clear()
+    setP4DestroyedBoxCount(0)
     if (ttsAvailable) window.speechSynthesis.cancel()
     setP4PatternSeed(Math.floor(Math.random() * 2147483647))
     randomizeP3PoolLayout()
@@ -1422,7 +1477,10 @@ export default function App() {
       if (event === 'p4-cycle') {
         const encounterBoxes = p4EncounterBoxStates(p4CycleRef.current, eventTimeRef.current, WORLD.center)
         const destroyBoxesHitBySplinter = (origin: Point, rotation: number) => encounterBoxes.forEach(box => {
-          if (box.active && p4SplinterHitsGroup(origin, rotation, box.position, box.size)) p4DestroyedBoxIdsRef.current.add(box.id)
+          if (box.active && p4SplinterHitsGroup(origin, rotation, box.position, box.size) && !p4DestroyedBoxIdsRef.current.has(box.id)) {
+            p4DestroyedBoxIdsRef.current.add(box.id)
+            setP4DestroyedBoxCount(p4DestroyedBoxIdsRef.current.size)
+          }
         })
         const duty = p4PlayerSplinterDuty(assignment, p4CycleRef.current, p4PatternSeed)
         const age = p4SplinterAge(p4CycleRef.current, eventTimeRef.current, duty)
@@ -1450,7 +1508,10 @@ export default function App() {
         }
         const frontSoaker = p4FrontSoakerPosition(stack, WORLD.center)
         encounterBoxes.forEach(box => {
-          if (box.active && p4TankKillsBox(box.position, frontSoaker)) p4DestroyedBoxIdsRef.current.add(box.id)
+          if (box.active && p4TankKillsBox(box.position, frontSoaker) && !p4DestroyedBoxIdsRef.current.has(box.id)) {
+            p4DestroyedBoxIdsRef.current.add(box.id)
+            setP4DestroyedBoxCount(p4DestroyedBoxIdsRef.current.size)
+          }
         })
         const hitBox = encounterBoxes.find(box =>
           box.active
@@ -1811,7 +1872,7 @@ export default function App() {
     <div className="plan-heading audio-settings-heading"><p className="eyebrow">AUDIO</p><h2>Music &amp; encounter assistance</h2><p className="hint">Music is opt-in. Encounter effects and raid-lead speech remain separate so each channel can be enabled independently later.</p></div>
     <section className="audio-settings-grid">
       {FEATURE_FLAGS.backgroundMusic && <fieldset aria-label="Music settings"><legend>Music</legend><label className="checkbox-control"><input aria-label="Enable background music" type="checkbox" checked={!musicMuted} onChange={event => { setMusicMuted(!event.target.checked); if (!event.target.checked) setMusicPreviewing(false) }} /><span>Enable music<span>Off by default · loops through the complete attempt.</span></span></label><label className="profile-control">Track<select aria-label="Background music track" value={musicTrack} onChange={event => setMusicTrack(event.target.value as MusicTrackId)}>{MUSIC_TRACKS.map(track => <option value={track.id} key={track.id}>{track.label}</option>)}</select></label><button type="button" className="music-preview" disabled={musicMuted} onClick={toggleMusicPreview}>{musicMuted ? 'Enable music to preview' : musicPreviewing ? '■ Stop preview' : '▶ Play preview'}</button><label className="speed-control">Volume <strong>{Math.round(musicVolume * 100)}%</strong><input aria-label="Background music volume" type="range" min="0" max="1" step=".05" value={musicVolume} onChange={event => setMusicVolume(Number(event.target.value))} /></label></fieldset>}
-      <fieldset aria-label="Encounter sound settings"><legend>Sounds</legend><label className="checkbox-control"><input aria-label="Enable encounter sounds" type="checkbox" checked={encounterSoundsEnabled} disabled={!FEATURE_FLAGS.encounterSounds} onChange={event => setEncounterSoundsEnabled(event.target.checked)} /><span>Encounter sound effects<span>{FEATURE_FLAGS.encounterSounds ? 'Local preview channel · off by default.' : 'Coming in v0.2.0 · available on localhost during development.'}</span></span></label><p className="hint">This channel will use short nonverbal effects synchronized to mechanics.</p><a className="audio-cue-link" href={AUDIO_CUES_URL} target="_blank" rel="noreferrer">View sound-file shopping list ↗</a></fieldset>
+      <fieldset aria-label="Encounter sound settings"><legend>Sounds</legend><label className="checkbox-control"><input aria-label="Enable encounter sounds" type="checkbox" checked={encounterSoundsEnabled} disabled={!FEATURE_FLAGS.encounterSounds} onChange={event => setEncounterSoundsEnabled(event.target.checked)} /><span>Encounter sound effects<span>{FEATURE_FLAGS.encounterSounds ? 'Local mechanic preview · off by default.' : 'Coming in v0.2.0 · available on localhost during development.'}</span></span></label>{FEATURE_FLAGS.encounterSounds && <label className="speed-control">Volume <strong>{Math.round(encounterSoundVolume * 100)}%</strong><input aria-label="Encounter sound volume" type="range" min="0" max="1" step=".05" value={encounterSoundVolume} onChange={event => setEncounterSoundVolume(Number(event.target.value))} /></label>}<p className="hint">{FEATURE_FLAGS.encounterSounds ? 'Approved laser, Stars, Starsplinter, orb, Soak, rune, protection, add, and failure effects are synchronized to live mechanics.' : 'Short nonverbal effects will be synchronized to mechanics.'}</p><a className="audio-cue-link" href={AUDIO_CUES_URL} target="_blank" rel="noreferrer">View sound cue review ↗</a></fieldset>
       <fieldset aria-label="TTS settings"><legend>TTS</legend><label className="checkbox-control"><input aria-label="Enable raid lead TTS" type="checkbox" checked={ttsEnabled} disabled={!ttsAvailable} onChange={event => setTtsEnabled(event.target.checked)} /><span>Raid-lead voice cues<span>{ttsAvailable ? 'Off by default · browser speech with clocked P4 calls.' : 'Speech synthesis is unavailable in this browser.'}</span></span></label><p className="hint">Calls include Memory Game, Soak Beam, Drop Crystal, Spread, Dodge, Left/Right/Left, and Move. P4 directions use pre-rendered clips for exact rhythm. Intermission Dodge and Drop Crystal coaching is Easy-only.</p><a className="audio-cue-link" href={AUDIO_CUES_URL} target="_blank" rel="noreferrer">Review active calls ↗</a></fieldset>
     </section>
     <div className="plan-heading setup-section-heading" id="keyboard-settings"><p className="eyebrow">KEYBOARD SETTINGS</p><h2>Keyboard &amp; mouse controls</h2><p className="hint">Configure movement and action bindings, keyboard turning, and mouse-camera behavior.</p><a className="setup-back-to-top" href="#setup-top" aria-label="Back to top from Keyboard settings" onClick={event => scrollToSetupSection(event, 'setup-top')}>↑ Top</a></div>
@@ -1906,7 +1967,7 @@ export default function App() {
   const mainCastRemaining = mainCastState.phase === 'casting'
     ? mainCastState.remaining
     : 0
-  return <GameArena combatProjectilesEnabled={combatProjectilesEnabled} mainProjectileFiredAt={mainProjectileFiredAt} bossHealth={bossHealth} mainCastRemaining={mainCastRemaining} personalJumpProgress={personalJumpProgress} musicMuted={musicMuted} softWipeNotice={softWipeNotice} crystalDutyNotice={crystalDutyNotice} hudLayout={hudLayout} positions={activePositions} intermissionPositions={phasePositions} p2SoakPositions={p2Positions} p2SpreadPositions={p2SpreadPositions} p3Positions={p3Positions} profiles={gameProfiles} raidStart={startSlots[startSlot]} movementSpeed={movementSpeed} movementBonus={movementBonus} gameSpeed={gameSpeed} p2Cycle={p2Cycle} p2Soaked={p2Soaked} p2OrbReturnAge={p2OrbReturnAge} p3Round={p3Round} p3ArchangelDuty={activeCrystalAssignments.includes(assignment) ? p3ArchangelDuty : null} crystalSpent={crystalSpent} p4Cycle={p4Cycle} p4PatternSeed={p4PatternSeed} p3PoolHealth={p3PoolHealth} onP3PoolOccupancy={occupancy => { p3PoolOccupancyRef.current = occupancy }} onP3LightCenters={centers => { p3NpcLightCentersRef.current = centers }} onP3RuneContacts={runes => { p3RuneContactsRef.current = runes }} p3RuneOrder={p3RuneOrder} p3RuneStep={p3RuneStep} p3ResolvedRunes={p3ResolvedRunes} health={health} criticalRemaining={criticalRemaining} healthPotEnabled={difficulty !== 'easy' && difficulty !== 'test' && healthPotEnabled} shieldEnabled={difficulty !== 'easy' && difficulty !== 'test' && shieldEnabled} healthPotUsed={healthPotUsed} shieldUsed={shieldUsed} keyBindings={keyBindings} crystalCarriers={activeCrystalCarriers} beamPattern={beamPattern} failureFlash={failureFlash} wipeReason={wipeReason} player={player} crystal={crystal} npcCrystals={npcCrystals} npcCarrier={npcCarrier} npcCrystalAge={npcCrystalAge} playerSplinterRotation={playerSplinterRotation} crystalAge={crystalAge} role={activeCrystalAssignments.includes(assignment) ? 'carrier' : 'non-carrier'} difficulty={difficulty} assignment={assignment} stats={stats} mistakes={mistakes} startSlotName={`S${startSlot + 1}`} paused={paused} event={event} eventTime={eventTime} beamAngles={beamAngles} npcSplinters={npcSplinters} cycle={cycle} setPaused={setPaused} setMusicMuted={setMusicMuted} onRetry={start} onExit={() => setScreen('menu')} onDrop={toggleCrystal} onCameraDirection={direction => { cameraForward.current = direction }} />
+  return <GameArena combatProjectilesEnabled={combatProjectilesEnabled} mainProjectileFiredAt={mainProjectileFiredAt} bossHealth={bossHealth} mainCastRemaining={mainCastRemaining} personalJumpProgress={personalJumpProgress} musicMuted={musicMuted} encounterSoundsEnabled={encounterSoundsEnabled} softWipeNotice={softWipeNotice} crystalDutyNotice={crystalDutyNotice} hudLayout={hudLayout} positions={activePositions} intermissionPositions={phasePositions} p2SoakPositions={p2Positions} p2SpreadPositions={p2SpreadPositions} p3Positions={p3Positions} profiles={gameProfiles} raidStart={startSlots[startSlot]} movementSpeed={movementSpeed} movementBonus={movementBonus} gameSpeed={gameSpeed} p2Cycle={p2Cycle} p2Soaked={p2Soaked} p2OrbReturnAge={p2OrbReturnAge} p3Round={p3Round} p3ArchangelDuty={activeCrystalAssignments.includes(assignment) ? p3ArchangelDuty : null} crystalSpent={crystalSpent} p4Cycle={p4Cycle} p4PatternSeed={p4PatternSeed} p3PoolHealth={p3PoolHealth} onP3PoolOccupancy={occupancy => { p3PoolOccupancyRef.current = occupancy }} onP3LightCenters={centers => { p3NpcLightCentersRef.current = centers }} onP3RuneContacts={runes => { p3RuneContactsRef.current = runes }} p3RuneOrder={p3RuneOrder} p3RuneStep={p3RuneStep} p3ResolvedRunes={p3ResolvedRunes} health={health} criticalRemaining={criticalRemaining} healthPotEnabled={difficulty !== 'easy' && difficulty !== 'test' && healthPotEnabled} shieldEnabled={difficulty !== 'easy' && difficulty !== 'test' && shieldEnabled} healthPotUsed={healthPotUsed} shieldUsed={shieldUsed} keyBindings={keyBindings} crystalCarriers={activeCrystalCarriers} beamPattern={beamPattern} failureFlash={failureFlash} wipeReason={wipeReason} player={player} crystal={crystal} npcCrystals={npcCrystals} npcCarrier={npcCarrier} npcCrystalAge={npcCrystalAge} playerSplinterRotation={playerSplinterRotation} crystalAge={crystalAge} role={activeCrystalAssignments.includes(assignment) ? 'carrier' : 'non-carrier'} difficulty={difficulty} assignment={assignment} stats={stats} mistakes={mistakes} startSlotName={`S${startSlot + 1}`} paused={paused} event={event} eventTime={eventTime} beamAngles={beamAngles} npcSplinters={npcSplinters} cycle={cycle} setPaused={setPaused} setMusicMuted={setMusicMuted} setEncounterSoundsEnabled={setEncounterSoundsEnabled} onRetry={start} onExit={() => setScreen('menu')} onDrop={toggleCrystal} onCameraDirection={direction => { cameraForward.current = direction }} />
 }
 
 function rayHitsAny(point: Point, origin: Point, rotation = 0, minimumLength = 10, maximumLength = STAR_LENGTH): boolean { const dx = point.x - origin.x; const dy = point.y - origin.y; const length = Math.hypot(dx, dy); if (length < minimumLength || length > maximumLength) return false; const angle = Math.atan2(dy, dx); return Array.from({ length: 6 }, (_, i) => Math.abs(Math.atan2(Math.sin(angle - rotation - i * Math.PI / 3), Math.cos(angle - rotation - i * Math.PI / 3))) < .12).some(Boolean) }
@@ -2097,7 +2158,7 @@ function HudLayoutEditor({ layout, onChange, onReset }: { layout: HudLayout; onC
   </section>
 }
 
-function GameArena(props: { combatProjectilesEnabled: boolean; mainProjectileFiredAt: number | null; bossHealth: number; mainCastRemaining: number; personalJumpProgress: number; musicMuted: boolean; softWipeNotice: string; crystalDutyNotice: string; hudLayout: HudLayout; positions: Assignment[]; intermissionPositions: Assignment[]; p2SoakPositions: Assignment[]; p2SpreadPositions: Assignment[]; p3Positions: Assignment[]; profiles: PlayerProfile[]; raidStart: Point; movementSpeed: number; movementBonus: boolean; gameSpeed: number; p2Cycle: number; p2Soaked: boolean; p2OrbReturnAge: number; p3Round: number; p3ArchangelDuty: 1 | 2 | null; crystalSpent: boolean; p4Cycle: number; p4PatternSeed: number; p3PoolHealth: number[]; onP3PoolOccupancy: (occupancy: number[]) => void; onP3LightCenters: (centers: Point[]) => void; onP3RuneContacts: (runes: RuneSymbol[]) => void; p3RuneOrder: RuneSymbol[]; p3RuneStep: number; p3ResolvedRunes: RuneSymbol[]; health: number; criticalRemaining: number; healthPotEnabled: boolean; shieldEnabled: boolean; healthPotUsed: boolean; shieldUsed: boolean; keyBindings: KeyBindings; crystalCarriers: number[]; beamPattern: 'line' | 'gap'; failureFlash: boolean; wipeReason: string; player: Point; crystal: Point | null; npcCrystals: Point[]; npcCarrier: number | null; npcCrystalAge: number; playerSplinterRotation: number; crystalAge: number; role: Role; difficulty: Difficulty; assignment: number; stats: GameStats; mistakes: Mistake[]; startSlotName: string; paused: boolean; event: EventKind; eventTime: number; beamAngles: number[]; npcSplinters: number[]; cycle: number; setPaused: (p: boolean) => void; setMusicMuted: (muted: boolean) => void; onRetry: () => void; onExit: () => void; onDrop: () => void; onCameraDirection: (direction: Point) => void }) {
+function GameArena(props: { combatProjectilesEnabled: boolean; mainProjectileFiredAt: number | null; bossHealth: number; mainCastRemaining: number; personalJumpProgress: number; musicMuted: boolean; encounterSoundsEnabled: boolean; softWipeNotice: string; crystalDutyNotice: string; hudLayout: HudLayout; positions: Assignment[]; intermissionPositions: Assignment[]; p2SoakPositions: Assignment[]; p2SpreadPositions: Assignment[]; p3Positions: Assignment[]; profiles: PlayerProfile[]; raidStart: Point; movementSpeed: number; movementBonus: boolean; gameSpeed: number; p2Cycle: number; p2Soaked: boolean; p2OrbReturnAge: number; p3Round: number; p3ArchangelDuty: 1 | 2 | null; crystalSpent: boolean; p4Cycle: number; p4PatternSeed: number; p3PoolHealth: number[]; onP3PoolOccupancy: (occupancy: number[]) => void; onP3LightCenters: (centers: Point[]) => void; onP3RuneContacts: (runes: RuneSymbol[]) => void; p3RuneOrder: RuneSymbol[]; p3RuneStep: number; p3ResolvedRunes: RuneSymbol[]; health: number; criticalRemaining: number; healthPotEnabled: boolean; shieldEnabled: boolean; healthPotUsed: boolean; shieldUsed: boolean; keyBindings: KeyBindings; crystalCarriers: number[]; beamPattern: 'line' | 'gap'; failureFlash: boolean; wipeReason: string; player: Point; crystal: Point | null; npcCrystals: Point[]; npcCarrier: number | null; npcCrystalAge: number; playerSplinterRotation: number; crystalAge: number; role: Role; difficulty: Difficulty; assignment: number; stats: GameStats; mistakes: Mistake[]; startSlotName: string; paused: boolean; event: EventKind; eventTime: number; beamAngles: number[]; npcSplinters: number[]; cycle: number; setPaused: (p: boolean) => void; setMusicMuted: (muted: boolean) => void; setEncounterSoundsEnabled: (enabled: boolean) => void; onRetry: () => void; onExit: () => void; onDrop: () => void; onCameraDirection: (direction: Point) => void }) {
   const [zoomDisplay, setZoomDisplay] = useState(16)
   const [wipeMinimized, setWipeMinimized] = useState(false)
   const [failureLogCopied, setFailureLogCopied] = useState(false)
@@ -2175,7 +2236,7 @@ function GameArena(props: { combatProjectilesEnabled: boolean; mainProjectileFir
     <div className="game-top">
       <p className="eyebrow game-phase-label">{phaseLabel} · {props.gameSpeed.toFixed(2)}×</p>
       <h1>{phaseTitle}</h1>
-      <div className="game-actions">{FEATURE_FLAGS.backgroundMusic && <button aria-label={props.musicMuted ? 'Enable music' : 'Disable music'} onClick={() => props.setMusicMuted(!props.musicMuted)}>{props.musicMuted ? '♫ Music off' : '♫ Music on'}</button>}<button disabled={Boolean(props.wipeReason)} onClick={() => props.setPaused(!props.paused)}>{props.wipeReason ? 'Wiped' : props.paused ? 'Resume' : 'Pause'}</button><button className="secondary" onClick={props.onExit}>Exit</button></div>
+      <div className="game-actions">{FEATURE_FLAGS.backgroundMusic && <button aria-label={props.musicMuted ? 'Enable music' : 'Disable music'} onClick={() => props.setMusicMuted(!props.musicMuted)}>{props.musicMuted ? '♫ Music off' : '♫ Music on'}</button>}{FEATURE_FLAGS.encounterSounds && <button aria-label={props.encounterSoundsEnabled ? 'Disable encounter sounds' : 'Enable encounter sounds'} onClick={() => props.setEncounterSoundsEnabled(!props.encounterSoundsEnabled)}>{props.encounterSoundsEnabled ? '🔊 Sounds on' : '🔇 Sounds off'}</button>}<button disabled={Boolean(props.wipeReason)} onClick={() => props.setPaused(!props.paused)}>{props.wipeReason ? 'Wiped' : props.paused ? 'Resume' : 'Pause'}</button><button className="secondary" onClick={props.onExit}>Exit</button></div>
     </div>
     <div className="game-layout">
       <div

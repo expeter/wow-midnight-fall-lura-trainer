@@ -161,6 +161,45 @@ test('Space jumps while actions are locked and P pauses', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Resume' })).toBeVisible()
 })
 
+test('Main ability visibly fills without resetting when its bound key is hammered', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('lura-keybindings', JSON.stringify({
+      forward: 'KeyW',
+      backward: 'KeyS',
+      left: 'KeyA',
+      right: 'KeyD',
+      turnLeft: 'KeyQ',
+      turnRight: 'KeyE',
+      jump: 'Space',
+      crystal: 'KeyC',
+      pause: 'KeyP',
+      healthPot: 'NumpadDecimal',
+      shield: 'Numpad7',
+      mainAbility: 'Digit4',
+    }))
+  })
+  await page.goto('/')
+  await page.getByRole('button', { name: /Enter Intermission/ }).click()
+  await page.keyboard.press('4')
+
+  const fill = page.locator('.main-cast-fill')
+  await expect(fill).toBeVisible()
+  await page.waitForTimeout(180)
+  const earlyScale = await fill.evaluate(element => new DOMMatrix(getComputedStyle(element).transform).a)
+
+  await page.keyboard.press('4')
+  await page.keyboard.press('4')
+  await page.keyboard.press('4')
+  await page.waitForTimeout(260)
+  const laterScale = await fill.evaluate(element => new DOMMatrix(getComputedStyle(element).transform).a)
+  expect(laterScale).toBeGreaterThan(earlyScale + .12)
+  await expect(page.getByText(/L’URA · 100\.0%/i)).toBeVisible()
+
+  await expect(page.getByText(/L’URA · 99\.5%/i)).toBeVisible({ timeout: 2_000 })
+  await expect(fill).toHaveCount(0)
+  await expect(page.locator('.score-overlay strong')).toHaveText('1001')
+})
+
 test('enters Phase 3 directly in non-blocking Test mode', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('lura-game-speed', '2.5'))
   await page.goto('/')

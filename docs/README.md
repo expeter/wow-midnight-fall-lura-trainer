@@ -195,6 +195,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-050` | Implemented | Guarantee that one Main Ability key press produces exactly one cast and one projectile: ignore additional input until its 1.0-second cast and 0.1-second recovery finish, and hide the cast bar during recovery instead of visually restarting it. |
 | `BUG-051` | Implemented | Advance the one-second Main Ability cast from real elapsed frame time at the configured game speed instead of the physics loop’s 50-millisecond safety clamp, preventing slow or stuck casts on busy GitHub Actions runners while keeping movement and collision simulation capped. |
 | `BUG-052` | Implemented | Replace the external I Asgard I TinyURL navigation with an in-app fetch of the bundled guild raid plan, then normalize, apply, and persist it without changing the current localhost or GitHub Pages location. |
+| `BUG-053` | Implemented | Render the Main Ability as one uninterrupted compositor-driven 0–100% castbar that pauses with the game and cannot be visually reset by repeated input or busy encounter rerenders; damage, score, and the projectile still occur only at completion. |
 
 ## Implemented feature inventory
 

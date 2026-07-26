@@ -61,6 +61,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-016` | Implemented | Increase each Phase 3 Soak health pool by 1.5×, from 42 to 63, so four-player groups cannot finish it too quickly. |
 | `CR-017` | Implemented | Keep idle Phase 3 NPCs at least 7 yards apart around their boss while preserving active Soak and rune duties; crystal carriers reserve non-overlapping light-zone spacing and may therefore skip a Soak. |
 | `CR-018` | Implemented | Keep Phase 3 Stars connections clear of the active Soak circles, including beam width, matching the updated encounter behavior. |
+| `CR-019` | Implemented | Reduce the setup page’s top padding from viewport-scale whitespace to a compact 14-pixel start. |
 | `BUG-008` | Implemented | Remove the premature 20-second P3 Soak failure; unfinished pools are now checked only when Big Boom resolves at 40 seconds. |
 | `BUG-009` | Implemented | Enforce P3 Stars orb spacing and isolate the southwest/southeast fields with clearance from the room divider. |
 | `BUG-010` | Implemented | Use the NPC protection bubble when the player's crystal duty belongs to the other Dark Archangel set; only consume the player's crystal on its assigned set. |

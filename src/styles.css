@@ -83,7 +83,7 @@
 .share-status { margin: 9px 0 0; color: #73e0c1; font: 11px 'DM Mono', monospace; }
 .setup-shell {
   max-width: 1040px;
-  padding-top: 4vh;
+  padding-top: 14px;
   display: grid;
   grid-template-columns: minmax(0, 630px) 320px;
   column-gap: 26px;

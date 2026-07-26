@@ -550,6 +550,10 @@ export function p3RuneDeadline(order: RuneSymbol[], rune: RuneSymbol): number {
   return P3_MEMORY_START_SECONDS + (order.indexOf(rune) + 1) * P3_MEMORY_STEP_SECONDS
 }
 
+export function p3MemoryResolved(order: RuneSymbol[], resolved: RuneSymbol[]): boolean {
+  return order.every(rune => resolved.includes(rune))
+}
+
 export function p3StarsTiming(eventTime: number): { active: boolean; cycle: number; localTime: number } {
   if (eventTime < P3_STARS_START_SECONDS) return { active: false, cycle: 0, localTime: 0 }
   const elapsed = eventTime - P3_STARS_START_SECONDS

@@ -139,6 +139,9 @@ export function p3LandingSoakPositions(index: number, center: Point, seed = 0): 
 export function p3LightHealthRate(protectedByLight: boolean): number {
   return protectedByLight ? 12 : -2
 }
+export function hasActiveP3CrystalLight(assignedCrystal: boolean, crystalSpent: boolean): boolean {
+  return assignedCrystal && !crystalSpent
+}
 export function separateP3NpcTarget(target: Point, crystal: boolean, occupied: Array<{ point: Point; crystal: boolean }>, salt = 0): Point {
   let result = { ...target }
   for (let pass = 0; pass < 3; pass += 1) {

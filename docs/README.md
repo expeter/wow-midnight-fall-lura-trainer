@@ -67,6 +67,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-022` | Implemented | Partially reverse the previous 1.5× P3 Soak-duration increase: reduce each pool from 63 HP to 50 HP, making three-player completion take about 16.7 seconds instead of 21. |
 | `CR-023` | Implemented | Align the creator-card actions into a consistent two-column link row with a full-width Buy me a coffee action beneath it. |
 | `CR-024` | Implemented | Reduce each P3 Soak pool from 50 HP to 35 HP, allowing three correctly positioned players to finish it in about 11.7 seconds before the memory game begins. |
+| `CR-025` | Implemented | Remove the player’s moving yellow P3 light and its health protection after their assigned Dark Archangel consumes the crystal; nearby NPC crystal lights remain usable. |
 | `BUG-008` | Implemented | Remove the premature 20-second P3 Soak failure; unfinished pools are now checked only when Big Boom resolves at 40 seconds. |
 | `BUG-009` | Implemented | Enforce P3 Stars orb spacing and isolate the southwest/southeast fields with clearance from the room divider. |
 | `BUG-010` | Implemented | Use the NPC protection bubble when the player's crystal duty belongs to the other Dark Archangel set; only consume the player's crystal on its assigned set. |

@@ -85,6 +85,13 @@ export function p3SideForPosition(position: Point, center: Point): -1 | 1 {
   return position.x < center.x ? -1 : 1
 }
 
+export function keepP3PointOnSide(position: Point, side: -1 | 1, center: Point, clearance = 0): Point {
+  return {
+    x: side < 0 ? Math.min(position.x, center.x - clearance) : Math.max(position.x, center.x + clearance),
+    y: position.y,
+  }
+}
+
 export function isP3RaidMemberVisible(playerPosition: Point, memberPosition: Point, center: Point, phaseThree: boolean): boolean {
   return !phaseThree || p3SideForPosition(playerPosition, center) === p3SideForPosition(memberPosition, center)
 }
@@ -827,12 +834,13 @@ export function bossBeamHitsPlayer(point: Point, origin: Point, angles: number[]
   })
 }
 export function roamingNpcPosition(base: Point, index: number, time: number, event: 'countdown' | 'positioning' | 'beam' | 'splinter' | 'p1-recover' | 'p2-countdown' | 'p2-jump' | 'p2-positioning' | 'p2-orbs' | 'p2-recover' | 'p2-pull' | 'p2-spread' | 'p2-fetch' | 'p2-wait' | `p3-${string}` | `p4-${string}`, eventTime: number, beamAngles: number[], center: Point): Point {
+  if (event === 'countdown' || event === 'positioning') return base
   const phase = index * 1.73
   const roaming = {
     x: base.x + Math.sin(time * (.31 + index % 3 * .04) + phase) * (4 + index % 4),
     y: base.y + Math.cos(time * (.27 + index % 5 * .025) + phase * .7) * (4 + (index + 2) % 5),
   }
-  if (event === 'countdown' || event === 'positioning' || event.startsWith('p2-') || event.startsWith('p3-') || event.startsWith('p4-') || !beamAngles.length) return roaming
+  if (event.startsWith('p2-') || event.startsWith('p3-') || event.startsWith('p4-') || !beamAngles.length) return roaming
   let nearest: { angle: number; across: number; signedAcross: number } | null = null
   for (const angle of beamAngles) {
     const dx = roaming.x - center.x

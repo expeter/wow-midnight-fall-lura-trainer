@@ -1171,13 +1171,19 @@ export default function App() {
         ? p4GroupPosition(p4CycleRef.current, eventTimeRef.current, WORLD.center)
         : p4StackPosition(1, WORLD.center)
       if (event === 'p4-cycle') {
+        const encounterBoxes = p4EncounterBoxStates(p4CycleRef.current, eventTimeRef.current, WORLD.center)
+        const destroyBoxesHitBySplinter = (origin: Point, rotation: number) => encounterBoxes.forEach(box => {
+          if (box.active && p4SplinterHitsGroup(origin, rotation, box.position, box.size)) p4DestroyedBoxIdsRef.current.add(box.id)
+        })
         const duty = p4PlayerSplinterDuty(assignment, p4CycleRef.current, p4PatternSeed)
         const age = p4SplinterAge(p4CycleRef.current, eventTimeRef.current, duty)
         const checkId = p4CycleRef.current * 10 + duty
         if (p4SplinterResolutionActive(age) && p4SplinterCheckedRef.current !== checkId) {
           p4SplinterCheckedRef.current = checkId
-          const hitStack = p4SplinterHitsGroup(position, p4SplinterRotation(p4CycleRef.current, duty, p4PatternSeed), stack)
-          if (hitStack) { triggerWipe('Your Phase 4 Starsplinter hit another player in the stack'); return }
+          const rotation = p4SplinterRotation(p4CycleRef.current, duty, p4PatternSeed)
+          const otherPlayers = [stack, p4FrontSoakerPosition(stack, WORLD.center), ...[0, 1, 2].filter(ordinal => ordinal !== duty).map(ordinal => p4NpcSplinterPosition(stack, WORLD.center, ordinal, p4SplinterAge(p4CycleRef.current, eventTimeRef.current, ordinal), p4SplinterRotation(p4CycleRef.current, ordinal, p4PatternSeed)))]
+          if (otherPlayers.some(target => p4SplinterHitsGroup(position, rotation, target, 4))) { triggerWipe('Your Phase 4 Starsplinter hit another player'); return }
+          destroyBoxesHitBySplinter(position, rotation)
         }
         for (let ordinal = 0; ordinal < 3; ordinal += 1) {
           if (ordinal === duty) continue
@@ -1187,13 +1193,13 @@ export default function App() {
           p4NpcSplinterCheckedRef.current.add(npcCheckId)
           const rotation = p4SplinterRotation(p4CycleRef.current, ordinal, p4PatternSeed)
           const origin = p4NpcSplinterPosition(stack, WORLD.center, ordinal, npcAge, rotation)
+          destroyBoxesHitBySplinter(origin, rotation)
           if (p4SplinterHitsGroup(origin, rotation, position, 3)) {
             triggerWipe('Another player’s Phase 4 Starsplinter hit you')
             return
           }
         }
         const frontSoaker = p4FrontSoakerPosition(stack, WORLD.center)
-        const encounterBoxes = p4EncounterBoxStates(p4CycleRef.current, eventTimeRef.current, WORLD.center)
         encounterBoxes.forEach(box => {
           if (box.active && p4TankKillsBox(box.position, frontSoaker)) p4DestroyedBoxIdsRef.current.add(box.id)
         })

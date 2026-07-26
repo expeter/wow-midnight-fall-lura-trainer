@@ -80,6 +80,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-032` | Implemented | Move camera inversion into a full-width Keyboard & mouse controls panel and align keyboard bindings, rotation speed, and mouse options on a responsive grid. |
 | `CR-033` | Implemented | Keep the opposite Phase 3 raid half simulated and visible, but dim its actors to distinguish it from the player’s active side without removing useful encounter context. |
 | `CR-034` | Implemented | Reduce backward player movement to 50% on Hard while preserving full forward and strafe speed in every phase. |
+| `CR-035` | Implemented | Let player and NPC Starsplinters destroy any Phase 4 floor add crossed by one of their six rays. |
 | `BUG-008` | Implemented | Remove the premature 20-second P3 Soak failure; unfinished pools are now checked only when Big Boom resolves at 40 seconds. |
 | `BUG-009` | Implemented | Enforce P3 Stars orb spacing and isolate the southwest/southeast fields with clearance from the room divider. |
 | `BUG-010` | Implemented | Use the NPC protection bubble when the player's crystal duty belongs to the other Dark Archangel set; only consume the player's crystal on its assigned set. |
@@ -101,6 +102,10 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-026` | Implemented | Shorten the pause keybinding label to “(Un)pause” so it remains on one line in the keyboard grid. |
 | `BUG-027` | Implemented | Determine Phase 3 side ownership, local carriers, lights, bosses, Soaks, Stars, runes, and movement from each raid-plan position relative to the divider instead of roster slots 1–10/11–20. |
 | `BUG-028` | Implemented | Resolve every Phase 4 Starsplinter exactly once after its detonation threshold instead of relying on a skippable 0.3-second window, and align stack collisions with the visible group footprint at accelerated timing. |
+| `BUG-029` | Implemented | Keep P3 NPC fallback movement anchored to the active raid plan and constrain actors plus their complete crystal-light footprints to their assigned side of the divider after landing. | [`screen-p3-bug-23.png`](../images/screen-p3-bug-23.png) |
+| `BUG-030` | Implemented | Hold Intermission NPCs exactly on their loaded raid-plan anchors during positioning instead of adding idle roaming offsets before the mechanics begin. | [`screen-p1-bug01.png`](../images/screen-p1-bug01.png) |
+| `BUG-031` | Implemented | Resolve a player’s P4 Starsplinter against the stack, front soaker, and both other active splinter players so hitting any player—not only the abstract stack center—wipes the attempt. |
+| `BUG-032` | Implemented | Preserve interpolated actor movement after the initial P3 landing Soaks and fade the completed yellow indicators out over 250 ms instead of abruptly clearing and visually flashing the scene. |
 
 ## Implemented feature inventory
 

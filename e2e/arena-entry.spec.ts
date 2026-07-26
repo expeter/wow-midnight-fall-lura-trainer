@@ -168,7 +168,7 @@ test('resolves a Phase 4 stack hit reliably at 2.5x speed', async ({ page }) => 
   await page.getByRole('button', { name: /Enter Arena 4/ }).click()
 
   await expect(page.getByLabel('Test mode recent failures')).toContainText(
-    'Your Phase 4 Starsplinter hit another player in the stack',
+    'Your Phase 4 Starsplinter hit another player',
     { timeout: MECHANIC_TIMEOUT },
   )
 })

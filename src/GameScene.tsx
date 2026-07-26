@@ -21,6 +21,7 @@ interface SceneProps {
   p4PatternSeed: number
   p3PoolHealth: number[]
   onP3PoolOccupancy: (occupancy: number[]) => void
+  onP3LightCenters: (centers: Point[]) => void
   onP3RuneContacts: (runes: RuneSymbol[]) => void
   p3RuneOrder: RuneSymbol[]
   p3RuneStep: number
@@ -870,6 +871,10 @@ export default function GameScene(props: SceneProps) {
         }
         return position
       })
+      const npcP3LightCenters = phaseThree
+        ? npcPositions.filter((_, npcIndex) => state.profiles[npcProfileIndices[npcIndex]].crystal)
+        : []
+      state.onP3LightCenters(npcP3LightCenters)
       if (state.event === 'p3-light-pools' || state.event === 'p3-pools-overlap') {
         const occupancy = ([-1, 1] as const).flatMap(side => p3PoolCenters(side, WORLD.center, state.p3Round).map(pool => npcPositions.filter(position => distance(position, pool) <= P3_POOL_RADIUS).length))
         state.onP3PoolOccupancy(occupancy)
@@ -1001,7 +1006,7 @@ export default function GameScene(props: SceneProps) {
           hazards.add(drop)
         })
         if (state.event !== 'p3-countdown' && state.event !== 'p3-flight' && state.event !== 'p3-landing') {
-          const carrierLights = npcPositions.flatMap((point, npcIndex) => state.profiles[npcProfileIndices[npcIndex]].crystal ? [point] : [])
+          const carrierLights = [...npcP3LightCenters]
           if (playerLightActive) carrierLights.push(state.player)
           carrierLights.forEach(point => {
             addGroundDisc(hazards, point, P3_LIGHT_RADIUS, 0xffd94a, .09, 2.1)

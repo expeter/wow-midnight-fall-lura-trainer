@@ -142,6 +142,9 @@ export function p3LightHealthRate(protectedByLight: boolean): number {
 export function hasActiveP3CrystalLight(assignedCrystal: boolean, crystalSpent: boolean): boolean {
   return assignedCrystal && !crystalSpent
 }
+export function isProtectedByP3Light(player: Point, ownLightActive: boolean, npcLights: Point[], padding = 3): boolean {
+  return ownLightActive || npcLights.some(light => distance(player, light) <= P3_LIGHT_RADIUS + padding)
+}
 export function separateP3NpcTarget(target: Point, crystal: boolean, occupied: Array<{ point: Point; crystal: boolean }>, salt = 0): Point {
   let result = { ...target }
   for (let pass = 0; pass < 3; pass += 1) {

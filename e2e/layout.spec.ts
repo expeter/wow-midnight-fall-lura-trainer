@@ -35,7 +35,7 @@ test('raid sharing spans the setup width between HUD settings and raid planning'
 })
 
 test('game settings use one compact three-card row on desktop', async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.setViewportSize({ width: 1000, height: 900 })
   await page.goto('/')
   const cards = [
     page.getByRole('group', { name: 'Difficulty & movement' }),
@@ -49,6 +49,16 @@ test('game settings use one compact three-card row on desktop', async ({ page })
   expect(bounds[1]!.x).toBeLessThan(bounds[2]!.x)
   expect(bounds[0]!.x + bounds[0]!.width).toBeLessThan(bounds[1]!.x)
   expect(bounds[1]!.x + bounds[1]!.width).toBeLessThan(bounds[2]!.x)
+
+  const difficultyButtons = ['test', 'easy', 'normal', 'hard'].map(name => page.getByRole('button', { name, exact: true }))
+  const difficultyBounds = await Promise.all(difficultyButtons.map(button => button.boundingBox()))
+  expect(difficultyBounds.every(Boolean)).toBe(true)
+  expect(difficultyBounds[0]!.y).toBeCloseTo(difficultyBounds[1]!.y, 0)
+  expect(difficultyBounds[2]!.y).toBeCloseTo(difficultyBounds[3]!.y, 0)
+  expect(difficultyBounds[2]!.y).toBeGreaterThan(difficultyBounds[0]!.y + difficultyBounds[0]!.height)
+  for (const button of difficultyButtons) {
+    expect(await button.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
+  }
 })
 
 test('setup topics use one clear heading hierarchy in document order', async ({ page }) => {

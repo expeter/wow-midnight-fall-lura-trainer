@@ -12,6 +12,8 @@
   section.
 - Made the five-second opening movement boost permanent and removed its setup
   toggle and retired browser preference.
+- Changed the difficulty selector to a two-by-two grid so every mode label
+  remains readable without forcing adjacent Game settings cards to overlap.
 - Consolidated Game settings into three desktop cards, reduced setup
   whitespace, and restored the Intermission raid-plan heading before its map.
 - Moved raid-plan save, load, and sharing controls into a full-width section

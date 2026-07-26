@@ -62,7 +62,7 @@ with a separate `SOAK CRYSTAL` instruction.
 | `soak-complete` | Reserved / currently silent | The reviewed cue had too much silence before its transient and did not fit the completion moment | — | P3 |
 | `rune-reveal` | Each memory rune is shown | Three related tonal notes | 0.25–0.5s each | P3 |
 | `rune-match` | Correct rune partner resolves | Positive paired chime | 0.4–0.8s | P3 |
-| `archangel-charge` | Dark Archangel begins | Dark sustained beam charge | 1–2s | P3 |
+| `archangel-charge` | Dark Archangel is one second into its cast | Five-second escalating danger bed ending on the six-second cast impact | 5s | P3 |
 | `protection-active` | Crystal bubble protects raid | Warm shield activation | 0.5–1s | P3 |
 | `heaven-hell` | P4 quarter becomes unsafe | Deep sector-wide impact | 0.8–1.5s | P4 |
 | `add-destroyed` | Tank cone or splinter destroys an add | Small dry impact | 0.2–0.5s | P4 |

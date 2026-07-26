@@ -56,6 +56,7 @@ export const ENCOUNTER_SOUND_SPECS: Record<EncounterSoundName, EncounterSoundSpe
 export const LASER_CHARGE_SOUND_SECONDS = 1.86
 export const INTERMISSION_BEAM_FIRE_SECONDS = 2.78
 export const ORB_RETURN_SOUND_DELAY_SECONDS = 1
+export const ARCHANGEL_SOUND_DELAY_SECONDS = 1
 
 export interface EncounterSoundCue {
   id: string
@@ -111,7 +112,7 @@ export function encounterSoundCuesForState(state: EncounterSoundState): Encounte
   state.p3ResolvedRunes.forEach(rune => {
     cues.push({ id: `p3-${state.p3Round}-rune-${rune}`, sound: 'rune-match' })
   })
-  if (state.event === 'p3-archangel') {
+  if (state.event === 'p3-archangel' && state.eventTime >= ARCHANGEL_SOUND_DELAY_SECONDS) {
     cues.push({ id: `p3-${state.p3Round}-archangel-charge`, sound: 'archangel-charge' })
     if (state.crystalOnGround) cues.push({ id: `p3-${state.p3Round}-protection-active`, sound: 'protection-active' })
   }

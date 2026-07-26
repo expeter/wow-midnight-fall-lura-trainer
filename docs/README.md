@@ -155,6 +155,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-076` | Implemented | Aim cosmetic attacks at varied boss-torso heights instead of the boss’s feet, preserving readable fanned impacts when the raid is stacked. |
 | `CR-077` | Implemented | Remove the P3 Soak-complete sound because its delayed transient does not fit the mechanic; preserve visual progress and TTS completion feedback, and keep Rune Clear only for actual rune matches. |
 | `CR-078` | Implemented | Replace the P3 Stars connection’s long Arc Burn with a quieter Rift laser discharge accelerated to roughly 0.28 seconds, producing a short buzz exactly when the lattice beams appear. |
+| `CR-079` | Implemented | Delay the five-second Dark Archangel charge sound until one second into its six-second cast so the cue finishes at the impact instead of fading before the missing pop. |
 | `SPEC-001` | Implemented | Define the stable ticket lifecycle: assign an ID, record intent, add focused regression coverage, validate, and commit. |
 | `SPEC-002` | Implemented | Define the creator business card’s stable content, readability, compact layout, and external-link behavior. |
 | `SPEC-003` | Implemented | Define the P3-to-P4 north gather, shared knockup origin, and phase-local HUD boundary. |

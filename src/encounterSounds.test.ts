@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { P2_BEAM_SECONDS, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P3_POOL_HEALTH, P4_SPLINTER_DETONATION_SECONDS, p4SplinterStartSeconds } from './game'
-import { encounterSoundCuesForState, ENCOUNTER_SOUND_SPECS, INTERMISSION_BEAM_FIRE_SECONDS, LASER_CHARGE_SOUND_SECONDS, ORB_RETURN_SOUND_DELAY_SECONDS } from './encounterSounds'
+import { ARCHANGEL_SOUND_DELAY_SECONDS, encounterSoundCuesForState, ENCOUNTER_SOUND_SPECS, INTERMISSION_BEAM_FIRE_SECONDS, LASER_CHARGE_SOUND_SECONDS, ORB_RETURN_SOUND_DELAY_SECONDS } from './encounterSounds'
 
 const base = {
   event: 'countdown',
@@ -69,5 +69,11 @@ describe('encounter sound cues', () => {
   it('plays one cue for each newly destroyed P4 add', () => {
     const cues = encounterSoundCuesForState({ ...base, event: 'p4-cycle', p4DestroyedBoxCount: 2 })
     expect(cues).toContainEqual({ id: 'p4-add-destroyed-2', sound: 'add-destroyed' })
+  })
+
+  it('delays Dark Archangel by one second so its five-second cue ends on impact', () => {
+    expect(encounterSoundCuesForState({ ...base, event: 'p3-archangel', eventTime: ARCHANGEL_SOUND_DELAY_SECONDS - .01 })).toEqual([])
+    expect(encounterSoundCuesForState({ ...base, event: 'p3-archangel', eventTime: ARCHANGEL_SOUND_DELAY_SECONDS }))
+      .toContainEqual(expect.objectContaining({ sound: 'archangel-charge' }))
   })
 })

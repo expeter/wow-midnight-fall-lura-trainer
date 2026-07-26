@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { angleToward, ARENA, assignmentRevealDistance, bossBeamHitsPlayer, canPickupCrystal, canRecoverFromWipe, crystalCarrierPosition, crystalWipeReason, difficultySettings, distance, distanceToSegment, hasActiveP3CrystalLight, healthResponsesPerPhase, INTERMISSION_SEQUENCE, isOnAssignedP3Side, isInP3ConsumedSector, isP3ConsumedSectorLethal, isP3ProtectionCrystalPlaced, isP3RuneTurn, isInSafeAnnulus, isInsideArena, isProtectedByP3Bubble, isProtectedByP3Light, jumpHeights, keepP3PointOnSide, moveInBounds, movePlayer, moveRelativeToCamera, moveWithIncreasingPull, nearestRuneEdges, npcEntryPosition, OPENING_BOOST_SECONDS, orientedAssignments, p1PositioningWipeReason, P2_BEAM_CADENCE_SECONDS, P2_BEAM_SECONDS, P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS, p2NpcCrystalDrops, P2_NPC_PREPOSITION_SECONDS, p2NpcRoamingPosition, p2NpcShouldReturnToSoak, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, p2OrbReturnState, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_POSITIONING_SECONDS, P2_PULL_SECONDS, p2ReturningOrbPositions, P2_SPREAD_SECONDS, p3ArchangelStackPosition, p3AssignmentForRound, p3BossPosition, p3FlightPosition, P3_FLIGHT_SECONDS, p3LandingGroupCenter, p3LandingGroupIndex, p3LandingPlanIndex, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3LightHealthRate, p3MemoryResolved, p3NpcPoolAssignment, p3NpcRuneReactionDelay, p3NpcSoaksActive, p3PoolCenters, p3PoolSoakRate, p3RuneDeadline, p3RuneEdges, p3RuneOrbs, P3_LANDING_SOAK_RADIUS, P3_RUNE_ORB_MIN_GAP, p3StarsTiming, p3WrongRuneContact, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, P3_SECOND_SOAK_NPC_DELAY_SECONDS, p4BossHealth, p4BoxStates, p4EncounterBoxStates, p4FrontSoakerPosition, p4GroupPosition, P4_GROUP_HIT_RADIUS, p4NpcRelocationPace, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4SplinterStartSeconds, p4StackPosition, p4TankConeActive, P4_BOX_COUNT, P4_BOX_MIN_SEPARATION, P4_BOX_SPEED, P4_CYCLE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, P4_SPLINTER_INTERVAL_SECONDS, P4_TANK_CONE_DURATION_SECONDS, P4_TANK_CONE_INTERVAL_SECONDS, personalCircleHitsCrystal, personalCircleHitsPlayer, PLAYER_COLLISION_PENALTY, randomCrystalDropDuty, randomizeP3PoolLayout, roamingNpcPosition, seededStars, separateP3NpcTarget, setP3BossPlan, translateSelectedPoints, walkTowards, WIPE_PENALTY } from './game'
+import { angleToward, ARENA, assignmentRevealDistance, bossBeamHitsPlayer, canPickupCrystal, canRecoverFromWipe, crystalCarrierPosition, crystalWipeReason, difficultySettings, distance, distanceToSegment, hasActiveP3CrystalLight, healthResponsesPerPhase, INTERMISSION_SEQUENCE, isOnAssignedP3Side, isInP3ConsumedSector, isP3ConsumedSectorLethal, isP3ProtectionCrystalPlaced, isP3RuneTurn, isInSafeAnnulus, isInsideArena, isProtectedByP3Bubble, isProtectedByP3Light, jumpHeights, keepP3PointOnSide, moveInBounds, movePlayer, moveRelativeToCamera, moveWithIncreasingPull, nearestRuneEdges, npcEntryPosition, OPENING_BOOST_SECONDS, orientedAssignments, p1PositioningWipeReason, P2_BEAM_CADENCE_SECONDS, P2_BEAM_SECONDS, P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS, p2NpcCrystalDrops, P2_NPC_PREPOSITION_SECONDS, p2NpcRoamingPosition, p2NpcShouldReturnToSoak, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, p2OrbReturnState, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_POSITIONING_SECONDS, P2_PULL_SECONDS, p2ReturningOrbPositions, P2_SPREAD_SECONDS, p3ArchangelStackPosition, p3AssignmentForRound, p3BossPosition, p3FlightPosition, P3_FLIGHT_SECONDS, p3LandingGroupCenter, p3LandingGroupIndex, p3LandingPlanIndex, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3LightHealthRate, p3MemoryResolved, p3NpcPoolAssignment, p3NpcRuneReactionDelay, p3NpcSoaksActive, p3PoolCenters, p3PoolSoakRate, p3RuneDeadline, p3RuneEdges, p3RuneOrbs, P3_LANDING_SOAK_RADIUS, P3_RUNE_ORB_MIN_GAP, p3StarsTiming, p3WrongRuneContact, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, P3_SECOND_SOAK_NPC_DELAY_SECONDS, p4BossHealth, p4BoxStates, p4EncounterBoxStates, p4FrontSoakerPosition, p4GroupPosition, P4_GROUP_HIT_RADIUS, p4NpcRelocationPace, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4SplinterStartSeconds, p4StackPosition, p4TankConeActive, p4TransitionStartPosition, P4_BOX_COUNT, P4_BOX_MIN_SEPARATION, P4_BOX_SPEED, P4_CYCLE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, P4_SPLINTER_INTERVAL_SECONDS, P4_TANK_CONE_DURATION_SECONDS, P4_TANK_CONE_INTERVAL_SECONDS, personalCircleHitsCrystal, personalCircleHitsPlayer, PLAYER_COLLISION_PENALTY, randomCrystalDropDuty, randomizeP3PoolLayout, roamingNpcPosition, seededStars, separateP3NpcTarget, setP3BossPlan, shouldShowP2OrbReturnCounter, translateSelectedPoints, walkTowards, WIPE_PENALTY } from './game'
 import { P3_APPROACH_NPC_SPEED_MULTIPLIER, P3_APPROACH_SECONDS, P3_MEMORY_START_SECONDS, P3_RUNE_HALF_CLEARANCE, P3_SAFE_ZONE_GRACE_SECONDS, P3_SAFE_ZONE_PENALTY_PER_SECOND, P3_SECTOR_SECONDS, p3UnsafePenaltyTicks } from './game'
 import { p3ProtectionBubbleCenter } from './game'
 import type { Point } from './game'
@@ -247,16 +247,18 @@ describe('Intermission game rules', () => {
   it('rotates southeast assignments toward east and southwest assignments toward west without crossing the divider', () => { const center = { x: 480, y: 270 }; const radius = 150; const southeast = { x: center.x + Math.cos(Math.PI / 3) * radius, y: center.y + Math.sin(Math.PI / 3) * radius }; const southwest = { x: center.x + Math.cos(Math.PI * 2 / 3) * radius, y: center.y + Math.sin(Math.PI * 2 / 3) * radius }; const rightNext = p3AssignmentForRound(southeast, center, 2); const leftNext = p3AssignmentForRound(southwest, center, 2); expect(rightNext.x).toBeGreaterThan(center.x); expect(rightNext.y).toBeCloseTo(center.y); expect(leftNext.x).toBeLessThan(center.x); expect(leftNext.y).toBeCloseTo(center.y) })
   it('keeps the Phase 4 clock and relocation continuous across cycle boundaries', () => {
     const center = { x: 480, y: 270 }
-    expect(P4_CYCLE_SECONDS).toBe(22)
-    expect(P4_HEAVEN_START_SECONDS).toBe(22)
+    expect(P4_CYCLE_SECONDS).toBe(21)
+    expect(P4_HEAVEN_START_SECONDS).toBe(21)
     expect(P4_KNOCKUP_SECONDS).toBe(1.5)
-    expect(p4SplinterStartSeconds(1)).toBe(12.5)
-    expect(p4SplinterStartSeconds(2)).toBe(12.5)
+    expect(p4SplinterStartSeconds(1)).toBe(14.3)
+    expect(p4SplinterStartSeconds(2)).toBe(14.3)
     expect(P4_PROTECTION_RADIUS).toBeCloseTo(22.572)
     expect(P4_SPLINTER_INTERVAL_SECONDS).toBe(1.1)
     expect(P4_SPLINTER_DETONATION_SECONDS).toBe(3.5)
-    expect(p4SplinterAge(2, 13.6, 1)).toBeCloseTo(0)
-    expect(p4SplinterAge(2, 18.2, 2)).toBeCloseTo(3.5)
+    expect(p4SplinterAge(2, 15.4, 1)).toBeCloseTo(0)
+    expect(p4SplinterAge(2, 20, 2)).toBeCloseTo(3.5)
+    expect(P4_HEAVEN_START_SECONDS - (p4SplinterStartSeconds(1) + P4_SPLINTER_INTERVAL_SECONDS * 2 + P4_SPLINTER_DETONATION_SECONDS)).toBeCloseTo(1)
+    expect(P4_MOVEMENT_MULTIPLIER).toBe(1.1)
     expect(p4StackPosition(1, center)).toEqual({ x: 480, y: 120 })
     expect(p4StackPosition(2, center).x).toBeCloseTo(330)
     expect(p4StackPosition(2, center).y).toBeCloseTo(270)
@@ -274,6 +276,13 @@ describe('Intermission game rules', () => {
     expect(p4GroupPosition(2, 12, center)).toEqual(p4StackPosition(2, center))
     expect(p4RelocationProgress(5, 0)).toBeNull()
     expect(p4GroupPosition(5, 0, center)).toEqual(p4StackPosition(4, center))
+  })
+  it('phase-gates the P2 return counter and anchors the P4 knockup at the north stack', () => {
+    const center = { x: 480, y: 270 }
+    expect(shouldShowP2OrbReturnCounter('p2-wait', 4)).toBe(true)
+    expect(shouldShowP2OrbReturnCounter('p3-sector-move', 4)).toBe(false)
+    expect(shouldShowP2OrbReturnCounter('p4-transition', 4)).toBe(false)
+    expect(p4TransitionStartPosition(center)).toEqual(p4StackPosition(1, center))
   })
   it('only hits another player when their center is inside the Phase 2 personal circle', () => {
     const player = { x: 100, y: 100 }
@@ -333,13 +342,13 @@ describe('Intermission game rules', () => {
     const quarterDuties = Array.from({ length: 4 }, (_, cycle) => p4PlayerSplinterDuty(7, cycle + 1, 12345 + cycle * 1000))
     expect(new Set(quarterDuties).size).toBeGreaterThan(1)
   })
-  it('plays all four 22-second quarters, then kills the boss at 92 seconds', () => {
+  it('plays all four 21-second quarters, then kills the boss at 88 seconds', () => {
     expect(p4BossHealth(1, 0)).toBe(100)
     expect(p4BossHealth(3, 2)).toBe(50)
-    expect(p4BossHealth(4, 22)).toBeCloseTo(100 * (1 - 88 / 92))
+    expect(p4BossHealth(4, 21)).toBeCloseTo(100 * (1 - 84 / 88))
     expect(p4BossHealth(5, 3.99)).toBeGreaterThan(0)
     expect(p4BossHealth(5, 4)).toBe(0)
-    expect(p4SplinterAge(4, 18.2, 2)).toBeCloseTo(P4_SPLINTER_DETONATION_SECONDS)
+    expect(p4SplinterAge(4, 20, 2)).toBeCloseTo(P4_SPLINTER_DETONATION_SECONDS)
   })
   it('streams Phase 4 adds outward from the boss instead of preloading them near the group', () => {
     const center = { x: 480, y: 270 }

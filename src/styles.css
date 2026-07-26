@@ -296,6 +296,11 @@
 .achievement-badge strong { color: #8ef0d3; font: 700 12px 'DM Mono', monospace; letter-spacing: .12em; }
 .achievement-unlocked .achievement-badge strong { color: #ffd978; }
 .achievement-badge small { margin-top: 3px; color: #8e9bb6; font-size: 11px; text-transform: capitalize; }
+.achievement-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.achievement-list > span { min-width: 190px; padding: 10px 13px; border: 1px solid rgba(255,211,105,.25); border-radius: 9px; background: rgba(255,211,105,.055); }
+.achievement-list strong, .achievement-list small { display: block; }
+.achievement-list strong { color: #ffd978; font: 700 11px 'DM Mono', monospace; letter-spacing: .07em; }
+.achievement-list small { margin-top: 3px; color: #9ba8c2; font-size: 11px; }
 .completion-summary { display: grid; grid-template-columns: 1.25fr 1fr 1fr; gap: 1px; margin: 30px 0 18px; overflow: hidden; border: 1px solid #28334d; border-radius: 12px; background: #28334d; }
 .completion-summary > div { padding: 17px 19px; background: rgba(8,12,23,.8); }
 .completion-summary strong, .completion-summary span { display: block; }

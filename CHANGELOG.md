@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Added mode-, crystal-duty-, option-, and flawless-aware completion
+  achievements, including the Superhuman Flawless full-run tier.
+- Disabled background music through a feature flag while replacement ambience
+  is being selected.
+- Tightened Phase 4 to a 21-second Heaven & Hell cadence while retaining the
+  shared 10% movement bonus and placing the last Starsplinter detonation one
+  second before movement begins.
+- Cleared the Phase 2 orb-return HUD at the Phase 3 boundary and aligned the
+  entire final north gather plus Phase 4 knockup on one exact raid-stack point.
+- Added durable component specifications and stable `SPEC` ticket handling.
 - Added a fixed I Asgard I raid-plan loader so guild members can refresh the
   maintained plan without exchanging another long share link.
 - Added automatic new-version detection using the deployed Git revision.

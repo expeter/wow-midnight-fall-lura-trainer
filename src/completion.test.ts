@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildPhaseResult, completionShareText, isFullSequenceCompletion, type PhaseResult } from './completion'
+import { buildPhaseResult, completionAchievements, completionShareText, isFullSequenceCompletion, type PhaseResult } from './completion'
 
 describe('completion card results', () => {
   it('scores each phase from its own 1000-point budget', () => {
@@ -39,5 +39,45 @@ describe('completion card results', () => {
     expect(text).toContain('1 mistake')
     expect(text).toContain('Attempt #7')
     expect(text).toContain('Played position: Assigned Mage — Spot 4')
+  })
+
+  it('differentiates mode, crystal duty, options, and superhuman flawless clears', () => {
+    const achievements = completionAchievements({
+      difficulty: 'Hard',
+      crystalPlayer: true,
+      fullSequence: true,
+      mistakes: 0,
+      totalScore: 1101,
+      healthPotEnabled: true,
+      shieldEnabled: true,
+      mainAbilityEnabled: true,
+    })
+    expect(achievements.map(achievement => achievement.id)).toEqual([
+      'movement-master',
+      'flawless',
+      'all-options',
+      'superhuman-flawless',
+    ])
+    expect(achievements.find(achievement => achievement.id === 'flawless')?.detail).toBe('Crystal player')
+    expect(completionAchievements({
+      difficulty: 'Normal',
+      crystalPlayer: false,
+      fullSequence: true,
+      mistakes: 0,
+      totalScore: 1101,
+      healthPotEnabled: true,
+      shieldEnabled: true,
+      mainAbilityEnabled: true,
+    }).some(achievement => achievement.id === 'superhuman-flawless')).toBe(false)
+    expect(completionAchievements({
+      difficulty: 'Easy',
+      crystalPlayer: false,
+      fullSequence: false,
+      mistakes: 2,
+      totalScore: 900,
+      healthPotEnabled: false,
+      shieldEnabled: false,
+      mainAbilityEnabled: false,
+    })[0]).toEqual({ id: 'practice-clear', label: 'L’URA PRACTICE CLEAR', detail: 'Easy · Non-crystal player' })
   })
 })

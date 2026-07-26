@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
-import { bossBeamHitsPlayer, canPickupCrystal, canRecoverFromWipe, crystalCarrierPosition, crystalWipeReason, difficultySettings, distance, distanceToSegment, isOnAssignedP3Side, isP3ConsumedSectorLethal, isInSafeAnnulus, isP3ProtectionCrystalPlaced, isProtectedByP3Bubble, isProtectedByP3Light, moveRelativeToCamera, moveWithIncreasingPull, npcEntryPosition, OPENING_BOOST_SECONDS, orientedAssignments, p1PositioningWipeReason, p2NpcCrystalDrops, p2ReturningOrbPositions, P1_STAR_LENGTH, P2_BEAM_SECONDS, P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_POSITIONING_SECONDS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p3ActiveCrystalAssignments, P3_APPROACH_SECONDS, p3ArchangelStackPosition, p3AssignmentForRound, p3BossPosition, p3FlightPosition, P3_FLIGHT_SECONDS, p3LandingPlanIndex, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3LightHealthRate, p3MemoryResolved, p3PoolCenters, p3PoolSoakRate, p3ProtectionBubbleCenter, p3RuneDeadline, p3RuneEdges, p3RuneOrbs, p3RuneStepAt, p3SideForPosition, p3StarsTiming, p3UnsafePenaltyTicks, p3WrongRuneContact, P3_LANDING_SOAK_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_MEMORY_STEP_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, P3_SAFE_ZONE_PENALTY_PER_SECOND, P3_SECTOR_SECONDS, p4BossHealth, p4EncounterBoxStates, p4GroupPosition, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4SplinterStartSeconds, p4StackPosition, P4_CYCLE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, P4_SPLINTER_INTERVAL_SECONDS, personalCircleHitsCrystal, personalCircleHitsPlayer, PLAYER_COLLISION_PENALTY, randomCrystalDropDuty, randomizeP3PoolLayout, roamingNpcPosition, setP3BossPlan, translateSelectedPoints, walkTowards, WIPE_PENALTY, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type Role, type RuneSymbol } from './game'
-import { buildPhaseResult, completionShareText, isFullSequenceCompletion, type PhaseKey, type PhaseResult } from './completion'
+import { bossBeamHitsPlayer, canPickupCrystal, canRecoverFromWipe, crystalCarrierPosition, crystalWipeReason, difficultySettings, distance, distanceToSegment, isOnAssignedP3Side, isP3ConsumedSectorLethal, isInSafeAnnulus, isP3ProtectionCrystalPlaced, isProtectedByP3Bubble, isProtectedByP3Light, moveRelativeToCamera, moveWithIncreasingPull, npcEntryPosition, OPENING_BOOST_SECONDS, orientedAssignments, p1PositioningWipeReason, p2NpcCrystalDrops, p2ReturningOrbPositions, P1_STAR_LENGTH, P2_BEAM_SECONDS, P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_POSITIONING_SECONDS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p3ActiveCrystalAssignments, P3_APPROACH_SECONDS, p3ArchangelStackPosition, p3AssignmentForRound, p3BossPosition, p3FlightPosition, P3_FLIGHT_SECONDS, p3LandingPlanIndex, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3LightHealthRate, p3MemoryResolved, p3PoolCenters, p3PoolSoakRate, p3ProtectionBubbleCenter, p3RuneDeadline, p3RuneEdges, p3RuneOrbs, p3RuneStepAt, p3SideForPosition, p3StarsTiming, p3UnsafePenaltyTicks, p3WrongRuneContact, P3_LANDING_SOAK_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_MEMORY_STEP_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, P3_SAFE_ZONE_PENALTY_PER_SECOND, P3_SECTOR_SECONDS, p4BossHealth, p4EncounterBoxStates, p4GroupPosition, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4SplinterStartSeconds, p4StackPosition, p4TransitionStartPosition, P4_CYCLE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, P4_SPLINTER_INTERVAL_SECONDS, personalCircleHitsCrystal, personalCircleHitsPlayer, PLAYER_COLLISION_PENALTY, randomCrystalDropDuty, randomizeP3PoolLayout, roamingNpcPosition, setP3BossPlan, shouldShowP2OrbReturnCounter, translateSelectedPoints, walkTowards, WIPE_PENALTY, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type Role, type RuneSymbol } from './game'
+import { buildPhaseResult, completionAchievements, completionShareText, isFullSequenceCompletion, type PhaseKey, type PhaseResult } from './completion'
 import { p4FrontSoakerPosition, p4TankKillsBox } from './game'
+import { FEATURE_FLAGS } from './features'
 import GameScene from './GameScene'
 import './styles.css'
 
@@ -532,6 +533,7 @@ export default function App() {
     if (event === 'p4-countdown' || event === 'p4-transition') p4DestroyedBoxIdsRef.current.clear()
   }, [event, p3Round])
   useEffect(() => {
+    if (!FEATURE_FLAGS.backgroundMusic) return
     const audio = new Audio()
     audio.loop = true
     audio.preload = 'none'
@@ -539,6 +541,7 @@ export default function App() {
     return () => { audio.pause(); audio.removeAttribute('src'); audioRef.current = null }
   }, [])
   useEffect(() => {
+    if (!FEATURE_FLAGS.backgroundMusic) return
     const audio = audioRef.current
     if (!audio) return
     const track = MUSIC_TRACKS.find(candidate => candidate.id === musicTrack) ?? MUSIC_TRACKS[0]
@@ -593,6 +596,7 @@ export default function App() {
   }, [event])
 
   function restartMusic() {
+    if (!FEATURE_FLAGS.backgroundMusic) return
     const audio = audioRef.current
     if (!audio) return
     const track = MUSIC_TRACKS.find(candidate => candidate.id === musicTrack) ?? MUSIC_TRACKS[0]
@@ -603,6 +607,7 @@ export default function App() {
     void audio.play().catch(() => { /* browser requires another user gesture */ })
   }
   function toggleMusicPreview() {
+    if (!FEATURE_FLAGS.backgroundMusic) return
     const audio = audioRef.current
     if (!audio || musicMuted) return
     if (musicPreviewing) {
@@ -853,6 +858,9 @@ export default function App() {
     eventTimeRef.current = 0
     setEventTime(0)
     if (event === 'p4-countdown') {
+      const stack = p4TransitionStartPosition(WORLD.center)
+      playerRef.current = stack
+      setPlayer(stack)
       setEvent('p4-transition')
     } else if (event === 'p1-recover') {
       if (crystal) {
@@ -1019,7 +1027,7 @@ export default function App() {
       setStats(current => ({ ...current, crystalDropped: false }))
       setEvent('p3-sector-move')
     } else if (event === 'p3-sector-move') {
-      if (p3Round >= 2) { beginTrackedPhase('p4'); announceCrystalDuty(p3CrystalAssignments, [], 'P4'); p4CycleRef.current = 1; setP4Cycle(1); setEvent('p4-transition'); return }
+      if (p3Round >= 2) { const stack = p4TransitionStartPosition(WORLD.center); playerRef.current = stack; setPlayer(stack); beginTrackedPhase('p4'); announceCrystalDuty(p3CrystalAssignments, [], 'P4'); p4CycleRef.current = 1; setP4Cycle(1); setEvent('p4-transition'); return }
       setP3Round(2)
       setP3PoolHealth(Array(6).fill(P3_POOL_HEALTH))
       p3PoolOccupancyRef.current = [0, 0, 0, 0, 0, 0]
@@ -1139,6 +1147,8 @@ export default function App() {
     setCrystalSpent(false)
     eventTimeRef.current = 0
     setEventTime(0)
+    p2OrbReturnAgeRef.current = -1
+    setP2OrbReturnAge(-1)
     p3FlightOriginRef.current = WORLD.center
     playerRef.current = WORLD.center
     setPlayer(WORLD.center)
@@ -1431,6 +1441,22 @@ export default function App() {
   const extrasSummary = enabledExtras.length
     ? `${enabledExtras.join(' + ')}${recoveryChallenges ? ` · health responses ${recoveryPasses}/${recoveryChallenges}` : ''}`
     : 'Standard movement mechanics'
+  const resultCrystalPlayer = intermissionCrystalAssignments.includes(assignment)
+    || p2CrystalAssignments.includes(assignment)
+    || p3CrystalAssignments.includes(assignment)
+  const achievements = completionAchievements({
+    difficulty: `${difficulty[0].toUpperCase()}${difficulty.slice(1)}`,
+    crystalPlayer: resultCrystalPlayer,
+    fullSequence: fullSequenceComplete,
+    mistakes: stats.hits,
+    totalScore: stats.score,
+    healthPotEnabled,
+    shieldEnabled,
+    mainAbilityEnabled,
+  })
+  const primaryAchievement = achievements.find(achievement => achievement.id === 'superhuman-flawless')
+    ?? achievements.find(achievement => achievement.id === 'flawless')
+    ?? achievements[0]
   async function copyCompletion() {
     const text = `${completionPreview ? 'PREVIEW DATA — NOT A COMPLETED RUN\n' : ''}${completionShareText({
       playerName: effectivePlayerName,
@@ -1444,6 +1470,7 @@ export default function App() {
       extras: extrasSummary,
       fullSequence: fullSequenceComplete,
       results: phaseResults,
+      achievements,
     })}\n${window.location.origin}${window.location.pathname}`
     try {
       await navigator.clipboard.writeText(text)
@@ -1471,7 +1498,7 @@ export default function App() {
     context.fillText(completionPreview ? 'RESULT SCREEN PREVIEW · NOT A COMPLETED RUN' : fullSequenceComplete ? 'FULL RUN COMPLETE · ACHIEVEMENT UNLOCKED' : 'L’URA PRACTICE COMPLETE', 70, 92)
     context.fillStyle = '#f7f5ee'
     context.font = '800 64px sans-serif'
-    context.fillText(fullSequenceComplete ? 'L’URA MOVEMENT MASTER' : 'PHASE CLEAR', 70, 165)
+    context.fillText(primaryAchievement?.label ?? (fullSequenceComplete ? 'L’URA MOVEMENT MASTER' : 'PHASE CLEAR'), 70, 165)
     context.fillStyle = '#f7f5ee'
     context.font = '700 34px sans-serif'
     context.fillText(effectivePlayerName, 72, 211)
@@ -1503,7 +1530,8 @@ export default function App() {
     })
     context.fillStyle = '#c7cfdf'
     context.font = '500 21px sans-serif'
-    context.fillText(`OPTIONAL CHALLENGES · ${extrasSummary}`, 72, 535)
+    context.fillText(`ACHIEVEMENTS · ${achievements.map(achievement => achievement.label).join(' · ') || 'Practice clear'}`, 72, 525)
+    context.fillText(`OPTIONAL CHALLENGES · ${extrasSummary}`, 72, 558)
     context.fillStyle = '#73819e'
     context.font = '500 18px sans-serif'
     context.fillText(`${window.location.host}${window.location.pathname} · Client-side practice result`, 72, 603)
@@ -1539,7 +1567,7 @@ export default function App() {
       <fieldset><legend>Layout</legend><p className="assignment">Raid-plan sharing<span>Names, classes, Intermission/P2/P3 positions, and start slots are included.</span></p><div className="editor-actions"><button onClick={savePositions}>Save layout</button><button onClick={resetPositions}>Reset</button></div><a className="asgard-plan-link" href={ASGARD_RAID_PLAN_URL}>Load I Asgard I raid plan<span>Maintained guild layout · replaces and saves your current plan</span></a><label className="profile-control">Share link or code<input aria-label="Raid plan share code" value={shareInput} onChange={event => setShareInput(event.target.value)} placeholder="Paste a shared plan here" /></label><div className="editor-actions"><button onClick={copyRaidPlan}>Copy share link</button><button onClick={applyRaidPlan}>Load shared plan</button></div>{shareStatus && <p className="share-status" role="status">{shareStatus}</p>}</fieldset>
     </section>
     <section className="practice-settings">
-      <fieldset><legend>Background music</legend><p className="hint">Optional Pixabay ambience. It restarts with each attempt and loops if the run lasts longer than the selected track.</p><label className="profile-control">Track<select aria-label="Background music track" value={musicTrack} onChange={event => setMusicTrack(event.target.value as MusicTrackId)}>{MUSIC_TRACKS.map(track => <option value={track.id} key={track.id}>{track.label}</option>)}</select></label><button type="button" className="music-preview" disabled={musicMuted} onClick={toggleMusicPreview}>{musicMuted ? 'Unmute to preview' : musicPreviewing ? '■ Stop preview' : '▶ Play preview'}</button><label className="speed-control">Volume <strong>{Math.round(musicVolume * 100)}%</strong><input aria-label="Background music volume" type="range" min="0" max="1" step=".05" value={musicVolume} onChange={event => setMusicVolume(Number(event.target.value))} /></label><label className="checkbox-control"><input aria-label="Mute background music" type="checkbox" checked={musicMuted} onChange={event => { setMusicMuted(event.target.checked); if (event.target.checked) setMusicPreviewing(false) }} /><span>Mute music<span>Can also be toggled inside the arena.</span></span></label></fieldset>
+      {FEATURE_FLAGS.backgroundMusic && <fieldset><legend>Background music</legend><p className="hint">Optional Pixabay ambience. It restarts with each attempt and loops if the run lasts longer than the selected track.</p><label className="profile-control">Track<select aria-label="Background music track" value={musicTrack} onChange={event => setMusicTrack(event.target.value as MusicTrackId)}>{MUSIC_TRACKS.map(track => <option value={track.id} key={track.id}>{track.label}</option>)}</select></label><button type="button" className="music-preview" disabled={musicMuted} onClick={toggleMusicPreview}>{musicMuted ? 'Unmute to preview' : musicPreviewing ? '■ Stop preview' : '▶ Play preview'}</button><label className="speed-control">Volume <strong>{Math.round(musicVolume * 100)}%</strong><input aria-label="Background music volume" type="range" min="0" max="1" step=".05" value={musicVolume} onChange={event => setMusicVolume(Number(event.target.value))} /></label><label className="checkbox-control"><input aria-label="Mute background music" type="checkbox" checked={musicMuted} onChange={event => { setMusicMuted(event.target.checked); if (event.target.checked) setMusicPreviewing(false) }} /><span>Mute music<span>Can also be toggled inside the arena.</span></span></label></fieldset>}
       <fieldset><legend>Optional combat actions</legend><p className="hint">Health emergencies only occur during active mechanics: once on Normal and twice on Hard across the complete run. Each recovery ability has one use.</p><label className="checkbox-control disabled-on-easy"><input aria-label="Enable health potion" type="checkbox" disabled={difficulty === 'easy'} checked={healthPotEnabled} onChange={event => setHealthPotEnabled(event.target.checked)} /><span>Health potion<span>{keyLabel(keyBindings.healthPot)} · restores full health · one use</span></span></label><label className="checkbox-control disabled-on-easy"><input aria-label="Enable shield" type="checkbox" disabled={difficulty === 'easy'} checked={shieldEnabled} onChange={event => setShieldEnabled(event.target.checked)} /><span>Shield<span>{keyLabel(keyBindings.shield)} · restores full health · one use</span></span></label><label className="checkbox-control"><input aria-label="Enable main ability" type="checkbox" checked={mainAbilityEnabled} onChange={event => setMainAbilityEnabled(event.target.checked)} /><span>Main ability<span>{keyLabel(keyBindings.mainAbility)} · one-second cast · +1 point per hit · available on every difficulty</span></span></label></fieldset>
       <fieldset className="input-settings"><legend>Keyboard & mouse controls</legend><div className="input-settings-layout"><section className="keyboard-settings"><header><h3>Keyboard</h3><p>Click a binding, then press its new key. Reusing a key leaves the previous action unbound.</p></header><label className="speed-control rotation-speed-control">Rotation speed <strong>{rotationSpeed}°/s</strong><input aria-label="Keyboard rotation speed" type="range" min="45" max="270" step="15" value={rotationSpeed} onChange={event => setRotationSpeed(Number(event.target.value))} /></label><div className="keybind-grid">{KEY_BIND_LABELS.map(binding => { const value = keyBindings[binding.action]; return <label className="keybind-control" key={binding.action}><span>{binding.label}</span><input aria-label={`${binding.label} keybind`} aria-invalid={!value} className={!value ? 'missing-keybind' : ''} placeholder="Unbound" readOnly value={value ? keyLabel(value) : ''} onKeyDown={event => { event.preventDefault(); event.stopPropagation(); setKeyBindings(current => assignUniqueKey(current, binding.action, event.code)) }} /></label> })}</div><button className="reset-keys" onClick={() => setKeyBindings({ ...DEFAULT_KEY_BINDINGS })}>Reset keybindings</button></section><section className="mouse-settings"><header><h3>Mouse camera</h3><p>Left-drag looks around. Right-drag changes the view and player facing. The wheel controls zoom.</p></header><div className="camera-invert-controls"><label className="checkbox-control"><input aria-label="Invert camera horizontal" type="checkbox" checked={invertCameraX} onChange={event => setInvertCameraX(event.target.checked)} /><span>Invert camera X<span>Reverse left/right mouse look.</span></span></label><label className="checkbox-control"><input aria-label="Invert camera vertical" type="checkbox" checked={invertCameraY} onChange={event => setInvertCameraY(event.target.checked)} /><span>Invert camera Y<span>Reverse up/down mouse look.</span></span></label></div></section></div></fieldset>
     </section>
@@ -1569,8 +1597,9 @@ export default function App() {
       {completionPreview && <p className="completion-preview-note">Preview data only — this is not stored or presented as a completed attempt.</p>}
       <div className="achievement-badge">
         <span aria-hidden="true">{fullSequenceComplete ? '🏆' : '✦'}</span>
-        <div><strong>{fullSequenceComplete ? 'L’URA MOVEMENT MASTER' : 'L’URA PRACTICE CLEAR'}</strong><small>{resultClass} · {difficulty}</small></div>
+        <div><strong>{primaryAchievement?.label ?? (fullSequenceComplete ? 'L’URA MOVEMENT MASTER' : 'L’URA PRACTICE CLEAR')}</strong><small>{primaryAchievement?.detail ?? `${resultClass} · ${difficulty}`}</small></div>
       </div>
+      {achievements.length > 1 && <div className="achievement-list" aria-label="Achievements">{achievements.map(achievement => <span key={achievement.id}><strong>{achievement.label}</strong><small>{achievement.detail}</small></span>)}</div>}
       <div className="completion-summary">
         <div><strong>{Math.round(stats.score)}</strong><span>Total points</span></div>
         <div><strong>{stats.time.toFixed(1)}s</strong><span>Time in arena</span></div>
@@ -1875,7 +1904,7 @@ function GameArena(props: { mainAbilityEnabled: boolean; bossHealth: number; mai
     <div className="game-top">
       <p className="eyebrow game-phase-label">{phaseLabel} · {props.gameSpeed.toFixed(2)}×</p>
       <h1>{phaseTitle}</h1>
-      <div className="game-actions"><button aria-label={props.musicMuted ? 'Unmute music' : 'Mute music'} onClick={() => props.setMusicMuted(!props.musicMuted)}>{props.musicMuted ? '🔇 Muted' : '🔊 Music'}</button><button disabled={Boolean(props.wipeReason)} onClick={() => props.setPaused(!props.paused)}>{props.wipeReason ? 'Wiped' : props.paused ? 'Resume' : 'Pause'}</button><button className="secondary" onClick={props.onExit}>Exit</button></div>
+      <div className="game-actions">{FEATURE_FLAGS.backgroundMusic && <button aria-label={props.musicMuted ? 'Unmute music' : 'Mute music'} onClick={() => props.setMusicMuted(!props.musicMuted)}>{props.musicMuted ? '🔇 Muted' : '🔊 Music'}</button>}<button disabled={Boolean(props.wipeReason)} onClick={() => props.setPaused(!props.paused)}>{props.wipeReason ? 'Wiped' : props.paused ? 'Resume' : 'Pause'}</button><button className="secondary" onClick={props.onExit}>Exit</button></div>
     </div>
     <div className="game-layout">
       <div
@@ -1942,7 +1971,7 @@ function GameArena(props: { mainAbilityEnabled: boolean; bossHealth: number; mai
         {props.crystalDutyNotice && <div className="crystal-duty-notice" role="status"><span>PHASE CRYSTAL DUTY</span><strong>{props.crystalDutyNotice}</strong></div>}
         {phaseThree && (props.event === 'p3-rune-preview' || props.event === 'p3-lattice-memory' || props.event === 'p3-light-pools' && props.eventTime >= P3_MEMORY_PANEL_SECONDS + 3 && props.eventTime < P3_MEMORY_START_SECONDS + P3_MEMORY_STEP_SECONDS * 3) && <div className="rune-order" role="status"><span>RUNE ORDER</span>{props.p3RuneOrder.map((rune, index) => <strong className={props.p3ResolvedRunes.includes(rune) ? 'done' : memoryGameActive && index === props.p3RuneStep ? 'active' : memoryGameActive && index < props.p3RuneStep ? 'done' : ''} key={`${rune}-${index}`}>{rune}</strong>)}</div>}
         {props.event === 'p2-orbs' && (props.difficulty === 'easy' || props.difficulty === 'test' || props.eventTime >= 2) && <div className={`beam-drop-counter${props.eventTime >= 2 ? ' safe' : ''}`} style={{ left: `${props.hudLayout.beam.x}%`, top: `${props.hudLayout.beam.y}%` }}>{props.eventTime < 2 ? <strong>WAIT TO DROP</strong> : <>{props.difficulty === 'easy' || props.difficulty === 'test' ? 'SAFE TO DROP · ' : ''}BEAM IN <strong>{Math.max(1, Math.ceil(P2_BEAM_SECONDS - props.eventTime))}</strong></>}</div>}
-        {props.p2OrbReturnAge >= 0 && props.p2OrbReturnAge < P2_ORB_RETURN_SECONDS + P2_ORB_RETURN_GLOW_SECONDS + P2_ORB_RETURN_TRAVEL_SECONDS + .5 && <div className="beam-drop-counter orb-return-counter" style={{ left: `${props.hudLayout.beam.x}%`, top: `${props.hudLayout.beam.y}%` }}>{props.p2OrbReturnAge < P2_ORB_RETURN_SECONDS ? <>ORBS RETURN IN <strong>{Math.max(1, Math.ceil(P2_ORB_RETURN_SECONDS - props.p2OrbReturnAge))}</strong></> : props.p2OrbReturnAge < P2_ORB_RETURN_SECONDS + P2_ORB_RETURN_GLOW_SECONDS ? <strong>ORBS CHARGING</strong> : <strong>ORBS RETURNING</strong>}</div>}
+        {shouldShowP2OrbReturnCounter(props.event, props.p2OrbReturnAge) && <div className="beam-drop-counter orb-return-counter" style={{ left: `${props.hudLayout.beam.x}%`, top: `${props.hudLayout.beam.y}%` }}>{props.p2OrbReturnAge < P2_ORB_RETURN_SECONDS ? <>ORBS RETURN IN <strong>{Math.max(1, Math.ceil(P2_ORB_RETURN_SECONDS - props.p2OrbReturnAge))}</strong></> : props.p2OrbReturnAge < P2_ORB_RETURN_SECONDS + P2_ORB_RETURN_GLOW_SECONDS ? <strong>ORBS CHARGING</strong> : <strong>ORBS RETURNING</strong>}</div>}
         {props.wipeReason && (wipeMinimized
           ? <div className="wipe-minimized" role="alert"><span>WIPED</span><strong>{props.wipeReason}</strong><button type="button" onClick={() => setWipeMinimized(false)}>Restore wipe details</button></div>
           : <div className="wipe-overlay" role="alert"><section className="wipe-dialog"><button className="wipe-minimize" type="button" aria-label="Minimize wipe details" onClick={() => setWipeMinimized(true)}>−</button><p>Raid wiped</p><h2>Wiped due to:</h2><strong>{props.wipeReason}</strong><div><button onClick={props.onRetry}>Try again</button><button className="secondary" onClick={props.onExit}>Change setup</button></div></section></div>)}
@@ -1968,8 +1997,8 @@ function GameArena(props: { mainAbilityEnabled: boolean; bossHealth: number; mai
         </div>
         {props.crystal && <div className="crystal-countdown" style={{ left: `${props.hudLayout.crystal.x}%`, top: `${props.hudLayout.crystal.y}%` }}>{props.event === 'p3-archangel' ? <>PROTECTION<br /><strong>{Math.max(1, Math.ceil(6 - props.eventTime))}</strong></> : <>PICK UP IN<br /><strong>{finalRecovery ? Math.max(1, Math.ceil(2 - props.eventTime)) : Math.max(1, Math.ceil(6 - props.crystalAge))}</strong></>}</div>}
         {(phaseThree || phaseFour || props.healthPotEnabled || props.shieldEnabled) && <div className={`player-health${props.criticalRemaining > 0 ? ' critical-health' : ''}`} style={{ left: `${props.hudLayout.playerHealth.x}%`, top: `${props.hudLayout.playerHealth.y}%` }}><div className="health-track"><i style={{ width: `${props.health}%` }} /></div><span>{Math.round(props.health)}%{props.criticalRemaining > 0 ? ` · REACT ${props.criticalRemaining.toFixed(1)}s` : ''}</span><div className="health-abilities">{props.healthPotEnabled && <b className={props.healthPotUsed ? 'used' : ''}>{keyLabel(props.keyBindings.healthPot)} POT</b>}{props.shieldEnabled && <b className={props.shieldUsed ? 'used' : ''}>{keyLabel(props.keyBindings.shield)} SHIELD</b>}</div></div>}
-        {(props.mainAbilityEnabled || phaseFour) && <><div className="boss-health" style={{ left: `${props.hudLayout.bossHealth.x}%`, top: `${props.hudLayout.bossHealth.y}%` }}><span>L’URA · {props.bossHealth.toFixed(1)}%</span><div className="boss-health-track"><i style={{ width: `${props.bossHealth}%` }} /></div><small>{phaseFour ? 'L’URA falls steadily over the 92-second phase' : `${keyLabel(props.keyBindings.mainAbility)} · MAIN ABILITY READY`}</small></div>{props.mainCastRemaining > 0 && <div className="player-castbar main-cast" style={{ left: `${props.hudLayout.castbar.x}%`, top: `${props.hudLayout.castbar.y}%` }}><i style={{ width: `${(1 - props.mainCastRemaining) * 100}%` }} /><b>MAIN ABILITY · {props.mainCastRemaining.toFixed(1)}s</b></div>}</>}
-        <div className="controls"><span className="controls-copy">{keyLabel(props.keyBindings.forward)}/{keyLabel(props.keyBindings.left)}/{keyLabel(props.keyBindings.backward)}/{keyLabel(props.keyBindings.right)} move · {keyLabel(props.keyBindings.jump)} jump · {keyLabel(props.keyBindings.pause)} pause · left-drag look · right-drag view + face · wheel zoom · Zoom {zoomDisplay.toFixed(1)} yd · {phaseFour ? props.event === 'p4-countdown' ? 'Movement unlocks after the countdown and raid knockup.' : props.event === 'p4-transition' ? 'The 22-second Heaven & Hell clock is running; adds begin when the raid lands.' : p4SplinterActive ? 'Three players alternate left, right, left with Starsplinter; Heaven & Hell remains on its global timer.' : p4RelocationProgress(props.p4Cycle, props.eventTime) !== null ? 'Move with the yellow protection zone and leave the consumed quarter behind.' : props.p4Cycle >= 5 ? 'No safe quarter remains. Hold until Lura falls.' : 'Stack safely; Heaven & Hell resolves every 22 seconds.' : p3 ? p3.detail : p2 ? p2.detail : countdown ? `Wait for the timer at ${props.startSlotName}` : positioning ? props.difficulty === 'easy' || props.difficulty === 'test' ? `Follow the teal guide to Spot ${props.assignment + 1}` : `Find Spot ${props.assignment + 1}; its ring appears only when close` : finalRecovery ? 'Two seconds to recover the final crystal before the Phase 2 center jump' : props.role === 'carrier' ? `${keyLabel(props.keyBindings.crystal)} drops the crystal anywhere · move away · pick up in time` : props.cycle === 6 ? 'Final set: all 20 players marked' : 'Dodge the ten marked Starsplinters'}</span><BuildIndicator inGame /></div>
+        {(props.mainAbilityEnabled || phaseFour) && <><div className="boss-health" style={{ left: `${props.hudLayout.bossHealth.x}%`, top: `${props.hudLayout.bossHealth.y}%` }}><span>L’URA · {props.bossHealth.toFixed(1)}%</span><div className="boss-health-track"><i style={{ width: `${props.bossHealth}%` }} /></div><small>{phaseFour ? 'L’URA falls steadily over the 88-second phase' : `${keyLabel(props.keyBindings.mainAbility)} · MAIN ABILITY READY`}</small></div>{props.mainCastRemaining > 0 && <div className="player-castbar main-cast" style={{ left: `${props.hudLayout.castbar.x}%`, top: `${props.hudLayout.castbar.y}%` }}><i style={{ width: `${(1 - props.mainCastRemaining) * 100}%` }} /><b>MAIN ABILITY · {props.mainCastRemaining.toFixed(1)}s</b></div>}</>}
+        <div className="controls"><span className="controls-copy">{keyLabel(props.keyBindings.forward)}/{keyLabel(props.keyBindings.left)}/{keyLabel(props.keyBindings.backward)}/{keyLabel(props.keyBindings.right)} move · {keyLabel(props.keyBindings.jump)} jump · {keyLabel(props.keyBindings.pause)} pause · left-drag look · right-drag view + face · wheel zoom · Zoom {zoomDisplay.toFixed(1)} yd · {phaseFour ? props.event === 'p4-countdown' ? 'Movement unlocks after the countdown and raid knockup.' : props.event === 'p4-transition' ? 'The 21-second Heaven & Hell clock is running; adds begin when the raid lands.' : p4SplinterActive ? 'Three players alternate left, right, left with Starsplinter; Heaven & Hell remains on its global timer.' : p4RelocationProgress(props.p4Cycle, props.eventTime) !== null ? 'Move with the yellow protection zone and leave the consumed quarter behind.' : props.p4Cycle >= 5 ? 'No safe quarter remains. Hold until Lura falls.' : 'Stack safely; Heaven & Hell resolves every 21 seconds.' : p3 ? p3.detail : p2 ? p2.detail : countdown ? `Wait for the timer at ${props.startSlotName}` : positioning ? props.difficulty === 'easy' || props.difficulty === 'test' ? `Follow the teal guide to Spot ${props.assignment + 1}` : `Find Spot ${props.assignment + 1}; its ring appears only when close` : finalRecovery ? 'Two seconds to recover the final crystal before the Phase 2 center jump' : props.role === 'carrier' ? `${keyLabel(props.keyBindings.crystal)} drops the crystal anywhere · move away · pick up in time` : props.cycle === 6 ? 'Final set: all 20 players marked' : 'Dodge the ten marked Starsplinters'}</span><BuildIndicator inGame /></div>
       </div>
     </div>
   </main>

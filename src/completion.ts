@@ -30,6 +30,39 @@ export function isFullSequenceCompletion(results: PhaseResult[]): boolean {
   return results.length === required.length && results.every((result, index) => result.key === required[index])
 }
 
+export interface Achievement {
+  id: 'practice-clear' | 'movement-master' | 'flawless' | 'all-options' | 'superhuman-flawless'
+  label: string
+  detail: string
+}
+
+export interface AchievementSummary {
+  difficulty: string
+  crystalPlayer: boolean
+  fullSequence: boolean
+  mistakes: number
+  totalScore: number
+  healthPotEnabled: boolean
+  shieldEnabled: boolean
+  mainAbilityEnabled: boolean
+}
+
+export function completionAchievements(summary: AchievementSummary): Achievement[] {
+  const achievements: Achievement[] = []
+  const duty = summary.crystalPlayer ? 'Crystal player' : 'Non-crystal player'
+  const flawless = summary.mistakes === 0
+  const allOptions = summary.healthPotEnabled && summary.shieldEnabled && summary.mainAbilityEnabled
+  achievements.push(summary.fullSequence
+    ? { id: 'movement-master', label: 'L’URA MOVEMENT MASTER', detail: `${summary.difficulty} · ${duty}` }
+    : { id: 'practice-clear', label: 'L’URA PRACTICE CLEAR', detail: `${summary.difficulty} · ${duty}` })
+  if (flawless) achievements.push({ id: 'flawless', label: `FLAWLESS · ${summary.difficulty.toUpperCase()}`, detail: duty })
+  if (allOptions) achievements.push({ id: 'all-options', label: 'ALL OPTIONAL CHALLENGES', detail: 'Health potion · Shield · Main ability' })
+  if (summary.fullSequence && flawless && allOptions && summary.totalScore > 1100 && summary.crystalPlayer) {
+    achievements.push({ id: 'superhuman-flawless', label: 'SUPERHUMAN FLAWLESS', detail: `${summary.difficulty} · Crystal player · 1100+ points` })
+  }
+  return achievements
+}
+
 interface ShareSummary {
   playerName: string
   playedPosition?: string
@@ -42,6 +75,7 @@ interface ShareSummary {
   extras: string
   fullSequence: boolean
   results: PhaseResult[]
+  achievements?: Achievement[]
 }
 
 export function completionShareText(summary: ShareSummary): string {
@@ -53,6 +87,7 @@ export function completionShareText(summary: ShareSummary): string {
     ...(summary.playedPosition ? [`Played position: ${summary.playedPosition}`] : []),
     ...phases.map((phase, index) => `${phase}${summary.results[index].recovery ? ` · Recovery ${summary.results[index].recovery === 'passed' ? '+50' : '−50'}` : ''}`),
     `Optional challenges: ${summary.extras}`,
+    ...(summary.achievements?.length ? [`Achievements: ${summary.achievements.map(achievement => achievement.label).join(' · ')}`] : []),
     `Total: ${Math.round(summary.totalScore)} pts · ${summary.totalTime.toFixed(1)}s · ${summary.mistakes} mistake${summary.mistakes === 1 ? '' : 's'}`,
   ].join('\n')
 }

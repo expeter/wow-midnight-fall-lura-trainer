@@ -27,8 +27,10 @@ and screenshot index](docs/README.md) document how the simulator evolved.
   assignments, start slots, separate Phase 2 soak/spread positions, and a
   Phase 3 initial-sector plan that rotates into the next sector
 - Shareable raid-plan codes and locally saved settings
-- Optional health reactions, main-ability casts, music, and adjustable HUD
-- Per-phase results and a shareable full-run achievement card; Test mode also
+- Optional health reactions, main-ability casts, and adjustable HUD; bundled
+  ambience is currently hidden behind a disabled feature flag
+- Per-phase results and a shareable, mode- and duty-aware achievement card;
+  Test mode also
   offers a clearly marked final-screen preview
 
 ## Controls
@@ -50,8 +52,7 @@ The defaults are:
 | Zoom | Mouse wheel |
 
 Keyboard controls can be rebound from the setup screen. Camera position,
-keybindings, raid plans, music preferences, and HUD placement are saved in the
-browser.
+keybindings, raid plans, and HUD placement are saved in the browser.
 
 ## Run locally
 
@@ -116,9 +117,10 @@ anything.
 
 The source code is released under the [MIT License](LICENSE).
 
-Bundled background music is subject to the Pixabay Content License rather than
-the MIT License. Track credits, provenance, and license details are documented
-in [sounds/pixabay/README.md](sounds/pixabay/README.md).
+Bundled but currently feature-disabled background music is subject to the
+Pixabay Content License rather than the MIT License. Track credits, provenance,
+and license details are documented in
+[sounds/pixabay/README.md](sounds/pixabay/README.md).
 
 This is an unofficial fan-made practice tool and is not affiliated with or
 endorsed by Blizzard Entertainment. World of Warcraft and related names are

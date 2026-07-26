@@ -51,15 +51,15 @@ export const P3_SECOND_SOAK_NPC_DELAY_SECONDS = 4
 export const P4_STACK_RADIUS = 150
 export const P4_PROTECTION_RADIUS = 22.572
 export const P4_GROUP_HIT_RADIUS = 10
-export const P4_INITIAL_SPLINTER_START_SECONDS = 12.5
-export const P4_SPLINTER_START_SECONDS = 12.5
+export const P4_INITIAL_SPLINTER_START_SECONDS = 14.3
+export const P4_SPLINTER_START_SECONDS = 14.3
 export const P4_SPLINTER_INTERVAL_SECONDS = 1.1
 export const P4_SPLINTER_DETONATION_SECONDS = 3.5
-export const P4_HEAVEN_START_SECONDS = 22
+export const P4_HEAVEN_START_SECONDS = 21
 export const P4_HEAVEN_MOVE_SECONDS = 12
 export const P4_KNOCKUP_SECONDS = 1.5
 export const P4_MOVEMENT_MULTIPLIER = 1.1
-export const P4_CYCLE_SECONDS = 22
+export const P4_CYCLE_SECONDS = 21
 export const P4_FINAL_KILL_START_SECONDS = 9
 export const P4_FINAL_KILL_SECONDS = 1
 export const P4_FINAL_SEQUENCE_END_SECONDS = 12
@@ -71,7 +71,7 @@ export const P4_BOX_MIN_SEPARATION = 15
 export const P4_BOX_SPEED = 6.336
 export const P4_TANK_CONE_INTERVAL_SECONDS = 3
 export const P4_TANK_CONE_DURATION_SECONDS = .65
-export const P4_BOSS_DURATION_SECONDS = 92
+export const P4_BOSS_DURATION_SECONDS = 88
 export type RuneSymbol = 'T' | 'X' | 'O'
 let p3BossPlan: [Point, Point] | null = null
 let p3PoolLayoutSeed = 0
@@ -369,6 +369,9 @@ export function p3NpcSoaksActive(playerEngaged: boolean, round: number, eventTim
 export function p4StackPosition(cycle: number, center: Point, radius = P4_STACK_RADIUS): Point {
   const angle = -Math.PI / 2 - (cycle - 1) * Math.PI / 2
   return { x: center.x + Math.cos(angle) * radius, y: center.y + Math.sin(angle) * radius }
+}
+export function p4TransitionStartPosition(center: Point): Point {
+  return p4StackPosition(1, center)
 }
 
 export function p4SplinterStartSeconds(cycle: number): number {
@@ -778,6 +781,11 @@ export function p2ReturningOrbPositions(age: number, cycle: number, time: number
 }
 export function p2NpcShouldReturnToSoak(orbReturnAge: number): boolean {
   return orbReturnAge >= P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS - P2_NPC_PREPOSITION_SECONDS
+}
+export function shouldShowP2OrbReturnCounter(event: string, orbReturnAge: number): boolean {
+  return event.startsWith('p2-')
+    && orbReturnAge >= 0
+    && orbReturnAge < P2_ORB_RETURN_SECONDS + P2_ORB_RETURN_GLOW_SECONDS + P2_ORB_RETURN_TRAVEL_SECONDS + .5
 }
 export function p2NpcRoamingPosition(base: Point, index: number, time: number, orbs: Point[], center: Point, maximumRadius: number): Point {
   const clampToArena = (point: Point): Point => {

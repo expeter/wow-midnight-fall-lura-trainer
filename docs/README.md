@@ -14,6 +14,7 @@ New requests can start with one of these prefixes:
 | `FR` | Feature request: a new player-facing capability | `FR: Add a replay timeline` |
 | `CR` | Change request: tune or alter existing behavior | `CR: Increase the P3 light radius` |
 | `BUG` | Something behaves differently from the intended mechanic | `BUG: P4 adds stop during pause` |
+| `SPEC` | Stable component or mechanic contract used to interpret later FR/CR/BUG work | `SPEC: P4 transitions always begin from the north stack` |
 
 When a request is implemented, record it here with a stable ID such as
 `FR-001`, `CR-001`, or `BUG-001`. Useful statuses are **Planned**, **In
@@ -27,6 +28,10 @@ requested. Every incoming `BUG`, `CR`, or `FR` must be recorded as **Planned**
 before implementation begins, even when several requests arrive in one message.
 It may only move to **Implemented** after a focused automated regression test
 has been added or updated for that request.
+
+The stable component contracts live in [specifications.md](specifications.md).
+When a new request contradicts a recorded specification, clarify or explicitly
+revise that specification before implementing the change.
 
 Example:
 
@@ -92,6 +97,16 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-038` | Implemented | Link the displayed BattleTag to Pestivator’s Raider.IO profile because Battle.net has no stable public friend-add URL for a BattleTag. |
 | `CR-039` | Implemented | Record every tagged request before implementation and require focused automated regression coverage before marking it implemented. |
 | `CR-040` | Implemented | Restore the creator card’s visual hierarchy with larger readable type, a larger avatar, balanced spacing, and consistent `↗` marks on the Raider.IO and Twitch profile links. |
+| `CR-041` | Implemented | Make the final Phase 3 north gather a true single-point raid stack: NPCs ignore their normal spread/positioning rules there and use the same origin as the Phase 4 knockup. |
+| `CR-042` | Implemented | List completion achievements by difficulty, crystal duty, enabled optional challenges, and flawless status; award Superhuman Flawless only to a flawless full-run crystal player with potion, shield, main ability, and more than 1100 points. |
+| `CR-043` | Implemented | Hide background music and its arena control behind a disabled feature flag until suitable replacement ambience is available. |
+| `CR-044` | Implemented | Resolve Heaven & Hell every 21 seconds, retain the shared 10% Phase 4 movement bonus, and time the third Starsplinter to detonate exactly one second before Heaven & Hell. |
+| `SPEC-001` | Implemented | Define the stable ticket lifecycle: assign an ID, record intent, add focused regression coverage, validate, and commit. |
+| `SPEC-002` | Implemented | Define the creator business card’s stable content, readability, compact layout, and external-link behavior. |
+| `SPEC-003` | Implemented | Define the P3-to-P4 north gather, shared knockup origin, and phase-local HUD boundary. |
+| `SPEC-004` | Implemented | Define completion achievement inputs and the Superhuman Flawless requirements. |
+| `SPEC-005` | Implemented | Define background audio as a feature-flagged component with no controls or playback while disabled. |
+| `SPEC-006` | Implemented | Define Phase 4 movement parity and the 21-second Starsplinter/Heaven & Hell cadence. |
 | `BUG-008` | Implemented | Remove the premature 20-second P3 Soak failure; unfinished pools are now checked only when Big Boom resolves at 40 seconds. |
 | `BUG-009` | Implemented | Enforce P3 Stars orb spacing and isolate the southwest/southeast fields with clearance from the room divider. |
 | `BUG-010` | Implemented | Use the NPC protection bubble when the player's crystal duty belongs to the other Dark Archangel set; only consume the player's crystal on its assigned set. |
@@ -120,6 +135,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-033` | Implemented | Render active P3 crystal-carrier safe zones above the opaque blue Soaks so all three local carrier lights remain visible, and give NPCs a 50% opening approach-speed bonus. | [`screen-p3-bug24.png`](../images/screen-p3-bug24.png) |
 | `BUG-034` | Implemented | Load, normalize, and persist shared hash plans before the first render so stale browser state cannot leak into the live Intermission snapshot. Intermission, both P2 maps, P3, P4’s shared roster, bosses, start slots, and per-phase crystals now receive the same loaded plan; mixed-roster P3 landing groups also follow the plan side instead of roster order. A browser regression enters all four phases from a stale-local/shared-hash scenario. |
 | `BUG-035` | Implemented | Remove the misleading generic Discord destination entirely and restore a clearly labeled `Twitch.tv →` profile link. |
+| `BUG-036` | Implemented | Clear and phase-gate the Phase 2 orb-return counter when Phase 3 begins, then anchor the P3-to-P4 player knockup to the same north stack used by the raid instead of the player’s leftover position. |
 
 ## Implemented feature inventory
 
@@ -223,8 +239,8 @@ multiplier scales the complete simulation uniformly.
 
 - Direct Test/Easy/Normal/Hard entry with a standard countdown, or an immediate
   transition after the Phase 3 north regroup.
-- Opening knock-up, four 22-second quarters, moving yellow safe area, Heaven &
-  Hell sector consumption, and a 92-second boss-health timeline.
+- Opening knock-up, four 21-second quarters, moving yellow safe area, Heaven &
+  Hell sector consumption, and an 88-second boss-health timeline.
 - Three sequential Starsplinters in a left/right/left formation. Every quarter
   randomizes the player's slot and straight/angled ray pattern.
 - Separate detonation timers, NPC return movement, and lethal group hits.

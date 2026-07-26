@@ -34,8 +34,9 @@ export const P3_APPROACH_NPC_SPEED_MULTIPLIER = 1.5
 export const P3_APPROACH_SECONDS = 10
 export const P3_SAFE_ZONE_GRACE_SECONDS = 5
 export const P3_SAFE_ZONE_PENALTY_PER_SECOND = 10
-export const P3_POOL_RADIUS = 10
+export const P3_POOL_RADIUS = 11.5
 export const P3_POOL_HEALTH = 35
+export const P3_POOL_CRYSTAL_CLEARANCE = .5
 export const P3_LANDING_SOAK_RADIUS = 12
 export const P3_FLIGHT_SECONDS = 2
 export const P3_SECTOR_SECONDS = 40
@@ -229,7 +230,7 @@ export function keepP3CrystalPoolCovered(target: Point, pool: Point): Point {
   const dx = target.x - pool.x
   const dy = target.y - pool.y
   const currentDistance = Math.hypot(dx, dy)
-  const minimumDistance = P3_POOL_RADIUS + 2
+  const minimumDistance = P3_POOL_RADIUS + P3_POOL_CRYSTAL_CLEARANCE
   const maximumDistance = P3_LIGHT_RADIUS - P3_POOL_RADIUS
   const direction = currentDistance > .001 ? { x: dx / currentDistance, y: dy / currentDistance } : { x: 0, y: -1 }
   const coveredDistance = Math.max(minimumDistance, Math.min(maximumDistance, currentDistance))
@@ -245,11 +246,11 @@ export function p3CrystalPoolCoverageTargets(pools: Point[], crystalAnchors: Poi
     const pool = candidates.reduce((nearest, candidate) => distance(anchor, candidate) < distance(anchor, nearest) ? candidate : nearest)
     const assignedPoolIndex = uncovered.indexOf(pool)
     if (assignedPoolIndex >= 0) uncovered.splice(assignedPoolIndex, 1)
-    const supportRadius = (P3_POOL_RADIUS + 2 + P3_LIGHT_RADIUS - P3_POOL_RADIUS) / 2
+    const supportRadius = (P3_POOL_RADIUS + P3_POOL_CRYSTAL_CLEARANCE + P3_LIGHT_RADIUS - P3_POOL_RADIUS) / 2
     const positions = Array.from({ length: 24 }, (_, index) => {
       const angle = index * Math.PI * 2 / 24
       const point = { x: pool.x + Math.cos(angle) * supportRadius, y: pool.y + Math.sin(angle) * supportRadius }
-      const outsideOtherPools = pools.every(other => other === pool || distance(point, other) >= P3_POOL_RADIUS + 2)
+      const outsideOtherPools = pools.every(other => other === pool || distance(point, other) >= P3_POOL_RADIUS + P3_POOL_CRYSTAL_CLEARANCE)
       const nearestLight = occupiedLights.length ? Math.min(...occupiedLights.map(light => distance(point, light))) : P3_LIGHT_RADIUS * 2
       return { point, score: (outsideOtherPools ? 1000 : 0) + Math.min(P3_LIGHT_RADIUS * 2, nearestLight) * 10 - distance(point, anchor) }
     })

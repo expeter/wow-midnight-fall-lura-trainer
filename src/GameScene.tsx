@@ -1132,7 +1132,7 @@ export default function GameScene(props: SceneProps) {
           const consumedCycles = p4VisualCycle - 1 + (state.eventTime >= P4_HEAVEN_START_SECONDS ? 1 : 0)
           for (let consumedCycle = 1; consumedCycle <= consumedCycles; consumedCycle++) {
             const sectorGap = .035
-            const sectorStart = Math.PI / 4 - (consumedCycle - 1) * Math.PI / 2 + sectorGap / 2
+            const sectorStart = Math.PI / 4 + (consumedCycle - 1) * Math.PI / 2 + sectorGap / 2
             const voidZone = new THREE.Mesh(new THREE.RingGeometry(WORLD.innerRadius, P3_OUTER_RADIUS, 64, 1, sectorStart, Math.PI / 2 - sectorGap), new THREE.MeshBasicMaterial({ color: 0x7d164f, transparent: true, opacity: .48, depthWrite: false, side: THREE.DoubleSide }))
             voidZone.rotation.x = -Math.PI / 2
             voidZone.position.set(WORLD.center.x, 2.7, WORLD.center.y)

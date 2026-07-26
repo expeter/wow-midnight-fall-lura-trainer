@@ -288,7 +288,7 @@ export function p3NpcSoaksActive(playerEngaged: boolean, round: number, eventTim
 }
 
 export function p4StackPosition(cycle: number, center: Point, radius = P4_STACK_RADIUS): Point {
-  const angle = -Math.PI / 2 + (cycle - 1) * Math.PI / 2
+  const angle = -Math.PI / 2 - (cycle - 1) * Math.PI / 2
   return { x: center.x + Math.cos(angle) * radius, y: center.y + Math.sin(angle) * radius }
 }
 
@@ -335,7 +335,7 @@ export function p4GroupPosition(cycle: number, eventTime: number, center: Point,
   const relocation = p4RelocationProgress(cycle, eventTime)
   if (cycle > 1 && eventTime < p4SplinterStartSeconds(cycle)) baseCycle = cycle - 1
   const progress = relocation ?? 0
-  const angle = -Math.PI / 2 + (baseCycle - 1 + progress) * Math.PI / 2
+  const angle = -Math.PI / 2 - (baseCycle - 1 + progress) * Math.PI / 2
   return { x: center.x + Math.cos(angle) * radius, y: center.y + Math.sin(angle) * radius }
 }
 

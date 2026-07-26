@@ -99,6 +99,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-025` | Implemented | Give the three Phase 3 crystal carriers on each side distinct moving light anchors, then consume exactly one crystal per side after each resolved Dark Archangel. | [`screen-p3-bug23.png`](../images/screen-p3-bug23.png) |
 | `BUG-026` | Implemented | Shorten the pause keybinding label to “(Un)pause” so it remains on one line in the keyboard grid. |
 | `BUG-027` | Implemented | Determine Phase 3 side ownership, local carriers, lights, bosses, Soaks, Stars, runes, and movement from each raid-plan position relative to the divider instead of roster slots 1–10/11–20. |
+| `BUG-028` | Implemented | Resolve every Phase 4 Starsplinter exactly once after its detonation threshold instead of relying on a skippable 0.3-second window, and align stack collisions with the visible group footprint at accelerated timing. |
 
 ## Implemented feature inventory
 

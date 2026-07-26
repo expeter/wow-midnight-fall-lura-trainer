@@ -160,6 +160,19 @@ test('enters Phase 4 directly and plays Splinters again before the second Heaven
   await expect(page.getByText('L’URA MOVEMENT MASTER')).toHaveCount(0)
 })
 
+test('resolves a Phase 4 stack hit reliably at 2.5x speed', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('lura-game-speed', '2.5'))
+  await page.goto('/')
+  await page.getByRole('button', { name: 'test', exact: true }).click()
+  await page.getByRole('button', { name: 'P4', exact: true }).click()
+  await page.getByRole('button', { name: /Enter Arena 4/ }).click()
+
+  await expect(page.getByLabel('Test mode recent failures')).toContainText(
+    'Your Phase 4 Starsplinter hit another player in the stack',
+    { timeout: MECHANIC_TIMEOUT },
+  )
+})
+
 test('keeps a terminal wipe over the frozen arena and allows minimizing its details', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('lura-game-speed', '2.5'))
   await page.goto('/')

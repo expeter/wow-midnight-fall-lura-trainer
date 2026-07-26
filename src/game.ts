@@ -46,6 +46,7 @@ export const P3_MEMORY_STEP_SECONDS = 5
 export const P3_SECOND_SOAK_NPC_DELAY_SECONDS = 4
 export const P4_STACK_RADIUS = 150
 export const P4_PROTECTION_RADIUS = 22.572
+export const P4_GROUP_HIT_RADIUS = 10
 export const P4_INITIAL_SPLINTER_START_SECONDS = 12.5
 export const P4_SPLINTER_START_SECONDS = 12.5
 export const P4_SPLINTER_INTERVAL_SECONDS = 1.1
@@ -459,10 +460,10 @@ export function p4EncounterBoxStates(cycle: number, eventTime: number, center: P
 }
 
 export function p4SplinterResolutionActive(age: number): boolean {
-  return age >= P4_SPLINTER_DETONATION_SECONDS && age <= P4_SPLINTER_DETONATION_SECONDS + .3
+  return age >= P4_SPLINTER_DETONATION_SECONDS
 }
 
-export function p4SplinterHitsGroup(origin: Point, rotation: number, groupCenter: Point, groupRadius = 8, length = 42): boolean {
+export function p4SplinterHitsGroup(origin: Point, rotation: number, groupCenter: Point, groupRadius = P4_GROUP_HIT_RADIUS, length = 42): boolean {
   if (distance(origin, groupCenter) <= groupRadius) return true
   return Array.from({ length: 6 }, (_, index) => {
     const angle = rotation + index * Math.PI / 3

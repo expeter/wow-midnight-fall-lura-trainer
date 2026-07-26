@@ -127,7 +127,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-059` | Implemented | Move the P3 `Memory game` and P2 personal-circle `Spread` TTS calls one second earlier so the spoken warning arrives before player movement is required. |
 | `CR-060` | Implemented | Confirm completed P3 Soaks and memory games with state-driven TTS, and announce `Stack` three seconds before Dark Archangel begins. |
 | `CR-061` | Implemented | Move the P3 `Move` TTS call one second earlier, from the start of sector movement to one second before Dark Archangel finishes. |
-| `CR-062` | Planned | Announce all three Phase 4 Starsplinter directions as `Left`, `Right`, `Left` one second before each visual telegraph, independently of the controlled player’s assigned splinter; announce `Move` one second before the final detonation. |
+| `CR-062` | Implemented | Announce all three Phase 4 Starsplinter directions as `Left`, `Right`, `Left` one second before each visual telegraph, independently of the controlled player’s assigned splinter; announce `Move` one second before the final detonation. |
 | `SPEC-001` | Implemented | Define the stable ticket lifecycle: assign an ID, record intent, add focused regression coverage, validate, and commit. |
 | `SPEC-002` | Implemented | Define the creator business card’s stable content, readability, compact layout, and external-link behavior. |
 | `SPEC-003` | Implemented | Define the P3-to-P4 north gather, shared knockup origin, and phase-local HUD boundary. |

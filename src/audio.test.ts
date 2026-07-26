@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ttsCuesForState, type TtsCueState } from './audio'
-import { P1_FINAL_RECOVERY_SECONDS, P2_BEAM_SECONDS, P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PULL_SECONDS, P3_FINAL_SECTOR_MOVE_SECONDS, P3_MEMORY_START_SECONDS, P4_SPLINTER_DETONATION_SECONDS, P4_SPLINTER_INTERVAL_SECONDS, p4PlayerSplinterDuty, p4SplinterStartSeconds } from './game'
+import { P1_FINAL_RECOVERY_SECONDS, P2_BEAM_SECONDS, P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PULL_SECONDS, P3_FINAL_SECTOR_MOVE_SECONDS, P3_MEMORY_START_SECONDS, P4_SPLINTER_DETONATION_SECONDS, P4_SPLINTER_INTERVAL_SECONDS, p4SplinterStartSeconds } from './game'
 
 const base: TtsCueState = {
   event: 'countdown',
@@ -84,12 +84,14 @@ describe('raid-lead TTS cues', () => {
     expect(ttsCuesForState({ ...base, event: 'p3-archangel-position', eventTime: 1 }).map(cue => cue.text)).toContain('Stack')
   })
 
-  it('calls only the player P4 splinter direction and movement after the final detonation', () => {
-    const duty = p4PlayerSplinterDuty(base.assignment, base.p4Cycle, base.p4PatternSeed)
-    const start = p4SplinterStartSeconds(base.p4Cycle) + duty * P4_SPLINTER_INTERVAL_SECONDS
-    expect(ttsCuesForState({ ...base, event: 'p4-cycle', eventTime: start - .01 })).toEqual([])
-    expect(ttsCuesForState({ ...base, event: 'p4-cycle', eventTime: start }).map(cue => cue.text)).toEqual([duty === 1 ? 'Right' : 'Left'])
-    const finalEnd = p4SplinterStartSeconds(base.p4Cycle) + P4_SPLINTER_INTERVAL_SECONDS * 2 + P4_SPLINTER_DETONATION_SECONDS
-    expect(ttsCuesForState({ ...base, event: 'p4-cycle', eventTime: finalEnd }).map(cue => cue.text)).toContain('Move')
+  it('calls every P4 splinter direction and movement one second early', () => {
+    const start = p4SplinterStartSeconds(base.p4Cycle)
+    expect(ttsCuesForState({ ...base, event: 'p4-cycle', eventTime: start - 1.01 })).toEqual([])
+    expect(ttsCuesForState({ ...base, event: 'p4-cycle', eventTime: start - 1 }).map(cue => cue.text)).toEqual(['Left'])
+    expect(ttsCuesForState({ ...base, event: 'p4-cycle', eventTime: start + P4_SPLINTER_INTERVAL_SECONDS - 1 }).map(cue => cue.text)).toEqual(['Left', 'Right'])
+    expect(ttsCuesForState({ ...base, event: 'p4-cycle', eventTime: start + P4_SPLINTER_INTERVAL_SECONDS * 2 - 1 }).map(cue => cue.text)).toEqual(['Left', 'Right', 'Left'])
+    const finalEnd = start + P4_SPLINTER_INTERVAL_SECONDS * 2 + P4_SPLINTER_DETONATION_SECONDS
+    expect(ttsCuesForState({ ...base, event: 'p4-cycle', eventTime: finalEnd - 1.01 }).map(cue => cue.text)).not.toContain('Move')
+    expect(ttsCuesForState({ ...base, event: 'p4-cycle', eventTime: finalEnd - 1 }).map(cue => cue.text)).toContain('Move')
   })
 })

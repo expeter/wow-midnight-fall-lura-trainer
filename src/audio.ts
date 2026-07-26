@@ -10,7 +10,6 @@ import {
   P3_FINAL_SECTOR_MOVE_SECONDS,
   P4_SPLINTER_DETONATION_SECONDS,
   P4_SPLINTER_INTERVAL_SECONDS,
-  p4PlayerSplinterDuty,
   p4SplinterStartSeconds,
   type Role,
 } from './game'
@@ -94,18 +93,20 @@ export function ttsCuesForState(state: TtsCueState): TtsCue[] {
   }
 
   if (state.event === 'p4-cycle') {
-    const duty = p4PlayerSplinterDuty(state.assignment, state.p4Cycle, state.p4PatternSeed)
-    const splinterStarts = p4SplinterStartSeconds(state.p4Cycle) + duty * P4_SPLINTER_INTERVAL_SECONDS
-    if (state.eventTime >= splinterStarts) {
-      cues.push({
-        id: `p4-${state.p4Cycle}-splinter-${duty}`,
-        text: duty === 1 ? 'Right' : 'Left',
-      })
+    const splinterStarts = p4SplinterStartSeconds(state.p4Cycle)
+    for (const ordinal of [0, 1, 2]) {
+      const callAt = splinterStarts + ordinal * P4_SPLINTER_INTERVAL_SECONDS - 1
+      if (state.eventTime >= callAt) {
+        cues.push({
+          id: `p4-${state.p4Cycle}-splinter-${ordinal}`,
+          text: ordinal === 1 ? 'Right' : 'Left',
+        })
+      }
     }
-    const finalSplinterEnds = p4SplinterStartSeconds(state.p4Cycle)
+    const finalSplinterEnds = splinterStarts
       + P4_SPLINTER_INTERVAL_SECONDS * 2
       + P4_SPLINTER_DETONATION_SECONDS
-    if (state.eventTime >= finalSplinterEnds) cues.push({ id: `p4-${state.p4Cycle}-move`, text: 'Move' })
+    if (state.eventTime >= finalSplinterEnds - 1) cues.push({ id: `p4-${state.p4Cycle}-move`, text: 'Move' })
   }
 
   return cues

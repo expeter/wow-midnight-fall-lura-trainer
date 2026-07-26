@@ -48,17 +48,15 @@ describe('encounter sound cues', () => {
     expect(during.some(cue => cue.sound === 'orb-return')).toBe(true)
   })
 
-  it('tracks completed P3 Soaks and runes without replay-dependent state', () => {
+  it('keeps completed P3 Soaks silent while tracking rune matches', () => {
     const cues = encounterSoundCuesForState({
       ...base,
       event: 'p3-light-pools',
       p3PoolHealth: [0, 0, P3_POOL_HEALTH, P3_POOL_HEALTH, P3_POOL_HEALTH, P3_POOL_HEALTH],
       p3ResolvedRunes: ['T'],
     })
-    expect(cues).toEqual(expect.arrayContaining([
-      expect.objectContaining({ id: 'p3-1-soaks-2', sound: 'soak-complete' }),
-      expect.objectContaining({ id: 'p3-1-rune-T', sound: 'rune-match' }),
-    ]))
+    expect(cues.some(cue => cue.id.includes('soaks'))).toBe(false)
+    expect(cues).toContainEqual(expect.objectContaining({ id: 'p3-1-rune-T', sound: 'rune-match' }))
   })
 
   it('gives each P4 Starsplinter its own detonation cue', () => {

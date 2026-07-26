@@ -59,7 +59,7 @@ with a separate `SOAK CRYSTAL` instruction.
 | `pull` | P2 raid pull begins | Sustained suction/wind rise | 2–4s loop | P2 |
 | `personal-circle` | P2 spread circles resolve | Soft area pulse, not an explosion | 0.4–0.8s | P2 |
 | `soak-progress` | A P3 Soak reaches valid occupancy | Quiet confirming hum | Short loop | P3 |
-| `soak-complete` | A P3 Soak finishes | Clean completion pulse | 0.4–0.8s | P3 |
+| `soak-complete` | Reserved / currently silent | The reviewed cue had too much silence before its transient and did not fit the completion moment | — | P3 |
 | `rune-reveal` | Each memory rune is shown | Three related tonal notes | 0.25–0.5s each | P3 |
 | `rune-match` | Correct rune partner resolves | Positive paired chime | 0.4–0.8s | P3 |
 | `archangel-charge` | Dark Archangel begins | Dark sustained beam charge | 1–2s | P3 |

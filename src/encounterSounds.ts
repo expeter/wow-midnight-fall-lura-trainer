@@ -26,7 +26,6 @@ export type EncounterSoundName =
   | 'splinter-detonate'
   | 'orb-return'
   | 'personal-circle'
-  | 'soak-complete'
   | 'rune-match'
   | 'archangel-charge'
   | 'protection-active'
@@ -46,7 +45,6 @@ export const ENCOUNTER_SOUND_SPECS: Record<EncounterSoundName, EncounterSoundSpe
   'splinter-detonate': { url: splinterDetonateUrl, volume: .82, playbackRate: 2 },
   'orb-return': { url: orbReturnUrl, volume: .78 },
   'personal-circle': { url: personalCircleUrl, volume: .72 },
-  'soak-complete': { url: runeClearUrl, volume: .72 },
   'rune-match': { url: runeClearUrl, volume: .66, playbackRate: 1.08 },
   'archangel-charge': { url: archangelChargeUrl, volume: .72 },
   'protection-active': { url: protectionActiveUrl, volume: .82 },
@@ -109,10 +107,6 @@ export function encounterSoundCuesForState(state: EncounterSoundState): Encounte
     cues.push({ id: `p3-${state.p3Round}-stars-second`, sound: 'stars-connect' })
   } else if (state.event === 'p3-pools-overlap' && state.eventTime >= 6.5) {
     cues.push({ id: `p3-${state.p3Round}-stars-overlap`, sound: 'stars-connect' })
-  }
-  const completedSoaks = state.p3PoolHealth.filter(health => health <= .5).length
-  if (state.event.startsWith('p3-') && completedSoaks > 0) {
-    cues.push({ id: `p3-${state.p3Round}-soaks-${completedSoaks}`, sound: 'soak-complete' })
   }
   state.p3ResolvedRunes.forEach(rune => {
     cues.push({ id: `p3-${state.p3Round}-rune-${rune}`, sound: 'rune-match' })

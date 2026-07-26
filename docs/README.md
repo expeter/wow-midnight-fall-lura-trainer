@@ -153,6 +153,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-074` | Implemented | Delay the Phase 2 returning-orb sound by one second after inward movement begins so the cue aligns more closely with the orbs landing in L’ura. |
 | `CR-075` | Implemented | Make the P2/P3 and enlarged Intermission/P4 boss models opaque with depth writing, send attacks slightly inside the boss so the model naturally occludes them, remove the falling arc from magical bolts and lightning, retain a small physical arc for arrows/spears, and shorten the pooled impact flash. |
 | `CR-076` | Implemented | Aim cosmetic attacks at varied boss-torso heights instead of the boss’s feet, preserving readable fanned impacts when the raid is stacked. |
+| `CR-077` | Implemented | Remove the P3 Soak-complete sound because its delayed transient does not fit the mechanic; preserve visual progress and TTS completion feedback, and keep Rune Clear only for actual rune matches. |
 | `SPEC-001` | Implemented | Define the stable ticket lifecycle: assign an ID, record intent, add focused regression coverage, validate, and commit. |
 | `SPEC-002` | Implemented | Define the creator business card’s stable content, readability, compact layout, and external-link behavior. |
 | `SPEC-003` | Implemented | Define the P3-to-P4 north gather, shared knockup origin, and phase-local HUD boundary. |

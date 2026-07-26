@@ -94,6 +94,11 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `FR-019` | Implemented | Add a one-click “Load I Asgard I raid plan” action backed by the stable `lura-trainer-iasgardi-v3` TinyURL; its resulting shared hash uses the standard normalized loader and immediately replaces and persists the current local plan. |
 | `FR-020` | Implemented | Emit Git-derived version metadata from every local or CI Vite build, periodically detect a newer deployed revision, offer an in-page reload prompt, display the running Git revision, and link a tracked changelog beneath the version. |
 | `FR-021` | Implemented | Add a compact four-item setup menu for Game settings, Keyboard settings, HUD, and Raid planning; omit phase-plan sublinks and preserve active raid-plan share hashes while scrolling. |
+| `FR-022` | Backlog | Make the Phase 4 front-player tank cone playable: expose the action to the controlled player when assigned, retain its intended cooldown and area, and destroy approaching adds caught by the cone. |
+| `FR-023` | Backlog | Randomly assign the moving Phase 4 protection safe zone to a player or NPC so the controlled player may need to carry and position it while the raid follows. |
+| `FR-024` | Backlog | Fire a visible player projectile toward L’ura when an enabled Main ability cast successfully completes; do not fire on keypress, interruption, pause, or before the cast finishes. |
+| `FR-025` | Backlog | Add a continuous encounter-length background theme that survives phase transitions and loops cleanly when necessary, with the existing audio feature flag and mute/volume controls restored only when suitable licensed music is selected. |
+| `FR-026` | Backlog | Add distinct, synchronized sound effects for major lasers, Starsplinter warnings/detonations, and orb actions, with suitable volume balance and a way to mute effects independently of music. |
 | `CR-037` | Superseded | A direct Discord profile needs a numeric user ID. The generic Discord application link was removed again; Twitch remains the direct creator contact. |
 | `CR-038` | Implemented | Link the displayed BattleTag to Pestivator’s Raider.IO profile because Battle.net has no stable public friend-add URL for a BattleTag. |
 | `CR-039` | Implemented | Record every tagged request before implementation and require focused automated regression coverage before marking it implemented. |
@@ -315,7 +320,11 @@ assets:
 ## Deferred ideas
 
 - Text-to-speech mechanic warnings.
-- Player-controlled Phase 4 tank cone.
+- `FR-022`: Player-controlled Phase 4 tank cone.
+- `FR-023`: Random player/NPC ownership of the Phase 4 protection zone.
+- `FR-024`: Main-ability projectiles on successful cast completion.
+- `FR-025`: Continuous encounter-length background music.
+- `FR-026`: Laser, Starsplinter, and orb sound effects.
 - Per-phase refills and certificate scoring for optional potion/shield
   challenges.
 - Verifiable completion links. A trustworthy proof cannot be created with a

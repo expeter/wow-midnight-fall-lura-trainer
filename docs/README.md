@@ -150,6 +150,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-036` | Implemented | Clear and phase-gate the Phase 2 orb-return counter when Phase 3 begins, then anchor the P3-to-P4 player knockup to the same north stack used by the raid instead of the player’s leftover position. |
 | `BUG-037` | Implemented | Keep the creator card inside its setup column at desktop and narrow widths, and enforce a 16-pixel minimum for every visible piece of card text. |
 | `BUG-038` | Implemented | Keep all difficulty labels readable at narrow desktop widths and browser zoom by arranging Test, Easy, Normal, and Hard in a stable two-by-two grid without allowing the Game settings cards to overlap. |
+| `BUG-039` | Implemented | Keep every Phase 4 NPC—including active Starsplinter players and the front soaker—inside the moving yellow protection zone, and keep collision positions aligned with their visible return to the stack. |
 
 ## Implemented feature inventory
 

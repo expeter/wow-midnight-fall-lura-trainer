@@ -55,6 +55,7 @@ export const P4_INITIAL_SPLINTER_START_SECONDS = 14.3
 export const P4_SPLINTER_START_SECONDS = 14.3
 export const P4_SPLINTER_INTERVAL_SECONDS = 1.1
 export const P4_SPLINTER_DETONATION_SECONDS = 3.5
+export const P4_SPLINTER_RETURN_SECONDS = P4_SPLINTER_INTERVAL_SECONDS
 export const P4_HEAVEN_START_SECONDS = 21
 export const P4_HEAVEN_MOVE_SECONDS = 12
 export const P4_KNOCKUP_SECONDS = 1.5
@@ -510,17 +511,33 @@ export function p4NpcSplinterPosition(stack: Point, center: Point, ordinal: numb
   const radial = { x: Math.cos(stackAngle), y: Math.sin(stackAngle) }
   const tangent = { x: -radial.y, y: radial.x }
   const side = ordinal === 1 ? -1 : 1
-  const base = { x: stack.x + tangent.x * 19 * side, y: stack.y + tangent.y * 19 * side }
-  let final = base
-  if (p4SplinterHitsGroup(final, rotation, stack)) {
-    for (let backward = 5; backward <= 24; backward += 1) {
-      const candidate = { x: base.x + radial.x * backward, y: base.y + radial.y * backward }
-      final = candidate
-      if (!p4SplinterHitsGroup(candidate, rotation, stack)) break
+  const safeRadius = P4_PROTECTION_RADIUS - .75
+  const final = Array.from({ length: 6 }, (_, index) => {
+    const angle = rotation + Math.PI / 6 + index * Math.PI / 3
+    const direction = { x: Math.cos(angle), y: Math.sin(angle) }
+    const sideAlignment = (direction.x * tangent.x + direction.y * tangent.y) * side
+    const outwardAlignment = direction.x * radial.x + direction.y * radial.y
+    return {
+      point: { x: stack.x + direction.x * safeRadius, y: stack.y + direction.y * safeRadius },
+      score: sideAlignment * 10 + outwardAlignment,
     }
-  }
-  const progress = Math.min(1, Math.max(0, age) / 1.35)
+  }).sort((a, b) => b.score - a.score)[0].point
+  const outwardProgress = Math.min(1, Math.max(0, age) / 1.35)
+  const returnProgress = Math.min(1, Math.max(0, age - P4_SPLINTER_DETONATION_SECONDS) / P4_SPLINTER_RETURN_SECONDS)
+  const progress = outwardProgress * (1 - returnProgress)
   return { x: stack.x + (final.x - stack.x) * progress, y: stack.y + (final.y - stack.y) * progress }
+}
+
+export function keepP4NpcInProtection(position: Point, groupCenter: Point, margin = .5): Point {
+  const dx = position.x - groupCenter.x
+  const dy = position.y - groupCenter.y
+  const currentRadius = Math.hypot(dx, dy)
+  const allowedRadius = Math.max(0, P4_PROTECTION_RADIUS - margin)
+  if (currentRadius <= allowedRadius) return position
+  return {
+    x: groupCenter.x + dx / currentRadius * allowedRadius,
+    y: groupCenter.y + dy / currentRadius * allowedRadius,
+  }
 }
 
 export function p4BossHealth(cycle: number, eventTime: number): number {

@@ -53,6 +53,9 @@ change before implementation.
 - Three Starsplinters begin 1.1 seconds apart and each detonates after 3.5
   seconds.
 - The final Starsplinter detonates exactly one second before Heaven & Hell.
+- Every NPC remains inside the moving yellow protection zone. Active
+  Starsplinter NPCs move to safe left/right/left positions within its edge,
+  hold until detonation, and return to the stack before the next detonation.
 
 ## SPEC-007 · Setup-page hierarchy
 

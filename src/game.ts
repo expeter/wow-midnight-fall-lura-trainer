@@ -129,6 +129,22 @@ export function p3LandingSoakPositions(index: number, center: Point, seed = 0): 
 export function p3LightHealthRate(protectedByLight: boolean): number {
   return protectedByLight ? 12 : -2
 }
+export function separateP3NpcTarget(target: Point, crystal: boolean, occupied: Array<{ point: Point; crystal: boolean }>, salt = 0): Point {
+  let result = { ...target }
+  for (let pass = 0; pass < 3; pass += 1) {
+    occupied.forEach((other, index) => {
+      const clearance = crystal && other.crystal ? P3_LIGHT_RADIUS * 2 : 7
+      const dx = result.x - other.point.x
+      const dy = result.y - other.point.y
+      const gap = Math.hypot(dx, dy)
+      if (gap >= clearance) return
+      const fallbackAngle = (salt * 2.399963 + index * 1.618034) % (Math.PI * 2)
+      const unit = gap > .001 ? { x: dx / gap, y: dy / gap } : { x: Math.cos(fallbackAngle), y: Math.sin(fallbackAngle) }
+      result = { x: other.point.x + unit.x * clearance, y: other.point.y + unit.y * clearance }
+    })
+  }
+  return result
+}
 export function isProtectedByP3Bubble(player: Point, bubble: Point, playerRadius = 4): boolean {
   return distance(player, bubble) <= P3_LIGHT_RADIUS + playerRadius
 }

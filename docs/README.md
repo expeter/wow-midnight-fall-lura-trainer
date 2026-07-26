@@ -136,6 +136,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-034` | Implemented | Load, normalize, and persist shared hash plans before the first render so stale browser state cannot leak into the live Intermission snapshot. Intermission, both P2 maps, P3, P4’s shared roster, bosses, start slots, and per-phase crystals now receive the same loaded plan; mixed-roster P3 landing groups also follow the plan side instead of roster order. A browser regression enters all four phases from a stale-local/shared-hash scenario. |
 | `BUG-035` | Implemented | Remove the misleading generic Discord destination entirely and restore a clearly labeled `Twitch.tv →` profile link. |
 | `BUG-036` | Implemented | Clear and phase-gate the Phase 2 orb-return counter when Phase 3 begins, then anchor the P3-to-P4 player knockup to the same north stack used by the raid instead of the player’s leftover position. |
+| `BUG-037` | Implemented | Keep the creator card inside its setup column at desktop and narrow widths, and enforce a 16-pixel minimum for every visible piece of card text. |
 
 ## Implemented feature inventory
 

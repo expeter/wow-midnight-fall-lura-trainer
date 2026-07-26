@@ -153,22 +153,25 @@
   grid-column: 2;
   grid-row: 2;
   display: flex;
-  gap: 14px;
-  width: 344px;
-  padding: 14px;
+  gap: 12px;
+  width: 100%;
+  max-width: 320px;
+  min-width: 0;
+  padding: 12px;
+  overflow: hidden;
   border: 1px solid #354361;
   border-radius: 12px;
   background: linear-gradient(145deg, rgba(24,34,59,.96), rgba(11,16,31,.96));
   box-shadow: 0 12px 34px rgba(0,0,0,.28);
 }
-.creator-card img { width: 82px; height: 82px; flex: 0 0 auto; border: 2px solid #73e0c1; border-radius: 11px; object-fit: cover; }
+.creator-card img { width: 72px; height: 72px; flex: 0 0 auto; border: 2px solid #73e0c1; border-radius: 11px; object-fit: cover; }
 .creator-avatar-link { display: block; flex: 0 0 auto; border-radius: 10px; line-height: 0; }
 .creator-avatar-link:hover img { border-color: #c9fff1; box-shadow: 0 0 14px rgba(115,224,193,.38); }
-.creator-card > div { min-width: 0; }
+.creator-card > div { flex: 1 1 auto; min-width: 0; max-width: 100%; }
 .creator-card span, .creator-card code { display: block; }
-.creator-card > div > span { color: #9eabc2; font: 12px 'DM Mono', monospace; text-transform: uppercase; letter-spacing: .1em; }
-.creator-card strong { display: block; margin: 3px 0; font-size: 20px; line-height: 1.05; }
-.creator-card .battle-tag-link { display: block; color: #c7d1e3; font: 12px 'DM Mono', monospace; line-height: 1.35; text-decoration: none; }
+.creator-card > div > span { color: #9eabc2; font: 16px 'DM Mono', monospace; line-height: 1.2; text-transform: uppercase; letter-spacing: .06em; }
+.creator-card strong { display: block; margin: 3px 0; font-size: 22px; line-height: 1.05; }
+.creator-card .battle-tag-link { display: block; color: #c7d1e3; font: 16px 'DM Mono', monospace; line-height: 1.35; text-decoration: none; }
 .creator-card .battle-tag-link:hover { color: #c9fff1; }
 .creator-card nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 9px; }
 .creator-card nav a {
@@ -176,12 +179,13 @@
   align-items: center;
   justify-content: center;
   min-height: 28px;
-  padding: 5px 8px;
+  min-width: 0;
+  padding: 5px 6px;
   border: 1px solid #3a4a68;
   border-radius: 5px;
   color: #c9fff1;
   background: #121d32;
-  font: 12px 'DM Mono', monospace;
+  font: 700 16px Manrope, sans-serif;
   text-decoration: none;
   white-space: nowrap;
 }
@@ -340,6 +344,13 @@
   .score { grid-column: 1 / -1; }
   .hud-section { border-left: 0; border-top: 1px solid #26324e; padding: 14px 8px; }
   .mistake-log ol { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 500px) {
+  .creator-card { max-width: 100%; }
+  .creator-card img { width: 64px; height: 64px; }
+  .creator-card nav { grid-template-columns: 1fr; }
+  .creator-card .coffee-link { grid-column: 1; }
 }
 
 /* The running game is a single viewport; setup/results remain normally scrollable. */
@@ -825,8 +836,9 @@
 .setup-shell .p3-boss-handle span,
 .setup-shell .p3-group-help { font-size: 11px; }
 .setup-shell .build-indicator a { font-size: 9px; }
+.setup-shell .creator-card > div > span,
 .setup-shell .creator-card .battle-tag-link,
-.setup-shell .creator-card nav a { font-size: 10px; }
+.setup-shell .creator-card nav a { font-size: 16px; }
 .setup-shell .asgard-plan-link { font-size: 13px; }
 .setup-shell .asgard-plan-link span { font-size: 11px; }
 .game-shell .game-top .eyebrow,

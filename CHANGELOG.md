@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Prevented the creator card from overflowing its setup column and raised every
+  visible card label to a minimum of 16 pixels.
 - Added mode-, crystal-duty-, option-, and flawless-aware completion
   achievements, including the Superhuman Flawless full-run tier.
 - Disabled background music through a feature flag while replacement ambience

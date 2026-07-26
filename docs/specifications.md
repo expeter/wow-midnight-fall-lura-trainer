@@ -17,6 +17,8 @@ change before implementation.
 - Keep the card compact and aligned with the setup header.
 - Preserve a readable avatar, BattleTag, Raider.IO, Twitch, and Buy me a coffee
   action.
+- Keep every visible card label at 16 pixels or larger and prevent the card
+  from extending beyond its setup column or viewport.
 - Use one consistent external-link mark and avoid generic profile destinations.
 
 ## SPEC-003 · Phase 3 to Phase 4 transition

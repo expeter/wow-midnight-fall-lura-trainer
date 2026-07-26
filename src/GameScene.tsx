@@ -52,6 +52,7 @@ interface SceneProps {
 const WORLD = { width: 960, height: 540, center: { x: 480, y: 270 }, innerRadius: 102, outerRadius: 169 }
 const P2_RADIUS = WORLD.innerRadius * .54
 const STAR_LENGTH = P1_STAR_LENGTH
+const DIM_OPPOSITE_P3_SIDE = true
 interface CameraSettings { yaw: number; pitch: number; zoom: number }
 function loadCameraSettings(): CameraSettings {
   try {
@@ -186,6 +187,16 @@ function clearGroup(group: THREE.Group) {
     if (Array.isArray(material)) material.forEach(item => item.dispose())
     else material?.dispose()
   }
+}
+function setEntityDimmed(entity: THREE.Object3D, dimmed: boolean) {
+  entity.traverse(object => {
+    const material = (object as THREE.Mesh | THREE.Sprite).material
+    if (!material || Array.isArray(material)) return
+    if (material.userData.baseOpacity === undefined) material.userData.baseOpacity = material.opacity
+    const baseOpacity = material.userData.baseOpacity as number
+    material.transparent = dimmed || baseOpacity < 1
+    material.opacity = baseOpacity * (dimmed ? .35 : 1)
+  })
 }
 function addFlatBeam(group: THREE.Group, origin: Point, angle: number, length: number, width: number, color: number, opacity: number) {
   const geometry = new THREE.PlaneGeometry(length, width)
@@ -760,7 +771,8 @@ export default function GameScene(props: SceneProps) {
         const npcP3CrystalActive = activeP3Crystals.includes(baseIndex)
         const crystalSlot = p3CrystalSlot(baseIndex)
         const localP3Member = isP3RaidMemberVisible(state.positions[state.assignment], state.positions[baseIndex], WORLD.center, phaseThree)
-        sprite.visible = localP3Member
+        sprite.visible = true
+        setEntityDimmed(sprite, DIM_OPPOSITE_P3_SIDE && phaseThree && !localP3Member)
         const soakTarget = state.p2SoakPositions[baseIndex]
         const spreadTarget = state.p2SpreadPositions[baseIndex]
         const intermissionPosition = npcPosition(index, state.time, state.intermissionPositions, state.assignment, state.event, state.eventTime, state.beamAngles, state.raidStart, state.movementSpeed, state.movementBonus)

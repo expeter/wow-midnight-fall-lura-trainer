@@ -13,14 +13,18 @@ describe('Main Ability cast state', () => {
     expect(mainAbilityCastProgress(completed.state)).toBe(1)
   })
 
-  it('collapses button spam into one queued cast after the 0.1 second gap', () => {
+  it('ignores early spam and allows one queued cast in the final 0.1 second window', () => {
     const casting = requestMainAbilityCast(idleMainAbilityCast())
-    const queuedOnce = requestMainAbilityCast(casting)
+    const ignoredSpam = requestMainAbilityCast(requestMainAbilityCast(casting))
+    expect(ignoredSpam.queued).toBe(false)
+    const queueWindow = advanceMainAbilityCast(ignoredSpam, .91).state
+    const queuedOnce = requestMainAbilityCast(queueWindow)
     const queuedRepeatedly = requestMainAbilityCast(requestMainAbilityCast(queuedOnce))
     expect(queuedRepeatedly.queued).toBe(true)
-    const first = advanceMainAbilityCast(queuedRepeatedly, 1)
+    const first = advanceMainAbilityCast(queuedRepeatedly, .09)
     expect(first.completed).toBe(1)
-    expect(first.state).toMatchObject({ phase: 'cooldown', remaining: .1, queued: true })
+    expect(first.state).toMatchObject({ phase: 'cooldown', queued: true })
+    expect(first.state.remaining).toBeCloseTo(.1)
     const secondStarted = advanceMainAbilityCast(first.state, .1)
     expect(secondStarted.state).toMatchObject({ phase: 'casting', remaining: 1, queued: false })
   })

@@ -20,7 +20,9 @@ export function idleMainAbilityCast(): MainAbilityCastState {
 
 export function requestMainAbilityCast(state: MainAbilityCastState): MainAbilityCastState {
   if (state.phase === 'idle') return { phase: 'casting', remaining: MAIN_ABILITY_CAST_SECONDS, queued: false }
-  return state.queued ? state : { ...state, queued: true }
+  const queueWindowOpen = state.phase === 'cooldown'
+    || state.phase === 'casting' && state.remaining <= MAIN_ABILITY_COOLDOWN_SECONDS
+  return !queueWindowOpen || state.queued ? state : { ...state, queued: true }
 }
 
 export function advanceMainAbilityCast(state: MainAbilityCastState, elapsed: number): MainAbilityAdvance {

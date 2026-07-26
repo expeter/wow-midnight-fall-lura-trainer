@@ -1035,10 +1035,11 @@ export default function GameScene(props: SceneProps) {
         ? npcPositions.filter((_, npcIndex) => isP3RaidMemberVisible(state.positions[state.assignment], state.positions[npcProfileIndices[npcIndex]], WORLD.center, true) && activeP3Crystals.includes(npcProfileIndices[npcIndex]))
         : []
       state.onP3LightCenters(npcP3LightCenters)
+      const playerProjectileVisible = state.combatProjectilesEnabled
       const projectilesVisible = state.combatProjectilesEnabled && combatProjectilesActive(state.event)
       const projectileTarget = phaseThree ? p3BossPosition(playerP3Side, WORLD.center, state.p3Round) : WORLD.center
       const playerProjectileAge = state.mainProjectileFiredAt === null ? Infinity : state.time - state.mainProjectileFiredAt
-      if (projectilesVisible) updateCombatProjectile(playerProjectile, state.player, projectileTarget, playerProjectileAge, state.profiles[state.assignment].playerClass, 1.12)
+      if (playerProjectileVisible) updateCombatProjectile(playerProjectile, state.player, projectileTarget, playerProjectileAge, state.profiles[state.assignment].playerClass, 1.12)
       else playerProjectile.group.visible = false
       const ambientShots = projectilesVisible ? npcProjectileShots(state.time, npcs.length) : []
       npcProjectiles.forEach((visual, slot) => {

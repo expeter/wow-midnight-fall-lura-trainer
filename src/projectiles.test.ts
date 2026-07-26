@@ -20,4 +20,9 @@ describe('cosmetic combat projectiles', () => {
     expect(combatProjectilesActive('p3-flight')).toBe(false)
     expect(combatProjectilesActive('p4-countdown')).toBe(false)
   })
+
+  it('keeps transition suppression scoped to ambient NPC shots', () => {
+    expect(combatProjectilesActive('countdown')).toBe(false)
+    expect(combatProjectilesActive('positioning')).toBe(false)
+  })
 })

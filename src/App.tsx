@@ -15,7 +15,7 @@ interface Mistake { id: number; time: number; label: string; penalty: number }
 interface PhaseStart { key: PhaseKey; score: number; time: number }
 type RecoveryStatus = 'disabled' | 'pending' | 'passed' | 'missed'
 interface PhaseCrystalAssignments { intermission: number[]; p2: number[]; p3: number[] }
-interface KeyBindings { forward: string; backward: string; left: string; right: string; jump: string; crystal: string; pause: string; healthPot: string; shield: string; mainAbility: string }
+interface KeyBindings { forward: string; backward: string; left: string; right: string; turnLeft: string; turnRight: string; jump: string; crystal: string; pause: string; healthPot: string; shield: string; mainAbility: string }
 type HudElement = 'mechanic' | 'beam' | 'crystal' | 'playerHealth' | 'bossHealth' | 'castbar'
 type HudLayout = Record<HudElement, Point>
 
@@ -104,7 +104,7 @@ const DEFAULT_PROFILES: PlayerProfile[] = Array.from({ length: 20 }, (_, index) 
   playerClass: CLASS_OPTIONS[index % CLASS_OPTIONS.length].value,
   crystal: [1, 4, 7, 10, 13, 16].includes(index),
 }))
-const DEFAULT_KEY_BINDINGS: KeyBindings = { forward: 'KeyW', backward: 'KeyS', left: 'KeyA', right: 'KeyD', jump: 'Space', crystal: 'KeyE', pause: 'KeyP', healthPot: 'KeyQ', shield: 'KeyR', mainAbility: 'KeyF' }
+const DEFAULT_KEY_BINDINGS: KeyBindings = { forward: 'KeyW', backward: 'KeyS', left: 'KeyA', right: 'KeyD', turnLeft: 'KeyQ', turnRight: 'KeyE', jump: 'Space', crystal: 'KeyC', pause: 'KeyP', healthPot: 'NumpadDecimal', shield: 'Numpad7', mainAbility: 'KeyF' }
 const DEFAULT_HUD_LAYOUT: HudLayout = {
   mechanic: { x: 43, y: 23 },
   beam: { x: 57, y: 23 },
@@ -116,6 +116,7 @@ const DEFAULT_HUD_LAYOUT: HudLayout = {
 const KEY_BIND_LABELS: { action: keyof KeyBindings; label: string }[] = [
   { action: 'forward', label: 'Forward' }, { action: 'backward', label: 'Backward' },
   { action: 'left', label: 'Strafe left' }, { action: 'right', label: 'Strafe right' },
+  { action: 'turnLeft', label: 'Rotate left' }, { action: 'turnRight', label: 'Rotate right' },
   { action: 'jump', label: 'Jump' },
   { action: 'crystal', label: 'Drop crystal' }, { action: 'pause', label: 'Pause / resume' },
   { action: 'healthPot', label: 'Health potion' }, { action: 'shield', label: 'Shield' },
@@ -126,8 +127,12 @@ function loadKeyBindings(): KeyBindings {
     const saved = JSON.parse(localStorage.getItem('lura-keybindings') || 'null')
     if (saved) {
       const legacyPause = typeof saved.jump !== 'string' && saved.pause === 'Space'
+      const legacyTurning = typeof saved.turnLeft !== 'string' || typeof saved.turnRight !== 'string'
       return Object.fromEntries(Object.entries(DEFAULT_KEY_BINDINGS).map(([key, fallback]) => {
         if (legacyPause && key === 'pause') return [key, 'KeyP']
+        if (legacyTurning && key === 'crystal' && saved.crystal === 'KeyE') return [key, 'KeyC']
+        if (legacyTurning && key === 'healthPot' && saved.healthPot === 'KeyQ') return [key, 'NumpadDecimal']
+        if (legacyTurning && key === 'shield' && saved.shield === 'KeyR') return [key, 'Numpad7']
         return [key, typeof saved[key] === 'string' ? saved[key] : fallback]
       })) as unknown as KeyBindings
     }
@@ -162,7 +167,9 @@ function loadMusicVolume() {
   return Number.isFinite(saved) && saved >= 0 && saved <= 1 ? saved : DEFAULT_MUSIC_VOLUME
 }
 function keyLabel(code: string) {
-  return code === 'Space' ? 'Space' : code.replace(/^Key/, '').replace(/^Digit/, '')
+  if (code === 'Space') return 'Space'
+  if (code === 'NumpadDecimal') return 'Num Del'
+  return code.replace(/^Key/, '').replace(/^Digit/, '').replace(/^Numpad/, 'Num ')
 }
 const ARENA_BACKGROUND = new URL('../images/midnight_falls.png', import.meta.url).href
 function loadPositions(): Assignment[] {
@@ -327,6 +334,10 @@ export default function App() {
   const [movementBonus, setMovementBonus] = useState(() => loadBoolean('lura-opening-speed-bonus', true))
   const [invertCameraX, setInvertCameraX] = useState(() => loadBoolean('lura-invert-camera-x', false))
   const [invertCameraY, setInvertCameraY] = useState(() => loadBoolean('lura-invert-camera-y', false))
+  const [rotationSpeed, setRotationSpeed] = useState(() => {
+    const saved = Number(localStorage.getItem('lura-player-rotation-speed'))
+    return Number.isFinite(saved) && saved >= 45 && saved <= 270 ? saved : 150
+  })
   const [hudLayout, setHudLayout] = useState(loadHudLayout)
   const [healthPotEnabled, setHealthPotEnabled] = useState(() => loadBoolean('lura-health-pot-enabled', false))
   const [shieldEnabled, setShieldEnabled] = useState(() => loadBoolean('lura-shield-enabled', false))
@@ -459,6 +470,7 @@ export default function App() {
   useEffect(() => { localStorage.setItem('lura-opening-speed-bonus', String(movementBonus)) }, [movementBonus])
   useEffect(() => { localStorage.setItem('lura-invert-camera-x', String(invertCameraX)) }, [invertCameraX])
   useEffect(() => { localStorage.setItem('lura-invert-camera-y', String(invertCameraY)) }, [invertCameraY])
+  useEffect(() => { localStorage.setItem('lura-player-rotation-speed', String(rotationSpeed)) }, [rotationSpeed])
   useEffect(() => { localStorage.setItem('lura-game-speed', String(gameSpeed)) }, [gameSpeed])
   useEffect(() => { localStorage.setItem('lura-hud-layout', JSON.stringify(hudLayout)) }, [hudLayout])
   useEffect(() => { localStorage.setItem('lura-health-pot-enabled', String(healthPotEnabled)) }, [healthPotEnabled])
@@ -1465,7 +1477,7 @@ export default function App() {
     <section className="practice-settings">
       <fieldset><legend>Background music</legend><p className="hint">Optional Pixabay ambience. It restarts with each attempt and loops if the run lasts longer than the selected track.</p><label className="profile-control">Track<select aria-label="Background music track" value={musicTrack} onChange={event => setMusicTrack(event.target.value as MusicTrackId)}>{MUSIC_TRACKS.map(track => <option value={track.id} key={track.id}>{track.label}</option>)}</select></label><button type="button" className="music-preview" disabled={musicMuted} onClick={toggleMusicPreview}>{musicMuted ? 'Unmute to preview' : musicPreviewing ? '■ Stop preview' : '▶ Play preview'}</button><label className="speed-control">Volume <strong>{Math.round(musicVolume * 100)}%</strong><input aria-label="Background music volume" type="range" min="0" max="1" step=".05" value={musicVolume} onChange={event => setMusicVolume(Number(event.target.value))} /></label><label className="checkbox-control"><input aria-label="Mute background music" type="checkbox" checked={musicMuted} onChange={event => { setMusicMuted(event.target.checked); if (event.target.checked) setMusicPreviewing(false) }} /><span>Mute music<span>Can also be toggled inside the arena.</span></span></label></fieldset>
       <fieldset><legend>Optional combat actions</legend><p className="hint">Health emergencies only occur during active mechanics: once on Normal and twice on Hard across the complete run. Each recovery ability has one use.</p><label className="checkbox-control disabled-on-easy"><input aria-label="Enable health potion" type="checkbox" disabled={difficulty === 'easy'} checked={healthPotEnabled} onChange={event => setHealthPotEnabled(event.target.checked)} /><span>Health potion<span>{keyLabel(keyBindings.healthPot)} · restores full health · one use</span></span></label><label className="checkbox-control disabled-on-easy"><input aria-label="Enable shield" type="checkbox" disabled={difficulty === 'easy'} checked={shieldEnabled} onChange={event => setShieldEnabled(event.target.checked)} /><span>Shield<span>{keyLabel(keyBindings.shield)} · restores full health · one use</span></span></label><label className="checkbox-control"><input aria-label="Enable main ability" type="checkbox" checked={mainAbilityEnabled} onChange={event => setMainAbilityEnabled(event.target.checked)} /><span>Main ability<span>{keyLabel(keyBindings.mainAbility)} · one-second cast · +1 point per hit · available on every difficulty</span></span></label></fieldset>
-      <fieldset><legend>Keybindings</legend><div className="keybind-grid">{KEY_BIND_LABELS.map(binding => <label className="keybind-control" key={binding.action}><span>{binding.label}</span><input aria-label={`${binding.label} keybind`} readOnly value={keyLabel(keyBindings[binding.action])} onKeyDown={event => { event.preventDefault(); event.stopPropagation(); setKeyBindings(current => ({ ...current, [binding.action]: event.code })) }} /></label>)}</div><button className="reset-keys" onClick={() => setKeyBindings({ ...DEFAULT_KEY_BINDINGS })}>Reset keybindings</button></fieldset>
+      <fieldset><legend>Keybindings</legend><label className="speed-control rotation-speed-control">Keyboard rotation speed <strong>{rotationSpeed}°/s</strong><input aria-label="Keyboard rotation speed" type="range" min="45" max="270" step="15" value={rotationSpeed} onChange={event => setRotationSpeed(Number(event.target.value))} /></label><div className="keybind-grid">{KEY_BIND_LABELS.map(binding => <label className="keybind-control" key={binding.action}><span>{binding.label}</span><input aria-label={`${binding.label} keybind`} readOnly value={keyLabel(keyBindings[binding.action])} onKeyDown={event => { event.preventDefault(); event.stopPropagation(); setKeyBindings(current => ({ ...current, [binding.action]: event.code })) }} /></label>)}</div><button className="reset-keys" onClick={() => setKeyBindings({ ...DEFAULT_KEY_BINDINGS })}>Reset keybindings</button></fieldset>
     </section>
     <div className="plan-heading"><p className="eyebrow">INTERFACE</p><h2>HUD positions</h2><p className="hint">Drag the mechanic counters, castbar, and player/boss health bars around the Phase 2 preview. Their positions are saved automatically.</p></div>
     <HudLayoutEditor layout={hudLayout} onChange={(counter, point) => setHudLayout(current => ({ ...current, [counter]: point }))} onReset={() => setHudLayout(structuredClone(DEFAULT_HUD_LAYOUT))} />

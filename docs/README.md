@@ -46,6 +46,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `FR-005` | Implemented | Give the non-Hard memory-game partner a seeded random reaction delay between one and six seconds before it starts moving to help the player. |
 | `FR-006` | Implemented | Let P2 NPCs roam around their cross-beam assignments and avoid returning orbs during downtime, then walk back to their exact soak positions for the final three seconds before the next beam. |
 | `FR-007` | Implemented | Add independently persistent horizontal and vertical mouse-camera inversion settings. |
+| `FR-008` | Implemented | Add rebindable Q/E keyboard turning that immediately changes player facing and forward movement direction, plus a persistent rotation-speed slider. |
 | `CR-002` | Implemented | Randomize the two P3 landing impacts per attempt and make a valid three-player Soak glow without revealing remaining progress outside Test/Easy. |
 | `CR-003` | Implemented | Generate the two P3 landing impacts independently within their group area; the crystal carrier takes the nearer impact and the helper takes the farther one. |
 | `CR-004` | Implemented | Add a subtle top-left version indicator with the package version and UTC build timestamp on every screen. |

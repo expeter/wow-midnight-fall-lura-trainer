@@ -38,11 +38,12 @@ The defaults are:
 | Action | Control |
 | --- | --- |
 | Move | `W` / `A` / `S` / `D` |
+| Rotate player | `Q` / `E` |
 | Jump | `Space` |
-| Drop crystal | `E` |
+| Drop crystal | `C` |
 | Pause or resume | `P` |
-| Health potion | `Q` |
-| Shield | `R` |
+| Health potion | `Numpad Delete` |
+| Shield | `Numpad 7` |
 | Main ability | `F` |
 | Look without changing facing | Left mouse drag |
 | Change view and player facing | Right mouse drag |

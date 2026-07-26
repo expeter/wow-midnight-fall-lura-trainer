@@ -567,6 +567,16 @@ export default function GameScene(props: SceneProps) {
     let zoomYards = savedCamera.zoom
     const invertCameraX = localStorage.getItem('lura-invert-camera-x') === 'true'
     const invertCameraY = localStorage.getItem('lura-invert-camera-y') === 'true'
+    let turnLeftKey = 'KeyQ'
+    let turnRightKey = 'KeyE'
+    try {
+      const savedBindings = JSON.parse(localStorage.getItem('lura-keybindings') || 'null')
+      if (typeof savedBindings?.turnLeft === 'string') turnLeftKey = savedBindings.turnLeft
+      if (typeof savedBindings?.turnRight === 'string') turnRightKey = savedBindings.turnRight
+    } catch { /* use defaults */ }
+    const storedRotationSpeed = Number(localStorage.getItem('lura-player-rotation-speed'))
+    const rotationSpeed = THREE.MathUtils.degToRad(Number.isFinite(storedRotationSpeed) ? THREE.MathUtils.clamp(storedRotationSpeed, 45, 270) : 150)
+    const turnKeys = new Set<string>()
     let cameraBaseAngle: number | null = null
     let facingAngle: number | null = null
     let currentCameraForwardAngle = -Math.PI / 2
@@ -617,6 +627,13 @@ export default function GameScene(props: SceneProps) {
     const onWheel = (event: WheelEvent) => { event.preventDefault(); updateZoom(zoomYards + event.deltaY * .008) }
     const onContextMenu = (event: MouseEvent) => event.preventDefault()
     const preventNativeDrag = (event: Event) => event.preventDefault()
+    const onTurnKeyDown = (event: KeyboardEvent) => {
+      if (event.code !== turnLeftKey && event.code !== turnRightKey) return
+      event.preventDefault()
+      turnKeys.add(event.code)
+    }
+    const onTurnKeyUp = (event: KeyboardEvent) => turnKeys.delete(event.code)
+    const clearTurnKeys = () => turnKeys.clear()
     renderer.domElement.addEventListener('pointerdown', onPointerDown)
     renderer.domElement.addEventListener('pointermove', onPointerMove)
     renderer.domElement.addEventListener('pointerup', onPointerUp)
@@ -625,6 +642,9 @@ export default function GameScene(props: SceneProps) {
     window.addEventListener('contextmenu', onContextMenu)
     renderer.domElement.addEventListener('dragstart', preventNativeDrag)
     renderer.domElement.addEventListener('selectstart', preventNativeDrag)
+    window.addEventListener('keydown', onTurnKeyDown)
+    window.addEventListener('keyup', onTurnKeyUp)
+    window.addEventListener('blur', clearTurnKeys)
 
     const render = () => {
       const state = latest.current
@@ -668,6 +688,11 @@ export default function GameScene(props: SceneProps) {
       const phaseTwo = state.event.startsWith('p2-')
       const phaseThree = state.event.startsWith('p3-')
       const phaseFour = state.event.startsWith('p4-')
+      const turnLocked = state.personalJumpProgress > 0 || state.event === 'countdown' || state.event === 'p2-countdown' || state.event === 'p2-jump' || state.event === 'p3-countdown' || state.event === 'p3-flight' || state.event === 'p4-countdown' || state.event === 'p4-transition'
+      if (!turnLocked) {
+        const turnDirection = (turnKeys.has(turnRightKey) ? 1 : 0) - (turnKeys.has(turnLeftKey) ? 1 : 0)
+        if (turnDirection) applyFacing((facingAngle ?? currentCameraForwardAngle) + turnDirection * rotationSpeed * renderDelta)
+      }
       if ((state.event === 'p3-light-pools' || state.event === 'p3-pools-overlap') && p3PlayerSoakEngagedRound !== state.p3Round) {
         const playerSide: -1 | 1 = state.assignment < 10 ? -1 : 1
         if (p3PoolCenters(playerSide, WORLD.center, state.p3Round).some(pool => distance(state.player, pool) <= P3_POOL_RADIUS)) p3PlayerSoakEngagedRound = state.p3Round
@@ -1207,6 +1232,9 @@ export default function GameScene(props: SceneProps) {
       window.removeEventListener('contextmenu', onContextMenu)
       renderer.domElement.removeEventListener('dragstart', preventNativeDrag)
       renderer.domElement.removeEventListener('selectstart', preventNativeDrag)
+      window.removeEventListener('keydown', onTurnKeyDown)
+      window.removeEventListener('keyup', onTurnKeyUp)
+      window.removeEventListener('blur', clearTurnKeys)
       clearGroup(hazards)
       transientGeometryCache.forEach(geometry => geometry.dispose())
       transientGeometryCache.clear()

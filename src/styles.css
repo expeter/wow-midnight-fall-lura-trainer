@@ -216,6 +216,8 @@
 .checkbox-control input { flex: 0 0 auto; width: 16px; height: 16px; margin: 1px 0 0; }
 .checkbox-control > span > span { display: block; margin-top: 3px; color: #8190ad; font-size: 11px; line-height: 1.35; }
 .checkbox-control:has(input:disabled) { opacity: .42; cursor: not-allowed; }
+.always-available-action { display: grid; gap: 3px; margin: 14px 0 0; color: #f6f4ee; font-size: 16px; line-height: 1.4; }
+.always-available-action span { color: #8190ad; }
 .input-settings { grid-column: 1 / -1; }
 .setup-grid fieldset { min-width: 0; }
 .setup-grid .difficulty-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }

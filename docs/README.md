@@ -96,7 +96,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `FR-021` | Implemented | Add a compact four-item setup menu for Game settings, Keyboard settings, HUD, and Raid planning; omit phase-plan sublinks and preserve active raid-plan share hashes while scrolling. |
 | `FR-022` | Backlog | Make the Phase 4 front-player tank cone playable: expose the action to the controlled player when assigned, retain its intended cooldown and area, and destroy approaching adds caught by the cone. |
 | `FR-023` | Backlog | Randomly assign the moving Phase 4 protection safe zone to a player or NPC so the controlled player may need to carry and position it while the raid follows. |
-| `FR-024` | Backlog | Fire a visible player projectile toward L’ura when an enabled Main ability cast successfully completes; do not fire on keypress, interruption, pause, or before the cast finishes. |
+| `FR-024` | Implemented | Make Main ability permanently available without an enable checkbox and award its hit only when the one-second cast completes. Add a persisted global cosmetic-projectile switch: completed player casts fire toward L’ura, while a capped lightweight NPC stream uses WoW class colors and simple class-specific shapes without changing encounter mechanics. |
 | `FR-025` | Implemented | Add a continuous encounter-length background theme that survives phase transitions and loops cleanly when necessary, with the existing audio feature flag and mute/volume controls restored only when suitable licensed music is selected. |
 | `FR-026` | Backlog | Add distinct, synchronized sound effects for major lasers, Starsplinter warnings/detonations, and orb actions, with suitable volume balance and a way to mute effects independently of music. |
 | `FR-027` | Backlog | Add an optional API-backed leaderboard and achievement tracker. Keep anonymous play fully available, optionally identify persistent/public results through Battle.net OAuth, and validate run timing and mechanics server-side rather than treating OAuth or a client-submitted score as proof of a legitimate run. |
@@ -352,7 +352,6 @@ assets:
 
 - `FR-022`: Player-controlled Phase 4 tank cone.
 - `FR-023`: Random player/NPC ownership of the Phase 4 protection zone.
-- `FR-024`: Main-ability projectiles on successful cast completion.
 - `FR-026`: Laser, Starsplinter, and orb sound effects.
 - `FR-027`: Optional API-backed highscores, achievements, and Battle.net login.
 - Per-phase refills and certificate scoring for optional potion/shield

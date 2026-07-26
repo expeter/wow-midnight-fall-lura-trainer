@@ -3,8 +3,11 @@ import * as THREE from 'three'
 import { angleToward, assignmentRevealDistance, constrainP3NpcTargetToSide, crystalCarrierPosition, distance, distanceToSegment, hasActiveP3CrystalLight, jumpHeights, keepP3CrystalPoolCovered, keepP3NpcInSoak, keepP4NpcInProtection, npcEntryPosition, OPENING_BOOST_SECONDS, P1_STAR_LENGTH, P2_BEAM_SECONDS, P2_ORBIT_SPEED, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_INNER_RADIUS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p2NpcRoamingPosition, p2NpcShouldReturnToSoak, p2OrbReturnState, p2ReturningOrbPositions, p3ActiveCrystalAssignments, P3_APPROACH_NPC_SPEED_MULTIPLIER, p3ArchangelStackPosition, p3BossPosition, p3CrystalPoolCoverageTargets, p3FlightPosition, P3_FLIGHT_SECONDS, p3LandingGroupIndex, p3LandingPlanIndex, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3NpcPoolAssignment, p3NpcRuneReactionDelay, p3NpcSoaksActive, p3PoolCenters, p3PoolLayoutId, p3ProtectionBubbleCenter, p3RuneEdges, p3RuneOrbs, p3RunePartnerPosition, p3SideForPosition, p3StarsTiming, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, p4EncounterBoxStates, p4FrontSoakerPosition, p4GroupPosition, p4NpcRelocationPace, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4StackPosition, p4TankConeActive, p4TransitionStartPosition, P4_FRONT_CONE_RANGE, P4_HEAVEN_MOVE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, roamingNpcPosition, separateP3NpcTarget, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type RuneSymbol } from './game'
 import { p3SpreadPosition, p4TankKillsBox } from './game'
 import { isP3RaidMemberVisible } from './game'
+import { combatProjectilePosition, combatProjectileShape, combatProjectilesActive, COMBAT_PROJECTILE_TRAVEL_SECONDS, npcProjectileShots, type CombatProjectileShape } from './projectiles'
 
 interface SceneProps {
+  combatProjectilesEnabled: boolean
+  mainProjectileFiredAt: number | null
   positions: Point[]
   intermissionPositions: Point[]
   p2SoakPositions: Point[]
@@ -411,6 +414,43 @@ function makeCrystal() {
   crystal.add(groundGlow)
   return crystal
 }
+interface CombatProjectileVisual {
+  group: THREE.Group
+  materials: THREE.MeshBasicMaterial[]
+  shapes: Record<CombatProjectileShape, THREE.Mesh>
+}
+function makeCombatProjectile(): CombatProjectileVisual {
+  const group = new THREE.Group()
+  const makeMaterial = () => new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .9, depthWrite: false })
+  const boltMaterial = makeMaterial()
+  const orbMaterial = makeMaterial()
+  const shardMaterial = makeMaterial()
+  const bolt = new THREE.Mesh(new THREE.BoxGeometry(3.8, .8, .8), boltMaterial)
+  const orb = new THREE.Mesh(new THREE.SphereGeometry(1.25, 10, 7), orbMaterial)
+  const shard = new THREE.Mesh(new THREE.ConeGeometry(1.15, 3.8, 6), shardMaterial)
+  shard.rotation.z = Math.PI / 2
+  group.add(bolt, orb, shard)
+  group.visible = false
+  return { group, materials: [boltMaterial, orbMaterial, shardMaterial], shapes: { bolt, orb, shard } }
+}
+function updateCombatProjectile(visual: CombatProjectileVisual, origin: Point, target: Point, age: number, playerClass: PlayerClass, scale = 1) {
+  const active = age >= 0 && age <= COMBAT_PROJECTILE_TRAVEL_SECONDS
+  visual.group.visible = active
+  if (!active) return
+  const shape = combatProjectileShape(playerClass)
+  Object.entries(visual.shapes).forEach(([name, mesh]) => { mesh.visible = name === shape })
+  const color = CLASS_COLORS[playerClass]
+  visual.materials.forEach(material => material.color.setHex(color))
+  const position = combatProjectilePosition(origin, target, age)
+  const progress = Math.max(0, Math.min(1, age / COMBAT_PROJECTILE_TRAVEL_SECONDS))
+  visual.group.position.set(position.x, 7 + Math.sin(progress * Math.PI) * 3, position.y)
+  visual.group.rotation.y = -Math.atan2(target.y - origin.y, target.x - origin.x)
+  visual.group.scale.setScalar(scale)
+}
+function disposeCombatProjectile(visual: CombatProjectileVisual) {
+  Object.values(visual.shapes).forEach(mesh => mesh.geometry.dispose())
+  visual.materials.forEach(material => material.dispose())
+}
 function rayHits(point: Point, origin: Point, rotation: number) {
   const dx = point.x - origin.x
   const dy = point.y - origin.y
@@ -538,6 +578,10 @@ export default function GameScene(props: SceneProps) {
       scene.add(entity)
       return entity
     })
+    const playerProjectile = makeCombatProjectile()
+    const npcProjectiles = Array.from({ length: 3 }, makeCombatProjectile)
+    scene.add(playerProjectile.group)
+    npcProjectiles.forEach(projectile => scene.add(projectile.group))
     const crystal = makeCrystal()
     crystal.visible = false
     scene.add(crystal)
@@ -990,6 +1034,26 @@ export default function GameScene(props: SceneProps) {
         ? npcPositions.filter((_, npcIndex) => isP3RaidMemberVisible(state.positions[state.assignment], state.positions[npcProfileIndices[npcIndex]], WORLD.center, true) && activeP3Crystals.includes(npcProfileIndices[npcIndex]))
         : []
       state.onP3LightCenters(npcP3LightCenters)
+      const projectilesVisible = state.combatProjectilesEnabled && combatProjectilesActive(state.event)
+      const projectileTarget = phaseThree ? p3BossPosition(playerP3Side, WORLD.center, state.p3Round) : WORLD.center
+      const playerProjectileAge = state.mainProjectileFiredAt === null ? Infinity : state.time - state.mainProjectileFiredAt
+      if (projectilesVisible) updateCombatProjectile(playerProjectile, state.player, projectileTarget, playerProjectileAge, state.profiles[state.assignment].playerClass, 1.12)
+      else playerProjectile.group.visible = false
+      const ambientShots = projectilesVisible ? npcProjectileShots(state.time, npcs.length) : []
+      npcProjectiles.forEach((visual, slot) => {
+        const shot = ambientShots[slot]
+        if (!shot) {
+          visual.group.visible = false
+          return
+        }
+        const profileIndex = npcProfileIndices[shot.npcOrdinal]
+        const visibleOnPlayerSide = !phaseThree || isP3RaidMemberVisible(state.positions[state.assignment], state.positions[profileIndex], WORLD.center, true)
+        if (!visibleOnPlayerSide) {
+          visual.group.visible = false
+          return
+        }
+        updateCombatProjectile(visual, npcPositions[shot.npcOrdinal], projectileTarget, shot.age, state.profiles[profileIndex].playerClass, .88)
+      })
       if (state.event === 'p3-light-pools' || state.event === 'p3-pools-overlap') {
         const occupancy = ([-1, 1] as const).flatMap(side => p3PoolCenters(side, WORLD.center, state.p3Round).map(pool => npcPositions.filter(position => distance(position, pool) <= P3_POOL_RADIUS).length))
         state.onP3PoolOccupancy(occupancy)
@@ -1323,10 +1387,12 @@ export default function GameScene(props: SceneProps) {
       transientGeometryCache.clear()
       p3StarsFieldCache.clear()
       beamMarkerTextures.forEach(texture => texture.dispose())
+      disposeCombatProjectile(playerProjectile)
+      npcProjectiles.forEach(disposeCombatProjectile)
       renderer.dispose()
       renderer.domElement.remove()
     }
   }, [])
 
-  return <div ref={host} className="scene-3d" aria-label="3D L'ura Intermission arena" />
+  return <div ref={host} className="scene-3d" aria-label="3D L'ura Intermission arena" data-combat-projectiles={props.combatProjectilesEnabled ? 'on' : 'off'} />
 }

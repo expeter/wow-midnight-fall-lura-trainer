@@ -655,6 +655,71 @@
   font-size: 13px;
 }
 
+/* Readable at native browser zoom on a standard desktop display. */
+.setup-shell,
+.game-shell,
+.results { font-size: 17px; }
+.setup-shell .lede { font-size: 17px; }
+.setup-shell .eyebrow,
+.setup-shell legend { font-size: 14px; }
+.setup-shell .entry-choice span,
+.setup-shell .hint,
+.setup-shell .scope-note,
+.setup-shell fieldset button span,
+.setup-shell .assignment span,
+.setup-shell .speed-control,
+.setup-shell .checkbox-control,
+.setup-shell .profile-control,
+.setup-shell .coordinate-control { font-size: 15px; }
+.setup-shell .checkbox-control > span > span,
+.setup-shell .keybind-control span,
+.setup-shell .share-status,
+.setup-shell .creator-card > div > span,
+.setup-shell .creator-card code,
+.setup-shell .creator-card a,
+.setup-shell .creator-card .copy-wallet { font-size: 13px; }
+.setup-shell .keybind-control input,
+.setup-shell .music-preview,
+.setup-shell .reset-keys { font-size: 14px; }
+.setup-shell .map-player { font-size: 12px; }
+.setup-shell .map-start-slot,
+.setup-shell .p3-boss-handle span,
+.setup-shell .p3-group-help { font-size: 11px; }
+.game-shell .game-top .eyebrow,
+.game-shell .controls,
+.game-shell .splinter-counter,
+.game-shell .crystal-countdown,
+.game-shell .beam-drop-counter { font-size: 14px; }
+.game-shell .score-overlay span,
+.game-shell .test-failure-log header,
+.game-shell .test-failure-log li time,
+.game-shell .soft-wipe-notice span,
+.game-shell .soft-wipe-notice small,
+.game-shell .wipe-minimized span { font-size: 11px; }
+.game-shell .test-failure-log li,
+.game-shell .test-failure-log p,
+.game-shell .player-health > span,
+.game-shell .boss-health > span,
+.game-shell .boss-health > small,
+.game-shell .rune-order span { font-size: 12px; }
+.game-shell .health-abilities b,
+.game-shell .main-cast b,
+.game-shell .player-castbar.main-cast b { font-size: 11px; }
+.game-shell .soft-wipe-notice strong { font-size: 16px; }
+.results .lede { font-size: 17px; }
+.results .achievement-badge strong,
+.results .achievement-badge small,
+.results .completion-summary span,
+.results .phase-results article > span,
+.results .result-mistakes time,
+.results .result-mistakes li b,
+.results .completion-actions [role='status'] { font-size: 13px; }
+.results .result-mistakes > p,
+.results .result-mistakes li span,
+.results .result-mistakes summary,
+.results .completion-preview-note,
+.results .completion-extras { font-size: 14px; }
+
 /* Completion card overrides the compact legacy results width. */
 .results { width: min(900px, 100%); max-width: 900px; }
 

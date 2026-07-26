@@ -46,6 +46,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-004` | Implemented | Add a subtle top-left version indicator with the package version and UTC build timestamp on every screen. |
 | `CR-005` | Implemented | Retune Phase 2 to five seconds of initial positioning, seven-second cross beams, a five-second pull and spread, a one-second orb charge plus one-second return, and a fixed thirty-second beam cadence. |
 | `CR-006` | Implemented | Add an out-of-game Season 2 recruitment banner linking to the German-speaking I Asgard I Raider.IO guild page. |
+| `CR-007` | Implemented | Increase the setup, planner, in-game HUD, failure, and completion interface type scales for readability at native browser zoom. |
 | `BUG-008` | Implemented | Remove the premature 20-second P3 Soak failure; unfinished pools are now checked only when Big Boom resolves at 40 seconds. |
 | `BUG-009` | Implemented | Enforce P3 Stars orb spacing and isolate the southwest/southeast fields with clearance from the room divider. |
 | `BUG-010` | Implemented | Use the NPC protection bubble when the player's crystal duty belongs to the other Dark Archangel set; only consume the player's crystal on its assigned set. |

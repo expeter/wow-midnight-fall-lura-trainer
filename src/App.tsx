@@ -1722,7 +1722,7 @@ function GameArena(props: { mainAbilityEnabled: boolean; bossHealth: number; mai
         />
         <div className="score-overlay"><span>Points</span><strong>{Math.round(props.stats.score)}</strong></div>
         <aside className="test-failure-log selectable-log" aria-label={props.difficulty === 'test' ? 'Test mode recent failures' : 'Recent failures'}>
-          <header><span>{props.difficulty === 'test' ? 'TEST FAILURES' : 'RECENT FAILURES'}</span><span className="failure-log-actions"><time>{props.stats.time.toFixed(1)}s</time><button type="button" aria-label={failureLogCopied ? 'Failures copied' : 'Copy recent failures'} title="Copy recent failures" onClick={copyFailureLog}>{failureLogCopied ? '✓' : '📋'}</button></span></header>
+          <header><span>{props.difficulty === 'test' ? 'TEST FAILURES' : 'RECENT FAILURES'}</span><span className="failure-log-actions"><time>{props.stats.time.toFixed(1)}s</time><button type="button" aria-label={failureLogCopied ? 'Failure log copied' : 'Copy failure log'} title="Copy failure log" onClick={copyFailureLog}>{failureLogCopied ? '✓' : '📋'}</button></span></header>
           {props.mistakes.length ? <ol>{props.mistakes.slice(0, 5).map(mistake => <li key={mistake.id}><time>{mistake.time.toFixed(1)}s</time><span>{mistake.label}</span></li>)}</ol> : <p>No failures yet.</p>}
         </aside>
         {props.softWipeNotice && <div className="soft-wipe-notice" role="status"><span>{props.difficulty === 'test' ? 'Test mode · run continues' : 'Strike 1 / 2 · −500 points'}</span><strong>{props.softWipeNotice}</strong><small>Practice continues</small></div>}

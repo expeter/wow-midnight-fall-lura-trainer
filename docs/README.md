@@ -53,6 +53,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-009` | Implemented | Enforce P3 Stars orb spacing and isolate the southwest/southeast fields with clearance from the room divider. |
 | `BUG-010` | Implemented | Use the NPC protection bubble when the player's crystal duty belongs to the other Dark Archangel set; only consume the player's crystal on its assigned set. |
 | `BUG-011` | Implemented | Keep the in-game version/build indicator in normal layout flow so it cannot overlap phase headlines. |
+| `BUG-012` | Implemented | Give the failure-log clipboard control a distinct accessible name so it cannot collide with the Recent failures panel label. |
 
 ## Implemented feature inventory
 

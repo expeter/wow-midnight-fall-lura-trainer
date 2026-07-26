@@ -17,7 +17,6 @@ import personalCircleUrl from '../tools/voice-soundboard/sfx/success-small-bell.
 import runeClearUrl from '../tools/voice-soundboard/sfx/success-rune-clear.wav?url'
 import archangelChargeUrl from '../tools/voice-soundboard/sfx/midnight-archangel-charge-veil.wav?url'
 import protectionActiveUrl from '../tools/voice-soundboard/sfx/cast-crystal-spark.wav?url'
-import addDestroyedUrl from '../tools/voice-soundboard/sfx/cast-light-loud.wav?url'
 import errorPulseUrl from '../tools/voice-soundboard/sfx/error-pulse-fast.wav?url'
 
 export type EncounterSoundName =
@@ -29,7 +28,6 @@ export type EncounterSoundName =
   | 'rune-match'
   | 'archangel-charge'
   | 'protection-active'
-  | 'add-destroyed'
   | 'mistake'
   | 'wipe'
 
@@ -48,7 +46,6 @@ export const ENCOUNTER_SOUND_SPECS: Record<EncounterSoundName, EncounterSoundSpe
   'rune-match': { url: runeClearUrl, volume: .66, playbackRate: 1.08 },
   'archangel-charge': { url: archangelChargeUrl, volume: .72 },
   'protection-active': { url: protectionActiveUrl, volume: .82 },
-  'add-destroyed': { url: addDestroyedUrl, volume: .5 },
   mistake: { url: errorPulseUrl, volume: .78, playbackRate: 1.18 },
   wipe: { url: errorPulseUrl, volume: 1, playbackRate: .82 },
 }
@@ -74,7 +71,6 @@ export interface EncounterSoundState {
   p3PoolHealth: number[]
   p3ResolvedRunes: RuneSymbol[]
   p4Cycle: number
-  p4DestroyedBoxCount: number
   crystalOnGround: boolean
   latestMistakeId: number | null
   wipeReason: string
@@ -125,9 +121,6 @@ export function encounterSoundCuesForState(state: EncounterSoundState): Encounte
       if (state.eventTime >= detonation - SPLINTER_SOUND_LEAD_SECONDS) {
         cues.push({ id: `p4-${state.p4Cycle}-splinter-${ordinal}`, sound: 'splinter-detonate' })
       }
-    }
-    if (state.p4DestroyedBoxCount > 0) {
-      cues.push({ id: `p4-add-destroyed-${state.p4DestroyedBoxCount}`, sound: 'add-destroyed' })
     }
   }
 

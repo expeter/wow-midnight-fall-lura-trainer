@@ -65,7 +65,6 @@ with a separate `SOAK CRYSTAL` instruction.
 | `archangel-charge` | Dark Archangel is one second into its cast | Five-second escalating danger bed ending on the six-second cast impact | 5s | P3 |
 | `protection-active` | Crystal bubble protects raid | Warm shield activation | 0.5–1s | P3 |
 | `heaven-hell` | P4 quarter becomes unsafe | Deep sector-wide impact | 0.8–1.5s | P4 |
-| `add-destroyed` | Tank cone or splinter destroys an add | Small dry impact | 0.2–0.5s | P4 |
 | `mistake` | Non-wipe point loss | Restrained error tick | 0.2–0.4s | All phases |
 | `wipe` | Terminal failure | Distinct low failure hit | 0.8–1.5s | All phases |
 

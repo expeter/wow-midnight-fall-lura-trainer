@@ -12,7 +12,6 @@ const base = {
   p3PoolHealth: Array(6).fill(P3_POOL_HEALTH),
   p3ResolvedRunes: [],
   p4Cycle: 1,
-  p4DestroyedBoxCount: 0,
   crystalOnGround: false,
   latestMistakeId: null,
   wipeReason: '',
@@ -24,7 +23,6 @@ describe('encounter sound cues', () => {
     expect(ENCOUNTER_SOUND_SPECS['stars-connect'].volume).toBe(.72)
     expect(ENCOUNTER_SOUND_SPECS['stars-connect'].playbackRate).toBe(2.2)
     expect(ENCOUNTER_SOUND_SPECS['splinter-detonate'].playbackRate).toBe(2)
-    expect(ENCOUNTER_SOUND_SPECS['add-destroyed'].volume).toBe(.5)
     expect(ENCOUNTER_SOUND_SPECS.mistake.playbackRate).toBeGreaterThan(1)
   })
 
@@ -75,9 +73,13 @@ describe('encounter sound cues', () => {
     expect(first.filter(cue => cue.sound === 'splinter-detonate')).toHaveLength(1)
   })
 
-  it('plays one cue for each newly destroyed P4 add', () => {
-    const cues = encounterSoundCuesForState({ ...base, event: 'p4-cycle', p4DestroyedBoxCount: 2 })
-    expect(cues).toContainEqual({ id: 'p4-add-destroyed-2', sound: 'add-destroyed' })
+  it('keeps disappearing P4 adds silent even while Starsplinters resolve', () => {
+    const cues = encounterSoundCuesForState({
+      ...base,
+      event: 'p4-cycle',
+      eventTime: p4SplinterStartSeconds(1) + P4_SPLINTER_DETONATION_SECONDS,
+    })
+    expect(cues.map(cue => cue.sound)).toEqual(['splinter-detonate'])
   })
 
   it('delays Dark Archangel by one second so its five-second cue ends on impact', () => {

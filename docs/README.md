@@ -213,6 +213,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-051` | Implemented | Advance the one-second Main Ability cast from real elapsed frame time at the configured game speed instead of the physics loop’s 50-millisecond safety clamp, preventing slow or stuck casts on busy GitHub Actions runners while keeping movement and collision simulation capped. |
 | `BUG-052` | Implemented | Replace the external I Asgard I TinyURL navigation with an in-app fetch of the bundled guild raid plan, then normalize, apply, and persist it without changing the current localhost or GitHub Pages location. |
 | `BUG-053` | Implemented | Render the Main Ability as one uninterrupted compositor-driven 0–100% castbar that pauses with the game and cannot be visually reset by repeated input or busy encounter rerenders; damage, score, and the projectile still occur only at completion. |
+| `BUG-054` | Implemented | Remove the misleading Phase 4 add-destroyed sound and its render counter: clustered tank and Starsplinter removals can be coalesced into a delayed cue, while the adds visually disappear rather than producing a readable impact. |
 
 ## Implemented feature inventory
 

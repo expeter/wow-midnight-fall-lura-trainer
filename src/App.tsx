@@ -466,7 +466,6 @@ export default function App() {
   const [p3Round, setP3Round] = useState(1)
   const [p4Cycle, setP4Cycle] = useState(1)
   const [p4PatternSeed, setP4PatternSeed] = useState(() => Math.floor(Math.random() * 2147483647))
-  const [p4DestroyedBoxCount, setP4DestroyedBoxCount] = useState(0)
   const [p3ArchangelDuty, setP3ArchangelDuty] = useState<1 | 2>(randomCrystalDropDuty)
   const [p3PoolHealth, setP3PoolHealth] = useState(Array(6).fill(P3_POOL_HEALTH))
   const [p3RuneOrder, setP3RuneOrder] = useState<RuneSymbol[]>(['T', 'X', 'O'])
@@ -720,7 +719,6 @@ export default function App() {
       p3PoolHealth,
       p3ResolvedRunes,
       p4Cycle,
-      p4DestroyedBoxCount,
       crystalOnGround: crystal !== null,
       latestMistakeId: mistakes[0]?.id ?? null,
       wipeReason,
@@ -731,7 +729,7 @@ export default function App() {
       activeEncounterSoundsRef.current.add(audio)
       audio.addEventListener('ended', () => activeEncounterSoundsRef.current.delete(audio), { once: true })
     })
-  }, [encounterSoundsEnabled, encounterSoundVolume, gameSpeed, screen, paused, wipeReason, event, eventTime, cycle, p2Cycle, p2OrbReturnAge, p3Round, p3PoolHealth, p3ResolvedRunes, p4Cycle, p4DestroyedBoxCount, crystal, mistakes])
+  }, [encounterSoundsEnabled, encounterSoundVolume, gameSpeed, screen, paused, wipeReason, event, eventTime, cycle, p2Cycle, p2OrbReturnAge, p3Round, p3PoolHealth, p3ResolvedRunes, p4Cycle, crystal, mistakes])
   useEffect(() => () => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel()
     timedVoiceSourcesRef.current.forEach(source => {
@@ -893,7 +891,6 @@ export default function App() {
     encounterSoundPlayedRef.current.clear()
     activeEncounterSoundsRef.current.forEach(audio => audio.pause())
     activeEncounterSoundsRef.current.clear()
-    setP4DestroyedBoxCount(0)
     if (ttsAvailable) window.speechSynthesis.cancel()
     setP4PatternSeed(Math.floor(Math.random() * 2147483647))
     randomizeP3PoolLayout()
@@ -1479,7 +1476,6 @@ export default function App() {
         const destroyBoxesHitBySplinter = (origin: Point, rotation: number) => encounterBoxes.forEach(box => {
           if (box.active && p4SplinterHitsGroup(origin, rotation, box.position, box.size) && !p4DestroyedBoxIdsRef.current.has(box.id)) {
             p4DestroyedBoxIdsRef.current.add(box.id)
-            setP4DestroyedBoxCount(p4DestroyedBoxIdsRef.current.size)
           }
         })
         const duty = p4PlayerSplinterDuty(assignment, p4CycleRef.current, p4PatternSeed)
@@ -1510,7 +1506,6 @@ export default function App() {
         encounterBoxes.forEach(box => {
           if (box.active && p4TankKillsBox(box.position, frontSoaker) && !p4DestroyedBoxIdsRef.current.has(box.id)) {
             p4DestroyedBoxIdsRef.current.add(box.id)
-            setP4DestroyedBoxCount(p4DestroyedBoxIdsRef.current.size)
           }
         })
         const hitBox = encounterBoxes.find(box =>

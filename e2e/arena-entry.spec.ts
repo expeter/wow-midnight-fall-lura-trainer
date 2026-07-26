@@ -83,7 +83,7 @@ test('Space jumps while actions are locked and P pauses', async ({ page }) => {
   await expect(arena).toHaveAttribute('data-personal-jump', 'true')
 
   await page.keyboard.press('f')
-  await page.keyboard.press('e')
+  await page.keyboard.press('c')
   await expect(page.locator('.score-overlay strong')).toHaveText('1000')
   await expect(page.locator('.crystal-countdown')).toHaveCount(0)
 
@@ -93,7 +93,7 @@ test('Space jumps while actions are locked and P pauses', async ({ page }) => {
   await expect(page.locator('.player-castbar')).toBeVisible()
   await expect(page.locator('.player-castbar')).toHaveAttribute('style', /left: 50%; top: 65%/)
   await expect(page.locator('.boss-health .main-cast')).toHaveCount(0)
-  await page.keyboard.press('e')
+  await page.keyboard.press('c')
   await expect(page.locator('.crystal-countdown')).toBeVisible()
 
   await page.keyboard.press('p')

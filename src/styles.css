@@ -85,6 +85,11 @@
 .coordinate-control input { display: block; margin-top: 4px; }
 .profile-control { display: block; margin-top: 11px; color: #aeb8d0; font-size: 12px; }
 .profile-control input, .profile-control select { display: block; width: 100%; margin-top: 5px; padding: 8px 9px; border: 1px solid #354361; border-radius: 6px; color: #f6f4ee; background: #10182b; font: 13px Manrope, sans-serif; }
+.crystal-assignment-list { margin-top: 9px; }
+.crystal-assignment-list > span { color: #8190ad; font-size: 12px; }
+.crystal-assignment-list > div { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+.crystal-assignment-list button { width: auto; margin: 0; padding: 5px 7px; color: #ffe889; border-color: rgba(255,224,79,.42); background: rgba(74,60,17,.36); font: 10px 'DM Mono', monospace; }
+.crystal-assignment-list button b { color: #fff3b0; }
 .share-status { margin: 9px 0 0; color: #73e0c1; font: 11px 'DM Mono', monospace; }
 .setup-shell {
   max-width: 1040px;

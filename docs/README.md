@@ -79,6 +79,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-031` | Implemented | Enforce unique keybindings: assigning an occupied key clears the previous action and marks its empty control red as Unbound. |
 | `CR-032` | Implemented | Move camera inversion into a full-width Keyboard & mouse controls panel and align keyboard bindings, rotation speed, and mouse options on a responsive grid. |
 | `CR-033` | Implemented | Keep the opposite Phase 3 raid half simulated and visible, but dim its actors to distinguish it from the player’s active side without removing useful encounter context. |
+| `CR-034` | Implemented | Reduce backward player movement to 50% on Hard while preserving full forward and strafe speed in every phase. |
 | `BUG-008` | Implemented | Remove the premature 20-second P3 Soak failure; unfinished pools are now checked only when Big Boom resolves at 40 seconds. |
 | `BUG-009` | Implemented | Enforce P3 Stars orb spacing and isolate the southwest/southeast fields with clearance from the room divider. |
 | `BUG-010` | Implemented | Use the NPC protection bubble when the player's crystal duty belongs to the other Dark Archangel set; only consume the player's crystal on its assigned set. |

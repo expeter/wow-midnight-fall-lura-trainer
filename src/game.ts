@@ -888,7 +888,7 @@ export function moveInBounds(position: Point, keys: Set<string>, speed: number, 
   }
 }
 
-export function moveRelativeToCamera(position: Point, keys: Set<string>, speed: number, dt: number, forward: Point, bounds: { minX: number; maxX: number; minY: number; maxY: number }): Point {
+export function moveRelativeToCamera(position: Point, keys: Set<string>, speed: number, dt: number, forward: Point, bounds: { minX: number; maxX: number; minY: number; maxY: number }, backwardMultiplier = 1): Point {
   const inputForward = (keys.has('w') ? 1 : 0) - (keys.has('s') ? 1 : 0)
   const inputRight = (keys.has('d') ? 1 : 0) - (keys.has('a') ? 1 : 0)
   const forwardLength = Math.hypot(forward.x, forward.y) || 1
@@ -899,13 +899,14 @@ export function moveRelativeToCamera(position: Point, keys: Set<string>, speed: 
   const dx = fx * inputForward + rightX * inputRight
   const dy = fy * inputForward + rightY * inputRight
   const inputLength = Math.hypot(dx, dy) || 1
+  const movementSpeed = inputForward < 0 ? speed * backwardMultiplier : speed
   return {
-    x: Math.max(bounds.minX, Math.min(bounds.maxX, position.x + dx / inputLength * speed * dt)),
-    y: Math.max(bounds.minY, Math.min(bounds.maxY, position.y + dy / inputLength * speed * dt)),
+    x: Math.max(bounds.minX, Math.min(bounds.maxX, position.x + dx / inputLength * movementSpeed * dt)),
+    y: Math.max(bounds.minY, Math.min(bounds.maxY, position.y + dy / inputLength * movementSpeed * dt)),
   }
 }
-export function moveWithIncreasingPull(position: Point, keys: Set<string>, speed: number, dt: number, forward: Point, bounds: { minX: number; maxX: number; minY: number; maxY: number }, center: Point, progress: number): Point {
-  const moved = moveRelativeToCamera(position, keys, speed, dt, forward, bounds)
+export function moveWithIncreasingPull(position: Point, keys: Set<string>, speed: number, dt: number, forward: Point, bounds: { minX: number; maxX: number; minY: number; maxY: number }, center: Point, progress: number, backwardMultiplier = 1): Point {
+  const moved = moveRelativeToCamera(position, keys, speed, dt, forward, bounds, backwardMultiplier)
   const dx = center.x - moved.x
   const dy = center.y - moved.y
   const length = Math.hypot(dx, dy)

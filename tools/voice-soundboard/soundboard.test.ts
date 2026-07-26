@@ -47,6 +47,7 @@ describe('audio review soundboard', () => {
   it('provides a persistent looping visual timing lab for every enabled encounter cue', () => {
     expect(soundboard).toContain('aria-label="Sound timing lab"')
     expect(soundboard).toContain('id="timing-offset"')
+    expect(soundboard).toContain('id="timing-offset-number"')
     expect(soundboard).toContain('id="timing-rate"')
     expect(soundboard).toContain('lura-sfx-timing-review')
     expect(soundboard).toContain('Copy tuning')
@@ -63,5 +64,13 @@ describe('audio review soundboard', () => {
       'mistake',
       'wipe',
     ])
+  })
+
+  it('allows exact millisecond timing offsets and keeps the number field synchronized with the slider', () => {
+    expect(soundboard).toContain('id="timing-offset" type="range" min="-6000" max="1000" step="1"')
+    expect(soundboard).toContain('id="timing-offset-number" type="number" min="-6000" max="1000" step="1"')
+    expect(soundboard).toContain('timingOffsetNumber.value = timingOffset.value')
+    expect(soundboard).toContain('timingOffset.value = timingOffsetNumber.value')
+    expect(soundboard).toContain('offset: Number(timingOffsetNumber.value) / 1000')
   })
 })

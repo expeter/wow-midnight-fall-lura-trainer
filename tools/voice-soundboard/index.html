@@ -112,6 +112,17 @@
     .timing-controls label { display: grid; gap: 5px; color: var(--muted); font-size: 13px; }
     .timing-controls label strong { color: var(--ink); font-variant-numeric: tabular-nums; }
     .timing-controls input[type="range"] { width: 100%; accent-color: var(--mint); }
+    .timing-offset-controls { display: grid; grid-template-columns: minmax(0, 1fr) 108px; align-items: center; gap: 10px; }
+    .timing-offset-controls input[type="number"] {
+      width: 100%;
+      padding: 7px 9px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(0,0,0,.2);
+      color: var(--ink);
+      font: 700 13px ui-monospace, monospace;
+      font-variant-numeric: tabular-nums;
+    }
     .timing-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .timing-actions button { padding: 10px; }
     .timing-actions .primary { color: #11101b; background: var(--mint); }
@@ -175,7 +186,13 @@
       </div>
       <div class="timing-controls">
         <label>Mechanic<select id="timing-cue" aria-label="Timing mechanic"></select></label>
-        <label>Sound start relative to visual moment <strong id="timing-offset-value">0 ms</strong><input id="timing-offset" type="range" min="-6000" max="1000" step="10" value="0"></label>
+        <label>
+          Sound start relative to visual moment <strong id="timing-offset-value">0 ms</strong>
+          <span class="timing-offset-controls">
+            <input id="timing-offset" type="range" min="-6000" max="1000" step="1" value="0">
+            <input id="timing-offset-number" type="number" min="-6000" max="1000" step="1" value="0" aria-label="Exact sound start offset in milliseconds">
+          </span>
+        </label>
         <label>Playback rate <strong id="timing-rate-value">1.00×</strong><input id="timing-rate" type="range" min=".4" max="3" step=".01" value="1"></label>
         <div class="timing-actions">
           <button class="primary" type="button" id="timing-play">▶ Loop</button>
@@ -321,6 +338,7 @@
     const timingStage = document.querySelector("#timing-stage");
     const timingCue = document.querySelector("#timing-cue");
     const timingOffset = document.querySelector("#timing-offset");
+    const timingOffsetNumber = document.querySelector("#timing-offset-number");
     const timingRate = document.querySelector("#timing-rate");
     const timingOffsetValue = document.querySelector("#timing-offset-value");
     const timingRateValue = document.querySelector("#timing-rate-value");
@@ -372,7 +390,7 @@
     function timingValues() {
       const preset = timingPreset();
       return {
-        offset: Number(timingOffset.value) / 1000,
+        offset: Number(timingOffsetNumber.value) / 1000,
         rate: Number(timingRate.value),
         preset
       };
@@ -381,7 +399,9 @@
     function loadTimingPreset() {
       const preset = timingPreset();
       const savedTiming = timingSaved[preset.id] || {};
-      timingOffset.value = Math.round((savedTiming.offset ?? preset.offset) * 1000);
+      const offsetMilliseconds = Math.round((savedTiming.offset ?? preset.offset) * 1000);
+      timingOffset.value = offsetMilliseconds;
+      timingOffsetNumber.value = offsetMilliseconds;
       timingRate.value = savedTiming.rate ?? preset.rate;
       updateTimingLabels();
       if (timingPlaying) restartTimingLoop();
@@ -571,7 +591,15 @@
     }
 
     timingCue.addEventListener("change", loadTimingPreset);
-    timingOffset.addEventListener("input", persistTiming);
+    timingOffset.addEventListener("input", () => {
+      timingOffsetNumber.value = timingOffset.value;
+      persistTiming();
+    });
+    timingOffsetNumber.addEventListener("input", () => {
+      if (timingOffsetNumber.value === "" || !timingOffsetNumber.validity.valid) return;
+      timingOffset.value = timingOffsetNumber.value;
+      persistTiming();
+    });
     timingRate.addEventListener("input", persistTiming);
     document.querySelector("#timing-play").addEventListener("click", restartTimingLoop);
     document.querySelector("#timing-stop").addEventListener("click", stopTiming);

@@ -4,7 +4,7 @@ import { angleToward, assignmentRevealDistance, constrainP3NpcTargetToSide, crys
 import { p3SpreadPosition, p4TankKillsBox } from './game'
 import { isP3RaidMemberVisible } from './game'
 import { isInsideP3Pool } from './game'
-import { combatProjectilePosition, combatProjectileShape, combatProjectilesActive, COMBAT_PROJECTILE_TRAVEL_SECONDS, npcProjectileShots, type CombatProjectileShape } from './projectiles'
+import { combatProjectilePosition, combatProjectileShape, combatProjectilesActive, COMBAT_PROJECTILE_TRAVEL_SECONDS, MAX_VISIBLE_NPC_PROJECTILES, npcProjectileShots, type CombatProjectileShape } from './projectiles'
 
 interface SceneProps {
   combatProjectilesEnabled: boolean
@@ -418,30 +418,75 @@ function makeCrystal() {
 interface CombatProjectileVisual {
   group: THREE.Group
   materials: THREE.MeshBasicMaterial[]
-  shapes: Record<CombatProjectileShape, THREE.Mesh>
+  shapes: Record<CombatProjectileShape, THREE.Object3D>
 }
 function makeCombatProjectile(): CombatProjectileVisual {
   const group = new THREE.Group()
-  const makeMaterial = () => new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .9, depthWrite: false })
-  const boltMaterial = makeMaterial()
-  const orbMaterial = makeMaterial()
-  const shardMaterial = makeMaterial()
-  const bolt = new THREE.Mesh(new THREE.BoxGeometry(3.8, .8, .8), boltMaterial)
-  const orb = new THREE.Mesh(new THREE.SphereGeometry(1.25, 10, 7), orbMaterial)
-  const shard = new THREE.Mesh(new THREE.ConeGeometry(1.15, 3.8, 6), shardMaterial)
-  shard.rotation.z = Math.PI / 2
-  group.add(bolt, orb, shard)
+  const colors: Record<CombatProjectileShape, number> = {
+    firebolt: 0xff5b22,
+    frostbolt: 0x69caff,
+    lightning: 0x9be8ff,
+    arrow: 0xe4c789,
+    spear: 0xbec8d8,
+    shadowbolt: 0x9a63e8,
+    naturebolt: 0x71d66a,
+    holybolt: 0xffe887,
+  }
+  const materials: THREE.MeshBasicMaterial[] = []
+  const material = (shape: CombatProjectileShape) => {
+    const next = new THREE.MeshBasicMaterial({ color: colors[shape], transparent: true, opacity: .94, depthWrite: false })
+    materials.push(next)
+    return next
+  }
+  const magicBolt = (shape: CombatProjectileShape) => {
+    const bolt = new THREE.Group()
+    const glow = new THREE.Mesh(new THREE.SphereGeometry(1.35, 10, 7), material(shape))
+    glow.position.x = 1.3
+    const tail = new THREE.Mesh(new THREE.ConeGeometry(.9, 4.2, 8), material(shape))
+    tail.rotation.z = -Math.PI / 2
+    tail.position.x = -.7
+    bolt.add(glow, tail)
+    return bolt
+  }
+  const thrownWeapon = (shape: 'arrow' | 'spear', length: number) => {
+    const weapon = new THREE.Group()
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(shape === 'arrow' ? .12 : .2, shape === 'arrow' ? .12 : .2, length, 7), material(shape))
+    shaft.rotation.z = Math.PI / 2
+    const tip = new THREE.Mesh(new THREE.ConeGeometry(shape === 'arrow' ? .42 : .7, shape === 'arrow' ? 1.2 : 1.8, 6), material(shape))
+    tip.rotation.z = -Math.PI / 2
+    tip.position.x = length / 2 + .55
+    weapon.add(shaft, tip)
+    return weapon
+  }
+  const lightningPoints = [
+    new THREE.Vector3(-3.4, 0, 0),
+    new THREE.Vector3(-2.1, .5, -.25),
+    new THREE.Vector3(-.8, -.45, .2),
+    new THREE.Vector3(.6, .55, -.2),
+    new THREE.Vector3(2, -.35, .25),
+    new THREE.Vector3(3.4, 0, 0),
+  ]
+  const lightning = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(lightningPoints), 14, .18, 5, false), material('lightning'))
+  const shapes: Record<CombatProjectileShape, THREE.Object3D> = {
+    firebolt: magicBolt('firebolt'),
+    frostbolt: magicBolt('frostbolt'),
+    lightning,
+    arrow: thrownWeapon('arrow', 4.4),
+    spear: thrownWeapon('spear', 5.2),
+    shadowbolt: magicBolt('shadowbolt'),
+    naturebolt: magicBolt('naturebolt'),
+    holybolt: magicBolt('holybolt'),
+  }
+  Object.values(shapes).forEach(shape => group.add(shape))
   group.visible = false
-  return { group, materials: [boltMaterial, orbMaterial, shardMaterial], shapes: { bolt, orb, shard } }
+  return { group, materials, shapes }
 }
-function updateCombatProjectile(visual: CombatProjectileVisual, origin: Point, target: Point, age: number, playerClass: PlayerClass, scale = 1) {
+function updateCombatProjectile(visual: CombatProjectileVisual, origin: Point, target: Point, age: number, playerClass: PlayerClass, scale = 1, shotOrdinal = 0) {
   const active = age >= 0 && age <= COMBAT_PROJECTILE_TRAVEL_SECONDS
   visual.group.visible = active
   if (!active) return
-  const shape = combatProjectileShape(playerClass)
+  const shape = combatProjectileShape(playerClass, shotOrdinal)
   Object.entries(visual.shapes).forEach(([name, mesh]) => { mesh.visible = name === shape })
-  const color = CLASS_COLORS[playerClass]
-  visual.materials.forEach(material => material.color.setHex(color))
   const position = combatProjectilePosition(origin, target, age)
   const progress = Math.max(0, Math.min(1, age / COMBAT_PROJECTILE_TRAVEL_SECONDS))
   visual.group.position.set(position.x, 7 + Math.sin(progress * Math.PI) * 3, position.y)
@@ -449,7 +494,9 @@ function updateCombatProjectile(visual: CombatProjectileVisual, origin: Point, t
   visual.group.scale.setScalar(scale)
 }
 function disposeCombatProjectile(visual: CombatProjectileVisual) {
-  Object.values(visual.shapes).forEach(mesh => mesh.geometry.dispose())
+  Object.values(visual.shapes).forEach(shape => shape.traverse(child => {
+    if (child instanceof THREE.Mesh) child.geometry.dispose()
+  }))
   visual.materials.forEach(material => material.dispose())
 }
 function rayHits(point: Point, origin: Point, rotation: number) {
@@ -580,7 +627,7 @@ export default function GameScene(props: SceneProps) {
       return entity
     })
     const playerProjectile = makeCombatProjectile()
-    const npcProjectiles = Array.from({ length: 3 }, makeCombatProjectile)
+    const npcProjectiles = Array.from({ length: MAX_VISIBLE_NPC_PROJECTILES }, makeCombatProjectile)
     scene.add(playerProjectile.group)
     npcProjectiles.forEach(projectile => scene.add(projectile.group))
     const crystal = makeCrystal()
@@ -1054,7 +1101,7 @@ export default function GameScene(props: SceneProps) {
           visual.group.visible = false
           return
         }
-        updateCombatProjectile(visual, npcPositions[shot.npcOrdinal], projectileTarget, shot.age, state.profiles[profileIndex].playerClass, .88)
+        updateCombatProjectile(visual, npcPositions[shot.npcOrdinal], projectileTarget, shot.age, state.profiles[profileIndex].playerClass, .88, shot.shotOrdinal)
       })
       if (state.event === 'p3-light-pools' || state.event === 'p3-pools-overlap') {
         const occupancy = ([-1, 1] as const).flatMap(side => p3PoolCenters(side, WORLD.center, state.p3Round).map(pool => npcPositions.filter(position => isInsideP3Pool(position, pool)).length))

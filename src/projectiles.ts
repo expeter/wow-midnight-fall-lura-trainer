@@ -1,23 +1,37 @@
 import type { PlayerClass, Point } from './game'
 
-export type CombatProjectileShape = 'bolt' | 'orb' | 'shard'
+export type CombatProjectileShape = 'firebolt' | 'frostbolt' | 'lightning' | 'arrow' | 'spear' | 'shadowbolt' | 'naturebolt' | 'holybolt'
 
 export interface NpcProjectileShot {
   age: number
   npcOrdinal: number
+  shotOrdinal: number
 }
 
 export const COMBAT_PROJECTILE_TRAVEL_SECONDS = .72
-export const NPC_PROJECTILE_INTERVAL_SECONDS = .52
-export const MAX_VISIBLE_NPC_PROJECTILES = 3
+export const NPC_PROJECTILE_MIN_INTERVAL_SECONDS = 1
+export const NPC_PROJECTILE_MAX_INTERVAL_SECONDS = 3
+export const MAX_VISIBLE_NPC_PROJECTILES = 20
 
-const ORB_CLASSES = new Set<PlayerClass>(['mage', 'priest', 'shaman', 'monk'])
-const SHARD_CLASSES = new Set<PlayerClass>(['warlock', 'death-knight', 'demon-hunter', 'hunter'])
+function deterministicUnit(seed: number) {
+  let value = Math.imul(seed ^ 0x9e3779b9, 0x85ebca6b)
+  value = Math.imul(value ^ value >>> 13, 0xc2b2ae35)
+  return ((value ^ value >>> 16) >>> 0) / 0x100000000
+}
 
-export function combatProjectileShape(playerClass: PlayerClass): CombatProjectileShape {
-  if (ORB_CLASSES.has(playerClass)) return 'orb'
-  if (SHARD_CLASSES.has(playerClass)) return 'shard'
-  return 'bolt'
+export function combatProjectileShape(playerClass: PlayerClass, shotOrdinal = 0): CombatProjectileShape {
+  if (playerClass === 'mage') return shotOrdinal % 2 === 0 ? 'firebolt' : 'frostbolt'
+  if (playerClass === 'shaman' || playerClass === 'augmentation' || playerClass === 'evoker') return 'lightning'
+  if (playerClass === 'hunter') return 'arrow'
+  if (playerClass === 'warrior' || playerClass === 'death-knight' || playerClass === 'demon-hunter') return 'spear'
+  if (playerClass === 'warlock') return 'shadowbolt'
+  if (playerClass === 'druid' || playerClass === 'monk') return 'naturebolt'
+  return 'holybolt'
+}
+
+export function npcProjectileIntervalSeconds(npcOrdinal: number): number {
+  return NPC_PROJECTILE_MIN_INTERVAL_SECONDS
+    + deterministicUnit(npcOrdinal * 17 + 11) * (NPC_PROJECTILE_MAX_INTERVAL_SECONDS - NPC_PROJECTILE_MIN_INTERVAL_SECONDS)
 }
 
 export function combatProjectilePosition(origin: Point, target: Point, age: number): Point {
@@ -31,14 +45,14 @@ export function combatProjectilePosition(origin: Point, target: Point, age: numb
 
 export function npcProjectileShots(time: number, npcCount: number): NpcProjectileShot[] {
   if (npcCount <= 0 || time < 0) return []
-  const newestCycle = Math.floor(time / NPC_PROJECTILE_INTERVAL_SECONDS)
   const shots: NpcProjectileShot[] = []
-  for (let offset = 0; offset < MAX_VISIBLE_NPC_PROJECTILES; offset += 1) {
-    const cycle = newestCycle - offset
-    if (cycle < 0) continue
-    const age = time - cycle * NPC_PROJECTILE_INTERVAL_SECONDS
-    if (age > COMBAT_PROJECTILE_TRAVEL_SECONDS) continue
-    shots.push({ age, npcOrdinal: (cycle * 7 + 3) % npcCount })
+  for (let npcOrdinal = 0; npcOrdinal < Math.min(npcCount, MAX_VISIBLE_NPC_PROJECTILES); npcOrdinal += 1) {
+    const interval = npcProjectileIntervalSeconds(npcOrdinal)
+    const firstShot = .05 + deterministicUnit(npcOrdinal * 31 + 7) * (interval - .05)
+    if (time < firstShot) continue
+    const shotOrdinal = Math.floor((time - firstShot) / interval)
+    const age = time - (firstShot + shotOrdinal * interval)
+    if (age <= COMBAT_PROJECTILE_TRAVEL_SECONDS) shots.push({ age, npcOrdinal, shotOrdinal })
   }
   return shots
 }

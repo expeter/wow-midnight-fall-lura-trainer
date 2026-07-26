@@ -66,6 +66,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-011` | Implemented | Keep the in-game version/build indicator in normal layout flow so it cannot overlap phase headlines. |
 | `BUG-012` | Implemented | Give the failure-log clipboard control a distinct accessible name so it cannot collide with the Recent failures panel label. |
 | `BUG-013` | Implemented | Put the Buy me a coffee action on its own business-card row so it cannot overlap the attribution links. |
+| `BUG-014` | Implemented | Validate the Dark Archangel protection crystal against the full visible 24-yard protection area instead of rejecting valid drops beyond an invisible 15-yard limit. |
 
 ## Implemented feature inventory
 

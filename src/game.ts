@@ -148,6 +148,9 @@ export function separateP3NpcTarget(target: Point, crystal: boolean, occupied: A
 export function isProtectedByP3Bubble(player: Point, bubble: Point, playerRadius = 4): boolean {
   return distance(player, bubble) <= P3_LIGHT_RADIUS + playerRadius
 }
+export function isP3ProtectionCrystalPlaced(crystal: Point, stack: Point): boolean {
+  return distance(crystal, stack) <= P3_LIGHT_RADIUS
+}
 export function p3ProtectionBubbleCenter(stack: Point, crystal: Point | null, playerDuty: 1 | 2 | null, round: number): Point {
   return playerDuty === round && crystal ? crystal : stack
 }

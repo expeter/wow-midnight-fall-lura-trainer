@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { combatProjectileImpactPoint, combatProjectilePosition, combatProjectileShape, combatProjectileTravelSeconds, combatProjectilesActive, COMBAT_PROJECTILE_TRAVEL_SECONDS, MAX_VISIBLE_NPC_PROJECTILES, NPC_PROJECTILE_MAX_INTERVAL_SECONDS, NPC_PROJECTILE_MIN_INTERVAL_SECONDS, npcProjectileIntervalSeconds, npcProjectileShots } from './projectiles'
+import { combatProjectileHeight, combatProjectileImpactPoint, combatProjectilePosition, combatProjectileShape, combatProjectileTargetHeight, combatProjectileTravelSeconds, combatProjectilesActive, COMBAT_PROJECTILE_TRAVEL_SECONDS, MAX_VISIBLE_NPC_PROJECTILES, NPC_PROJECTILE_MAX_INTERVAL_SECONDS, NPC_PROJECTILE_MIN_INTERVAL_SECONDS, npcProjectileIntervalSeconds, npcProjectileShots } from './projectiles'
 
 describe('cosmetic combat projectiles', () => {
   it('uses recognizable class-specific attacks', () => {
@@ -28,6 +28,16 @@ describe('cosmetic combat projectiles', () => {
     const second = combatProjectileImpactPoint({ x: 400, y: 350 }, center, 16, 2)
     expect(Math.hypot(first.x - center.x, first.y - center.y)).toBeCloseTo(16)
     expect(first).not.toEqual(second)
+  })
+
+  it('aims at varied torso heights without making magical attacks fall downward', () => {
+    const torsoHeights = Array.from({ length: 12 }, (_, shot) => combatProjectileTargetHeight(16, shot))
+    expect(Math.min(...torsoHeights)).toBeGreaterThan(12)
+    expect(Math.max(...torsoHeights)).toBeLessThan(19)
+    const targetHeight = combatProjectileTargetHeight(16, 4)
+    const directMidpoint = 7 + (targetHeight - 7) * .5
+    expect(combatProjectileHeight('lightning', .5, targetHeight, 4)).toBeCloseTo(directMidpoint)
+    expect(combatProjectileHeight('arrow', .5, targetHeight, 4)).toBeGreaterThan(directMidpoint)
   })
 
   it('gives every NPC its own one-to-three-second attack cadence', () => {

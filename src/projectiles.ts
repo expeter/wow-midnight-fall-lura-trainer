@@ -9,7 +9,7 @@ export interface NpcProjectileShot {
 }
 
 export const COMBAT_PROJECTILE_TRAVEL_SECONDS = 1.15
-export const COMBAT_PROJECTILE_IMPACT_SECONDS = .16
+export const COMBAT_PROJECTILE_IMPACT_SECONDS = .08
 export const NPC_PROJECTILE_MIN_INTERVAL_SECONDS = 1
 export const NPC_PROJECTILE_MAX_INTERVAL_SECONDS = 3
 export const MAX_VISIBLE_NPC_PROJECTILES = 20
@@ -59,6 +59,17 @@ export function combatProjectileImpactPoint(origin: Point, bossCenter: Point, bo
     x: bossCenter.x + Math.cos(angle) * bossRadius,
     y: bossCenter.y + Math.sin(angle) * bossRadius,
   }
+}
+
+export function combatProjectileTargetHeight(bossCenterHeight: number, shotOrdinal = 0): number {
+  return bossCenterHeight * (.82 + deterministicUnit(shotOrdinal * 59 + 17) * .34)
+}
+
+export function combatProjectileHeight(shape: CombatProjectileShape, progress: number, targetHeight: number, shotOrdinal = 0): number {
+  const clamped = Math.max(0, Math.min(1, progress))
+  const directHeight = 7 + (targetHeight - 7) * clamped
+  const physicalArc = shape === 'arrow' ? 2.2 : shape === 'spear' ? 1.3 : 0
+  return directHeight + Math.sin(clamped * Math.PI) * physicalArc + (shotOrdinal % 3 - 1) * .18
 }
 
 export function npcProjectileShots(time: number, npcCount: number): NpcProjectileShot[] {

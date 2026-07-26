@@ -4,7 +4,7 @@ import { angleToward, assignmentRevealDistance, constrainP3NpcTargetToSide, crys
 import { p3SpreadPosition, p4TankKillsBox } from './game'
 import { isP3RaidMemberVisible } from './game'
 import { isInsideP3Pool } from './game'
-import { combatProjectileImpactPoint, combatProjectilePosition, combatProjectileShape, combatProjectileTravelSeconds, combatProjectilesActive, COMBAT_PROJECTILE_IMPACT_SECONDS, MAX_VISIBLE_NPC_PROJECTILES, npcProjectileShots, type CombatProjectileShape } from './projectiles'
+import { combatProjectileHeight, combatProjectileImpactPoint, combatProjectilePosition, combatProjectileShape, combatProjectileTargetHeight, combatProjectileTravelSeconds, combatProjectilesActive, COMBAT_PROJECTILE_IMPACT_SECONDS, MAX_VISIBLE_NPC_PROJECTILES, npcProjectileShots, type CombatProjectileShape } from './projectiles'
 
 interface SceneProps {
   combatProjectilesEnabled: boolean
@@ -487,7 +487,7 @@ function makeCombatProjectile(): CombatProjectileVisual {
   materials.push(impactMaterial)
   return { group, impact, materials, shapes }
 }
-function updateCombatProjectile(visual: CombatProjectileVisual, origin: Point, target: Point, age: number, playerClass: PlayerClass, scale = 1, shotOrdinal = 0) {
+function updateCombatProjectile(visual: CombatProjectileVisual, origin: Point, target: Point, impactTarget: Point, targetHeight: number, age: number, playerClass: PlayerClass, scale = 1, shotOrdinal = 0) {
   const shape = combatProjectileShape(playerClass, shotOrdinal)
   const travelSeconds = combatProjectileTravelSeconds(shape)
   const projectileActive = age >= 0 && age < travelSeconds
@@ -499,7 +499,7 @@ function updateCombatProjectile(visual: CombatProjectileVisual, origin: Point, t
   Object.entries(visual.shapes).forEach(([name, mesh]) => { mesh.visible = name === shape })
   const position = combatProjectilePosition(origin, target, age, travelSeconds)
   const progress = Math.max(0, Math.min(1, age / travelSeconds))
-  visual.group.position.set(position.x, 7 + Math.sin(progress * Math.PI) * (2 + shotOrdinal % 3), position.y)
+  visual.group.position.set(position.x, combatProjectileHeight(shape, progress, targetHeight, shotOrdinal), position.y)
   visual.group.rotation.y = -Math.atan2(target.y - origin.y, target.x - origin.x)
   visual.group.scale.setScalar(scale)
   if (impactActive) {
@@ -507,7 +507,7 @@ function updateCombatProjectile(visual: CombatProjectileVisual, origin: Point, t
     const impactMaterial = visual.impact.material as THREE.MeshBasicMaterial
     impactMaterial.color.setHex(COMBAT_PROJECTILE_COLORS[shape])
     impactMaterial.opacity = pulse * (shape === 'arrow' || shape === 'spear' ? .55 : .9)
-    visual.impact.position.set(target.x, 8 + (shotOrdinal % 3) * 1.2, target.y)
+    visual.impact.position.set(impactTarget.x, targetHeight, impactTarget.y)
     visual.impact.scale.setScalar(scale * pulse * (shape === 'lightning' ? 1.8 : shape === 'arrow' || shape === 'spear' ? .7 : 1.25))
   }
 }
@@ -583,13 +583,13 @@ export default function GameScene(props: SceneProps) {
     const boss = new THREE.Mesh(new THREE.SphereGeometry(WORLD.innerRadius, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x38143f, transparent: true, opacity: .58, depthWrite: false, side: THREE.DoubleSide }))
     boss.position.set(WORLD.center.x, 0, WORLD.center.y)
     scene.add(boss)
-    const p2Boss = new THREE.Mesh(new THREE.SphereGeometry(10.5, 32, 20), new THREE.MeshBasicMaterial({ color: 0x9b4d9b, transparent: true, opacity: .48, depthWrite: false, depthTest: false }))
+    const p2Boss = new THREE.Mesh(new THREE.SphereGeometry(10.5, 32, 20), new THREE.MeshBasicMaterial({ color: 0x9b4d9b, transparent: false, opacity: 1, depthWrite: true, depthTest: true }))
     p2Boss.position.set(WORLD.center.x, 10.5, WORLD.center.y)
     p2Boss.renderOrder = 7
     p2Boss.visible = false
     scene.add(p2Boss)
     const p3Bosses = [-1, 1].map((side, index) => {
-      const object = new THREE.Mesh(new THREE.SphereGeometry(10.5, 32, 20), new THREE.MeshBasicMaterial({ color: index ? 0x744d9b : 0xb14d94, transparent: true, opacity: .9, depthWrite: true }))
+      const object = new THREE.Mesh(new THREE.SphereGeometry(10.5, 32, 20), new THREE.MeshBasicMaterial({ color: index ? 0x744d9b : 0xb14d94, transparent: false, opacity: 1, depthWrite: true }))
       const position = p3BossPosition(side as -1 | 1, WORLD.center, 1)
       object.position.set(position.x, 10.5, position.y)
       object.visible = false
@@ -835,7 +835,7 @@ export default function GameScene(props: SceneProps) {
       const enlargedCentralBoss = phaseFour || !phaseTwo && !phaseThree
       p2Boss.scale.setScalar(enlargedCentralBoss ? 1.52 : 1)
       p2Boss.position.set(WORLD.center.x, enlargedCentralBoss ? 16 : 10.5, WORLD.center.y)
-      ;(p2Boss.material as THREE.MeshBasicMaterial).opacity = enlargedCentralBoss ? .9 : .48
+      ;(p2Boss.material as THREE.MeshBasicMaterial).opacity = 1
       p3Bosses.forEach((object, index) => {
         object.visible = phaseThree
         const side: -1 | 1 = index === 0 ? -1 : 1
@@ -1107,9 +1107,13 @@ export default function GameScene(props: SceneProps) {
       const projectilesVisible = state.combatProjectilesEnabled && combatProjectilesActive(state.event)
       const projectileBossCenter = phaseThree ? p3BossPosition(playerP3Side, WORLD.center, state.p3Round) : WORLD.center
       const projectileBossRadius = phaseThree || phaseTwo ? 10.5 : 16
+      const projectileBossHeight = phaseThree || phaseTwo ? 10.5 : 16
       const playerProjectileAge = state.mainProjectileFiredAt === null ? Infinity : state.time - state.mainProjectileFiredAt
-      const playerProjectileTarget = combatProjectileImpactPoint(state.player, projectileBossCenter, projectileBossRadius, state.assignment + Math.floor((state.mainProjectileFiredAt ?? 0) * 10))
-      if (playerProjectileVisible) updateCombatProjectile(playerProjectile, state.player, playerProjectileTarget, playerProjectileAge, state.profiles[state.assignment].playerClass, 1.12)
+      const playerShotSeed = state.assignment + Math.floor((state.mainProjectileFiredAt ?? 0) * 10)
+      const playerProjectileImpact = combatProjectileImpactPoint(state.player, projectileBossCenter, projectileBossRadius, playerShotSeed)
+      const playerProjectileTarget = combatProjectileImpactPoint(state.player, projectileBossCenter, projectileBossRadius * .18, playerShotSeed)
+      const playerProjectileTargetHeight = combatProjectileTargetHeight(projectileBossHeight, playerShotSeed)
+      if (playerProjectileVisible) updateCombatProjectile(playerProjectile, state.player, playerProjectileTarget, playerProjectileImpact, playerProjectileTargetHeight, playerProjectileAge, state.profiles[state.assignment].playerClass, 1.12)
       else {
         playerProjectile.group.visible = false
         playerProjectile.impact.visible = false
@@ -1130,8 +1134,11 @@ export default function GameScene(props: SceneProps) {
           return
         }
         const origin = npcPositions[shot.npcOrdinal]
-        const target = combatProjectileImpactPoint(origin, projectileBossCenter, projectileBossRadius, profileIndex * 101 + shot.shotOrdinal)
-        updateCombatProjectile(visual, origin, target, shot.age, state.profiles[profileIndex].playerClass, .88, shot.shotOrdinal)
+        const shotSeed = profileIndex * 101 + shot.shotOrdinal
+        const impact = combatProjectileImpactPoint(origin, projectileBossCenter, projectileBossRadius, shotSeed)
+        const target = combatProjectileImpactPoint(origin, projectileBossCenter, projectileBossRadius * .18, shotSeed)
+        const targetHeight = combatProjectileTargetHeight(projectileBossHeight, shotSeed)
+        updateCombatProjectile(visual, origin, target, impact, targetHeight, shot.age, state.profiles[profileIndex].playerClass, .88, shot.shotOrdinal)
       })
       if (state.event === 'p3-light-pools' || state.event === 'p3-pools-overlap') {
         const occupancy = ([-1, 1] as const).flatMap(side => p3PoolCenters(side, WORLD.center, state.p3Round).map(pool => npcPositions.filter(position => isInsideP3Pool(position, pool)).length))

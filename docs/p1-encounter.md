@@ -5,6 +5,11 @@ Ticket: `FR-030`
 P1 is a future encounter before the existing Intermission. For now it is only
 represented by a disabled phase teaser.
 
+The pure rules foundation is prepared under `FR-032` in
+[`src/p1.ts`](../src/p1.ts), with deterministic regression coverage. It is not
+connected to the application, renderer, controls, or raid-plan persistence
+until the complete `FR-030` integration is deliberately implemented.
+
 ## Planning and assignments
 
 - Add a dedicated P1 raid plan. When no P1 plan exists, initialize it from the

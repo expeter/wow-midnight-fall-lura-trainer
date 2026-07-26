@@ -99,6 +99,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `FR-024` | Backlog | Fire a visible player projectile toward L’ura when an enabled Main ability cast successfully completes; do not fire on keypress, interruption, pause, or before the cast finishes. |
 | `FR-025` | Backlog | Add a continuous encounter-length background theme that survives phase transitions and loops cleanly when necessary, with the existing audio feature flag and mute/volume controls restored only when suitable licensed music is selected. |
 | `FR-026` | Backlog | Add distinct, synchronized sound effects for major lasers, Starsplinter warnings/detonations, and orb actions, with suitable volume balance and a way to mute effects independently of music. |
+| `FR-027` | Backlog | Add an optional API-backed leaderboard and achievement tracker. Keep anonymous play fully available, optionally identify persistent/public results through Battle.net OAuth, and validate run timing and mechanics server-side rather than treating OAuth or a client-submitted score as proof of a legitimate run. |
 | `CR-037` | Superseded | A direct Discord profile needs a numeric user ID. The generic Discord application link was removed again; Twitch remains the direct creator contact. |
 | `CR-038` | Implemented | Link the displayed BattleTag to Pestivator’s Raider.IO profile because Battle.net has no stable public friend-add URL for a BattleTag. |
 | `CR-039` | Implemented | Record every tagged request before implementation and require focused automated regression coverage before marking it implemented. |
@@ -331,6 +332,7 @@ assets:
 - `FR-024`: Main-ability projectiles on successful cast completion.
 - `FR-025`: Continuous encounter-length background music.
 - `FR-026`: Laser, Starsplinter, and orb sound effects.
+- `FR-027`: Optional API-backed highscores, achievements, and Battle.net login.
 - Per-phase refills and certificate scoring for optional potion/shield
   challenges.
 - Verifiable completion links. A trustworthy proof cannot be created with a

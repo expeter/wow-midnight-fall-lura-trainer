@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P3_POOL_HEALTH, P4_SPLINTER_DETONATION_SECONDS, p4SplinterStartSeconds } from './game'
-import { encounterSoundCuesForState, ENCOUNTER_SOUND_SPECS } from './encounterSounds'
+import { P2_BEAM_SECONDS, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P3_POOL_HEALTH, P4_SPLINTER_DETONATION_SECONDS, p4SplinterStartSeconds } from './game'
+import { encounterSoundCuesForState, ENCOUNTER_SOUND_SPECS, INTERMISSION_BEAM_FIRE_SECONDS, LASER_CHARGE_SOUND_SECONDS, ORB_RETURN_SOUND_DELAY_SECONDS } from './encounterSounds'
 
 const base = {
   event: 'countdown',
@@ -20,21 +20,30 @@ const base = {
 
 describe('encounter sound cues', () => {
   it('uses the approved production transformations', () => {
+    expect(ENCOUNTER_SOUND_SPECS['laser-charge'].playbackRate).toBe(.5)
     expect(ENCOUNTER_SOUND_SPECS['stars-connect'].volume).toBe(.9)
     expect(ENCOUNTER_SOUND_SPECS['splinter-detonate'].playbackRate).toBe(2)
     expect(ENCOUNTER_SOUND_SPECS['add-destroyed'].volume).toBe(.5)
     expect(ENCOUNTER_SOUND_SPECS.mistake.playbackRate).toBeGreaterThan(1)
   })
 
-  it('synchronizes intermission beam and Starsplinter sounds', () => {
-    expect(encounterSoundCuesForState({ ...base, event: 'beam' }).map(cue => cue.sound)).toEqual(['laser-charge'])
-    expect(encounterSoundCuesForState({ ...base, event: 'beam', eventTime: 2.78 }).map(cue => cue.sound)).toEqual(['laser-charge', 'laser-fire'])
+  it('starts the doubled Intermission beam charge so it ends when the beam fires', () => {
+    const start = INTERMISSION_BEAM_FIRE_SECONDS - LASER_CHARGE_SOUND_SECONDS
+    expect(encounterSoundCuesForState({ ...base, event: 'beam', eventTime: start - .01 })).toEqual([])
+    expect(encounterSoundCuesForState({ ...base, event: 'beam', eventTime: start })).toContainEqual(expect.objectContaining({ sound: 'laser-charge' }))
     expect(encounterSoundCuesForState({ ...base, event: 'splinter', eventTime: 2.65 }).map(cue => cue.sound)).toEqual(['splinter-detonate'])
   })
 
-  it('fires the orb-return sound when the inward movement begins', () => {
-    const before = encounterSoundCuesForState({ ...base, event: 'p2-wait', p2OrbReturnAge: P2_ORB_RETURN_SECONDS + P2_ORB_RETURN_GLOW_SECONDS - .01 })
-    const during = encounterSoundCuesForState({ ...base, event: 'p2-wait', p2OrbReturnAge: P2_ORB_RETURN_SECONDS + P2_ORB_RETURN_GLOW_SECONDS })
+  it('ends the doubled P2 beam charge at cross-beam resolution instead of its appearance', () => {
+    const start = P2_BEAM_SECONDS - LASER_CHARGE_SOUND_SECONDS
+    expect(encounterSoundCuesForState({ ...base, event: 'p2-orbs', eventTime: start - .01 })).toEqual([])
+    expect(encounterSoundCuesForState({ ...base, event: 'p2-orbs', eventTime: start })).toContainEqual(expect.objectContaining({ sound: 'laser-charge' }))
+  })
+
+  it('delays the orb-return sound until one second into the inward flight', () => {
+    const soundAt = P2_ORB_RETURN_SECONDS + P2_ORB_RETURN_GLOW_SECONDS + ORB_RETURN_SOUND_DELAY_SECONDS
+    const before = encounterSoundCuesForState({ ...base, event: 'p2-wait', p2OrbReturnAge: soundAt - .01 })
+    const during = encounterSoundCuesForState({ ...base, event: 'p2-wait', p2OrbReturnAge: soundAt })
     expect(before.some(cue => cue.sound === 'orb-return')).toBe(false)
     expect(during.some(cue => cue.sound === 'orb-return')).toBe(true)
   })

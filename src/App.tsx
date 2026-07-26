@@ -727,11 +727,11 @@ export default function App() {
     }).filter(cue => !encounterSoundPlayedRef.current.has(cue.id))
     cues.forEach(cue => {
       encounterSoundPlayedRef.current.add(cue.id)
-      const audio = playEncounterSound(cue.sound, encounterSoundVolume)
+      const audio = playEncounterSound(cue.sound, encounterSoundVolume, gameSpeed)
       activeEncounterSoundsRef.current.add(audio)
       audio.addEventListener('ended', () => activeEncounterSoundsRef.current.delete(audio), { once: true })
     })
-  }, [encounterSoundsEnabled, encounterSoundVolume, screen, paused, wipeReason, event, eventTime, cycle, p2Cycle, p2OrbReturnAge, p3Round, p3PoolHealth, p3ResolvedRunes, p4Cycle, p4DestroyedBoxCount, crystal, mistakes])
+  }, [encounterSoundsEnabled, encounterSoundVolume, gameSpeed, screen, paused, wipeReason, event, eventTime, cycle, p2Cycle, p2OrbReturnAge, p3Round, p3PoolHealth, p3ResolvedRunes, p4Cycle, p4DestroyedBoxCount, crystal, mistakes])
   useEffect(() => () => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel()
     timedVoiceSourcesRef.current.forEach(source => {

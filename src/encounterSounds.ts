@@ -1,6 +1,7 @@
 import {
   P2_ORB_RETURN_GLOW_SECONDS,
   P2_ORB_RETURN_SECONDS,
+  P2_BEAM_SECONDS,
   P2_SPREAD_SECONDS,
   P4_SPLINTER_DETONATION_SECONDS,
   P4_SPLINTER_INTERVAL_SECONDS,
@@ -21,7 +22,6 @@ import errorPulseUrl from '../tools/voice-soundboard/sfx/error-pulse-fast.wav?ur
 
 export type EncounterSoundName =
   | 'laser-charge'
-  | 'laser-fire'
   | 'stars-connect'
   | 'splinter-detonate'
   | 'orb-return'
@@ -41,8 +41,7 @@ export interface EncounterSoundSpec {
 }
 
 export const ENCOUNTER_SOUND_SPECS: Record<EncounterSoundName, EncounterSoundSpec> = {
-  'laser-charge': { url: laserWhooshUrl, volume: .72 },
-  'laser-fire': { url: laserWhooshUrl, volume: .82, playbackRate: 1.12 },
+  'laser-charge': { url: laserWhooshUrl, volume: .78, playbackRate: .5 },
   'stars-connect': { url: starsConnectUrl, volume: .9 },
   'splinter-detonate': { url: splinterDetonateUrl, volume: .82, playbackRate: 2 },
   'orb-return': { url: orbReturnUrl, volume: .78 },
@@ -55,6 +54,10 @@ export const ENCOUNTER_SOUND_SPECS: Record<EncounterSoundName, EncounterSoundSpe
   mistake: { url: errorPulseUrl, volume: .78, playbackRate: 1.18 },
   wipe: { url: errorPulseUrl, volume: 1, playbackRate: .82 },
 }
+
+export const LASER_CHARGE_SOUND_SECONDS = 1.86
+export const INTERMISSION_BEAM_FIRE_SECONDS = 2.78
+export const ORB_RETURN_SOUND_DELAY_SECONDS = 1
 
 export interface EncounterSoundCue {
   id: string
@@ -80,19 +83,17 @@ export interface EncounterSoundState {
 export function encounterSoundCuesForState(state: EncounterSoundState): EncounterSoundCue[] {
   const cues: EncounterSoundCue[] = []
 
-  if (state.event === 'beam') {
+  if (state.event === 'beam' && state.eventTime >= INTERMISSION_BEAM_FIRE_SECONDS - LASER_CHARGE_SOUND_SECONDS) {
     cues.push({ id: `intermission-${state.cycle}-laser-charge`, sound: 'laser-charge' })
-    if (state.eventTime >= 2.78) cues.push({ id: `intermission-${state.cycle}-laser-fire`, sound: 'laser-fire' })
   }
   if (state.event === 'splinter' && state.eventTime >= 2.65) {
     cues.push({ id: `intermission-${state.cycle}-splinter-detonate`, sound: 'splinter-detonate' })
   }
 
-  if (state.event === 'p2-orbs') {
+  if (state.event === 'p2-orbs' && state.eventTime >= P2_BEAM_SECONDS - LASER_CHARGE_SOUND_SECONDS) {
     cues.push({ id: `p2-${state.p2Cycle}-laser-charge`, sound: 'laser-charge' })
-    if (state.eventTime >= 1) cues.push({ id: `p2-${state.p2Cycle}-laser-fire`, sound: 'laser-fire' })
   }
-  if (state.p2OrbReturnAge >= P2_ORB_RETURN_SECONDS + P2_ORB_RETURN_GLOW_SECONDS) {
+  if (state.p2OrbReturnAge >= P2_ORB_RETURN_SECONDS + P2_ORB_RETURN_GLOW_SECONDS + ORB_RETURN_SOUND_DELAY_SECONDS) {
     cues.push({ id: `p2-${state.p2Cycle}-orb-return`, sound: 'orb-return' })
   }
   if (state.event === 'p2-spread' && state.eventTime >= P2_SPREAD_SECONDS - .15) {
@@ -142,12 +143,12 @@ export function encounterSoundCuesForState(state: EncounterSoundState): Encounte
   return cues
 }
 
-export function playEncounterSound(name: EncounterSoundName, channelVolume: number): HTMLAudioElement {
+export function playEncounterSound(name: EncounterSoundName, channelVolume: number, gameSpeed = 1): HTMLAudioElement {
   const spec = ENCOUNTER_SOUND_SPECS[name]
   const audio = new Audio(spec.url)
   audio.preload = 'auto'
   audio.volume = Math.max(0, Math.min(1, channelVolume * spec.volume))
-  audio.playbackRate = spec.playbackRate ?? 1
+  audio.playbackRate = (spec.playbackRate ?? 1) * gameSpeed
   void audio.play().catch(() => { /* playback may still require a user gesture */ })
   return audio
 }

@@ -49,13 +49,13 @@ with a separate `SOAK CRYSTAL` instruction.
 
 | ID | Mechanic | Desired sound | Length | Reuse |
 | --- | --- | --- | --- | --- |
-| `laser-charge` | Boss beam telegraph | Low rising energy charge with a clear peak | 1–2s | Intermission and P2 |
-| `laser-fire` | Boss beam becomes lethal | Tight, heavy sci-fi laser discharge | 0.4–1s | Intermission, P2, P3 Stars |
+| `laser-charge` | Boss beam resolves | Stretched Magical Whoosh ending exactly when the beam fires | 1.86s | Intermission and P2 |
+| `laser-fire` | Reserved / currently silent | A separate discharge duplicated the charge cue and is disabled while the revised mix is reviewed | — | Intermission and P2 |
 | `stars-connect` | P3 Stars lattice connects | Brighter electrical link or arc | 0.5–1s | P3 only |
 | `splinter-mark` | Starsplinter assigned | Short crystalline warning/chime | 0.4–0.8s | Intermission and P4 |
 | `splinter-detonate` | Starsplinter rays resolve | Sharp six-way energy burst | 0.5–1s | Intermission and P4 |
 | `orb-charge` | P2 returning orbs start glowing | Pulsing magical charge | 0.8–1.2s | P2 |
-| `orb-return` | P2 orbs jump inward | Fast inward whoosh | 0.5–1s | P2 |
+| `orb-return` | P2 orbs approach L’ura | Arcane motion cue delayed one second after inward flight begins so it lands closer to the boss impact | 1.18s | P2 |
 | `pull` | P2 raid pull begins | Sustained suction/wind rise | 2–4s loop | P2 |
 | `personal-circle` | P2 spread circles resolve | Soft area pulse, not an explosion | 0.4–0.8s | P2 |
 | `soak-progress` | A P3 Soak reaches valid occupancy | Quiet confirming hum | Short loop | P3 |

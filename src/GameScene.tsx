@@ -103,9 +103,29 @@ function walkAroundArena(origin: Point, target: Point, seconds: number, speed: n
   const pathLength = Math.hypot(angleDelta * averageRadius, distance(origin, WORLD.center) - distance(target, WORLD.center)) || 1
   return pointAlongArenaArc(origin, target, WORLD.center, seconds * speed / pathLength)
 }
-function avoidP3Stars(position: Point, target: Point, side: -1 | 1, round: number, cycle: number, index: number): Point {
+type P3StarsField = { orbs: Point[]; edges: Array<[number, number]> }
+const p3StarsFieldCache = new Map<string, P3StarsField>()
+const transientGeometryCache = new Map<string, THREE.BufferGeometry>()
+function p3StarsField(side: -1 | 1, round: number, cycle: number): P3StarsField {
+  const key = `${side}:${round}:${cycle}`
+  const cached = p3StarsFieldCache.get(key)
+  if (cached) return cached
   const orbs = p3RuneOrbs(side, WORLD.center, round, cycle)
-  const nearby = p3RuneEdges(side, WORLD.center, round, orbs).find(([from, to]) => distanceToSegment(position, orbs[from], orbs[to]) < 8 || distanceToSegment(target, orbs[from], orbs[to]) < 5)
+  const field = { orbs, edges: p3RuneEdges(side, WORLD.center, round, orbs) }
+  p3StarsFieldCache.set(key, field)
+  return field
+}
+function cachedTransientGeometry<T extends THREE.BufferGeometry>(key: string, create: () => T): T {
+  const cached = transientGeometryCache.get(key)
+  if (cached) return cached as T
+  const geometry = create()
+  geometry.userData.transientCache = true
+  transientGeometryCache.set(key, geometry)
+  return geometry
+}
+function avoidP3Stars(position: Point, target: Point, field: P3StarsField, index: number): Point {
+  const { orbs, edges } = field
+  const nearby = edges.find(([from, to]) => distanceToSegment(position, orbs[from], orbs[to]) < 8 || distanceToSegment(target, orbs[from], orbs[to]) < 5)
   if (!nearby) return target
   const start = orbs[nearby[0]]
   const end = orbs[nearby[1]]
@@ -160,7 +180,7 @@ function clearGroup(group: THREE.Group) {
   while (group.children.length) {
     const child = group.children.pop()!
     const mesh = child as THREE.Mesh
-    mesh.geometry?.dispose()
+    if (!mesh.geometry?.userData.transientCache) mesh.geometry?.dispose()
     const material = mesh.material
     if (Array.isArray(material)) material.forEach(item => item.dispose())
     else material?.dispose()
@@ -180,7 +200,7 @@ function addLaserBeam(group: THREE.Group, origin: Point, angle: number, length: 
   const midpoint = new THREE.Vector3(origin.x + direction.x * length / 2, 4.4, origin.y + direction.z * length / 2)
   const addLayer = (radius: number, layerColor: number, layerOpacity: number, order: number) => {
     const beam = new THREE.Mesh(
-      new THREE.CylinderGeometry(radius, radius, length, 10, 1, true),
+      cachedTransientGeometry(`laser:${radius}:${length}`, () => new THREE.CylinderGeometry(radius, radius, length, 10, 1, true)),
       new THREE.MeshBasicMaterial({ color: layerColor, transparent: true, opacity: layerOpacity, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }),
     )
     beam.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction)
@@ -244,7 +264,7 @@ function addBossRune(group: THREE.Group, point: Point, texture: THREE.Texture, o
   group.add(marker)
 }
 function addOrb(group: THREE.Group, point: Point, color = 0xb170ff, size = 5.4, opacity = .92) {
-  const orb = new THREE.Mesh(new THREE.SphereGeometry(size, 20, 12), new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, depthTest: false }))
+  const orb = new THREE.Mesh(cachedTransientGeometry(`orb:${size}`, () => new THREE.SphereGeometry(size, 20, 12)), new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, depthTest: false }))
   orb.position.set(point.x, size + 1.5, point.y)
   orb.renderOrder = 11
   group.add(orb)
@@ -696,7 +716,7 @@ export default function GameScene(props: SceneProps) {
       const playerLightActive = hasActiveP3CrystalLight(state.playerIsCrystal, state.playerCrystalSpent)
       const plannedP3Targets: Array<{ point: Point; crystal: boolean }> = [{ point: state.player, crystal: playerLightActive }]
       const npcPositions = npcs.map((sprite, index) => {
-        const baseIndex = Array.from({ length: 20 }, (_, positionIndex) => positionIndex).filter(positionIndex => positionIndex !== state.assignment)[index]
+        const baseIndex = npcProfileIndices[index]
         const soakTarget = state.p2SoakPositions[baseIndex]
         const spreadTarget = state.p2SpreadPositions[baseIndex]
         const intermissionPosition = npcPosition(index, state.time, state.intermissionPositions, state.assignment, state.event, state.eventTime, state.beamAngles, state.raidStart, state.movementSpeed, state.movementBonus)
@@ -812,7 +832,7 @@ export default function GameScene(props: SceneProps) {
           const stars = p3StarsTiming(state.eventTime)
           if (stars.active && stars.localTime >= 2.5 && stars.localTime <= 4.5) {
             const current = renderedNpcPositions[index] ?? p3Target
-            p3Target = avoidP3Stars(current, p3Target, baseIndex < 10 ? -1 : 1, state.p3Round, stars.cycle, index)
+            p3Target = avoidP3Stars(current, p3Target, p3StarsField(baseIndex < 10 ? -1 : 1, state.p3Round, stars.cycle), index)
           }
         }
         const normal = phaseThree || phaseFour
@@ -1039,13 +1059,14 @@ export default function GameScene(props: SceneProps) {
         if (firstPoolLattice || lattice || overlapLattice) {
           const localTime = firstPoolLattice ? starsTiming.localTime : overlapLattice ? state.eventTime - 4 : state.eventTime
           ;([-1, 1] as const).forEach(side => {
-            const orbs = p3RuneOrbs(side, WORLD.center, state.p3Round, firstPoolLattice ? starsTiming.cycle : 0)
+            const field = p3StarsField(side, state.p3Round, firstPoolLattice ? starsTiming.cycle : 0)
+            const orbs = field.orbs
             const beamsVisible = localTime >= 2.5 && localTime <= 4.5
             orbs.forEach(point => {
               addOrb(hazards, point, 0x17477f, 3.05, .88)
               addGroundRing(hazards, point, 4.25, 5.05, 0x3fa5ff, beamsVisible ? .38 : .62, 2.8)
             })
-            if (beamsVisible) p3RuneEdges(side, WORLD.center, state.p3Round, orbs).forEach(([from, to]) => {
+            if (beamsVisible) field.edges.forEach(([from, to]) => {
               const start = orbs[from]
               const end = orbs[to]
               addLaserBeam(hazards, start, Math.atan2(end.y - start.y, end.x - start.x), distance(start, end), 2.2, 0x258dff, .76)
@@ -1072,7 +1093,7 @@ export default function GameScene(props: SceneProps) {
           const npcRunes: RuneSymbol[] = [otherRunes[0], otherRunes[0], otherRunes[1], otherRunes[1]]
           const localNpcs = npcPositions.filter((_, npcIndex) => {
             if (npcIndex === partnerNpcOrdinal) return false
-            const baseIndex = Array.from({ length: 20 }, (__, index) => index).filter(index => index !== state.assignment)[npcIndex]
+            const baseIndex = npcProfileIndices[npcIndex]
             return (baseIndex < 10 ? -1 : 1) === playerSide
           }).slice(0, 4)
           localNpcs.forEach((point, index) => {
@@ -1182,6 +1203,9 @@ export default function GameScene(props: SceneProps) {
       renderer.domElement.removeEventListener('dragstart', preventNativeDrag)
       renderer.domElement.removeEventListener('selectstart', preventNativeDrag)
       clearGroup(hazards)
+      transientGeometryCache.forEach(geometry => geometry.dispose())
+      transientGeometryCache.clear()
+      p3StarsFieldCache.clear()
       beamMarkerTextures.forEach(texture => texture.dispose())
       renderer.dispose()
       renderer.domElement.remove()

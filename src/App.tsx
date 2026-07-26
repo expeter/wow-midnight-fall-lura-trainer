@@ -3,6 +3,8 @@ import { bossBeamHitsPlayer, canPickupCrystal, canRecoverFromWipe, crystalCarrie
 import { buildPhaseResult, completionAchievements, completionShareText, isFullSequenceCompletion, type PhaseKey, type PhaseResult } from './completion'
 import { p4FrontSoakerPosition, p4TankKillsBox } from './game'
 import { p4TimedVoiceCues, timedVoiceDelaySeconds, ttsCuesForState, type P4VoiceClip } from './audio'
+import AchievementCollection, { AchievementBadgeSummary } from './AchievementCollection'
+import { ACHIEVEMENT_STORAGE_KEY, collectibleAchievements, mergeEarnedAchievements, parseAchievementCollection, serializeAchievementCollection } from './achievementCollection'
 import { FEATURE_FLAGS } from './features'
 import GameScene from './GameScene'
 import './styles.css'
@@ -424,6 +426,7 @@ export default function App() {
   const [phaseResults, setPhaseResults] = useState<PhaseResult[]>([])
   const [completionCopyStatus, setCompletionCopyStatus] = useState('')
   const [completionPreview, setCompletionPreview] = useState(false)
+  const [achievementCollection, setAchievementCollection] = useState(() => parseAchievementCollection(localStorage.getItem(ACHIEVEMENT_STORAGE_KEY)))
   const [attemptNumber, setAttemptNumber] = useState(() => Math.max(0, Number(localStorage.getItem('lura-attempt-count')) || 0))
   const [paused, setPaused] = useState(false)
   const [player, setPlayer] = useState<Point>(positions[0])
@@ -1575,7 +1578,7 @@ export default function App() {
   const resultCrystalPlayer = intermissionCrystalAssignments.includes(assignment)
     || p2CrystalAssignments.includes(assignment)
     || p3CrystalAssignments.includes(assignment)
-  const achievements = completionAchievements({
+  const achievementSummary = {
     difficulty: `${difficulty[0].toUpperCase()}${difficulty.slice(1)}`,
     crystalPlayer: resultCrystalPlayer,
     fullSequence: fullSequenceComplete,
@@ -1584,7 +1587,21 @@ export default function App() {
     healthPotEnabled,
     shieldEnabled,
     mainAbilityEnabled: mainAbilityUsed,
-  })
+  }
+  const achievements = completionAchievements(achievementSummary)
+  const collectibleAwards = collectibleAchievements(achievementSummary)
+  const collectibleAwardSignature = collectibleAwards.map(achievement => achievement.key).join('|')
+  useEffect(() => {
+    if (screen !== 'results' || completionPreview || !collectibleAwardSignature) return
+    setAchievementCollection(current => {
+      const updated = mergeEarnedAchievements(current, collectibleAwards, new Date().toISOString(), {
+        attempt: attemptNumber,
+        playerName: effectivePlayerName,
+      })
+      if (updated !== current) localStorage.setItem(ACHIEVEMENT_STORAGE_KEY, serializeAchievementCollection(updated))
+      return updated
+    })
+  }, [screen, completionPreview, collectibleAwardSignature])
   const primaryAchievement = achievements.find(achievement => achievement.id === 'superhuman-flawless')
     ?? achievements.find(achievement => achievement.id === 'flawless')
     ?? achievements[0]
@@ -1691,6 +1708,7 @@ export default function App() {
     <aside className="recruitment-banner">We are looking for German-speaking players for Season 2: <a href="https://raider.io/guilds/eu/blackrock/IAsgardI" target="_blank" rel="noreferrer">I Asgard I on Raider.IO</a></aside>
     <CreatorCard />
     <header><p className="eyebrow">MIDNIGHT FALLS · MOVEMENT PRACTICE</p><h1>L’ura Trainer</h1><p className="lede">Choose your assigned player below. Its WoW class determines its body color; crystal duty is configured independently beneath each phase plan.</p></header>
+    <AchievementBadgeSummary collection={achievementCollection} />
     <div className="entry-choice"><span>Practice target</span><button className="coming-soon" aria-label="P1 — Coming soon" title="P1 is planned but not playable yet" disabled>P1 · Soon</button><button className={entryMode === 'arena1' ? 'selected' : ''} onClick={() => setEntryMode('arena1')}>Intermission</button><button className={entryMode === 'arena2' ? 'selected' : ''} onClick={() => setEntryMode('arena2')}>P2</button><button className={entryMode === 'arena3' ? 'selected' : ''} onClick={() => setEntryMode('arena3')}>P3</button><button className={entryMode === 'arena4' ? 'selected' : ''} onClick={() => setEntryMode('arena4')}>P4</button>{difficulty === 'test' && <button className="secondary preview-results" onClick={previewCompletionScreen}>Preview final screen</button>}<button aria-label={entryMode === 'arena1' ? 'Enter Arena 1 — Enter Intermission' : entryMode === 'arena2' ? 'Enter Arena 2 — Enter P2' : entryMode === 'arena3' ? 'Enter Arena 3 — Enter P3' : 'Enter Arena 4 — Enter P4'} className="start entry-start" onClick={start}>Enter {entryMode === 'arena1' ? 'Intermission' : entryMode === 'arena2' ? 'P2' : entryMode === 'arena3' ? 'P3' : 'P4'}</button></div>
     <nav className="setup-jump-nav" aria-label="Setup sections"><span>On this page</span><a href="#game-settings" onClick={event => scrollToSetupSection(event, 'game-settings')}>Game settings</a><a href="#keyboard-settings" onClick={event => scrollToSetupSection(event, 'keyboard-settings')}>Keyboard settings</a><a href="#hud-settings" onClick={event => scrollToSetupSection(event, 'hud-settings')}>HUD</a><a href="#raid-planning" onClick={event => scrollToSetupSection(event, 'raid-planning')}>Raid plan</a></nav>
     <div className="plan-heading setup-section-heading" id="game-settings"><p className="eyebrow">GAME SETTINGS</p><h2>Practice configuration</h2><p className="hint">Choose the difficulty, controlled raid position, movement tuning, and optional combat challenges.</p><a className="setup-back-to-top" href="#setup-top" aria-label="Back to top from Game settings" onClick={event => scrollToSetupSection(event, 'setup-top')}>↑ Top</a></div>
@@ -1725,6 +1743,7 @@ export default function App() {
     <P3PositionMap assignment={assignment} positions={p3Positions} bossPositions={p3BossPositions} profiles={p3Profiles} onChange={(index, point) => { setAssignment(index); setP3Positions(current => current.map((position, positionIndex) => positionIndex === index ? clampToP3Arena(point) : position)) }} onBossChange={(index, point) => setP3BossPositions(current => current.map((position, positionIndex) => positionIndex === index ? point : position))} />
     <CrystalAssignmentEditor phaseLabel="Phase 3" assignments={p3CrystalAssignments} profiles={profiles} onChange={(slot, playerIndex) => setP3CrystalAssignments(current => updateCrystalAssignmentSlot(current, slot, playerIndex))} />
     <p className="scope-note">{entryMode === 'arena4' ? 'Start at the Phase 4 north regroup.' : entryMode === 'arena3' ? 'Start with the Phase 3 outward flight.' : entryMode === 'arena2' ? 'Start stacked in Phase 2, then transition into Phase 3.' : 'Positioning opener → Intermission → Phase 2 → Phase 3 → Phase 4.'} · {keyLabel(keyBindings.forward)}/{keyLabel(keyBindings.left)}/{keyLabel(keyBindings.backward)}/{keyLabel(keyBindings.right)} move · {keyLabel(keyBindings.pause)} pause</p>
+    <AchievementCollection collection={achievementCollection} />
   </main>
   if (screen === 'results') return <main className="shell results">
     <BuildIndicator />

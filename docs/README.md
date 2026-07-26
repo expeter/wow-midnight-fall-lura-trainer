@@ -172,6 +172,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-041` | Implemented | After the final Phase 2 orb return has resolved, replace the misleading next-beam countdown with a countdown toward the Phase 3 transition. |
 | `BUG-042` | Implemented | During Phase 3 Soaks, let nearby assisting NPCs close the final gap into an active pool instead of holding spread spacing just outside it. Evidence: [`screen-p3-bug-25.png`](../images/screen-p3-bug-25.png). |
 | `BUG-043` | Implemented | Initialize every Phase 3 ground Soak from the configured `P3_POOL_HEALTH` value instead of silently resetting all six pools to 100 HP at the start of an attempt. |
+| `BUG-044` | Implemented | Ensure every P3 Stars orb has at least one visible closest-neighbour connection and key the rendered edge cache by the randomized Soak layout consumed by collision checks, preventing invisible-beam wipes. Evidence: [`screen-p3-bug26.png`](../images/screen-p3-bug26.png). |
 
 ## Implemented feature inventory
 

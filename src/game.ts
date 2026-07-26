@@ -86,6 +86,10 @@ export function setP3BossPlan(points: Point[]): void {
 export function randomizeP3PoolLayout(seed = Math.floor(Math.random() * 2147483646) + 1): void {
   p3PoolLayoutSeed = Math.abs(Math.floor(seed)) % 2147483647
 }
+
+export function p3PoolLayoutId(): number {
+  return p3PoolLayoutSeed
+}
 export function assignmentRevealDistance(difficulty: Difficulty): number {
   return difficulty === 'test' || difficulty === 'easy' ? Infinity : difficulty === 'normal' ? 45 : 22
 }
@@ -651,20 +655,21 @@ export function p3RunePartnerPosition(assignment: number, center: Point, round: 
 
 export function p3RuneOrbs(side: -1 | 1, center: Point, round: number, cycle = 0): Point[] {
   const boss = p3BossPosition(side, center, round)
+  const pools = p3PoolCenters(side, center, round)
   const radialX = boss.x - center.x
   const radialY = boss.y - center.y
   const radialLength = Math.hypot(radialX, radialY) || 1
   const radial = { x: radialX / radialLength, y: radialY / radialLength }
   const tangent = { x: -radial.y, y: radial.x }
-  const coverage = [boss, ...p3LightCenters(side, center, round), ...p3PoolCenters(side, center, round)]
+  const coverage = [boss, ...p3LightCenters(side, center, round), ...pools]
   const local = coverage.map(point => ({
     tangent: (point.x - boss.x) * tangent.x + (point.y - boss.y) * tangent.y,
     radial: (point.x - boss.x) * radial.x + (point.y - boss.y) * radial.y,
   }))
-  const tangentMin = Math.min(...local.map(point => point.tangent)) - 24
-  const tangentMax = Math.max(...local.map(point => point.tangent)) + 24
-  const radialMin = Math.min(...local.map(point => point.radial)) - 24
-  const radialMax = Math.max(...local.map(point => point.radial)) + 24
+  const tangentMin = Math.min(...local.map(point => point.tangent)) - 30
+  const tangentMax = Math.max(...local.map(point => point.tangent)) + 30
+  const radialMin = Math.min(...local.map(point => point.radial)) - 30
+  const radialMax = Math.max(...local.map(point => point.radial)) + 30
   let seed = 113 + round * 97 + cycle * 131 + (side > 0 ? 41 : 0)
   const random = () => { seed = seed * 16807 % 2147483647; return (seed - 1) / 2147483646 }
   const pointForRatio = ({ x, y }: Point): Point => {
@@ -682,6 +687,7 @@ export function p3RuneOrbs(side: -1 | 1, center: Point, round: number, cycle = 0
     return staysInHalf
       && arenaRadius >= 108
       && arenaRadius <= P3_OUTER_RADIUS - 5
+      && pools.every(pool => distance(point, pool) >= P3_POOL_RADIUS + 8)
       && (round < 2 || !isInP3ConsumedSector(point, center, 102, P3_OUTER_RADIUS))
   }
   const ratios: Point[] = [
@@ -693,7 +699,7 @@ export function p3RuneOrbs(side: -1 | 1, center: Point, round: number, cycle = 0
   while (ratios.length < 20) {
     let best: Point | null = null
     let bestGap = 0
-    for (let attempt = 0; attempt < 1024; attempt += 1) {
+    for (let attempt = 0; attempt < 4096; attempt += 1) {
       const candidate = { x: random(), y: random() }
       if (!isPlayableRatio(candidate)) continue
       const tangentGap = tangentMax - tangentMin
@@ -707,7 +713,26 @@ export function p3RuneOrbs(side: -1 | 1, center: Point, round: number, cycle = 0
     if (!best || bestGap < P3_RUNE_ORB_MIN_GAP) break
     ratios.push(best)
   }
-  return ratios.map(pointForRatio)
+  const points = ratios.map(pointForRatio)
+  const hasViableNeighbour = (point: Point, others: Point[]) => others.some(neighbour =>
+    distance(point, neighbour) <= 72
+    && pools.every(pool => distanceToSegment(pool, point, neighbour) >= P3_POOL_RADIUS + 3)
+    && others.every(other => other === neighbour || distanceToSegment(other, point, neighbour) >= 8)
+  )
+  for (let index = 0; index < points.length; index++) {
+    const others = points.filter((_, otherIndex) => otherIndex !== index)
+    if (hasViableNeighbour(points[index], others)) continue
+    for (let attempt = 0; attempt < 4096; attempt++) {
+      const ratio = { x: random(), y: random() }
+      if (!isPlayableRatio(ratio)) continue
+      const candidate = pointForRatio(ratio)
+      if (others.some(other => distance(candidate, other) < P3_RUNE_ORB_MIN_GAP)) continue
+      if (!hasViableNeighbour(candidate, others)) continue
+      points[index] = candidate
+      break
+    }
+  }
+  return points
 }
 
 export function p3RuneStepAt(eventTime: number): number {
@@ -790,9 +815,47 @@ export function nearestRuneEdges(points: Point[], maximumConnections = 3, maximu
 
 export function p3RuneEdges(side: -1 | 1, center: Point, round: number, orbs: Point[]): Array<[number, number]> {
   const pools = p3PoolCenters(side, center, round)
-  return nearestRuneEdges(orbs).filter(([from, to]) =>
+  const clearsPools = (from: number, to: number) =>
     pools.every(pool => distanceToSegment(pool, orbs[from], orbs[to]) >= P3_POOL_RADIUS + 3)
-  )
+  const candidates: Array<{ from: number; to: number; length: number }> = []
+  for (let from = 0; from < orbs.length; from++) {
+    for (let to = from + 1; to < orbs.length; to++) {
+      const length = distance(orbs[from], orbs[to])
+      if (
+        length <= 72
+        && clearsPools(from, to)
+        && orbs.every((point, index) => index === from || index === to || distanceToSegment(point, orbs[from], orbs[to]) >= 8)
+      ) candidates.push({ from, to, length })
+    }
+  }
+  candidates.sort((a, b) => a.length - b.length)
+  const edges: Array<[number, number]> = []
+  const degree = Array.from({ length: orbs.length }, (_, index) => edges.filter(edge => edge.includes(index)).length)
+  const canAdd = ({ from, to }: { from: number; to: number }) =>
+    degree[from] < 3
+    && degree[to] < 3
+    && edges.every(([edgeFrom, edgeTo]) =>
+      edgeFrom === from || edgeFrom === to || edgeTo === from || edgeTo === to
+      || !segmentsIntersect(orbs[from], orbs[to], orbs[edgeFrom], orbs[edgeTo])
+    )
+  const add = ({ from, to }: { from: number; to: number }) => {
+    edges.push([from, to])
+    degree[from] += 1
+    degree[to] += 1
+  }
+
+  // Establish visible coverage first. Starting with orphan coverage prevents
+  // optional short links from saturating a neighbour or boxing an orb out.
+  for (const candidate of candidates) {
+    if (degree[candidate.from] > 0 && degree[candidate.to] > 0) continue
+    if (canAdd(candidate)) add(candidate)
+  }
+  // Then add the familiar local density without crossings or >3 connections.
+  for (const candidate of candidates) {
+    if (edges.some(([from, to]) => from === candidate.from && to === candidate.to)) continue
+    if (canAdd(candidate)) add(candidate)
+  }
+  return edges
 }
 
 function segmentsIntersect(a: Point, b: Point, c: Point, d: Point): boolean {

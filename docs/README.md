@@ -57,6 +57,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-013` | Implemented | Restore the Phase 3 planner to the standard content width and zoom its coordinate view further into the opening assignment area. |
 | `CR-014` | Implemented | Place the two yellow landing soaks after the P2 transition at least 15 yards from the landing players and prevent their circles from overlapping. |
 | `CR-015` | Implemented | Require all three ordered Phase 3 memory pairs to resolve before Big Boom; an incomplete memory game now wipes the attempt. |
+| `CR-016` | Implemented | Increase each Phase 3 Soak health pool by 1.5×, from 42 to 63, so four-player groups cannot finish it too quickly. |
 | `BUG-008` | Implemented | Remove the premature 20-second P3 Soak failure; unfinished pools are now checked only when Big Boom resolves at 40 seconds. |
 | `BUG-009` | Implemented | Enforce P3 Stars orb spacing and isolate the southwest/southeast fields with clearance from the room divider. |
 | `BUG-010` | Implemented | Use the NPC protection bubble when the player's crystal duty belongs to the other Dark Archangel set; only consume the player's crystal on its assigned set. |

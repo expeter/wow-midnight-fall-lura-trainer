@@ -65,6 +65,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-020` | Implemented | Give the Phase 3 planner an independent, non-repeating 325% arena background viewport with its normal horizontal alignment and a negative-1000-pixel vertical focus; legacy shared P3 placements may fall outside this focused view. |
 | `CR-021` | Implemented | Reverse Phase 4 Heaven & Hell progression to counter-clockwise—north, west, south, east—and consume the matching arena quarters in the same order. |
 | `CR-022` | Implemented | Partially reverse the previous 1.5× P3 Soak-duration increase: reduce each pool from 63 HP to 50 HP, making three-player completion take about 16.7 seconds instead of 21. |
+| `CR-023` | Implemented | Align the creator-card actions into a consistent two-column link row with a full-width Buy me a coffee action beneath it. |
 | `BUG-008` | Implemented | Remove the premature 20-second P3 Soak failure; unfinished pools are now checked only when Big Boom resolves at 40 seconds. |
 | `BUG-009` | Implemented | Enforce P3 Stars orb spacing and isolate the southwest/southeast fields with clearance from the room divider. |
 | `BUG-010` | Implemented | Use the NPC protection bubble when the player's crystal duty belongs to the other Dark Archangel set; only consume the player's crystal on its assigned set. |

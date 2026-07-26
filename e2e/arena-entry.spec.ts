@@ -135,7 +135,6 @@ test('Space jumps while actions are locked and P pauses', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: 'easy' }).click()
   await page.getByLabel('Assignment position').fill('1')
-  await page.getByLabel('Enable main ability').check()
   await page.getByRole('button', { name: /Enter Intermission/ }).click()
 
   await expect(page.getByText('Take your position.')).toBeVisible({ timeout: 3_000 })
@@ -150,10 +149,11 @@ test('Space jumps while actions are locked and P pauses', async ({ page }) => {
 
   await expect(arena).toHaveAttribute('data-personal-jump', 'false', { timeout: 1_000 })
   await page.keyboard.press('f')
-  await expect(page.locator('.score-overlay strong')).toHaveText('1001')
   await expect(page.locator('.player-castbar')).toBeVisible()
   await expect(page.locator('.player-castbar')).toHaveAttribute('style', /left: 50%; top: 65%/)
   await expect(page.locator('.boss-health .main-cast')).toHaveCount(0)
+  await expect(page.locator('.score-overlay strong')).toHaveText('1001')
+  await expect(page.locator('.player-castbar')).toHaveCount(0)
   await page.keyboard.press('c')
   await expect(page.locator('.crystal-countdown')).toBeVisible()
 

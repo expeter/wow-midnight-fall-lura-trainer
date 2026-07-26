@@ -139,6 +139,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-064` | Implemented | Add a compact disabled `P1 · Coming soon` phase teaser before Intermission without making the backlog encounter playable. |
 | `CR-065` | Implemented | Exclude the workspace-local `.tmp/` Playwright browser cache from Git so Chromium may be installed beside the project without risking large generated binaries entering a commit. |
 | `CR-066` | Implemented | Remove the partial-width border beneath each achievement-cluster header so it no longer duplicates the surrounding section divider. |
+| `CR-067` | Implemented | On a first visit with empty browser storage and no shared hash, automatically fetch, normalize, apply, and persist the bundled I Asgard I plan with all twenty player profiles; explicit local and shared plans retain priority. |
 | `SPEC-001` | Implemented | Define the stable ticket lifecycle: assign an ID, record intent, add focused regression coverage, validate, and commit. |
 | `SPEC-002` | Implemented | Define the creator business card’s stable content, readability, compact layout, and external-link behavior. |
 | `SPEC-003` | Implemented | Define the P3-to-P4 north gather, shared knockup origin, and phase-local HUD boundary. |

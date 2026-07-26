@@ -73,6 +73,24 @@ describe('player menu', () => {
     expect((screen.getByLabelText(/raid plan share code/i) as HTMLInputElement).value).toMatch(/^http:\/\/localhost(?::\d+)?\/#raidplan=/)
     expect(window.location.hash).toBe('')
   })
+  it('uses the bundled I Asgard I plan for the first visit while preserving explicit local plans', async () => {
+    vi.mocked(fetch).mockImplementation(async input => String(input).includes('raidplans/asgard.txt')
+      ? { ok: true, text: async () => asgardRaidPlanCode } as Response
+      : { ok: true, json: async () => ({ version: '0.1.0', revision: 'unknown', builtAt: new Date(0).toISOString() }) } as Response)
+    const firstVisit = render(<App />)
+    await waitFor(() => expect(JSON.parse(localStorage.getItem('lura-player-profiles') || '[]')).toHaveLength(20))
+    const guildProfiles = JSON.parse(localStorage.getItem('lura-player-profiles') || '[]')
+    expect(guildProfiles[0].name).toBe('aero')
+    expect(guildProfiles[19].name).toBe('Pestivator')
+    firstVisit.unmount()
+
+    guildProfiles[0].name = 'My saved setup'
+    localStorage.setItem('lura-player-profiles', JSON.stringify(guildProfiles))
+    vi.mocked(fetch).mockClear()
+    render(<App />)
+    expect(screen.getByLabelText(/raid position name/i)).toHaveValue('My saved setup')
+    expect(vi.mocked(fetch).mock.calls.some(([input]) => String(input).includes('raidplans/asgard.txt'))).toBe(false)
+  })
   it('uses a consistent setup hierarchy for game, input, HUD, sharing, and phase plans', () => {
     render(<App />)
     const gameHeading = screen.getByRole('heading', { name: /practice configuration/i })

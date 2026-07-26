@@ -384,6 +384,7 @@ export default function App() {
   const [difficulty, setDifficulty] = useState<Difficulty>('normal')
   const [entryMode, setEntryMode] = useState<EntryMode>('arena1')
   const [initialSharedPlan] = useState(loadInitialSharedRaidPlan)
+  const [useAsgardAsInitialPlan] = useState(() => !initialSharedPlan && !localStorage.getItem('lura-player-positions'))
   const [movementSpeed, setMovementSpeed] = useState(18)
   const [gameSpeed, setGameSpeed] = useState(() => {
     const saved = Number(localStorage.getItem('lura-game-speed'))
@@ -711,6 +712,10 @@ export default function App() {
     window.addEventListener('hashchange', loadHashPlan)
     return () => window.removeEventListener('hashchange', loadHashPlan)
   }, [])
+  useEffect(() => {
+    if (!useAsgardAsInitialPlan) return
+    void loadAsgardRaidPlan()
+  }, [useAsgardAsInitialPlan])
   useEffect(() => {
     if (screen !== 'game') return
     const togglePause = (event: KeyboardEvent) => {

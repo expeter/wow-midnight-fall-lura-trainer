@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { advanceMainAbilityCast, idleMainAbilityCast, mainAbilityCastProgress, requestMainAbilityCast } from './mainAbility'
+import { advanceMainAbilityCast, idleMainAbilityCast, mainAbilityCastProgress, mainAbilityElapsedSeconds, requestMainAbilityCast } from './mainAbility'
 
 describe('Main Ability cast state', () => {
   it('fills for one second and only completes at 100%', () => {
@@ -39,5 +39,13 @@ describe('Main Ability cast state', () => {
       expect(state).toEqual(idleMainAbilityCast())
     }
     expect(completed).toBe(4)
+  })
+
+  it('uses real elapsed time for casts even when rendering frames are delayed', () => {
+    const sparseFrameElapsed = mainAbilityElapsedSeconds(1_000, 1_600, 2)
+    expect(sparseFrameElapsed).toBe(1.2)
+    const result = advanceMainAbilityCast(requestMainAbilityCast(idleMainAbilityCast()), sparseFrameElapsed)
+    expect(result.completed).toBe(1)
+    expect(result.state).toEqual(idleMainAbilityCast())
   })
 })

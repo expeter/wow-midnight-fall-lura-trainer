@@ -7,7 +7,7 @@ import AchievementCollection, { AchievementBadgeSummary } from './AchievementCol
 import { ACHIEVEMENT_STORAGE_KEY, collectibleAchievements, mergeEarnedAchievements, parseAchievementCollection, serializeAchievementCollection } from './achievementCollection'
 import { FEATURE_FLAGS } from './features'
 import GameScene from './GameScene'
-import { advanceMainAbilityCast, idleMainAbilityCast, requestMainAbilityCast, type MainAbilityCastState } from './mainAbility'
+import { advanceMainAbilityCast, idleMainAbilityCast, mainAbilityElapsedSeconds, requestMainAbilityCast, type MainAbilityCastState } from './mainAbility'
 import './styles.css'
 
 type Screen = 'menu' | 'game' | 'results'
@@ -908,7 +908,10 @@ export default function App() {
     window.addEventListener('keydown', down); window.addEventListener('keyup', up); window.addEventListener('blur', clearMovement)
     let frame = 0; let previous = performance.now()
     const tick = (now: number) => {
-      const dt = Math.min((now - previous) / 1000, .05) * gameSpeed; previous = now
+      const elapsedSeconds = Math.max(0, (now - previous) / 1000)
+      const dt = Math.min(elapsedSeconds, .05) * gameSpeed
+      const mainAbilityDt = mainAbilityElapsedSeconds(previous, now, gameSpeed)
+      previous = now
       eventTimeRef.current += dt; setEventTime(eventTimeRef.current); timeRef.current += dt; setStats(s => ({ ...s, time: s.time + dt }))
       if (event === 'p4-cycle') {
         const scriptedBossHealth = p4BossHealth(p4CycleRef.current, eventTimeRef.current)
@@ -996,7 +999,7 @@ export default function App() {
       const jumpRemaining = Math.max(0, jumpUntilRef.current - timeRef.current)
       const jumping = jumpRemaining > 0
       setPersonalJumpProgress(jumping ? 1 - jumpRemaining / PERSONAL_JUMP_SECONDS : 0)
-      const mainCastAdvance = advanceMainAbilityCast(mainAbilityCastRef.current, dt)
+      const mainCastAdvance = advanceMainAbilityCast(mainAbilityCastRef.current, mainAbilityDt)
       mainAbilityCastRef.current = mainCastAdvance.state
       setMainCastState(mainCastAdvance.state)
       if (mainCastAdvance.completed > 0) {

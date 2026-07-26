@@ -23,6 +23,10 @@ export function requestMainAbilityCast(state: MainAbilityCastState): MainAbility
     : state
 }
 
+export function mainAbilityElapsedSeconds(previousTimestamp: number, currentTimestamp: number, gameSpeed: number): number {
+  return Math.max(0, (currentTimestamp - previousTimestamp) / 1000) * Math.max(0, gameSpeed)
+}
+
 export function advanceMainAbilityCast(state: MainAbilityCastState, elapsed: number): MainAbilityAdvance {
   let next = state
   let remainingElapsed = Math.max(0, elapsed)

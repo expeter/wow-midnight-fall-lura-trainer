@@ -189,6 +189,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-048` | Implemented | Preserve all Main-ability damage when Phase 4 starts, subtract that damage in addition to the scripted Heaven & Hell health loss without ever healing L’ura, grant +50 points for every 10% of player damage, and award a dedicated achievement when L’ura reaches 0% before the final sequence. |
 | `BUG-049` | Implemented | Keep one Main Ability cast progressing visibly from 0–100% across live encounter event changes; only fire, damage, and score at completion, enforce a 0.1-second gap, and collapse repeated input into at most one queued cast. |
 | `BUG-050` | Implemented | Guarantee that one Main Ability key press produces exactly one cast and one projectile: ignore additional input until its 1.0-second cast and 0.1-second recovery finish, and hide the cast bar during recovery instead of visually restarting it. |
+| `BUG-051` | Implemented | Advance the one-second Main Ability cast from real elapsed frame time at the configured game speed instead of the physics loop’s 50-millisecond safety clamp, preventing slow or stuck casts on busy GitHub Actions runners while keeping movement and collision simulation capped. |
 
 ## Implemented feature inventory
 

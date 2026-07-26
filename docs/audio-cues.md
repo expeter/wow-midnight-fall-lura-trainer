@@ -51,7 +51,7 @@ with a separate `SOAK CRYSTAL` instruction.
 | --- | --- | --- | --- | --- |
 | `laser-charge` | Boss beam resolves | Stretched Magical Whoosh ending exactly when the beam fires | 1.86s | Intermission and P2 |
 | `laser-fire` | Reserved / currently silent | A separate discharge duplicated the charge cue and is disabled while the revised mix is reviewed | — | Intermission and P2 |
-| `stars-connect` | P3 Stars lattice connects | Brighter electrical link or arc | 0.5–1s | P3 only |
+| `stars-connect` | P3 Stars lattice connects | Very short Rift laser buzz synchronized to beam appearance | ~0.28s | P3 only |
 | `splinter-mark` | Starsplinter assigned | Short crystalline warning/chime | 0.4–0.8s | Intermission and P4 |
 | `splinter-detonate` | Starsplinter rays resolve | Sharp six-way energy burst | 0.5–1s | Intermission and P4 |
 | `orb-charge` | P2 returning orbs start glowing | Pulsing magical charge | 0.8–1.2s | P2 |

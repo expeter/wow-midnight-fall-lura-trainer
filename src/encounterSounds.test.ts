@@ -21,7 +21,8 @@ const base = {
 describe('encounter sound cues', () => {
   it('uses the approved production transformations', () => {
     expect(ENCOUNTER_SOUND_SPECS['laser-charge'].playbackRate).toBe(.5)
-    expect(ENCOUNTER_SOUND_SPECS['stars-connect'].volume).toBe(.9)
+    expect(ENCOUNTER_SOUND_SPECS['stars-connect'].volume).toBe(.72)
+    expect(ENCOUNTER_SOUND_SPECS['stars-connect'].playbackRate).toBe(2.2)
     expect(ENCOUNTER_SOUND_SPECS['splinter-detonate'].playbackRate).toBe(2)
     expect(ENCOUNTER_SOUND_SPECS['add-destroyed'].volume).toBe(.5)
     expect(ENCOUNTER_SOUND_SPECS.mistake.playbackRate).toBeGreaterThan(1)

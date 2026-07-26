@@ -10,7 +10,7 @@ import {
   type RuneSymbol,
 } from './game'
 import laserWhooshUrl from '../tools/voice-soundboard/sfx/laser-magical-whoosh.wav?url'
-import starsConnectUrl from '../tools/voice-soundboard/sfx/laser-arc-burn.wav?url'
+import starsConnectUrl from '../tools/voice-soundboard/sfx/midnight-laser-fire-rift.wav?url'
 import splinterDetonateUrl from '../tools/voice-soundboard/sfx/laser-prismatic-cut.wav?url'
 import orbReturnUrl from '../tools/voice-soundboard/sfx/orb-arcane-laser.wav?url'
 import personalCircleUrl from '../tools/voice-soundboard/sfx/success-small-bell.wav?url'
@@ -41,7 +41,7 @@ export interface EncounterSoundSpec {
 
 export const ENCOUNTER_SOUND_SPECS: Record<EncounterSoundName, EncounterSoundSpec> = {
   'laser-charge': { url: laserWhooshUrl, volume: .78, playbackRate: .5 },
-  'stars-connect': { url: starsConnectUrl, volume: .9 },
+  'stars-connect': { url: starsConnectUrl, volume: .72, playbackRate: 2.2 },
   'splinter-detonate': { url: splinterDetonateUrl, volume: .82, playbackRate: 2 },
   'orb-return': { url: orbReturnUrl, volume: .78 },
   'personal-circle': { url: personalCircleUrl, volume: .72 },

@@ -700,6 +700,16 @@ export function p2ReturningOrbPositions(age: number, cycle: number, time: number
 export function personalCircleHitsCrystal(circleCenter: Point, crystals: Point[], radius = P2_PERSONAL_CIRCLE_OUTER_RADIUS): boolean {
   return crystals.some(crystal => distance(circleCenter, crystal) < radius)
 }
+export function personalCircleHitsPlayer(circleCenter: Point, players: Point[], radius = P2_PERSONAL_CIRCLE_OUTER_RADIUS): boolean {
+  return players.some(player => distance(circleCenter, player) < radius)
+}
+export function walkTowards(origin: Point, target: Point, seconds: number, speed: number): Point {
+  const dx = target.x - origin.x
+  const dy = target.y - origin.y
+  const length = Math.hypot(dx, dy) || 1
+  const travelled = Math.min(length, Math.max(0, seconds) * speed)
+  return { x: origin.x + dx / length * travelled, y: origin.y + dy / length * travelled }
+}
 export function jumpHeights(scriptedProgress: number, personalProgress: number): { player: number; npc: number } {
   const scripted = scriptedProgress > 0 ? Math.sin(Math.min(1, scriptedProgress) * Math.PI) * 42 : 0
   const personal = personalProgress > 0 ? Math.sin(Math.min(1, personalProgress) * Math.PI) * 8 : 0

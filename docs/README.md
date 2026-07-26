@@ -91,7 +91,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-035` | Implemented | Let player and NPC Starsplinters destroy any Phase 4 floor add crossed by one of their six rays. |
 | `CR-036` | Implemented | Give players ten seconds after the P3 landing Soaks to reach their assigned side; being across the divider at resolution costs 50 points, while exact marker distance is not scored. |
 | `FR-018` | Implemented | Allow five consecutive seconds outside P3 safe-zone protection, then deduct 10 points for every additional full second until the player returns to protection and resets the grace period. |
-| `FR-019` | Implemented | Add a one-click “Load I Asgard I raid plan” action backed by the stable `lura-trainer-iasgardi-v3` TinyURL; its resulting shared hash uses the standard normalized loader and immediately replaces and persists the current local plan. |
+| `FR-019` | Implemented | Add a one-click “Load I Asgard I raid plan” action that uses the standard normalized loader and immediately replaces and persists the current local plan. |
 | `FR-020` | Implemented | Emit Git-derived version metadata from every local or CI Vite build, periodically detect a newer deployed revision, offer an in-page reload prompt, display the running Git revision, and link a tracked changelog beneath the version. |
 | `FR-021` | Implemented | Add a compact four-item setup menu for Game settings, Keyboard settings, HUD, and Raid planning; omit phase-plan sublinks and preserve active raid-plan share hashes while scrolling. |
 | `FR-022` | Backlog | Make the Phase 4 front-player tank cone playable: expose the action to the controlled player when assigned, retain its intended cooldown and area, and destroy approaching adds caught by the cone. |
@@ -192,6 +192,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-049` | Implemented | Keep one Main Ability cast progressing visibly from 0–100% across live encounter event changes; only fire, damage, and score at completion, enforce a 0.1-second gap, and collapse repeated input into at most one queued cast. |
 | `BUG-050` | Implemented | Guarantee that one Main Ability key press produces exactly one cast and one projectile: ignore additional input until its 1.0-second cast and 0.1-second recovery finish, and hide the cast bar during recovery instead of visually restarting it. |
 | `BUG-051` | Implemented | Advance the one-second Main Ability cast from real elapsed frame time at the configured game speed instead of the physics loop’s 50-millisecond safety clamp, preventing slow or stuck casts on busy GitHub Actions runners while keeping movement and collision simulation capped. |
+| `BUG-052` | Implemented | Replace the external I Asgard I TinyURL navigation with an in-app fetch of the bundled guild raid plan, then normalize, apply, and persist it without changing the current localhost or GitHub Pages location. |
 
 ## Implemented feature inventory
 

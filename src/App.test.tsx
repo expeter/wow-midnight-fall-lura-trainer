@@ -4,8 +4,34 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
 import App from './App'
 
+const asgardRaidPlanCode = btoa(encodeURIComponent(JSON.stringify({
+  positions: Array.from({ length: 20 }, (_, index) => ({ x: 350 + index, y: 270 })),
+  p2Positions: Array.from({ length: 20 }, (_, index) => ({ x: 430 + index, y: 270 })),
+  p2SpreadPositions: Array.from({ length: 20 }, (_, index) => ({ x: 440 + index, y: 250 })),
+  p3Positions: Array.from({ length: 20 }, (_, index) => ({ x: 410 + index, y: 390 })),
+  p3BossPositions: [{ x: 430, y: 390 }, { x: 530, y: 390 }],
+  startSlots: [{ x: 480, y: 490 }, { x: 250, y: 270 }, { x: 710, y: 270 }, { x: 480, y: 40 }],
+  profiles: Array.from({ length: 20 }, (_, index) => ({
+    name: index === 0 ? 'aero' : index === 19 ? 'Pestivator' : `Player ${index + 1}`,
+    playerClass: 'mage',
+    crystal: [8, 11, 12, 15, 16, 18].includes(index),
+  })),
+  crystalAssignments: {
+    intermission: [8, 11, 12, 15, 16, 18],
+    p2: [8, 11, 12, 15, 16, 18],
+    p3: [8, 11, 12, 15, 16, 18],
+  },
+})))
+
 describe('player menu', () => {
-  beforeEach(() => { localStorage.clear(); window.location.hash = '' })
+  beforeEach(() => {
+    localStorage.clear()
+    window.location.hash = ''
+    vi.mocked(fetch).mockReset().mockResolvedValue({
+      ok: true,
+      json: async () => ({ version: '0.1.0', revision: 'unknown', builtAt: new Date(0).toISOString() }),
+    } as Response)
+  })
   afterEach(() => cleanup())
   it('derives crystal duty from the phase roster and starts with a countdown', async () => { const user = userEvent.setup(); render(<App />); fireEvent.change(screen.getByLabelText(/assignment position/i), { target: { value: '1' } }); expect(screen.getByLabelText(/intermission crystal 1/i)).toHaveValue('1'); await user.click(screen.getByRole('button', { name: /enter arena/i })); expect(screen.getByText(/Get ready/i)).toBeInTheDocument(); expect(screen.getByText('3')).toBeInTheDocument(); expect(screen.getByText(/CRYSTAL CARRIER/i)).toBeInTheDocument(); expect(screen.getByText(/You received a crystal · Intermission/i)).toBeInTheDocument(); expect(screen.getByText('Points')).toBeInTheDocument(); expect(document.querySelector('.hud')).not.toBeInTheDocument() })
   it('shows the assignment control and difficulty choices', () => { render(<App />); expect(screen.getByLabelText(/assignment position/i)).toBeInTheDocument(); expect(screen.getByRole('button', { name: 'easy' })).toBeInTheDocument(); expect(screen.getByRole('button', { name: 'hard' })).toBeInTheDocument() })
@@ -30,7 +56,23 @@ describe('player menu', () => {
   it('assigns a name and WoW class color and saves all profiles', async () => { const user = userEvent.setup(); render(<App />); await user.clear(screen.getByLabelText(/raid position name/i)); await user.type(screen.getByLabelText(/raid position name/i), 'Lunara'); await user.selectOptions(screen.getByLabelText(/player class and color/i), 'mage'); await user.click(screen.getByRole('button', { name: /save layout/i })); const saved = JSON.parse(localStorage.getItem('lura-player-profiles') || '[]'); expect(saved).toHaveLength(20); expect(saved[0]).toMatchObject({ name: 'Lunara', playerClass: 'mage', crystal: false }) })
   it('shows four configurable raid-plan start slots and saves them', async () => { const user = userEvent.setup(); render(<App />); expect(screen.getAllByRole('button', { name: /start slot/i })).toHaveLength(4); await user.click(screen.getByRole('button', { name: /save layout/i })); expect(JSON.parse(localStorage.getItem('lura-start-slots') || '[]')).toHaveLength(4) })
   it('creates a shareable raid-plan link and supports P pause/resume', async () => { const user = userEvent.setup(); render(<App />); await user.click(screen.getByRole('button', { name: /copy share link/i })); expect((screen.getByLabelText(/raid plan share code/i) as HTMLInputElement).value).toContain('#raidplan='); await user.click(screen.getByRole('button', { name: /enter arena/i })); await user.keyboard('p'); expect(screen.getByRole('button', { name: /resume/i })).toBeInTheDocument(); await user.keyboard('p'); expect(screen.getByRole('button', { name: /^pause$/i })).toBeInTheDocument() })
-  it('offers the maintained I Asgard I raid plan through its stable guild link', () => { render(<App />); const link = screen.getByRole('link', { name: /load i asgard i raid plan/i }); expect(link).toHaveAttribute('href', 'https://tinyurl.com/lura-trainer-iasgardi-v3'); expect(link).toHaveTextContent(/replaces and saves your current plan/i) })
+  it('fetches the bundled I Asgard I raid plan into localhost and persists it without navigating away', async () => {
+    vi.mocked(fetch).mockImplementation(async input => String(input).includes('raidplans/asgard.txt')
+      ? { ok: true, text: async () => asgardRaidPlanCode } as Response
+      : { ok: true, json: async () => ({ version: '0.1.0', revision: 'unknown', builtAt: new Date(0).toISOString() }) } as Response)
+    const user = userEvent.setup()
+    render(<App />)
+    const loader = screen.getByRole('button', { name: /load i asgard i raid plan/i })
+    expect(loader).toHaveTextContent(/loads here and saves to this browser/i)
+    expect(window.location.hash).toBe('')
+    await user.click(loader)
+    expect(await screen.findByText('I Asgard I raid plan loaded and saved')).toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem('lura-player-profiles') || '[]')[0].name).toBe('aero')
+    expect(JSON.parse(localStorage.getItem('lura-player-positions') || '[]')).toHaveLength(20)
+    expect(JSON.parse(localStorage.getItem('lura-p3-crystal-assignments') || '[]')).toHaveLength(6)
+    expect((screen.getByLabelText(/raid plan share code/i) as HTMLInputElement).value).toMatch(/^http:\/\/localhost(?::\d+)?\/#raidplan=/)
+    expect(window.location.hash).toBe('')
+  })
   it('uses a consistent setup hierarchy for game, input, HUD, sharing, and phase plans', () => {
     render(<App />)
     const gameHeading = screen.getByRole('heading', { name: /practice configuration/i })

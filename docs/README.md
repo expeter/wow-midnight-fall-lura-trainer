@@ -92,6 +92,8 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-019` | Implemented | Resolve P2 personal-circle player hits against NPCs’ actual spread positions and the visible circle radius; another player is hit only when their center is inside the controlled player’s circle. |
 | `BUG-020` | Implemented | Evaluate P3 light protection against the crystal NPCs’ actual rendered positions instead of their static planning anchors, keeping health behavior aligned with the visible yellow safe areas. |
 | `BUG-021` | Implemented | Remove the invisible Phase 3 planner side-ownership clamp so players may be dragged across the visible divider while the divider and arena rings remain planning guides. |
+| `BUG-022` | Implemented | Persist each phase crystal roster immediately so a configured Phase 3 carrier assignment survives reload/navigation before entering P3 directly. |
+| `BUG-023` | Implemented | Let the phase crystal editor explanation use its available header width so its final word does not wrap alone on desktop. |
 
 ## Implemented feature inventory
 

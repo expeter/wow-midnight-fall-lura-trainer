@@ -19,6 +19,38 @@ export interface TtsCue {
   text: string
 }
 
+export type P4VoiceClip = 'left' | 'right' | 'move'
+
+export interface TimedVoiceCue {
+  id: string
+  clip: P4VoiceClip
+  at: number
+}
+
+export const P4_TIMED_VOICE_LEAD_SECONDS = 1
+
+export function timedVoiceDelaySeconds(cueAt: number, eventTime: number, gameSpeed: number): number {
+  return (cueAt - eventTime) / Math.max(1, gameSpeed)
+}
+
+export function p4TimedVoiceCues(cycle: number): TimedVoiceCue[] {
+  const splinterStarts = p4SplinterStartSeconds(cycle)
+  const directions: P4VoiceClip[] = ['left', 'right', 'left']
+  const cues = directions.map((clip, ordinal) => ({
+    id: `p4-${cycle}-splinter-${ordinal}`,
+    clip,
+    at: splinterStarts + ordinal * P4_SPLINTER_INTERVAL_SECONDS - P4_TIMED_VOICE_LEAD_SECONDS,
+  }))
+  const finalSplinterEnds = splinterStarts
+    + P4_SPLINTER_INTERVAL_SECONDS * 2
+    + P4_SPLINTER_DETONATION_SECONDS
+  return [...cues, {
+    id: `p4-${cycle}-move`,
+    clip: 'move',
+    at: finalSplinterEnds - P4_TIMED_VOICE_LEAD_SECONDS,
+  }]
+}
+
 export interface TtsCueState {
   event: string
   eventTime: number
@@ -90,23 +122,6 @@ export function ttsCuesForState(state: TtsCueState): TtsCue[] {
   }
   if (state.event === 'p3-sector-move' && state.p3Round >= 2 && state.eventTime >= P3_FINAL_SECTOR_MOVE_SECONDS - 1) {
     cues.push({ id: 'transition-p4-stack', text: 'Phase 4 stack' })
-  }
-
-  if (state.event === 'p4-cycle') {
-    const splinterStarts = p4SplinterStartSeconds(state.p4Cycle)
-    for (const ordinal of [0, 1, 2]) {
-      const callAt = splinterStarts + ordinal * P4_SPLINTER_INTERVAL_SECONDS - 1
-      if (state.eventTime >= callAt) {
-        cues.push({
-          id: `p4-${state.p4Cycle}-splinter-${ordinal}`,
-          text: ordinal === 1 ? 'Right' : 'Left',
-        })
-      }
-    }
-    const finalSplinterEnds = splinterStarts
-      + P4_SPLINTER_INTERVAL_SECONDS * 2
-      + P4_SPLINTER_DETONATION_SECONDS
-    if (state.eventTime >= finalSplinterEnds - 1) cues.push({ id: `p4-${state.p4Cycle}-move`, text: 'Move' })
   }
 
   return cues

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type MouseEvent as Rea
 import { bossBeamHitsPlayer, canPickupCrystal, canRecoverFromWipe, crystalCarrierPosition, crystalWipeReason, difficultySettings, distance, distanceToSegment, isOnAssignedP3Side, isP3ConsumedSectorLethal, isInSafeAnnulus, isP3ProtectionCrystalPlaced, isProtectedByP3Bubble, isProtectedByP3Light, moveRelativeToCamera, moveWithIncreasingPull, npcEntryPosition, OPENING_BOOST_SECONDS, orientedAssignments, p1PositioningWipeReason, p2NpcCrystalDrops, p2PhaseTransitionCountdown, p2ReturningOrbPositions, P1_FINAL_RECOVERY_SECONDS, P1_STAR_LENGTH, P2_BEAM_SECONDS, P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS, P2_ORB_GLOW_LEAD_SECONDS, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_POSITIONING_SECONDS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p3ActiveCrystalAssignments, P3_APPROACH_SECONDS, p3ArchangelStackPosition, p3AssignmentForRound, p3BossPosition, p3FlightPosition, P3_FINAL_SECTOR_MOVE_SECONDS, P3_FLIGHT_SECONDS, p3LandingPlanIndex, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3LightHealthRate, p3MemoryResolved, p3PoolCenters, p3PoolSoakRate, p3ProtectionBubbleCenter, p3RuneDeadline, p3RuneEdges, p3RuneOrbs, p3RuneStepAt, p3SideForPosition, p3StarsTiming, p3UnsafePenaltyTicks, p3WrongRuneContact, P3_LANDING_SOAK_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_MEMORY_STEP_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, P3_SAFE_ZONE_PENALTY_PER_SECOND, P3_SECTOR_SECONDS, p4BossHealth, p4EncounterBoxStates, p4GroupPosition, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4SplinterStartSeconds, p4StackPosition, p4TransitionStartPosition, P4_CYCLE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, P4_SPLINTER_INTERVAL_SECONDS, personalCircleHitsCrystal, personalCircleHitsPlayer, PLAYER_COLLISION_PENALTY, randomCrystalDropDuty, randomizeP3PoolLayout, roamingNpcPosition, setP3BossPlan, shouldShowP2OrbReturnCounter, translateSelectedPoints, walkTowards, WIPE_PENALTY, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type Role, type RuneSymbol } from './game'
 import { buildPhaseResult, completionAchievements, completionShareText, isFullSequenceCompletion, type PhaseKey, type PhaseResult } from './completion'
 import { p4FrontSoakerPosition, p4TankKillsBox } from './game'
-import { ttsCuesForState } from './audio'
+import { p4TimedVoiceCues, timedVoiceDelaySeconds, ttsCuesForState, type P4VoiceClip } from './audio'
 import { FEATURE_FLAGS } from './features'
 import GameScene from './GameScene'
 import './styles.css'
@@ -43,6 +43,11 @@ const CHANGELOG_URL = `${PROJECT_URL}/blob/main/CHANGELOG.md`
 const RAIDER_IO_PROFILE = 'https://raider.io/characters/eu/antonidas/Pestivator'
 const ASGARD_RAID_PLAN_URL = 'https://tinyurl.com/lura-trainer-iasgardi-v3'
 const AUDIO_CUES_URL = `${PROJECT_URL}/blob/main/docs/audio-cues.md`
+const P4_VOICE_CUE_URLS: Record<P4VoiceClip, string> = {
+  left: new URL('../sounds/tts/left.wav', import.meta.url).href,
+  right: new URL('../sounds/tts/right.wav', import.meta.url).href,
+  move: new URL('../sounds/tts/move.wav', import.meta.url).href,
+}
 const MUSIC_TRACKS = [
   { id: 'criminal', label: 'Criminal Dark Tech · 8:03', src: new URL('../sounds/pixabay/voldemarsf-criminal-dark-tech-surveillance-police-patrol-454563.mp3', import.meta.url).href },
   { id: 'beast', label: 'GYM · Beast Mode ON · 8:07', src: new URL('../sounds/pixabay/ejah_music-gym-beast-mode-on-438605.mp3', import.meta.url).href },
@@ -397,6 +402,7 @@ export default function App() {
   const [musicMuted, setMusicMuted] = useState(() => !loadBoolean('lura-music-enabled', false))
   const [musicPreviewing, setMusicPreviewing] = useState(false)
   const [ttsEnabled, setTtsEnabled] = useState(() => loadBoolean('lura-tts-enabled', false))
+  const [timedVoiceReady, setTimedVoiceReady] = useState(false)
   const [keyBindings, setKeyBindings] = useState<KeyBindings>(loadKeyBindings)
   const [assignment, setAssignment] = useState(loadAssignment)
   const [playerName, setPlayerName] = useState(() => localStorage.getItem('lura-player-name') || '')
@@ -488,6 +494,10 @@ export default function App() {
   const jumpCameraForwardRef = useRef<Point>({ x: 0, y: -1 })
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const ttsSpokenRef = useRef(new Set<string>())
+  const timedVoiceContextRef = useRef<AudioContext | null>(null)
+  const timedVoiceBuffersRef = useRef<Partial<Record<P4VoiceClip, AudioBuffer>>>({})
+  const timedVoiceSourcesRef = useRef<AudioBufferSourceNode[]>([])
+  const timedVoiceLoadRef = useRef<Promise<void> | null>(null)
   const jumpOriginRef = useRef<Point>(positions[0])
   const pullOriginRef = useRef<Point>(WORLD.center)
   const p3FlightOriginRef = useRef<Point>(WORLD.center)
@@ -567,6 +577,56 @@ export default function App() {
     && typeof window !== 'undefined'
     && 'speechSynthesis' in window
     && typeof SpeechSynthesisUtterance !== 'undefined'
+  const timedVoiceAvailable = ttsAvailable
+    && typeof window !== 'undefined'
+    && 'AudioContext' in window
+  useEffect(() => {
+    if (!timedVoiceAvailable || !ttsEnabled) return
+    let active = true
+    if (!timedVoiceContextRef.current) timedVoiceContextRef.current = new AudioContext()
+    const context = timedVoiceContextRef.current
+    if (!timedVoiceLoadRef.current) {
+      timedVoiceLoadRef.current = Promise.all(
+        (Object.entries(P4_VOICE_CUE_URLS) as [P4VoiceClip, string][]).map(async ([clip, url]) => {
+          const response = await fetch(url)
+          if (!response.ok) throw new Error(`Unable to load ${clip} voice cue`)
+          timedVoiceBuffersRef.current[clip] = await context.decodeAudioData(await response.arrayBuffer())
+        }),
+      ).then(() => undefined)
+    }
+    void timedVoiceLoadRef.current
+      .then(() => { if (active) setTimedVoiceReady(true) })
+      .catch(() => { if (active) setTimedVoiceReady(false) })
+    return () => { active = false }
+  }, [timedVoiceAvailable, ttsEnabled])
+  useEffect(() => {
+    const stopScheduledVoice = () => {
+      timedVoiceSourcesRef.current.forEach(source => {
+        try { source.stop() } catch { /* source already stopped */ }
+      })
+      timedVoiceSourcesRef.current = []
+    }
+    stopScheduledVoice()
+    const context = timedVoiceContextRef.current
+    if (!timedVoiceReady || !ttsEnabled || screen !== 'game' || paused || wipeReason || event !== 'p4-cycle' || !context) {
+      return stopScheduledVoice
+    }
+    void context.resume()
+    const anchor = context.currentTime + .02
+    for (const cue of p4TimedVoiceCues(p4Cycle)) {
+      const remainingRealSeconds = timedVoiceDelaySeconds(cue.at, eventTime, gameSpeed)
+      if (remainingRealSeconds < -.05) continue
+      const buffer = timedVoiceBuffersRef.current[cue.clip]
+      if (!buffer) continue
+      const source = context.createBufferSource()
+      source.buffer = buffer
+      source.playbackRate.value = gameSpeed
+      source.connect(context.destination)
+      source.start(anchor + Math.max(0, remainingRealSeconds))
+      timedVoiceSourcesRef.current.push(source)
+    }
+    return stopScheduledVoice
+  }, [timedVoiceReady, ttsEnabled, screen, paused, wipeReason, event, p4Cycle, gameSpeed])
   useEffect(() => {
     if (!ttsAvailable || !ttsEnabled || screen !== 'game' || paused || wipeReason) {
       if (ttsAvailable) window.speechSynthesis.cancel()
@@ -601,6 +661,10 @@ export default function App() {
   }, [ttsAvailable, ttsEnabled, screen, paused, wipeReason, event, eventTime, cycle, p2Cycle, p2OrbReturnAge, p3Round, p3ArchangelDuty, p3PoolHealth, p3RuneOrder, p3ResolvedRunes, p4Cycle, p4PatternSeed, assignment, activeCrystalAssignments, difficulty, gameSpeed])
   useEffect(() => () => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel()
+    timedVoiceSourcesRef.current.forEach(source => {
+      try { source.stop() } catch { /* source already stopped */ }
+    })
+    void timedVoiceContextRef.current?.close()
   }, [])
   useEffect(() => {
     setP2SpreadPositions(current => {
@@ -1626,7 +1690,7 @@ export default function App() {
     <section className="audio-settings-grid">
       {FEATURE_FLAGS.backgroundMusic && <fieldset aria-label="Music settings"><legend>Music</legend><label className="checkbox-control"><input aria-label="Enable background music" type="checkbox" checked={!musicMuted} onChange={event => { setMusicMuted(!event.target.checked); if (!event.target.checked) setMusicPreviewing(false) }} /><span>Enable music<span>Off by default · loops through the complete attempt.</span></span></label><label className="profile-control">Track<select aria-label="Background music track" value={musicTrack} onChange={event => setMusicTrack(event.target.value as MusicTrackId)}>{MUSIC_TRACKS.map(track => <option value={track.id} key={track.id}>{track.label}</option>)}</select></label><button type="button" className="music-preview" disabled={musicMuted} onClick={toggleMusicPreview}>{musicMuted ? 'Enable music to preview' : musicPreviewing ? '■ Stop preview' : '▶ Play preview'}</button><label className="speed-control">Volume <strong>{Math.round(musicVolume * 100)}%</strong><input aria-label="Background music volume" type="range" min="0" max="1" step=".05" value={musicVolume} onChange={event => setMusicVolume(Number(event.target.value))} /></label></fieldset>}
       <fieldset aria-label="Encounter sound settings"><legend>Sounds</legend><label className="checkbox-control"><input aria-label="Enable encounter sounds" type="checkbox" checked={false} disabled={!FEATURE_FLAGS.encounterSounds} readOnly /><span>Encounter sound effects<span>Planned: laser, orb, Stars, Starsplinter, impact, and warning effects.</span></span></label><p className="hint">This channel will use short nonverbal effects synchronized to mechanics.</p><a className="audio-cue-link" href={AUDIO_CUES_URL} target="_blank" rel="noreferrer">View sound-file shopping list ↗</a></fieldset>
-      <fieldset aria-label="TTS settings"><legend>TTS</legend><label className="checkbox-control"><input aria-label="Enable raid lead TTS" type="checkbox" checked={ttsEnabled} disabled={!ttsAvailable} onChange={event => setTtsEnabled(event.target.checked)} /><span>Raid-lead voice cues<span>{ttsAvailable ? 'Off by default · browser-generated English calls.' : 'Speech synthesis is unavailable in this browser.'}</span></span></label><p className="hint">Calls include Memory Game, Soak Beam, Drop Crystal, Spread, Dodge, Left/Right/Left, and Move. Intermission Dodge and Drop Crystal coaching is Easy-only.</p><a className="audio-cue-link" href={AUDIO_CUES_URL} target="_blank" rel="noreferrer">Review active calls ↗</a></fieldset>
+      <fieldset aria-label="TTS settings"><legend>TTS</legend><label className="checkbox-control"><input aria-label="Enable raid lead TTS" type="checkbox" checked={ttsEnabled} disabled={!ttsAvailable} onChange={event => setTtsEnabled(event.target.checked)} /><span>Raid-lead voice cues<span>{ttsAvailable ? 'Off by default · browser speech with clocked P4 calls.' : 'Speech synthesis is unavailable in this browser.'}</span></span></label><p className="hint">Calls include Memory Game, Soak Beam, Drop Crystal, Spread, Dodge, Left/Right/Left, and Move. P4 directions use pre-rendered clips for exact rhythm. Intermission Dodge and Drop Crystal coaching is Easy-only.</p><a className="audio-cue-link" href={AUDIO_CUES_URL} target="_blank" rel="noreferrer">Review active calls ↗</a></fieldset>
     </section>
     <div className="plan-heading setup-section-heading" id="keyboard-settings"><p className="eyebrow">KEYBOARD SETTINGS</p><h2>Keyboard &amp; mouse controls</h2><p className="hint">Configure movement and action bindings, keyboard turning, and mouse-camera behavior.</p><a className="setup-back-to-top" href="#setup-top" aria-label="Back to top from Keyboard settings" onClick={event => scrollToSetupSection(event, 'setup-top')}>↑ Top</a></div>
     <section className="practice-settings">

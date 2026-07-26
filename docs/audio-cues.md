@@ -2,7 +2,8 @@
 
 Status: `SPEC-009` audio reference. Music is available and defaults to off.
 Browser TTS implements the calls below as an opt-in helper. Encounter sounds
-remain disabled until suitable short files are approved.
+remain disabled until suitable short files are approved through the persistent
+20-row review table in `tools/voice-soundboard/`.
 
 Keep the channels independent:
 

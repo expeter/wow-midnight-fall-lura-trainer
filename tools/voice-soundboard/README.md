@@ -9,8 +9,9 @@ Open `index.html` in a browser to compare individual **Left**, **Right**, and
 **Move** commands. Each voice also has a left–right–left preview scheduled on
 the Web Audio clock at `0.000s`, `1.000s`, and `2.000s`; this avoids the timing
 drift of chained media-element playback. Notes, the preferred voice, and the
-SFX shortlist are saved only in that browser's local storage. **Copy review**
-exports that feedback as plain text.
+20-row encounter table are saved only in that browser's local storage. Each
+sound row has four playable candidates, one choice, and one comment. **Copy
+review** exports the complete decision table as Markdown in one pass.
 
 Some browsers restrict `file://` audio loading. If the clips do not play, serve
 this directory locally:
@@ -22,11 +23,12 @@ python3 -m http.server 8090 --directory tools/voice-soundboard
 Then open <http://localhost:8090>. All audition derivatives live inside this
 tool, so playback does not depend on paths outside the served directory.
 
-## Spell-effect candidates
+## Spell-effect review table
 
-The lower board compares four choices in each of five mechanic groups. Each
-group combines a polished supplied candidate with three deterministic,
-original trainer syntheses:
+The lower board maps five candidate families across the complete SPEC-009
+shopping list. Reuse is deliberate: a coherent beam character can be auditioned
+for its telegraph, discharge, and P3 lattice without producing 80 unrelated
+files.
 
 | Group | Supplied starting point | Original alternatives |
 | --- | --- | --- |
@@ -36,9 +38,10 @@ original trainer syntheses:
 | Mechanic success | Small Bell | Rune Clear, Soak Complete, Crystal Chime |
 | Mistake & wipe | Faster Error Pulse | Void Warning, Rune Fail, Crystal Danger |
 
-Selection is intentionally separate from production integration. A shortlisted
+Selection is intentionally separate from production integration. A selected
 clip still needs its source/license recorded before it is shipped with the
-game.
+game. Existing browser shortlist choices migrate into the first matching table
+rows and remain gold-outlined for reference.
 
 Regenerate all SFX derivatives from the repository root:
 
@@ -57,8 +60,9 @@ other words in `generate.py`, following the first listening review.
 - Magical Whoosh belongs with lasers and beams.
 - Arcane Laser belongs with P2's flying/returning orbs.
 - Light Cast remains a possible Main Ability release and is auditioned with a
-  louder normalized master.
+  2× louder normalized master.
 - Error Pulse has the right character but needed a trimmed, faster attack.
+- Error Pulse is the initial selection for ordinary mistake feedback.
 
 ## Candidates
 

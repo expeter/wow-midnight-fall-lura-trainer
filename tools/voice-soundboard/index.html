@@ -70,13 +70,29 @@
     .section-heading { margin: 42px 0 16px; }
     .section-heading h2 { font-size: 32px; }
     .section-heading p { max-width: 720px; margin: 5px 0 0; color: var(--muted); }
-    .effect-groups { display: grid; gap: 22px; }
-    .effect-group h3 { margin: 0 0 4px; font-size: 23px; }
-    .effect-group > p { margin: 0 0 11px; color: var(--muted); }
-    .effect-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(235px, 1fr)); gap: 12px; }
-    .sfx-card button { width: 100%; padding: 15px; color: #151023; background: linear-gradient(110deg, var(--mint), #a8f3d7); }
-    .sfx-card button:hover { color: #151023; background: linear-gradient(110deg, #8ff3cf, #c4fae6); }
-    .sfx-card .character { min-height: 3em; }
+    .review-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 18px; background: var(--panel); }
+    .review-table { width: 100%; min-width: 1050px; border-collapse: collapse; }
+    .review-table th, .review-table td { padding: 13px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    .review-table th { position: sticky; top: 0; z-index: 2; color: var(--mint); background: #171426; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+    .review-table tr:last-child td { border-bottom: 0; }
+    .cue-id { display: block; color: var(--gold); font: 700 12px/1.4 ui-monospace, monospace; }
+    .cue-use { min-width: 185px; color: var(--muted); font-size: 13px; }
+    .candidate-list { display: grid; grid-template-columns: repeat(2, minmax(145px, 1fr)); gap: 7px; min-width: 320px; }
+    .candidate { padding: 8px 10px; text-align: left; font-size: 13px; }
+    .candidate.shortlisted { box-shadow: inset 0 0 0 1px var(--gold); }
+    .candidate.playing { color: #151023; background: linear-gradient(110deg, var(--mint), #a8f3d7); }
+    select, .cue-comment {
+      width: 100%;
+      min-width: 165px;
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      color: var(--ink);
+      background: #151222;
+      font: inherit;
+    }
+    .cue-comment { min-width: 220px; }
+    .legacy-review { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
     .notes { margin-top: 16px; padding: 22px; }
     .notes h2 { font-size: 18px; }
     .notes-actions { display: flex; gap: 9px; margin-top: 12px; }
@@ -119,9 +135,15 @@
     <div class="section-heading">
       <div class="eyebrow">Encounter sound candidates</div>
       <h2>Audition the spell kit.</h2>
-      <p>These clips are review material only. Play them against the suggested mechanic, shortlist the useful ones, and leave the final mapping in your notes.</p>
+      <p>Review every planned mechanic in one pass. Each row has four playable candidates, one saved choice, and one saved comment. Sounds remain disconnected from the game until this table is approved.</p>
     </div>
-    <section class="effect-groups" id="effects" aria-label="Spell sound candidates"></section>
+    <p class="legacy-review" id="legacy-review"></p>
+    <div class="review-table-wrap">
+      <table class="review-table" aria-label="Encounter sound review">
+        <thead><tr><th>Cue</th><th>Mechanic</th><th>Playable candidates</th><th>Pick</th><th>Comment</th></tr></thead>
+        <tbody id="sound-review"></tbody>
+      </table>
+    </div>
 
     <section class="notes">
       <h2>Audition notes</h2>
@@ -146,41 +168,58 @@
       { id: "kal16", name: "KAL16", character: "US male diphone · fuller KAL rendering" }
     ];
     const words = ["left", "right", "move"];
-    const effectGroups = [
-      { name: "Lasers & beams", use: "Boss beams, Starsplinters, and runic lattice lines.", effects: [
-        { id: "laser-magical-whoosh", name: "Magical Whoosh", source: "supplied" },
-        { id: "laser-void-sweep", name: "Void Sweep", source: "generated" },
-        { id: "laser-prismatic-cut", name: "Prismatic Cut", source: "generated" },
-        { id: "laser-arc-burn", name: "Arc Burn", source: "generated" }
-      ]},
-      { name: "P2 returning orbs", use: "The glow, launch, and inward flight of the twelve orbs.", effects: [
-        { id: "orb-arcane-laser", name: "Arcane Laser", source: "supplied" },
-        { id: "orb-orb-recall", name: "Orb Recall", source: "generated" },
-        { id: "orb-gravity-pearl", name: "Gravity Pearl", source: "generated" },
-        { id: "orb-celestial-return", name: "Celestial Return", source: "generated" }
-      ]},
-      { name: "Main Ability release", use: "Played only when the one-second cast completes and its projectile fires.", effects: [
-        { id: "cast-light-loud", name: "Light Cast · louder", source: "supplied" },
-        { id: "cast-arcane-release", name: "Arcane Release", source: "generated" },
-        { id: "cast-crystal-spark", name: "Crystal Spark", source: "generated" },
-        { id: "cast-spell-impact", name: "Spell Impact", source: "generated" }
-      ]},
-      { name: "Mechanic success", use: "Soak cleared, memory game finished, or crystal recovered.", effects: [
-        { id: "success-small-bell", name: "Small Bell", source: "supplied" },
-        { id: "success-rune-clear", name: "Rune Clear", source: "generated" },
-        { id: "success-soak-complete", name: "Soak Complete", source: "generated" },
-        { id: "success-crystal-chime", name: "Crystal Chime", source: "generated" }
-      ]},
-      { name: "Mistake & wipe", use: "Immediate failure feedback without covering the raid-lead call.", effects: [
-        { id: "error-pulse-fast", name: "Error Pulse · faster", source: "supplied" },
-        { id: "error-void-warning", name: "Void Warning", source: "generated" },
-        { id: "error-rune-fail", name: "Rune Fail", source: "generated" },
-        { id: "error-crystal-danger", name: "Crystal Danger", source: "generated" }
-      ]}
+    const effects = [
+      { id: "laser-magical-whoosh", name: "Magical Whoosh" },
+      { id: "laser-void-sweep", name: "Void Sweep" },
+      { id: "laser-prismatic-cut", name: "Prismatic Cut" },
+      { id: "laser-arc-burn", name: "Arc Burn" },
+      { id: "orb-arcane-laser", name: "Arcane Laser" },
+      { id: "orb-orb-recall", name: "Orb Recall" },
+      { id: "orb-gravity-pearl", name: "Gravity Pearl" },
+      { id: "orb-celestial-return", name: "Celestial Return" },
+      { id: "cast-light-loud", name: "Light Cast · 2× louder" },
+      { id: "cast-arcane-release", name: "Arcane Release" },
+      { id: "cast-crystal-spark", name: "Crystal Spark" },
+      { id: "cast-spell-impact", name: "Spell Impact" },
+      { id: "success-small-bell", name: "Small Bell" },
+      { id: "success-rune-clear", name: "Rune Clear" },
+      { id: "success-soak-complete", name: "Soak Complete" },
+      { id: "success-crystal-chime", name: "Crystal Chime" },
+      { id: "error-pulse-fast", name: "Error Pulse · faster attack" },
+      { id: "error-void-warning", name: "Void Warning" },
+      { id: "error-rune-fail", name: "Rune Fail" },
+      { id: "error-crystal-danger", name: "Crystal Danger" }
     ];
-    const effects = effectGroups.flatMap(group => group.effects);
+    const soundCues = [
+      ["laser-charge", "Boss beam telegraph", "Low rising charge with a clear peak.", ["laser-void-sweep", "laser-arc-burn", "laser-magical-whoosh", "orb-gravity-pearl"]],
+      ["laser-fire", "Boss beam becomes lethal", "Tight discharge reused by Intermission, P2, and P3 Stars.", ["laser-magical-whoosh", "laser-prismatic-cut", "laser-arc-burn", "cast-spell-impact"]],
+      ["stars-connect", "P3 Stars lattice connects", "Electrical link that makes the visible edge timing obvious.", ["laser-prismatic-cut", "laser-arc-burn", "laser-magical-whoosh", "orb-arcane-laser"]],
+      ["splinter-mark", "Starsplinter assigned", "Short crystalline warning for Intermission and P4.", ["success-crystal-chime", "cast-crystal-spark", "success-small-bell", "success-rune-clear"]],
+      ["splinter-detonate", "Starsplinter resolves", "Sharp six-way energy burst.", ["cast-spell-impact", "laser-prismatic-cut", "cast-arcane-release", "error-crystal-danger"]],
+      ["orb-charge", "P2 orbs start glowing", "Pulsing magical charge before the return.", ["orb-orb-recall", "orb-gravity-pearl", "orb-celestial-return", "orb-arcane-laser"]],
+      ["orb-return", "P2 orbs jump inward", "Fast inward flight cue.", ["orb-arcane-laser", "orb-celestial-return", "laser-magical-whoosh", "orb-orb-recall"]],
+      ["pull", "P2 raid pull begins", "Sustained suction or wind rise.", ["laser-void-sweep", "orb-gravity-pearl", "orb-orb-recall", "laser-arc-burn"]],
+      ["personal-circle", "P2 spread circles resolve", "Soft area pulse rather than an explosion.", ["success-soak-complete", "success-rune-clear", "success-crystal-chime", "success-small-bell"]],
+      ["soak-progress", "P3 Soak gains valid occupancy", "Quiet confirming hum while enough players stand inside.", ["orb-gravity-pearl", "orb-orb-recall", "orb-celestial-return", "laser-void-sweep"]],
+      ["soak-complete", "P3 Soak finishes", "Clean confirmation pulse.", ["success-soak-complete", "success-small-bell", "success-rune-clear", "success-crystal-chime"]],
+      ["rune-reveal", "Memory rune appears", "Related tonal note for each revealed rune.", ["success-rune-clear", "success-small-bell", "cast-crystal-spark", "orb-celestial-return"]],
+      ["rune-match", "Correct rune partner resolves", "Positive paired chime.", ["success-rune-clear", "success-crystal-chime", "success-small-bell", "success-soak-complete"]],
+      ["archangel-charge", "Dark Archangel begins", "Dark sustained beam charge.", ["laser-void-sweep", "laser-arc-burn", "orb-gravity-pearl", "error-crystal-danger"]],
+      ["protection-active", "Crystal bubble protects raid", "Warm shield activation.", ["success-crystal-chime", "cast-crystal-spark", "success-soak-complete", "cast-arcane-release"]],
+      ["heaven-hell", "P4 quarter becomes unsafe", "Deep sector-wide impact.", ["cast-spell-impact", "error-crystal-danger", "laser-arc-burn", "error-void-warning"]],
+      ["add-destroyed", "P4 add is destroyed", "Small dry impact for tank cone or splinter.", ["cast-spell-impact", "laser-prismatic-cut", "cast-light-loud", "cast-arcane-release"]],
+      ["main-ability-release", "Main Ability cast completes", "Player projectile release after the one-second cast.", ["cast-light-loud", "cast-arcane-release", "cast-crystal-spark", "cast-spell-impact"]],
+      ["mistake", "Non-wipe point loss", "Restrained, immediate error tick.", ["error-pulse-fast", "error-rune-fail", "error-crystal-danger", "error-void-warning"]],
+      ["wipe", "Terminal failure", "Distinct low failure hit.", ["error-void-warning", "error-crystal-danger", "error-rune-fail", "cast-spell-impact"]]
+    ].map(([id, mechanic, use, candidates]) => ({ id, mechanic, use, candidates }));
+    const explicitDefaults = {
+      "laser-fire": { pick: "laser-magical-whoosh", comment: "Magical Whoosh fits the lasers." },
+      "orb-return": { pick: "orb-arcane-laser", comment: "Arcane Laser fits the P2 orbs flying inward." },
+      "main-ability-release": { pick: "cast-light-loud", comment: "Light Cast could fit when the cast fires; auditioned at 2× loudness." },
+      "mistake": { pick: "error-pulse-fast", comment: "Error Pulse has the right character; use the faster, trimmed attack." }
+    };
     const grid = document.querySelector("#voices");
-    const effectGrid = document.querySelector("#effects");
+    const reviewTable = document.querySelector("#sound-review");
     const buffers = new Map();
     let context;
     let active = [];
@@ -199,22 +238,29 @@
         <label class="pick"><input type="radio" name="preferred" value="${voice.id}"> Mark as preferred</label>
       </article>
     `).join("");
-    effectGrid.innerHTML = effectGroups.map(group => `
-      <section class="effect-group">
-        <h3>${group.name}</h3>
-        <p>${group.use}</p>
-        <div class="effect-grid">${group.effects.map(effect => `
-          <article class="card sfx-card">
-            <div class="card-head">
-              <div><h2>${effect.name}</h2><p class="character">${effect.source === "generated" ? "Original trainer synthesis" : "Polished supplied candidate"}</p></div>
-              <span class="badge">${effect.source}</span>
-            </div>
-            <button type="button" data-effect="${effect.id}">▶ Play candidate</button>
-            <label class="pick"><input type="checkbox" name="shortlist" value="${effect.id}"> Keep in shortlist</label>
-          </article>`).join("")}
-        </div>
-      </section>
+    const effectName = id => effects.find(effect => effect.id === id)?.name || id;
+    let savedRows = {};
+    try { savedRows = JSON.parse(localStorage.getItem("lura-sfx-row-review") || "{}"); } catch (_) {}
+    let priorShortlist = [];
+    try { priorShortlist = JSON.parse(localStorage.getItem("lura-sfx-shortlist") || "[]"); } catch (_) {}
+    soundCues.forEach(cue => {
+      if (savedRows[cue.id]) return;
+      const migratedPick = cue.candidates.find(candidate => priorShortlist.includes(candidate));
+      savedRows[cue.id] = { ...explicitDefaults[cue.id], ...(migratedPick ? { pick: migratedPick } : {}) };
+    });
+    reviewTable.innerHTML = soundCues.map(cue => `
+      <tr data-cue="${cue.id}">
+        <td><strong>${cue.mechanic}</strong><span class="cue-id">${cue.id}</span></td>
+        <td class="cue-use">${cue.use}</td>
+        <td><div class="candidate-list">${cue.candidates.map(candidate => `<button type="button" class="candidate${priorShortlist.includes(candidate) ? " shortlisted" : ""}" data-effect="${candidate}">▶ ${effectName(candidate)}</button>`).join("")}</div></td>
+        <td><select aria-label="Pick for ${cue.mechanic}" data-pick><option value="">Not chosen</option>${cue.candidates.map(candidate => `<option value="${candidate}"${savedRows[cue.id]?.pick === candidate ? " selected" : ""}>${effectName(candidate)}</option>`).join("")}</select></td>
+        <td><input class="cue-comment" aria-label="Comment for ${cue.mechanic}" data-comment value="${(savedRows[cue.id]?.comment || "").replaceAll("&", "&amp;").replaceAll('"', "&quot;")}" placeholder="Your feedback…"></td>
+      </tr>
     `).join("");
+    localStorage.setItem("lura-sfx-row-review", JSON.stringify(savedRows));
+    document.querySelector("#legacy-review").textContent = priorShortlist.length
+      ? `Migrated ${priorShortlist.length} prior “keep” choice${priorShortlist.length === 1 ? "" : "s"}; gold-outlined candidates were in your old shortlist.`
+      : "No earlier shortlist was found on this browser origin.";
 
     function audioContext() {
       context ||= new (window.AudioContext || window.webkitAudioContext)();
@@ -278,7 +324,7 @@
         active.push(source);
       });
     });
-    effectGrid.addEventListener("click", event => {
+    reviewTable.addEventListener("click", event => {
       const button = event.target.closest("[data-effect]");
       if (!button) return;
       stop();
@@ -301,9 +347,7 @@
     const saved = document.querySelector("#saved");
     notes.value = localStorage.getItem("lura-voice-notes") || "";
     const priorPick = localStorage.getItem("lura-voice-pick");
-    if (priorPick) document.querySelector(`[name="preferred"][value="${priorPick}"]`)?.click();
-    const priorShortlist = JSON.parse(localStorage.getItem("lura-sfx-shortlist") || "[]");
-    priorShortlist.forEach(id => document.querySelector(`[name="shortlist"][value="${id}"]`)?.click());
+    document.querySelector(`[name="preferred"][value="${priorPick || "slt"}"]`)?.click();
     let saveTimer;
     notes.addEventListener("input", () => {
       clearTimeout(saveTimer);
@@ -319,16 +363,33 @@
         saved.textContent = `${event.target.value.toUpperCase()} marked as preferred.`;
       }
     });
-    effectGrid.addEventListener("change", event => {
-      if (event.target.name !== "shortlist") return;
-      const shortlist = [...document.querySelectorAll('[name="shortlist"]:checked')].map(input => input.value);
-      localStorage.setItem("lura-sfx-shortlist", JSON.stringify(shortlist));
-      saved.textContent = "SFX shortlist saved in this browser.";
+    function persistRows() {
+      const rows = {};
+      reviewTable.querySelectorAll("[data-cue]").forEach(row => {
+        rows[row.dataset.cue] = {
+          pick: row.querySelector("[data-pick]").value,
+          comment: row.querySelector("[data-comment]").value
+        };
+      });
+      localStorage.setItem("lura-sfx-row-review", JSON.stringify(rows));
+      saved.textContent = "Sound table saved in this browser.";
+      setTimeout(() => saved.textContent = "", 1800);
+    }
+    reviewTable.addEventListener("change", persistRows);
+    reviewTable.addEventListener("input", event => {
+      if (!event.target.matches("[data-comment]")) return;
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(persistRows, 250);
     });
     document.querySelector("#copy-review").addEventListener("click", async () => {
       const voice = document.querySelector('[name="preferred"]:checked')?.value?.toUpperCase() || "None";
-      const shortlist = [...document.querySelectorAll('[name="shortlist"]:checked')].map(input => input.value).join(", ") || "None";
-      const review = `Lura audio review\nPreferred voice: ${voice}\nSFX shortlist: ${shortlist}\nNotes:\n${notes.value || "None"}`;
+      const rows = [...reviewTable.querySelectorAll("[data-cue]")].map(row => {
+        const cue = soundCues.find(candidate => candidate.id === row.dataset.cue);
+        const pick = row.querySelector("[data-pick]").value;
+        const comment = row.querySelector("[data-comment]").value.trim();
+        return `| ${cue.id} | ${pick ? effectName(pick) : "Not chosen"} | ${comment || ""} |`;
+      }).join("\n");
+      const review = `Lura audio review\nPreferred voice: ${voice}\nVoice notes: ${notes.value || "None"}\n\n| Cue | Pick | Comment |\n| --- | --- | --- |\n${rows}`;
       try {
         await navigator.clipboard.writeText(review);
         saved.textContent = "Review copied to clipboard.";
@@ -337,13 +398,16 @@
       }
     });
     document.querySelector("#clear-review").addEventListener("click", () => {
-      if (!window.confirm("Clear the saved voice, SFX shortlist, and notes?")) return;
+      if (!window.confirm("Clear the saved voice, sound table, shortlist, and notes?")) return;
       localStorage.removeItem("lura-voice-notes");
       localStorage.removeItem("lura-voice-pick");
       localStorage.removeItem("lura-sfx-shortlist");
+      localStorage.removeItem("lura-sfx-row-review");
       notes.value = "";
-      document.querySelectorAll('[name="preferred"], [name="shortlist"]').forEach(input => { input.checked = false; });
-      saved.textContent = "Saved review cleared.";
+      document.querySelectorAll('[name="preferred"]').forEach(input => { input.checked = false; });
+      reviewTable.querySelectorAll("[data-pick]").forEach(input => { input.value = ""; });
+      reviewTable.querySelectorAll("[data-comment]").forEach(input => { input.value = ""; });
+      saved.textContent = "Saved review cleared. Reload to reapply the written starting suggestions.";
     });
   </script>
 </body>

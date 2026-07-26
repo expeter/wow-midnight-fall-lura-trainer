@@ -47,4 +47,47 @@ test('game settings use one compact three-card row on desktop', async ({ page })
   expect(Math.max(...bounds.map(box => box!.y)) - Math.min(...bounds.map(box => box!.y))).toBeLessThan(2)
   expect(bounds[0]!.x).toBeLessThan(bounds[1]!.x)
   expect(bounds[1]!.x).toBeLessThan(bounds[2]!.x)
+  expect(bounds[0]!.x + bounds[0]!.width).toBeLessThan(bounds[1]!.x)
+  expect(bounds[1]!.x + bounds[1]!.width).toBeLessThan(bounds[2]!.x)
+})
+
+test('setup topics use one clear heading hierarchy in document order', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto('/')
+  const headings = [
+    page.getByRole('heading', { name: 'Practice configuration' }),
+    page.getByRole('heading', { name: 'Keyboard & mouse controls' }),
+    page.getByRole('heading', { name: 'HUD positions' }),
+    page.getByRole('heading', { name: 'Layouts and sharing' }),
+    page.getByRole('heading', { name: 'Opening positions' }),
+  ]
+  const bounds = await Promise.all(headings.map(heading => heading.boundingBox()))
+  expect(bounds.every(Boolean)).toBe(true)
+  for (let index = 1; index < bounds.length; index += 1) {
+    expect(bounds[index]!.y).toBeGreaterThan(bounds[index - 1]!.y)
+  }
+  await expect(page.getByRole('group', { name: 'Input bindings' })).toBeVisible()
+  await expect(page.getByText('GAME SETTINGS', { exact: true })).toBeVisible()
+  await expect(page.getByText('KEYBOARD SETTINGS', { exact: true })).toBeVisible()
+
+  const headingContentPairs = [
+    [page.getByRole('heading', { name: 'Practice configuration' }).locator('..'), page.getByRole('group', { name: 'Difficulty & movement' })],
+    [page.getByRole('heading', { name: 'Keyboard & mouse controls' }).locator('..'), page.getByRole('group', { name: 'Input bindings' })],
+    [page.getByRole('heading', { name: 'Layouts and sharing' }).locator('..'), page.getByRole('group', { name: 'Raid-plan sharing' })],
+    [page.getByRole('heading', { name: 'Opening positions' }).locator('..'), page.getByLabel('Intermission position map')],
+  ]
+  for (const [heading, content] of headingContentPairs) {
+    const [headingBounds, contentBounds] = await Promise.all([heading.boundingBox(), content.boundingBox()])
+    expect(headingBounds).not.toBeNull()
+    expect(contentBounds).not.toBeNull()
+    expect(contentBounds!.y - (headingBounds!.y + headingBounds!.height)).toBeGreaterThanOrEqual(10)
+    expect(contentBounds!.y - (headingBounds!.y + headingBounds!.height)).toBeLessThanOrEqual(18)
+  }
+
+  const jumpNav = page.getByRole('navigation', { name: 'Setup sections' })
+  await expect(jumpNav.getByRole('link')).toHaveCount(4)
+  await page.evaluate(() => history.replaceState(null, '', '#raidplan=preserve-this-hash'))
+  await jumpNav.getByRole('link', { name: 'Raid plan' }).click()
+  await expect(page).toHaveURL(/#raidplan=preserve-this-hash$/)
+  await expect(page.getByRole('heading', { name: 'Layouts and sharing' })).toBeInViewport()
 })

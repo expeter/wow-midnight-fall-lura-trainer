@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Standardized the setup page around explicit Game settings, Keyboard
+  settings, Interface, Raid planning, and phase-plan headings, with keyboard
+  and mouse controls grouped beneath the Keyboard settings topic.
+- Added a compact four-link setup menu for jumping to Game settings, Keyboard
+  settings, HUD, or Raid planning without replacing shared raid-plan hashes.
+- Restyled setup jumps as quiet inline navigation, added reduced-motion-aware
+  smooth scrolling, and added a small Back to top action to each main setup
+  section.
+- Made the five-second opening movement boost permanent and removed its setup
+  toggle and retired browser preference.
 - Consolidated Game settings into three desktop cards, reduced setup
   whitespace, and restored the Intermission raid-plan heading before its map.
 - Moved raid-plan save, load, and sharing controls into a full-width section

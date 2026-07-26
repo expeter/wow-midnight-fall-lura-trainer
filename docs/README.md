@@ -93,6 +93,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `FR-018` | Implemented | Allow five consecutive seconds outside P3 safe-zone protection, then deduct 10 points for every additional full second until the player returns to protection and resets the grace period. |
 | `FR-019` | Implemented | Add a one-click “Load I Asgard I raid plan” action backed by the stable `lura-trainer-iasgardi-v3` TinyURL; its resulting shared hash uses the standard normalized loader and immediately replaces and persists the current local plan. |
 | `FR-020` | Implemented | Emit Git-derived version metadata from every local or CI Vite build, periodically detect a newer deployed revision, offer an in-page reload prompt, display the running Git revision, and link a tracked changelog beneath the version. |
+| `FR-021` | Implemented | Add a compact four-item setup menu for Game settings, Keyboard settings, HUD, and Raid planning; omit phase-plan sublinks and preserve active raid-plan share hashes while scrolling. |
 | `CR-037` | Superseded | A direct Discord profile needs a numeric user ID. The generic Discord application link was removed again; Twitch remains the direct creator contact. |
 | `CR-038` | Implemented | Link the displayed BattleTag to Pestivator’s Raider.IO profile because Battle.net has no stable public friend-add URL for a BattleTag. |
 | `CR-039` | Implemented | Record every tagged request before implementation and require focused automated regression coverage before marking it implemented. |
@@ -103,13 +104,16 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-044` | Implemented | Resolve Heaven & Hell every 21 seconds, retain the shared 10% Phase 4 movement bonus, and time the third Starsplinter to detonate exactly one second before Heaven & Hell. |
 | `CR-045` | Implemented | Move raid-plan save/load/sharing into its own full-width section after HUD settings and immediately before the raid-planning maps. |
 | `CR-046` | Implemented | Consolidate Game settings into three desktop cards, then order Keyboard & mouse, HUD, and Raid planning; restore the missing Intermission raid-plan heading before its map. |
+| `CR-047` | Implemented | Standardize the setup-page hierarchy: add explicit Game settings and Keyboard settings sections, keep keyboard and mouse controls together beneath the latter, and remove spacing workarounds between topics. |
+| `CR-048` | Implemented | Remove the Opening movement bonus option and make its existing 40% first-five-seconds positioning boost permanently active, ignoring and deleting the retired browser preference. |
+| `CR-049` | Implemented | Restyle the setup jump menu as quiet inline “On this page” navigation, smoothly scroll between sections while respecting reduced-motion preferences, and add a compact Back to top link to each top-level setup section without adding links to phase subsections. |
 | `SPEC-001` | Implemented | Define the stable ticket lifecycle: assign an ID, record intent, add focused regression coverage, validate, and commit. |
 | `SPEC-002` | Implemented | Define the creator business card’s stable content, readability, compact layout, and external-link behavior. |
 | `SPEC-003` | Implemented | Define the P3-to-P4 north gather, shared knockup origin, and phase-local HUD boundary. |
 | `SPEC-004` | Implemented | Define completion achievement inputs and the Superhuman Flawless requirements. |
 | `SPEC-005` | Implemented | Define background audio as a feature-flagged component with no controls or playback while disabled. |
 | `SPEC-006` | Implemented | Define Phase 4 movement parity and the 21-second Starsplinter/Heaven & Hell cadence. |
-| `SPEC-007` | Implemented | Define the setup-page hierarchy and responsive grouping for game, input, HUD, sharing, and phase planning. |
+| `SPEC-007` | Implemented | Define the setup-page hierarchy and responsive grouping for game, input, HUD, sharing, and phase planning. Every top-level topic uses the same eyebrow, title, and helper-text pattern: Game settings / Practice configuration, Keyboard settings / Keyboard & mouse controls, Interface / HUD positions, Raid planning / Layouts and sharing, followed by an individually titled section for every phase map. The top setup menu links only to the four top-level topics and scrolls without replacing a shared raid-plan hash. |
 | `BUG-008` | Implemented | Remove the premature 20-second P3 Soak failure; unfinished pools are now checked only when Big Boom resolves at 40 seconds. |
 | `BUG-009` | Implemented | Enforce P3 Stars orb spacing and isolate the southwest/southeast fields with clearance from the room divider. |
 | `BUG-010` | Implemented | Use the NPC protection bubble when the player's crystal duty belongs to the other Dark Archangel set; only consume the player's crystal on its assigned set. |

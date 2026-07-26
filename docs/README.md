@@ -62,7 +62,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-017` | Implemented | Keep idle Phase 3 NPCs at least 7 yards apart around their boss while preserving active Soak and rune duties; crystal carriers reserve non-overlapping light-zone spacing and may therefore skip a Soak. |
 | `CR-018` | Implemented | Keep Phase 3 Stars connections clear of the active Soak circles, including beam width, matching the updated encounter behavior. |
 | `CR-019` | Implemented | Reduce the setup page’s top padding from viewport-scale whitespace to a compact 14-pixel start. |
-| `CR-020` | Implemented | Give the Phase 3 planner an independent, non-repeating 325% arena background viewport focused at the tested 1024-by-1000-pixel offset; legacy shared P3 placements may fall outside this focused view. |
+| `CR-020` | Implemented | Give the Phase 3 planner an independent, non-repeating 325% arena background viewport with its normal horizontal alignment and a negative-1000-pixel vertical focus; legacy shared P3 placements may fall outside this focused view. |
 | `BUG-008` | Implemented | Remove the premature 20-second P3 Soak failure; unfinished pools are now checked only when Big Boom resolves at 40 seconds. |
 | `BUG-009` | Implemented | Enforce P3 Stars orb spacing and isolate the southwest/southeast fields with clearance from the room divider. |
 | `BUG-010` | Implemented | Use the NPC protection bubble when the player's crystal duty belongs to the other Dark Archangel set; only consume the player's crystal on its assigned set. |
@@ -71,6 +71,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-013` | Implemented | Put the Buy me a coffee action on its own business-card row so it cannot overlap the attribution links. |
 | `BUG-014` | Implemented | Validate the Dark Archangel protection crystal against the full visible 24-yard protection area instead of rejecting valid drops beyond an invisible 15-yard limit. |
 | `BUG-015` | Implemented | Widen the setup layout and creator card so Raider.IO and Twitch share the first link row while Buy me a coffee remains alone below. |
+| `BUG-016` | Implemented | Correct the Phase 3 planner background to use a negative-1000-pixel vertical focus and remove the breaking explicit horizontal offset. |
 
 ## Implemented feature inventory
 

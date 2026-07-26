@@ -24,8 +24,7 @@
 .p3-position-map {
   background-repeat: no-repeat;
   background-size: 325%;
-  background-position-x: 1024px;
-  background-position-y: 1000px;
+  background-position-y: -1000px;
   touch-action: none;
 }
 .p3-position-map::before { width: 33%; }

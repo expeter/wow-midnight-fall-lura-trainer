@@ -28,6 +28,7 @@ export interface TimedVoiceCue {
 }
 
 export const P4_TIMED_VOICE_LEAD_SECONDS = 1
+export const P4_SPLINTER_VOICE_LEAD_SECONDS = 0
 
 export function timedVoiceDelaySeconds(cueAt: number, eventTime: number, gameSpeed: number): number {
   return (cueAt - eventTime) / Math.max(1, gameSpeed)
@@ -39,7 +40,7 @@ export function p4TimedVoiceCues(cycle: number): TimedVoiceCue[] {
   const cues = directions.map((clip, ordinal) => ({
     id: `p4-${cycle}-splinter-${ordinal}`,
     clip,
-    at: splinterStarts + ordinal * P4_SPLINTER_INTERVAL_SECONDS - P4_TIMED_VOICE_LEAD_SECONDS,
+    at: splinterStarts + ordinal * P4_SPLINTER_INTERVAL_SECONDS - P4_SPLINTER_VOICE_LEAD_SECONDS,
   }))
   const finalSplinterEnds = splinterStarts
     + P4_SPLINTER_INTERVAL_SECONDS * 2

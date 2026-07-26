@@ -145,6 +145,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-067` | Implemented | On a first visit with empty browser storage and no shared hash, automatically fetch, normalize, apply, and persist the bundled I Asgard I plan with all twenty player profiles; explicit local and shared plans retain priority. |
 | `CR-068` | Implemented | Present each newly earned achievement as a compact live card sliding down from the top with its icon, title, and flavor text, then fade the notification after five seconds without replaying stored achievements. |
 | `CR-069` | Implemented | Give every visible NPC an independent one-to-three-second attack cadence and replace generic ambient bolts with recognizable class-themed firebolts, frostbolts, lightning arcs, arrows, spears, shadow bolts, nature bolts, and holy bolts. |
+| `CR-070` | Implemented | Start each pre-rendered Phase 4 `Left`, `Right`, `Left` call exactly when its corresponding Starsplinter assignment appears now that the clips are sufficiently short; retain the separate one-second warning lead for `Move`. |
 | `SPEC-001` | Implemented | Define the stable ticket lifecycle: assign an ID, record intent, add focused regression coverage, validate, and commit. |
 | `SPEC-002` | Implemented | Define the creator business card’s stable content, readability, compact layout, and external-link behavior. |
 | `SPEC-003` | Implemented | Define the P3-to-P4 north gather, shared knockup origin, and phase-local HUD boundary. |

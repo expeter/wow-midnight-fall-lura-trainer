@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { P4_TIMED_VOICE_LEAD_SECONDS, p4TimedVoiceCues, timedVoiceDelaySeconds, ttsCuesForState, type TtsCueState } from './audio'
+import { P4_SPLINTER_VOICE_LEAD_SECONDS, P4_TIMED_VOICE_LEAD_SECONDS, p4TimedVoiceCues, timedVoiceDelaySeconds, ttsCuesForState, type TtsCueState } from './audio'
 import { P1_FINAL_RECOVERY_SECONDS, P2_BEAM_SECONDS, P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PULL_SECONDS, P3_FINAL_SECTOR_MOVE_SECONDS, P3_MEMORY_START_SECONDS, P4_SPLINTER_DETONATION_SECONDS, P4_SPLINTER_INTERVAL_SECONDS, p4SplinterStartSeconds } from './game'
 
 const base: TtsCueState = {
@@ -89,11 +89,12 @@ describe('raid-lead TTS cues', () => {
     const finalEnd = start + P4_SPLINTER_INTERVAL_SECONDS * 2 + P4_SPLINTER_DETONATION_SECONDS
     const cues = p4TimedVoiceCues(base.p4Cycle)
     expect(P4_TIMED_VOICE_LEAD_SECONDS).toBe(1)
+    expect(P4_SPLINTER_VOICE_LEAD_SECONDS).toBe(0)
     expect(cues.map(cue => cue.clip)).toEqual(['left', 'right', 'left', 'move'])
     expect(cues.slice(0, 3).map(cue => cue.at)).toEqual([
-      start - 1,
-      start + P4_SPLINTER_INTERVAL_SECONDS - 1,
-      start + P4_SPLINTER_INTERVAL_SECONDS * 2 - 1,
+      start,
+      start + P4_SPLINTER_INTERVAL_SECONDS,
+      start + P4_SPLINTER_INTERVAL_SECONDS * 2,
     ])
     expect(cues[1].at - cues[0].at).toBeCloseTo(P4_SPLINTER_INTERVAL_SECONDS)
     expect(cues[2].at - cues[1].at).toBeCloseTo(P4_SPLINTER_INTERVAL_SECONDS)

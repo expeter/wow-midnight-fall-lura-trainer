@@ -1554,19 +1554,10 @@ function P3PositionMap({ assignment, positions, bossPositions, profiles, onChang
 }
 
 function CreatorCard() {
-  const [copied, setCopied] = useState(false)
-  async function copyAddress() {
-    try {
-      await navigator.clipboard.writeText(SOLANA_ADDRESS)
-      setCopied(true)
-      window.setTimeout(() => setCopied(false), 1800)
-    } catch { setCopied(false) }
-  }
   return <aside className="creator-card" aria-label="About Pestivator">
-    <img src={CREATOR_AVATAR} alt="Pestivator's gnome avatar" />
+    <a className="creator-avatar-link" href="https://raider.io/characters/eu/antonidas/Pestivator" target="_blank" rel="noreferrer" aria-label="Pestivator on Raider.IO"><img src={CREATOR_AVATAR} alt="Pestivator's gnome avatar" /></a>
     <div><span>Created by</span><strong>Pestivator</strong><code>pestivator#2515</code>
-      <nav aria-label="Pestivator links"><a href="https://twitch.tv/pestivator" target="_blank" rel="noreferrer">Twitch</a><a className="coffee-link" href={`solana:${SOLANA_ADDRESS}?label=Pestivator&message=Thanks%20for%20the%20Lura%20Trainer`} title={`Send SOL to ${SOLANA_ADDRESS}`}>☕ Buy me a coffee</a></nav>
-      <button type="button" className="copy-wallet" onClick={copyAddress} title={SOLANA_ADDRESS}>{copied ? 'SOL address copied!' : 'Copy Solana address'}</button>
+      <nav aria-label="Pestivator links"><a href="https://raider.io/characters/eu/antonidas/Pestivator" target="_blank" rel="noreferrer">Raider.IO ↗</a><a href="https://twitch.tv/pestivator" target="_blank" rel="noreferrer">Twitch</a><a className="coffee-link" href={`solana:${SOLANA_ADDRESS}?label=Pestivator&message=Thanks%20for%20the%20Lura%20Trainer`} title={`Send SOL to ${SOLANA_ADDRESS}`}>☕ Buy me a coffee</a></nav>
     </div>
   </aside>
 }

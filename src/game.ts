@@ -776,6 +776,12 @@ export function isInSafeAnnulus(point: Point, center: Point, innerRadius: number
   return radius >= innerRadius && radius <= outerRadius
 }
 
+export function p1PositioningWipeReason(point: Point, center: Point, innerRadius: number, outerRadius: number): string | null {
+  return isInSafeAnnulus(point, center, innerRadius, outerRadius)
+    ? null
+    : 'Did not reach the Phase 1 playable ring before mechanics began'
+}
+
 export function movePlayer(position: Point, keys: Set<string>, speed: number, dt: number): Point {
   return moveInBounds(position, keys, speed, dt, { minX: 24, maxX: ARENA.width - 24, minY: 24, maxY: ARENA.height - 24 })
 }

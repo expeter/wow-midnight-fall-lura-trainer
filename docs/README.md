@@ -72,6 +72,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-014` | Implemented | Validate the Dark Archangel protection crystal against the full visible 24-yard protection area instead of rejecting valid drops beyond an invisible 15-yard limit. |
 | `BUG-015` | Implemented | Widen the setup layout and creator card so Raider.IO and Twitch share the first link row while Buy me a coffee remains alone below. |
 | `BUG-016` | Implemented | Correct the Phase 3 planner background to use a negative-1000-pixel vertical focus and remove the breaking explicit horizontal offset. |
+| `BUG-017` | Implemented | Resolve the P1 opening positioning as a wipe when the player has not reached the playable dark annulus between the inner and outer rings; exact assignment accuracy remains advisory. |
 
 ## Implemented feature inventory
 

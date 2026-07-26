@@ -32,6 +32,8 @@ export const P3_OUTER_RADIUS = 199
 export const P3_LIGHT_RADIUS = 24
 export const P3_APPROACH_NPC_SPEED_MULTIPLIER = 1.5
 export const P3_APPROACH_SECONDS = 10
+export const P3_SAFE_ZONE_GRACE_SECONDS = 5
+export const P3_SAFE_ZONE_PENALTY_PER_SECOND = 10
 export const P3_POOL_RADIUS = 10
 export const P3_POOL_HEALTH = 35
 export const P3_LANDING_SOAK_RADIUS = 12
@@ -161,6 +163,11 @@ export function p3LandingSoakPositions(index: number, center: Point, seed = 0): 
 }
 export function p3LightHealthRate(protectedByLight: boolean): number {
   return protectedByLight ? 12 : -2
+}
+export function p3UnsafePenaltyTicks(previousUnsafeSeconds: number, nextUnsafeSeconds: number, graceSeconds = P3_SAFE_ZONE_GRACE_SECONDS): number {
+  const previousTicks = Math.max(0, Math.floor(previousUnsafeSeconds - graceSeconds))
+  const nextTicks = Math.max(0, Math.floor(nextUnsafeSeconds - graceSeconds))
+  return Math.max(0, nextTicks - previousTicks)
 }
 export function hasActiveP3CrystalLight(assignedCrystal: boolean, crystalSpent: boolean): boolean {
   return assignedCrystal && !crystalSpent

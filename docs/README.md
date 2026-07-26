@@ -82,6 +82,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-034` | Implemented | Reduce backward player movement to 50% on Hard while preserving full forward and strafe speed in every phase. |
 | `CR-035` | Implemented | Let player and NPC Starsplinters destroy any Phase 4 floor add crossed by one of their six rays. |
 | `CR-036` | Implemented | Give players ten seconds after the P3 landing Soaks to reach their assigned side; being across the divider at resolution costs 50 points, while exact marker distance is not scored. |
+| `FR-018` | Implemented | Allow five consecutive seconds outside P3 safe-zone protection, then deduct 10 points for every additional full second until the player returns to protection and resets the grace period. |
 | `BUG-008` | Implemented | Remove the premature 20-second P3 Soak failure; unfinished pools are now checked only when Big Boom resolves at 40 seconds. |
 | `BUG-009` | Implemented | Enforce P3 Stars orb spacing and isolate the southwest/southeast fields with clearance from the room divider. |
 | `BUG-010` | Implemented | Use the NPC protection bubble when the player's crystal duty belongs to the other Dark Archangel set; only consume the player's crystal on its assigned set. |

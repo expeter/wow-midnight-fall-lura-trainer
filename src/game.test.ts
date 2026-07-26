@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { angleToward, ARENA, assignmentRevealDistance, bossBeamHitsPlayer, canPickupCrystal, canRecoverFromWipe, crystalCarrierPosition, crystalWipeReason, difficultySettings, distance, distanceToSegment, hasActiveP3CrystalLight, healthResponsesPerPhase, INTERMISSION_SEQUENCE, isOnAssignedP3Side, isInP3ConsumedSector, isP3ConsumedSectorLethal, isP3ProtectionCrystalPlaced, isP3RuneTurn, isInSafeAnnulus, isInsideArena, isProtectedByP3Bubble, isProtectedByP3Light, jumpHeights, keepP3PointOnSide, moveInBounds, movePlayer, moveRelativeToCamera, moveWithIncreasingPull, nearestRuneEdges, npcEntryPosition, OPENING_BOOST_SECONDS, orientedAssignments, p1PositioningWipeReason, P2_BEAM_CADENCE_SECONDS, P2_BEAM_SECONDS, P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS, p2NpcCrystalDrops, P2_NPC_PREPOSITION_SECONDS, p2NpcRoamingPosition, p2NpcShouldReturnToSoak, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, p2OrbReturnState, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_POSITIONING_SECONDS, P2_PULL_SECONDS, p2ReturningOrbPositions, P2_SPREAD_SECONDS, p3ArchangelStackPosition, p3AssignmentForRound, p3BossPosition, p3FlightPosition, P3_FLIGHT_SECONDS, p3LandingGroupCenter, p3LandingGroupIndex, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3LightHealthRate, p3MemoryResolved, p3NpcPoolAssignment, p3NpcRuneReactionDelay, p3NpcSoaksActive, p3PoolCenters, p3PoolSoakRate, p3RuneDeadline, p3RuneEdges, p3RuneOrbs, P3_LANDING_SOAK_RADIUS, P3_RUNE_ORB_MIN_GAP, p3StarsTiming, p3WrongRuneContact, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, P3_SECOND_SOAK_NPC_DELAY_SECONDS, p4BossHealth, p4BoxStates, p4EncounterBoxStates, p4FrontSoakerPosition, p4GroupPosition, P4_GROUP_HIT_RADIUS, p4NpcRelocationPace, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4SplinterStartSeconds, p4StackPosition, p4TankConeActive, P4_BOX_COUNT, P4_BOX_MIN_SEPARATION, P4_BOX_SPEED, P4_CYCLE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, P4_SPLINTER_INTERVAL_SECONDS, P4_TANK_CONE_DURATION_SECONDS, P4_TANK_CONE_INTERVAL_SECONDS, personalCircleHitsCrystal, personalCircleHitsPlayer, PLAYER_COLLISION_PENALTY, randomCrystalDropDuty, randomizeP3PoolLayout, roamingNpcPosition, seededStars, separateP3NpcTarget, setP3BossPlan, translateSelectedPoints, walkTowards, WIPE_PENALTY } from './game'
-import { P3_APPROACH_NPC_SPEED_MULTIPLIER, P3_APPROACH_SECONDS, P3_MEMORY_START_SECONDS, P3_RUNE_HALF_CLEARANCE, P3_SECTOR_SECONDS } from './game'
+import { P3_APPROACH_NPC_SPEED_MULTIPLIER, P3_APPROACH_SECONDS, P3_MEMORY_START_SECONDS, P3_RUNE_HALF_CLEARANCE, P3_SAFE_ZONE_GRACE_SECONDS, P3_SAFE_ZONE_PENALTY_PER_SECOND, P3_SECTOR_SECONDS, p3UnsafePenaltyTicks } from './game'
 import { p3ProtectionBubbleCenter } from './game'
 import type { Point } from './game'
 import { P3_LIGHT_RADIUS, p3SpreadPosition, p4TankKillsBox, P4_TANK_KILL_RADIUS } from './game'
@@ -64,6 +64,14 @@ describe('Intermission game rules', () => {
     expect(P3_APPROACH_SECONDS).toBe(10)
     expect(isOnAssignedP3Side({ x: 700, y: 100 }, { x: 520, y: 400 }, center)).toBe(true)
     expect(isOnAssignedP3Side({ x: 470, y: 400 }, { x: 520, y: 400 }, center)).toBe(false)
+  })
+  it('charges ten points per full second outside P3 protection after a five-second grace period', () => {
+    expect(P3_SAFE_ZONE_GRACE_SECONDS).toBe(5)
+    expect(P3_SAFE_ZONE_PENALTY_PER_SECOND).toBe(10)
+    expect(p3UnsafePenaltyTicks(0, 5.99)).toBe(0)
+    expect(p3UnsafePenaltyTicks(5.99, 6.01)).toBe(1)
+    expect(p3UnsafePenaltyTicks(6.01, 8.1)).toBe(2)
+    expect(p3UnsafePenaltyTicks(0, 20)).toBe(15)
   })
   it('keeps three P3 crystals per side until Dark Archangel consumes one per side', () => {
     const assignments = [1, 4, 7, 11, 14, 17]

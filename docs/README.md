@@ -101,6 +101,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `FR-026` | Backlog | Add distinct, synchronized sound effects for major lasers, Starsplinter warnings/detonations, and orb actions, with suitable volume balance and a way to mute effects independently of music. |
 | `FR-027` | Backlog | Add an optional API-backed leaderboard and achievement tracker. Keep anonymous play fully available, optionally identify persistent/public results through Battle.net OAuth, and validate run timing and mechanics server-side rather than treating OAuth or a client-submitted score as proof of a legitimate run. |
 | `FR-028` | Implemented | Restore optional background music with only the two newly selected licensed tracks, default playback to off, and add a dedicated Audio settings row for Music, future encounter Sounds, and deferred TTS. |
+| `FR-029` | Planned | Implement opt-in browser TTS for the approved phase-aware raid-lead calls, suppress repeated/stale speech across render updates and pause states, and gracefully disable the option when speech synthesis is unavailable. |
 | `CR-037` | Superseded | A direct Discord profile needs a numeric user ID. The generic Discord application link was removed again; Twitch remains the direct creator contact. |
 | `CR-038` | Implemented | Link the displayed BattleTag to Pestivator’s Raider.IO profile because Battle.net has no stable public friend-add URL for a BattleTag. |
 | `CR-039` | Implemented | Record every tagged request before implementation and require focused automated regression coverage before marking it implemented. |
@@ -118,6 +119,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-051` | Deferred | In the second Phase 3 sequence, swap the memory-game and ground-Soak ordering. Preserve the first sequence as currently timed and revisit the exact second-sequence overlap before implementation. |
 | `CR-052` | Implemented | Increase the Phase 3 ground-Soak radius by 15% so nearby players can commit to the pool more reliably. |
 | `CR-053` | Implemented | Increase the enlarged Phase 3 ground-Soak radius by another 10%, reduce its health by 15%, and preserve full crystal-light coverage from outside the pool. |
+| `CR-054` | Planned | Preserve the P2 orbs’ existing rotational direction as they transition into their inward return, and begin their glow telegraph one second earlier. |
 | `SPEC-001` | Implemented | Define the stable ticket lifecycle: assign an ID, record intent, add focused regression coverage, validate, and commit. |
 | `SPEC-002` | Implemented | Define the creator business card’s stable content, readability, compact layout, and external-link behavior. |
 | `SPEC-003` | Implemented | Define the P3-to-P4 north gather, shared knockup origin, and phase-local HUD boundary. |
@@ -162,6 +164,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-040` | Implemented | Keep a short Phase 4 pause/resume from being mistaken for a completed quarter when a queued clock render is slightly older than the previous frame. |
 | `BUG-041` | Implemented | After the final Phase 2 orb return has resolved, replace the misleading next-beam countdown with a countdown toward the Phase 3 transition. |
 | `BUG-042` | Implemented | During Phase 3 Soaks, let nearby assisting NPCs close the final gap into an active pool instead of holding spread spacing just outside it. Evidence: [`screen-p3-bug-25.png`](../images/screen-p3-bug-25.png). |
+| `BUG-043` | Implemented | Initialize every Phase 3 ground Soak from the configured `P3_POOL_HEALTH` value instead of silently resetting all six pools to 100 HP at the start of an attempt. |
 
 ## Implemented feature inventory
 

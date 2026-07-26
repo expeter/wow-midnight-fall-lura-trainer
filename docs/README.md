@@ -51,6 +51,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-008` | Implemented | Remove the premature 20-second P3 Soak failure; unfinished pools are now checked only when Big Boom resolves at 40 seconds. |
 | `BUG-009` | Implemented | Enforce P3 Stars orb spacing and isolate the southwest/southeast fields with clearance from the room divider. |
 | `BUG-010` | Implemented | Use the NPC protection bubble when the player's crystal duty belongs to the other Dark Archangel set; only consume the player's crystal on its assigned set. |
+| `BUG-011` | Implemented | Keep the in-game version/build indicator in normal layout flow so it cannot overlap phase headlines. |
 
 ## Implemented feature inventory
 

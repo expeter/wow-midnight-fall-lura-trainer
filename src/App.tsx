@@ -1571,12 +1571,12 @@ function CreatorCard() {
   </aside>
 }
 
-function BuildIndicator() {
+function BuildIndicator({ inGame = false }: { inGame?: boolean }) {
   const built = new Date(APP_BUILD_TIME)
   const timestamp = Number.isNaN(built.getTime())
     ? APP_BUILD_TIME
     : `${built.toISOString().slice(0, 16).replace('T', ' ')} UTC`
-  return <aside className="build-indicator" aria-label="Build information" title={`Built ${built.toISOString()}`}>v{APP_VERSION} · {timestamp}</aside>
+  return <aside className={`build-indicator${inGame ? ' game-build-indicator' : ''}`} aria-label="Build information" title={`Built ${built.toISOString()}`}>v{APP_VERSION} · {timestamp}</aside>
 }
 
 function HudLayoutEditor({ layout, onChange, onReset }: { layout: HudLayout; onChange: (counter: HudElement, point: Point) => void; onReset: () => void }) {
@@ -1659,7 +1659,7 @@ function GameArena(props: { mainAbilityEnabled: boolean; bossHealth: number; mai
     ? p4SplinterStart - props.eventTime
     : P4_CYCLE_SECONDS - props.eventTime + p4SplinterStartSeconds(props.p4Cycle + 1)
   return <main className="game-shell">
-    <BuildIndicator />
+    <BuildIndicator inGame />
     <div className="game-top">
       <div><p className="eyebrow">{phaseFour ? 'PHASE 4 · RAID STACK · HEAVEN & HELL' : phaseThree ? `PHASE 3 · SECTOR ${props.p3Round} / 2 · ${props.assignment < 10 ? 'L’URA SIDE' : 'IMAGE SIDE'} · ${props.role === 'carrier' ? 'CRYSTAL CARRIER' : 'NON-CARRIER'}` : phaseTwo ? `PHASE 2 · CYCLE ${props.p2Cycle} / 3 · SPOT ${props.assignment + 1} · ${props.role === 'carrier' ? 'CRYSTAL CARRIER' : 'NON-CARRIER'}` : `INTERMISSION · ${countdown || positioning ? `${props.startSlotName.toUpperCase()} START` : `PACK ${props.cycle} / 6`} · ${props.role === 'carrier' ? 'CRYSTAL CARRIER' : 'NON-CARRIER'}`} · {props.gameSpeed.toFixed(2)}×</p><h1>{phaseFour ? props.event === 'p4-countdown' ? 'Get ready for Phase 4.' : props.event === 'p4-transition' ? 'Knocked into Phase 4.' : 'Starsplinter into Heaven and Hell.' : p3?.title ?? p2?.title ?? (countdown ? 'Get ready.' : positioning ? 'Take your position.' : finalRecovery ? 'Recover your crystal.' : props.event === 'beam' ? 'Find the gap.' : 'Clear the crystals.')}</h1></div>
       <div className="game-actions"><button aria-label={props.musicMuted ? 'Unmute music' : 'Mute music'} onClick={() => props.setMusicMuted(!props.musicMuted)}>{props.musicMuted ? '🔇 Muted' : '🔊 Music'}</button><button disabled={Boolean(props.wipeReason)} onClick={() => props.setPaused(!props.paused)}>{props.wipeReason ? 'Wiped' : props.paused ? 'Resume' : 'Pause'}</button><button className="secondary" onClick={props.onExit}>Exit</button></div>

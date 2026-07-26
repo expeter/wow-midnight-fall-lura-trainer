@@ -288,6 +288,12 @@
   flex-direction: column;
   overflow: hidden;
 }
+.game-build-indicator {
+  position: static;
+  flex: 0 0 auto;
+  align-self: flex-start;
+  margin: 0 0 3px;
+}
 .game-top {
   flex: 0 0 auto;
   margin-bottom: 10px;

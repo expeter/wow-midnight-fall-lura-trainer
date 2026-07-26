@@ -16,29 +16,49 @@ Some browsers restrict `file://` audio loading. If the clips do not play, serve
 this directory locally:
 
 ```sh
-python3 -m http.server 8090
+python3 -m http.server 8090 --directory tools/voice-soundboard
 ```
 
-Then open <http://localhost:8090/tools/voice-soundboard/>. Serving the
-repository root is required so the board can load the candidate files from
-`sounds/`. Existing review data from the old URL remains available because
-browser local storage belongs to the same `localhost:8090` origin.
+Then open <http://localhost:8090>. All audition derivatives live inside this
+tool, so playback does not depend on paths outside the served directory.
 
 ## Spell-effect candidates
 
-The lower board currently compares five locally supplied candidates:
+The lower board compares four choices in each of five mechanic groups. Each
+group combines a polished supplied candidate with three deterministic,
+original trainer syntheses:
 
-| Candidate | Suggested mechanic |
-| --- | --- |
-| Arcane laser | Boss beams in P1/P2/P3 |
-| Light cast | Cast completion, rune, or crystal activation |
-| Magical whoosh | Starsplinter launch or returning orbs |
-| Small bell | Soak or memory-game success |
-| Error pulse | Mistake or wipe feedback |
+| Group | Supplied starting point | Original alternatives |
+| --- | --- | --- |
+| Lasers & beams | Magical Whoosh | Void Sweep, Prismatic Cut, Arc Burn |
+| P2 returning orbs | Arcane Laser | Orb Recall, Gravity Pearl, Celestial Return |
+| Main Ability release | Louder Light Cast | Arcane Release, Crystal Spark, Spell Impact |
+| Mechanic success | Small Bell | Rune Clear, Soak Complete, Crystal Chime |
+| Mistake & wipe | Faster Error Pulse | Void Warning, Rune Fail, Crystal Danger |
 
 Selection is intentionally separate from production integration. A shortlisted
 clip still needs its source/license recorded before it is shipped with the
 game.
+
+Regenerate all SFX derivatives from the repository root:
+
+```sh
+python3 tools/voice-soundboard/generate_sfx.py
+```
+
+The custom alternatives are synthesized deterministically with Python's
+standard library. `ffmpeg` trims, accelerates, and normalizes the supplied
+audition sources. SLT's `Move` command is also generated 14% tighter than its
+other words in `generate.py`, following the first listening review.
+
+## Review carried into this revision
+
+- SLT is the preferred speech voice; its original `Move` felt too relaxed.
+- Magical Whoosh belongs with lasers and beams.
+- Arcane Laser belongs with P2's flying/returning orbs.
+- Light Cast remains a possible Main Ability release and is auditioned with a
+  louder normalized master.
+- Error Pulse has the right character but needed a trimmed, faster attack.
 
 ## Candidates
 

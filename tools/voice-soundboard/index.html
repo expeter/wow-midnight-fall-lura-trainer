@@ -70,6 +70,10 @@
     .section-heading { margin: 42px 0 16px; }
     .section-heading h2 { font-size: 32px; }
     .section-heading p { max-width: 720px; margin: 5px 0 0; color: var(--muted); }
+    .effect-groups { display: grid; gap: 22px; }
+    .effect-group h3 { margin: 0 0 4px; font-size: 23px; }
+    .effect-group > p { margin: 0 0 11px; color: var(--muted); }
+    .effect-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(235px, 1fr)); gap: 12px; }
     .sfx-card button { width: 100%; padding: 15px; color: #151023; background: linear-gradient(110deg, var(--mint), #a8f3d7); }
     .sfx-card button:hover { color: #151023; background: linear-gradient(110deg, #8ff3cf, #c4fae6); }
     .sfx-card .character { min-height: 3em; }
@@ -117,7 +121,7 @@
       <h2>Audition the spell kit.</h2>
       <p>These clips are review material only. Play them against the suggested mechanic, shortlist the useful ones, and leave the final mapping in your notes.</p>
     </div>
-    <section class="grid" id="effects" aria-label="Spell sound candidates"></section>
+    <section class="effect-groups" id="effects" aria-label="Spell sound candidates"></section>
 
     <section class="notes">
       <h2>Audition notes</h2>
@@ -142,13 +146,39 @@
       { id: "kal16", name: "KAL16", character: "US male diphone · fuller KAL rendering" }
     ];
     const words = ["left", "right", "move"];
-    const effects = [
-      { id: "laser", name: "Arcane laser", use: "Boss beams · P1/P2/P3 laser telegraphs", file: "../../sounds/freesound_community-rayo-laser-101851.mp3" },
-      { id: "cast", name: "Light cast", use: "Player cast completion · rune or crystal activation", file: "../../sounds/u_o6py8docsy-cast-light-288736.mp3" },
-      { id: "whoosh", name: "Magical whoosh", use: "Splinter launch · returning orb movement", file: "../../sounds/u_hyed0v3ux9-magical-whoosh-148459.mp3" },
-      { id: "success", name: "Small bell", use: "Soak cleared · memory game completed", file: "../../sounds/oxidvideos-ding-small-bell-sfx-411945.mp3" },
-      { id: "error", name: "Error pulse", use: "Mistake · failed mechanic · wipe feedback", file: "../../sounds/rikk_nextsoft-error_sound-221445.mp3" }
+    const effectGroups = [
+      { name: "Lasers & beams", use: "Boss beams, Starsplinters, and runic lattice lines.", effects: [
+        { id: "laser-magical-whoosh", name: "Magical Whoosh", source: "supplied" },
+        { id: "laser-void-sweep", name: "Void Sweep", source: "generated" },
+        { id: "laser-prismatic-cut", name: "Prismatic Cut", source: "generated" },
+        { id: "laser-arc-burn", name: "Arc Burn", source: "generated" }
+      ]},
+      { name: "P2 returning orbs", use: "The glow, launch, and inward flight of the twelve orbs.", effects: [
+        { id: "orb-arcane-laser", name: "Arcane Laser", source: "supplied" },
+        { id: "orb-orb-recall", name: "Orb Recall", source: "generated" },
+        { id: "orb-gravity-pearl", name: "Gravity Pearl", source: "generated" },
+        { id: "orb-celestial-return", name: "Celestial Return", source: "generated" }
+      ]},
+      { name: "Main Ability release", use: "Played only when the one-second cast completes and its projectile fires.", effects: [
+        { id: "cast-light-loud", name: "Light Cast · louder", source: "supplied" },
+        { id: "cast-arcane-release", name: "Arcane Release", source: "generated" },
+        { id: "cast-crystal-spark", name: "Crystal Spark", source: "generated" },
+        { id: "cast-spell-impact", name: "Spell Impact", source: "generated" }
+      ]},
+      { name: "Mechanic success", use: "Soak cleared, memory game finished, or crystal recovered.", effects: [
+        { id: "success-small-bell", name: "Small Bell", source: "supplied" },
+        { id: "success-rune-clear", name: "Rune Clear", source: "generated" },
+        { id: "success-soak-complete", name: "Soak Complete", source: "generated" },
+        { id: "success-crystal-chime", name: "Crystal Chime", source: "generated" }
+      ]},
+      { name: "Mistake & wipe", use: "Immediate failure feedback without covering the raid-lead call.", effects: [
+        { id: "error-pulse-fast", name: "Error Pulse · faster", source: "supplied" },
+        { id: "error-void-warning", name: "Void Warning", source: "generated" },
+        { id: "error-rune-fail", name: "Rune Fail", source: "generated" },
+        { id: "error-crystal-danger", name: "Crystal Danger", source: "generated" }
+      ]}
     ];
+    const effects = effectGroups.flatMap(group => group.effects);
     const grid = document.querySelector("#voices");
     const effectGrid = document.querySelector("#effects");
     const buffers = new Map();
@@ -169,15 +199,21 @@
         <label class="pick"><input type="radio" name="preferred" value="${voice.id}"> Mark as preferred</label>
       </article>
     `).join("");
-    effectGrid.innerHTML = effects.map(effect => `
-      <article class="card sfx-card">
-        <div class="card-head">
-          <div><h2>${effect.name}</h2><p class="character">${effect.use}</p></div>
-          <span class="badge">${effect.id}</span>
+    effectGrid.innerHTML = effectGroups.map(group => `
+      <section class="effect-group">
+        <h3>${group.name}</h3>
+        <p>${group.use}</p>
+        <div class="effect-grid">${group.effects.map(effect => `
+          <article class="card sfx-card">
+            <div class="card-head">
+              <div><h2>${effect.name}</h2><p class="character">${effect.source === "generated" ? "Original trainer synthesis" : "Polished supplied candidate"}</p></div>
+              <span class="badge">${effect.source}</span>
+            </div>
+            <button type="button" data-effect="${effect.id}">▶ Play candidate</button>
+            <label class="pick"><input type="checkbox" name="shortlist" value="${effect.id}"> Keep in shortlist</label>
+          </article>`).join("")}
         </div>
-        <button type="button" data-effect="${effect.id}">▶ Play candidate</button>
-        <label class="pick"><input type="checkbox" name="shortlist" value="${effect.id}"> Keep in shortlist</label>
-      </article>
+      </section>
     `).join("");
 
     function audioContext() {
@@ -248,7 +284,7 @@
       stop();
       const effect = effects.find(candidate => candidate.id === button.dataset.effect);
       if (!effect) return;
-      activeEffect = new Audio(effect.file);
+      activeEffect = new Audio(`sfx/${effect.id}.wav`);
       button.classList.add("playing");
       activeEffect.addEventListener("ended", () => {
         button.classList.remove("playing");

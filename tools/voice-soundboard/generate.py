@@ -78,7 +78,7 @@ def synthesize(lib_dir: Path, voice_key: str, text: str, output: Path) -> None:
         flite.delete_wave(wave)
 
 
-def polish(ffmpeg: str, source: Path, output: Path) -> None:
+def polish(ffmpeg: str, source: Path, output: Path, speed: float = 1) -> None:
     # Keep a tiny leading cushion for reliable instant playback, remove the
     # long Flite tail, and make comparisons similar in perceived loudness.
     audio_filter = (
@@ -87,6 +87,8 @@ def polish(ffmpeg: str, source: Path, output: Path) -> None:
         "start_silence=0.012:"
         "stop_periods=-1:stop_duration=0:stop_threshold=-50dB:"
         "stop_silence=0.055,"
+        + (f"atempo={speed}," if speed != 1 else "")
+        +
         "afade=t=in:st=0:d=0.008,"
         "loudnorm=I=-20:TP=-2:LRA=7"
     )
@@ -131,7 +133,7 @@ def main() -> int:
                 raw = temp_dir / f"{voice_key}-{command}-raw.wav"
                 final = args.output_dir / f"{voice_key}-{command}.wav"
                 synthesize(args.lib_dir, voice_key, command.capitalize(), raw)
-                polish(ffmpeg, raw, final)
+                polish(ffmpeg, raw, final, 1.14 if voice_key == "slt" and command == "move" else 1)
                 print(final.relative_to(HERE))
     return 0
 

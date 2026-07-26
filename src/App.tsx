@@ -34,7 +34,6 @@ const PROJECT_URL = 'https://github.com/expeter/wow-midnight-fall-lura-trainer'
 const CHANGELOG_URL = `${PROJECT_URL}/blob/main/CHANGELOG.md`
 const RAIDER_IO_PROFILE = 'https://raider.io/characters/eu/antonidas/Pestivator'
 const ASGARD_RAID_PLAN_URL = 'https://tinyurl.com/lura-trainer-iasgardi-v3'
-const DISCORD_APP_URL = 'https://discord.com/app'
 const MUSIC_TRACKS = [
   { id: 'panic', label: 'Panic Again Pulse · 1:19', src: new URL('../sounds/pixabay/oceanframemusic-panic-again-pulse-no-copyright-suspense-music-568851.mp3', import.meta.url).href },
   { id: 'dominion', label: 'Dominion · 1:16', src: new URL('../sounds/pixabay/ancient_echoes-dominion-519384.mp3', import.meta.url).href },
@@ -1736,7 +1735,7 @@ function CreatorCard() {
   return <aside className="creator-card" aria-label="About Pestivator">
     <a className="creator-avatar-link" href={RAIDER_IO_PROFILE} target="_blank" rel="noreferrer" aria-label="Pestivator on Raider.IO"><img src={CREATOR_AVATAR} alt="Pestivator's gnome avatar" /></a>
     <div><span>Created by</span><strong>Pestivator</strong><a className="battle-tag-link" href={RAIDER_IO_PROFILE} target="_blank" rel="noreferrer" title="BattleTag · open Pestivator on Raider.IO">pestivator#2515</a>
-      <nav aria-label="Pestivator links"><a href={RAIDER_IO_PROFILE} target="_blank" rel="noreferrer">Raider.IO</a><a className="creator-icon-link twitch" href="https://twitch.tv/pestivator" target="_blank" rel="noreferrer" aria-label="Pestivator on Twitch" title="Twitch · Pestivator"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 4h14v11l-4 4h-4l-3 2v-2H5V4Z" /><path d="M10 8v5M14 8v5" /></svg></a><a className="creator-icon-link discord" href={DISCORD_APP_URL} target="_blank" rel="noreferrer" aria-label="Open Discord for pestivator, legacy tag pestivator#0757" title="Discord · pestivator · legacy pestivator#0757"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 6.5c3.8-2 8.2-2 12 0l1.5 9.5c-2 1.5-3.7 2.3-5.2 2.7l-1.1-1.5h-2.4l-1.1 1.5C8.2 18.3 6.5 17.5 4.5 16L6 6.5Z" /><circle cx="9.5" cy="12.5" r="1.2" /><circle cx="14.5" cy="12.5" r="1.2" /></svg></a><a className="coffee-link" href={`solana:${SOLANA_ADDRESS}?label=Pestivator&message=Thanks%20for%20the%20Lura%20Trainer`} title={`Send SOL to ${SOLANA_ADDRESS}`}>☕ Buy me a coffee</a></nav>
+      <nav aria-label="Pestivator links"><a href={RAIDER_IO_PROFILE} target="_blank" rel="noreferrer">Raider.IO</a><a href="https://twitch.tv/pestivator" target="_blank" rel="noreferrer" aria-label="Pestivator on Twitch">Twitch.tv →</a><a className="coffee-link" href={`solana:${SOLANA_ADDRESS}?label=Pestivator&message=Thanks%20for%20the%20Lura%20Trainer`} title={`Send SOL to ${SOLANA_ADDRESS}`}>☕ Buy me a coffee</a></nav>
     </div>
   </aside>
 }

@@ -88,7 +88,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `FR-018` | Implemented | Allow five consecutive seconds outside P3 safe-zone protection, then deduct 10 points for every additional full second until the player returns to protection and resets the grace period. |
 | `FR-019` | Implemented | Add a one-click “Load I Asgard I raid plan” action backed by the stable `lura-trainer-iasgardi-v3` TinyURL; its resulting shared hash uses the standard normalized loader and immediately replaces and persists the current local plan. |
 | `FR-020` | Implemented | Emit Git-derived version metadata from every local or CI Vite build, periodically detect a newer deployed revision, offer an in-page reload prompt, display the running Git revision, and link a tracked changelog beneath the version. |
-| `CR-037` | Implemented | Add a compact Discord chat entry for `pestivator` (legacy `pestivator#0757`) without increasing the creator card’s link-row count. |
+| `CR-037` | Superseded | A direct Discord profile needs a numeric user ID. The generic Discord application link was removed again; Twitch remains the direct creator contact. |
 | `CR-038` | Implemented | Link the displayed BattleTag to Pestivator’s Raider.IO profile because Battle.net has no stable public friend-add URL for a BattleTag. |
 | `CR-039` | Implemented | Record every tagged request before implementation and require focused automated regression coverage before marking it implemented. |
 | `BUG-008` | Implemented | Remove the premature 20-second P3 Soak failure; unfinished pools are now checked only when Big Boom resolves at 40 seconds. |
@@ -118,7 +118,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-032` | Implemented | Preserve interpolated actor movement after the initial P3 landing Soaks and fade the completed yellow indicators out over 250 ms instead of abruptly clearing and visually flashing the scene. |
 | `BUG-033` | Implemented | Render active P3 crystal-carrier safe zones above the opaque blue Soaks so all three local carrier lights remain visible, and give NPCs a 50% opening approach-speed bonus. | [`screen-p3-bug24.png`](../images/screen-p3-bug24.png) |
 | `BUG-034` | Implemented | Load, normalize, and persist shared hash plans before the first render so stale browser state cannot leak into the live Intermission snapshot. Intermission, both P2 maps, P3, P4’s shared roster, bosses, start slots, and per-phase crystals now receive the same loaded plan; mixed-roster P3 landing groups also follow the plan side instead of roster order. A browser regression enters all four phases from a stale-local/shared-hash scenario. |
-| `BUG-035` | Implemented | Replace the misleading Discord `channels/@me` destination with Discord’s application page and use compact, readable SVG icon links for Discord and Twitch. The Discord icon’s accessible label and tooltip retain `pestivator` and the legacy `pestivator#0757` tag. |
+| `BUG-035` | Implemented | Remove the misleading generic Discord destination entirely and restore a clearly labeled `Twitch.tv →` profile link. |
 
 ## Implemented feature inventory
 
@@ -255,7 +255,7 @@ multiplier scales the complete simulation uniformly.
 - Production build validation through Vite.
 - GitHub Pages deployment workflow.
 - MIT license, unofficial fan-project notice, creator card, Twitch/BattleTag
-  and Discord contact details, optional Solana support link, and Pixabay music
+  and Twitch contact details, optional Solana support link, and Pixabay music
   credits.
 
 ## Historical issue groups

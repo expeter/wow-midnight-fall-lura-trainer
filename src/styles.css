@@ -170,7 +170,7 @@
 .creator-card strong { display: block; margin: 2px 0; font-size: 17px; }
 .creator-card .battle-tag-link { display: block; color: #b9c4d9; font: 10px 'DM Mono', monospace; text-decoration: none; }
 .creator-card .battle-tag-link:hover { color: #c9fff1; }
-.creator-card nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin-top: 7px; }
+.creator-card nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; margin-top: 7px; }
 .creator-card nav a {
   display: flex;
   align-items: center;
@@ -185,11 +185,6 @@
   white-space: nowrap;
 }
 .creator-card nav a:hover { border-color: #73e0c1; background: #193239; }
-.creator-card .creator-icon-link { min-height: 28px; padding: 3px; }
-.creator-card .creator-icon-link svg { width: 18px; height: 18px; overflow: visible; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.creator-card .creator-icon-link.twitch { color: #bf94ff; }
-.creator-card .creator-icon-link.discord { color: #aeb8ff; }
-.creator-card .creator-icon-link.discord svg circle { fill: currentColor; stroke: none; }
 .creator-card .coffee-link { grid-column: 1 / -1; width: 100%; color: #ffe18b; border-color: #625331; }
 .practice-settings { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: -12px 0 24px; }
 .music-preview { padding: 8px 10px; margin: 10px 0 0; text-align: center; font-size: 11px; }

@@ -183,6 +183,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-045` | Implemented | Let both Phase 3 raid halves finish the final movement at the exact shared Phase 4 north stack instead of stopping at their former divider-side clearance. Evidence: [`screen-p3-bug27.png`](../images/screen-p3-bug27.png). |
 | `BUG-046` | Implemented | During Intermission, wipe when the controlled player’s resolving Starsplinter hits an NPC who is currently carrying a crystal; an NPC whose crystal is visibly on the ground is not treated as still carrying it. |
 | `BUG-047` | Implemented | Count entities whose bodies visibly overlap the Phase 3 ground-Soak rim as occupants in Test and all other modes, so a visually valid three-player Soak consistently drains its health. |
+| `BUG-048` | Implemented | Preserve all Main-ability damage when Phase 4 starts, subtract that damage in addition to the scripted Heaven & Hell health loss without ever healing L’ura, grant +50 points for every 10% of player damage, and award a dedicated achievement when L’ura reaches 0% before the final sequence. |
 
 ## Implemented feature inventory
 

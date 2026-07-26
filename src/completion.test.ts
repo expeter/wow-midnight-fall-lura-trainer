@@ -80,4 +80,19 @@ describe('completion card results', () => {
       mainAbilityEnabled: false,
     })[0]).toEqual({ id: 'practice-clear', label: 'L’URA PRACTICE CLEAR', detail: 'Easy · Non-crystal player' })
   })
+
+  it('celebrates defeating L’ura before the final Heaven and Hell', () => {
+    const achievements = completionAchievements({
+      difficulty: 'Normal',
+      crystalPlayer: false,
+      fullSequence: true,
+      mistakes: 1,
+      totalScore: 1250,
+      healthPotEnabled: false,
+      shieldEnabled: false,
+      mainAbilityEnabled: true,
+      earlyKill: true,
+    })
+    expect(achievements.some(achievement => achievement.id === 'early-kill')).toBe(true)
+  })
 })

@@ -608,6 +608,14 @@ export function p4BossHealth(cycle: number, eventTime: number): number {
   const elapsed = (cycle - 1) * P4_CYCLE_SECONDS + eventTime
   return Math.max(0, 100 * (1 - elapsed / P4_BOSS_DURATION_SECONDS))
 }
+export function p4BossHealthWithPlayerDamage(cycle: number, eventTime: number, playerDamage: number): number {
+  return Math.max(0, p4BossHealth(cycle, eventTime) - Math.max(0, Math.min(100, playerDamage)))
+}
+export function bossDamageScoreBonus(previousDamage: number, nextDamage: number): number {
+  const previousTiers = Math.floor(Math.max(0, Math.min(100, previousDamage)) / 10)
+  const nextTiers = Math.floor(Math.max(0, Math.min(100, nextDamage)) / 10)
+  return Math.max(0, nextTiers - previousTiers) * 50
+}
 
 export function p3PoolCenters(side: -1 | 1, center: Point, round: number): Point[] {
   const boss = p3BossPosition(side, center, round)

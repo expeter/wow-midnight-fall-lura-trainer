@@ -5,7 +5,7 @@ import { p3ProtectionBubbleCenter } from './game'
 import type { Point } from './game'
 import { P3_LIGHT_RADIUS, p3SpreadPosition, p4TankKillsBox, P4_TANK_KILL_RADIUS } from './game'
 import { isP3RaidMemberVisible, p3ActiveCrystalAssignments } from './game'
-import { isInsideP3Pool, P1_STAR_LENGTH, starsplinterHitsCrystalCarrier } from './game'
+import { bossDamageScoreBonus, isInsideP3Pool, p4BossHealthWithPlayerDamage, P1_STAR_LENGTH, starsplinterHitsCrystalCarrier } from './game'
 
 describe('Intermission game rules', () => {
   it('creates six deterministic stars for a seed', () => { expect(seededStars(42)).toEqual(seededStars(42)); expect(seededStars(42)).toHaveLength(6) })
@@ -26,6 +26,14 @@ describe('Intermission game rules', () => {
     expect(isInsideP3Pool({ x: 114.5, y: 100 }, pool)).toBe(true)
     expect(isInsideP3Pool({ x: 115.5, y: 100 }, pool)).toBe(false)
     expect(p3PoolSoakRate(3)).toBe(3)
+  })
+  it('keeps pre-P4 damage and awards each newly crossed ten-percent tier', () => {
+    expect(p4BossHealthWithPlayerDamage(1, 0, 60)).toBe(40)
+    expect(p4BossHealthWithPlayerDamage(2, 0, 60)).toBeCloseTo(16.14, 2)
+    expect(p4BossHealthWithPlayerDamage(3, 0, 60)).toBe(0)
+    expect(bossDamageScoreBonus(9.5, 10)).toBe(50)
+    expect(bossDamageScoreBonus(19.5, 30)).toBe(100)
+    expect(bossDamageScoreBonus(30, 30.5)).toBe(0)
   })
   it('only treats the band between the two arena circles as safe', () => { const center = { x: 100, y: 100 }; expect(isInSafeAnnulus({ x: 160, y: 100 }, center, 50, 80)).toBe(true); expect(isInSafeAnnulus({ x: 120, y: 100 }, center, 50, 80)).toBe(false); expect(isInSafeAnnulus({ x: 190, y: 100 }, center, 50, 80)).toBe(false) })
   it('wipes P1 positioning only when the player misses the playable ring', () => { const center = { x: 100, y: 100 }; expect(p1PositioningWipeReason({ x: 160, y: 100 }, center, 50, 80)).toBeNull(); expect(p1PositioningWipeReason({ x: 190, y: 100 }, center, 50, 80)).toMatch(/did not reach/i); expect(p1PositioningWipeReason({ x: 120, y: 100 }, center, 50, 80)).toMatch(/did not reach/i) })

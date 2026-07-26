@@ -30,6 +30,7 @@ const ICONS: Record<Achievement['id'], string> = {
   flawless: '◇',
   'all-options': '✚',
   'superhuman-flawless': '★',
+  'early-kill': '⚔',
 }
 
 function normalizedDifficulty(difficulty: string): string {
@@ -67,12 +68,14 @@ function scenarioAchievement(
         ? { ...shared, fullSequence: true, mistakes: 0, healthPotEnabled: false, shieldEnabled: false, mainAbilityEnabled: false }
         : id === 'all-options'
           ? { ...shared, fullSequence: true, mistakes: 1, healthPotEnabled: true, shieldEnabled: true, mainAbilityEnabled: true }
-          : { ...shared, fullSequence: true, mistakes: 0, totalScore: 1101, healthPotEnabled: true, shieldEnabled: true, mainAbilityEnabled: true }
+          : id === 'superhuman-flawless'
+            ? { ...shared, fullSequence: true, mistakes: 0, totalScore: 1101, healthPotEnabled: true, shieldEnabled: true, mainAbilityEnabled: true }
+            : { ...shared, fullSequence: true, mistakes: 1, healthPotEnabled: false, shieldEnabled: false, mainAbilityEnabled: true, earlyKill: true }
   return collectibleAchievements(summary).find(achievement => achievement.id === id) ?? null
 }
 
 export function achievementCatalog(): AchievementDefinition[] {
-  const ids: Achievement['id'][] = ['practice-clear', 'movement-master', 'flawless', 'all-options', 'superhuman-flawless']
+  const ids: Achievement['id'][] = ['practice-clear', 'movement-master', 'flawless', 'all-options', 'superhuman-flawless', 'early-kill']
   return DIFFICULTIES.flatMap(difficulty =>
     [false, true].flatMap(crystalPlayer =>
       ids.map(id => scenarioAchievement(difficulty, crystalPlayer, id)).filter((entry): entry is AchievementDefinition => Boolean(entry)),

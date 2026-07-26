@@ -31,7 +31,7 @@ export function isFullSequenceCompletion(results: PhaseResult[]): boolean {
 }
 
 export interface Achievement {
-  id: 'practice-clear' | 'movement-master' | 'flawless' | 'all-options' | 'superhuman-flawless'
+  id: 'practice-clear' | 'movement-master' | 'flawless' | 'all-options' | 'superhuman-flawless' | 'early-kill'
   label: string
   detail: string
 }
@@ -45,6 +45,7 @@ export interface AchievementSummary {
   healthPotEnabled: boolean
   shieldEnabled: boolean
   mainAbilityEnabled: boolean
+  earlyKill?: boolean
 }
 
 export function completionAchievements(summary: AchievementSummary): Achievement[] {
@@ -60,6 +61,7 @@ export function completionAchievements(summary: AchievementSummary): Achievement
   if (summary.fullSequence && flawless && allOptions && summary.totalScore > 1100 && summary.crystalPlayer) {
     achievements.push({ id: 'superhuman-flawless', label: 'SUPERHUMAN FLAWLESS', detail: `${summary.difficulty} · Crystal player · 1100+ points` })
   }
+  if (summary.earlyKill) achievements.push({ id: 'early-kill', label: 'L’URA DEFEATED EARLY', detail: 'Boss reached 0% before the fourth Heaven & Hell finished' })
   return achievements
 }
 

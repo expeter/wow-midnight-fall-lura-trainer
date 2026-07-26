@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
 import { bossBeamHitsPlayer, canPickupCrystal, canRecoverFromWipe, crystalCarrierPosition, crystalWipeReason, difficultySettings, distance, distanceToSegment, isOnAssignedP3Side, isP3ConsumedSectorLethal, isInSafeAnnulus, isP3ProtectionCrystalPlaced, isProtectedByP3Bubble, isProtectedByP3Light, moveRelativeToCamera, moveWithIncreasingPull, npcEntryPosition, OPENING_BOOST_SECONDS, orientedAssignments, p1PositioningWipeReason, p2NpcCrystalDrops, p2PhaseTransitionCountdown, p2ReturningOrbPositions, P1_FINAL_RECOVERY_SECONDS, P1_STAR_LENGTH, P2_BEAM_SECONDS, P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS, P2_ORB_GLOW_LEAD_SECONDS, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_POSITIONING_SECONDS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p3ActiveCrystalAssignments, P3_APPROACH_SECONDS, p3ArchangelStackPosition, p3AssignmentForRound, p3BossPosition, p3FlightPosition, P3_FINAL_SECTOR_MOVE_SECONDS, P3_FLIGHT_SECONDS, p3LandingPlanIndex, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3LightHealthRate, p3MemoryResolved, p3PoolCenters, p3PoolSoakRate, p3ProtectionBubbleCenter, p3RuneDeadline, p3RuneEdges, p3RuneOrbs, p3RuneStepAt, p3SideForPosition, p3StarsTiming, p3UnsafePenaltyTicks, p3WrongRuneContact, P3_LANDING_SOAK_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_MEMORY_STEP_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, P3_SAFE_ZONE_PENALTY_PER_SECOND, P3_SECTOR_SECONDS, p4BossHealth, p4EncounterBoxStates, p4GroupPosition, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4SplinterStartSeconds, p4StackPosition, p4TransitionStartPosition, P4_CYCLE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, P4_SPLINTER_INTERVAL_SECONDS, personalCircleHitsCrystal, personalCircleHitsPlayer, PLAYER_COLLISION_PENALTY, randomCrystalDropDuty, randomizeP3PoolLayout, roamingNpcPosition, setP3BossPlan, shouldShowP2OrbReturnCounter, translateSelectedPoints, walkTowards, WIPE_PENALTY, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type Role, type RuneSymbol } from './game'
 import { buildPhaseResult, completionAchievements, completionShareText, isFullSequenceCompletion, type PhaseKey, type PhaseResult } from './completion'
-import { isInsideP3Pool, p4FrontSoakerPosition, p4TankKillsBox, starsplinterHitsCrystalCarrier } from './game'
+import { bossDamageScoreBonus, isInsideP3Pool, p4BossHealthWithPlayerDamage, p4FrontSoakerPosition, p4TankKillsBox, starsplinterHitsCrystalCarrier } from './game'
 import { p4TimedVoiceCues, timedVoiceDelaySeconds, ttsCuesForState, type P4VoiceClip } from './audio'
 import AchievementCollection, { AchievementBadgeSummary } from './AchievementCollection'
 import { ACHIEVEMENT_STORAGE_KEY, collectibleAchievements, mergeEarnedAchievements, parseAchievementCollection, serializeAchievementCollection } from './achievementCollection'
@@ -465,6 +465,7 @@ export default function App() {
   const [bossHealth, setBossHealth] = useState(100)
   const [mainCastRemaining, setMainCastRemaining] = useState(0)
   const [mainAbilityUsed, setMainAbilityUsed] = useState(false)
+  const [luraKilledEarly, setLuraKilledEarly] = useState(false)
   const [mainProjectileFiredAt, setMainProjectileFiredAt] = useState<number | null>(null)
   const [personalJumpProgress, setPersonalJumpProgress] = useState(0)
   const [startSlot, setStartSlot] = useState(0)
@@ -495,6 +496,8 @@ export default function App() {
   const shieldUsedRef = useRef(false)
   const mainAbilityReadyAtRef = useRef(0)
   const mainAbilityCastPendingRef = useRef(false)
+  const bossHealthRef = useRef(100)
+  const bossPlayerDamageRef = useRef(0)
   const jumpUntilRef = useRef(0)
   const jumpKeysRef = useRef(new Set<string>())
   const jumpCameraForwardRef = useRef<Point>({ x: 0, y: -1 })
@@ -532,6 +535,7 @@ export default function App() {
   const crystalNoticeTimerRef = useRef<number | null>(null)
   const keysHeld = useRef(new Set<string>())
   statsRef.current = stats
+  bossHealthRef.current = bossHealth
 
   useEffect(() => { localStorage.setItem('lura-selected-position', String(assignment)) }, [assignment])
   useEffect(() => { localStorage.setItem('lura-player-name', playerName) }, [playerName])
@@ -790,9 +794,11 @@ export default function App() {
     phaseStartRef.current = { key, score: statsRef.current.score, time: timeRef.current }
     resetPhaseRecovery(key)
   }
-  function finishP4AndShowResults() {
+  function finishP4AndShowResults(killedEarly = false) {
     finishTrackedPhase('p4')
     setBossHealth(0)
+    bossHealthRef.current = 0
+    setLuraKilledEarly(killedEarly)
     setCompletionCopyStatus('')
     setCompletionPreview(false)
     setScreen('results')
@@ -822,8 +828,18 @@ export default function App() {
     const intermissionStart = startSlots[slot]
     const oriented = orientedAssignments(positions, intermissionStart, WORLD.center)
     const startPosition = entryMode === 'arena1' ? intermissionStart : entryMode === 'arena4' ? p4StackPosition(1, WORLD.center) : WORLD.center
+    const preservedBossHealth = bossHealthRef.current
+    if (!preserveScore) {
+      bossHealthRef.current = 100
+      bossPlayerDamageRef.current = 0
+      setLuraKilledEarly(false)
+    }
     jumpUntilRef.current = 0; jumpKeysRef.current.clear(); p4LastBoxHitRef.current = -Infinity; setPersonalJumpProgress(0); setMusicPreviewing(false); restartMusic()
     setPhasePositions(oriented); setStartSlot(slot); playerRef.current = startPosition; jumpOriginRef.current = startPosition; pullOriginRef.current = startPosition; p3FlightOriginRef.current = startPosition; crystalAgeRef.current = 0; eventTimeRef.current = 0; p3UnsafeSecondsRef.current = 0; if (!preserveScore) timeRef.current = 0; droppedForPackRef.current = false; healthRef.current = 100; criticalDeadlineRef.current = 0; nextCriticalRef.current = Infinity; healthPotUsedRef.current = false; shieldUsedRef.current = false; mainAbilityReadyAtRef.current = 0; mainAbilityCastPendingRef.current = false; setHealth(100); setCriticalRemaining(0); setHealthPotUsed(false); setShieldUsed(false); setBossHealth(100); setMainCastRemaining(0); if (!preserveScore) setMainAbilityUsed(false); setMainProjectileFiredAt(null); setPlayer(startPosition); setCrystal(null); setCrystalSpent(false); setCrystalAge(0); setNpcSplinters([]); setNpcCrystals([]); setNpcCarrier(null); setNpcCrystalAge(0); setPlayerSplinterRotation(0); setP3ArchangelDuty(randomCrystalDropDuty()); if (preserveScore) setStats(current => ({ ...current, crystalDropped: false })); else { statsRef.current = { score: 1000, hits: 0, crystalDropped: false, time: 0 }; setStats(statsRef.current); setMistakes([]); wipeCountRef.current = 0; phaseResultsRef.current = []; setPhaseResults([]); phaseStartRef.current = { key: phaseForEntry(entryMode), score: 1000, time: 0 }; resetPhaseRecovery(phaseForEntry(entryMode)); const nextAttempt = Math.max(0, Number(localStorage.getItem('lura-attempt-count')) || 0) + 1; localStorage.setItem('lura-attempt-count', String(nextAttempt)); setAttemptNumber(nextAttempt); setCompletionCopyStatus('') } lastMistakeRef.current = { label: '', time: -Infinity }; setWipeReason(''); setSoftWipeNotice(''); announceCrystalDuty([], entryCrystalAssignments, entryMode === 'arena1' ? 'Intermission' : entryMode === 'arena2' ? 'P2' : entryMode === 'arena3' ? 'P3' : 'P4', true); setEvent(entryMode === 'arena2' ? 'p2-countdown' : entryMode === 'arena3' ? 'p3-countdown' : entryMode === 'arena4' ? 'p4-countdown' : 'countdown'); setEventTime(0); setCycle(1); setP2Cycle(1); setP2Soaked(false); setP2OrbReturnAge(-1); p2OrbPlayerHitRef.current = false; p2OrbReturnAgeRef.current = -1; p2OrbReturnHitRef.current = false; p2ReturnSoakCheckedRef.current = false; setP3Round(1); setP3PoolHealth(Array(6).fill(P3_POOL_HEALTH)); setP3RuneOrder(shuffledRunes()); setP3RuneStep(0); p3ResolvedRunesRef.current = []; setP3ResolvedRunes([]); p3RuneCheckedRef.current = false; setP3ResolvedRunes([]); p3RuneCheckedRef.current = false; p3RuneContactRef.current = false; p3WrongRuneSinceRef.current = { rune: null, since: 0 }; p3WrongRuneContactRef.current = false; p3RuneFailedRef.current = false; p3StarsCycleRef.current = -1; p3LandingRequiredRef.current = difficulty === 'hard' || difficulty === 'normal' && Math.random() < .5; hitRef.current = false; unsafeRef.current = false; wipeRef.current = false; softWipeGuardRef.current = false; chooseBossPattern(oriented[assignment]); setPaused(false); setScreen('game')
+    if (preserveScore) {
+      bossHealthRef.current = preservedBossHealth
+      setBossHealth(preservedBossHealth)
+    }
   }
   const start = () => initializeAttempt(false)
   function previewCompletionScreen() {
@@ -885,11 +901,13 @@ export default function App() {
       const dt = Math.min((now - previous) / 1000, .05) * gameSpeed; previous = now
       eventTimeRef.current += dt; setEventTime(eventTimeRef.current); timeRef.current += dt; setStats(s => ({ ...s, time: s.time + dt }))
       if (event === 'p4-cycle') {
-        const nextBossHealth = p4BossHealth(p4CycleRef.current, eventTimeRef.current)
+        const scriptedBossHealth = p4BossHealth(p4CycleRef.current, eventTimeRef.current)
+        const nextBossHealth = p4BossHealthWithPlayerDamage(p4CycleRef.current, eventTimeRef.current, bossPlayerDamageRef.current)
+        bossHealthRef.current = nextBossHealth
         setBossHealth(nextBossHealth)
         if (nextBossHealth <= 0) {
           keys.clear()
-          finishP4AndShowResults()
+          finishP4AndShowResults(scriptedBossHealth > 0)
           return
         }
       }
@@ -971,8 +989,16 @@ export default function App() {
       setMainCastRemaining(mainCastRemaining)
       if (mainAbilityCastPendingRef.current && mainCastRemaining <= 0) {
         mainAbilityCastPendingRef.current = false
-        setBossHealth(current => Math.max(1, current - .5))
-        setStats(current => ({ ...current, score: current.score + 1 }))
+        const previousDamage = bossPlayerDamageRef.current
+        const nextDamage = Math.min(100, previousDamage + .5)
+        const damageBonus = bossDamageScoreBonus(previousDamage, nextDamage)
+        bossPlayerDamageRef.current = nextDamage
+        const nextBossHealth = event === 'p4-cycle'
+          ? p4BossHealthWithPlayerDamage(p4CycleRef.current, eventTimeRef.current, nextDamage)
+          : Math.max(1, 100 - nextDamage)
+        bossHealthRef.current = nextBossHealth
+        setBossHealth(nextBossHealth)
+        setStats(current => ({ ...current, score: current.score + 1 + damageBonus }))
         setMainAbilityUsed(true)
         setMainProjectileFiredAt(timeRef.current)
       }
@@ -1582,6 +1608,7 @@ export default function App() {
     healthPotEnabled ? 'Health potion' : '',
     shieldEnabled ? 'Shield' : '',
     mainAbilityUsed ? 'Main ability used' : '',
+    bossPlayerDamageRef.current >= 10 ? `${Math.floor(bossPlayerDamageRef.current / 10) * 10}% boss damage · +${Math.floor(bossPlayerDamageRef.current / 10) * 50} points` : '',
   ].filter(Boolean)
   const extrasSummary = enabledExtras.length
     ? `${enabledExtras.join(' + ')}${recoveryChallenges ? ` · health responses ${recoveryPasses}/${recoveryChallenges}` : ''}`
@@ -1598,6 +1625,7 @@ export default function App() {
     healthPotEnabled,
     shieldEnabled,
     mainAbilityEnabled: mainAbilityUsed,
+    earlyKill: luraKilledEarly,
   }
   const achievements = completionAchievements(achievementSummary)
   const collectibleAwards = collectibleAchievements(achievementSummary)

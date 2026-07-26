@@ -34,6 +34,7 @@ describe('persistent achievement collection', () => {
     expect(catalog.some(entry => entry.key === 'superhuman-flawless:hard:crystal')).toBe(true)
     expect(catalog.some(entry => entry.key === 'superhuman-flawless:hard:non-crystal')).toBe(false)
     expect(catalog.some(entry => entry.key === 'all-options:easy:crystal')).toBe(false)
+    expect(catalog.some(entry => entry.key === 'early-kill:normal:non-crystal')).toBe(true)
   })
 
   it('preserves the first-earned timestamp when an award is earned again', () => {

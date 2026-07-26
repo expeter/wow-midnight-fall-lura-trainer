@@ -211,7 +211,11 @@ describe('player menu', () => {
       'Criminal Dark Tech · 8:03',
       'GYM · Beast Mode ON · 8:07',
     ])
-    expect(screen.getByLabelText(/enable encounter sounds/i)).toBeDisabled()
+    const encounterSounds = screen.getByLabelText(/enable encounter sounds/i)
+    expect(encounterSounds).toBeEnabled()
+    expect(encounterSounds).not.toBeChecked()
+    await user.click(encounterSounds)
+    await waitFor(() => expect(localStorage.getItem('lura-encounter-sounds-enabled')).toBe('true'))
     const tts = screen.getByLabelText(/enable raid lead tts/i)
     expect(tts).toBeEnabled()
     expect(tts).not.toBeChecked()

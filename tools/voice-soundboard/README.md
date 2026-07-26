@@ -1,6 +1,6 @@
 # Lura voice soundboard
 
-This is an isolated local audition tool. It does not replace the production
+This is an isolated local audition and timing tool. It does not replace the production
 clips in `sounds/tts/`, and it is not imported by the game. It also presents
 the current spell-effect candidates from `sounds/` without wiring them into
 encounter mechanics.
@@ -14,6 +14,14 @@ Fourteen active rows compare the strongest prior candidate with three new
 dark-arcane variants; the other six rows preserve the review decision to use no
 effect. Candidate buttons show their exact duration. **Copy review** exports
 the complete decision table as Markdown in one pass.
+
+The **Visual timing lab** loops simplified versions of the ten currently
+enabled mechanic effects. Its gold flash marks the exact appearance,
+disappearance, impact, or confirmation boundary used for tuning. Sound start
+offset and playback rate are independently adjustable, restart on a clean loop,
+and persist in `lura-sfx-timing-review`. **Copy tuning** exports every calibrated
+offset and rate as one Markdown table. These values remain review data until
+they are deliberately transferred into `src/encounterSounds.ts`.
 
 Some browsers restrict `file://` audio loading. If the clips do not play, serve
 this directory locally:

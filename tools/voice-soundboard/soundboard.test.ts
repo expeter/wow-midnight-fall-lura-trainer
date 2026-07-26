@@ -43,4 +43,25 @@ describe('audio review soundboard', () => {
     expect(soundboard).toContain('["main-ability-release", "Main Ability cast completes", "Intentionally silent')
     expect(soundboard).toContain('"mistake": { pick: "error-pulse-fast"')
   })
+
+  it('provides a persistent looping visual timing lab for every enabled encounter cue', () => {
+    expect(soundboard).toContain('aria-label="Sound timing lab"')
+    expect(soundboard).toContain('id="timing-offset"')
+    expect(soundboard).toContain('id="timing-rate"')
+    expect(soundboard).toContain('lura-sfx-timing-review')
+    expect(soundboard).toContain('Copy tuning')
+    const timingRows = [...soundboard.matchAll(/\{ id: "([^"]+)", label: "[^"]+", sound: "[^"]+", visual: "[^"]+", moment: [^,]+, loop: [^,]+, offset: [^,]+, rate: [^ }]+ \}/g)]
+    expect(timingRows.map(([, id]) => id)).toEqual([
+      'laser-charge',
+      'stars-connect',
+      'splinter-detonate',
+      'orb-return',
+      'personal-circle',
+      'rune-match',
+      'archangel-charge',
+      'protection-active',
+      'mistake',
+      'wipe',
+    ])
+  })
 })

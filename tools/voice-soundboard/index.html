@@ -94,6 +94,28 @@
     }
     .cue-comment { min-width: 220px; }
     .legacy-review { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
+    .timing-lab { display: grid; grid-template-columns: minmax(320px, 1.35fr) minmax(280px, .65fr); gap: 18px; padding: 18px; border: 1px solid var(--line); border-radius: 18px; background: var(--panel); }
+    .timing-stage { position: relative; min-height: 360px; overflow: hidden; border: 1px solid rgba(119,237,193,.2); border-radius: 14px; background: radial-gradient(circle, #20154a 0 10%, #100d25 11% 47%, #080710 48%); }
+    .timing-arena { position: absolute; width: 310px; aspect-ratio: 1; left: 50%; top: 50%; translate: -50% -50%; border: 2px solid rgba(184,164,255,.28); border-radius: 50%; box-shadow: inset 0 0 70px rgba(76,42,151,.26); }
+    .timing-boss { position: absolute; z-index: 4; width: 32px; height: 32px; left: 50%; top: 50%; translate: -50% -50%; border-radius: 50%; background: #a889ff; box-shadow: 0 0 22px #8e64ff; }
+    .timing-ray, .timing-beam, .timing-star-line { position: absolute; z-index: 2; left: 50%; top: 50%; height: 3px; width: 132px; transform-origin: 0 50%; background: linear-gradient(90deg, #eefcff, #53adff 65%, transparent); box-shadow: 0 0 8px #4ab7ff; opacity: 0; }
+    .timing-beam { width: 148px; height: 18px; background: linear-gradient(90deg, #f6d9ff, #b24aff 70%, transparent); box-shadow: 0 0 14px #b64cff; }
+    .timing-star-line { left: 24%; top: 39%; width: 52%; height: 2px; transform-origin: center; background: #358eff; box-shadow: 0 0 7px #41a4ff; }
+    .timing-orb { position: absolute; z-index: 3; width: 15px; height: 15px; left: 50%; top: 50%; translate: -50% -50%; border-radius: 50%; background: #ffe975; box-shadow: 0 0 12px #ffe66d; opacity: 0; }
+    .timing-circle, .timing-bubble, .timing-rune { position: absolute; z-index: 3; left: 50%; top: 50%; translate: -50% -50%; opacity: 0; }
+    .timing-circle { width: 118px; aspect-ratio: 1; border: 4px solid #5eb4ff; border-radius: 50%; box-shadow: 0 0 12px #388cff; }
+    .timing-bubble { width: 180px; aspect-ratio: 1; border: 3px solid #ffe777; border-radius: 50%; background: rgba(255,224,80,.12); box-shadow: inset 0 0 30px rgba(255,225,80,.22), 0 0 20px rgba(255,225,80,.4); }
+    .timing-rune { color: #91d4ff; font: 900 82px/1 ui-sans-serif, sans-serif; text-shadow: 0 0 16px #3294ff; }
+    .timing-impact { position: absolute; z-index: 7; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(circle, rgba(255,255,255,.72), rgba(168,85,255,.25) 18%, transparent 48%); }
+    .timing-clock { position: absolute; z-index: 8; left: 12px; bottom: 10px; color: var(--mint); font: 800 12px ui-monospace, monospace; }
+    .timing-controls { display: grid; align-content: start; gap: 14px; }
+    .timing-controls label { display: grid; gap: 5px; color: var(--muted); font-size: 13px; }
+    .timing-controls label strong { color: var(--ink); font-variant-numeric: tabular-nums; }
+    .timing-controls input[type="range"] { width: 100%; accent-color: var(--mint); }
+    .timing-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .timing-actions button { padding: 10px; }
+    .timing-actions .primary { color: #11101b; background: var(--mint); }
+    .timing-status { min-height: 3em; margin: 0; color: var(--muted); font-size: 13px; }
     .notes { margin-top: 16px; padding: 22px; }
     .notes h2 { font-size: 18px; }
     .notes-actions { display: flex; gap: 9px; margin-top: 12px; }
@@ -117,6 +139,7 @@
       main { padding-top: 36px; }
       .toolbar { align-items: start; flex-direction: column; }
       .stop { width: 100%; }
+      .timing-lab { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -132,6 +155,37 @@
     </div>
 
     <section class="grid" id="voices" aria-label="Voice candidates"></section>
+
+    <div class="section-heading">
+      <div class="eyebrow">Visual timing lab</div>
+      <h2>Make the sound land on the frame.</h2>
+      <p>Loop a simplified rendering of each live mechanic, then tune sound start and playback speed while watching its exact visual boundary. Values persist locally and can be copied back into the ticket.</p>
+    </div>
+    <section class="timing-lab" aria-label="Sound timing lab">
+      <div class="timing-stage" id="timing-stage">
+        <div class="timing-arena"></div>
+        <div class="timing-boss"></div>
+        <div class="timing-beam"></div>
+        <div class="timing-star-line"></div>
+        <div class="timing-circle"></div>
+        <div class="timing-bubble"></div>
+        <div class="timing-rune">X</div>
+        <div class="timing-impact"></div>
+        <div class="timing-clock">0.000s</div>
+      </div>
+      <div class="timing-controls">
+        <label>Mechanic<select id="timing-cue" aria-label="Timing mechanic"></select></label>
+        <label>Sound start relative to visual moment <strong id="timing-offset-value">0 ms</strong><input id="timing-offset" type="range" min="-6000" max="1000" step="10" value="0"></label>
+        <label>Playback rate <strong id="timing-rate-value">1.00×</strong><input id="timing-rate" type="range" min=".4" max="3" step=".01" value="1"></label>
+        <div class="timing-actions">
+          <button class="primary" type="button" id="timing-play">▶ Loop</button>
+          <button type="button" id="timing-stop">Stop</button>
+          <button type="button" id="timing-reset">Reset measured</button>
+          <button type="button" id="timing-copy">Copy tuning</button>
+        </div>
+        <p class="timing-status" id="timing-status">Choose a mechanic and start the loop. The gold flash marks the exact event boundary.</p>
+      </div>
+    </section>
 
     <div class="section-heading">
       <div class="eyebrow">Encounter sound candidates</div>
@@ -248,9 +302,202 @@
     const grid = document.querySelector("#voices");
     const reviewTable = document.querySelector("#sound-review");
     const buffers = new Map();
+    const effectBuffers = new Map();
     let context;
     let active = [];
     let activeEffect;
+    const timingPresets = [
+      { id: "laser-charge", label: "Boss beam resolves", sound: "laser-magical-whoosh", visual: "laser", moment: 2.4, loop: 3.2, offset: -1.604, rate: .5 },
+      { id: "stars-connect", label: "P3 Stars connect", sound: "midnight-laser-fire-rift", visual: "stars", moment: 1.4, loop: 2.7, offset: 0, rate: 2.2 },
+      { id: "splinter-detonate", label: "Starsplinter disappears", sound: "laser-prismatic-cut", visual: "splinter", moment: 1.8, loop: 3, offset: -.02, rate: 2 },
+      { id: "orb-return", label: "P2 orbs reach L’ura", sound: "orb-arcane-laser", visual: "orb", moment: 2, loop: 3.3, offset: -.271, rate: 1 },
+      { id: "personal-circle", label: "P2 circles resolve", sound: "success-small-bell", visual: "circle", moment: 1.8, loop: 3, offset: -.07, rate: 1 },
+      { id: "rune-match", label: "Memory rune clears", sound: "success-rune-clear", visual: "rune", moment: 1.6, loop: 2.9, offset: 0, rate: 1.08 },
+      { id: "archangel-charge", label: "Dark Archangel impacts", sound: "midnight-archangel-charge-veil", visual: "archangel", moment: 6, loop: 7.4, offset: -5, rate: 1 },
+      { id: "protection-active", label: "Protection bubble appears", sound: "cast-crystal-spark", visual: "protection", moment: 1.4, loop: 2.8, offset: 0, rate: 1 },
+      { id: "mistake", label: "Point-loss flash", sound: "error-pulse-fast", visual: "mistake", moment: 1.4, loop: 2.7, offset: 0, rate: 1.18 },
+      { id: "wipe", label: "Wipe overlay", sound: "error-pulse-fast", visual: "wipe", moment: 1.4, loop: 3, offset: 0, rate: .82 }
+    ];
+    const timingStage = document.querySelector("#timing-stage");
+    const timingCue = document.querySelector("#timing-cue");
+    const timingOffset = document.querySelector("#timing-offset");
+    const timingRate = document.querySelector("#timing-rate");
+    const timingOffsetValue = document.querySelector("#timing-offset-value");
+    const timingRateValue = document.querySelector("#timing-rate-value");
+    const timingStatus = document.querySelector("#timing-status");
+    const timingClock = timingStage.querySelector(".timing-clock");
+    const timingBeam = timingStage.querySelector(".timing-beam");
+    const timingStarLine = timingStage.querySelector(".timing-star-line");
+    const timingCircle = timingStage.querySelector(".timing-circle");
+    const timingBubble = timingStage.querySelector(".timing-bubble");
+    const timingRune = timingStage.querySelector(".timing-rune");
+    const timingImpact = timingStage.querySelector(".timing-impact");
+    const timingRays = Array.from({ length: 6 }, (_, index) => {
+      const ray = index ? timingStage.appendChild(timingStage.querySelector(".timing-ray")?.cloneNode() || document.createElement("i")) : timingStage.querySelector(".timing-ray");
+      if (!ray) {
+        const created = document.createElement("i");
+        created.className = "timing-ray";
+        timingStage.appendChild(created);
+        return created;
+      }
+      ray.classList.add("timing-ray");
+      ray.style.transform = `rotate(${index * 60}deg)`;
+      return ray;
+    });
+    const timingOrbs = Array.from({ length: 4 }, (_, index) => {
+      const orb = index ? timingStage.appendChild(timingStage.querySelector(".timing-orb")?.cloneNode() || document.createElement("i")) : timingStage.querySelector(".timing-orb");
+      if (!orb) {
+        const created = document.createElement("i");
+        created.className = "timing-orb";
+        timingStage.appendChild(created);
+        return created;
+      }
+      orb.classList.add("timing-orb");
+      return orb;
+    });
+    let timingSaved = {};
+    try { timingSaved = JSON.parse(localStorage.getItem("lura-sfx-timing-review") || "{}"); } catch (_) {}
+    let timingPlaying = false;
+    let timingTimer = 0;
+    let timingFrame = 0;
+    let timingSource;
+    let timingStartedAt = 0;
+
+    timingCue.innerHTML = timingPresets.map(preset => `<option value="${preset.id}">${preset.label}</option>`).join("");
+
+    function timingPreset() {
+      return timingPresets.find(preset => preset.id === timingCue.value) || timingPresets[0];
+    }
+
+    function timingValues() {
+      const preset = timingPreset();
+      return {
+        offset: Number(timingOffset.value) / 1000,
+        rate: Number(timingRate.value),
+        preset
+      };
+    }
+
+    function loadTimingPreset() {
+      const preset = timingPreset();
+      const savedTiming = timingSaved[preset.id] || {};
+      timingOffset.value = Math.round((savedTiming.offset ?? preset.offset) * 1000);
+      timingRate.value = savedTiming.rate ?? preset.rate;
+      updateTimingLabels();
+      if (timingPlaying) restartTimingLoop();
+      else renderTimingVisual(0);
+    }
+
+    function updateTimingLabels() {
+      const { offset, rate } = timingValues();
+      timingOffsetValue.textContent = `${offset > 0 ? "+" : ""}${Math.round(offset * 1000)} ms`;
+      timingRateValue.textContent = `${rate.toFixed(2)}×`;
+    }
+
+    function persistTiming() {
+      const { preset, offset, rate } = timingValues();
+      timingSaved[preset.id] = { offset, rate };
+      localStorage.setItem("lura-sfx-timing-review", JSON.stringify(timingSaved));
+      updateTimingLabels();
+      if (timingPlaying) restartTimingLoop();
+    }
+
+    async function getEffectBuffer(key) {
+      if (!effectBuffers.has(key)) {
+        const ctx = audioContext();
+        effectBuffers.set(key, fetch(`sfx/${key}.wav`)
+          .then(response => {
+            if (!response.ok) throw new Error(`Could not load ${key}`);
+            return response.arrayBuffer();
+          })
+          .then(bytes => ctx.decodeAudioData(bytes)));
+      }
+      return effectBuffers.get(key);
+    }
+
+    function renderTimingVisual(age) {
+      const { preset } = timingValues();
+      const moment = preset.moment;
+      const before = age < moment;
+      const impactAge = age - moment;
+      timingClock.textContent = `${age.toFixed(3)}s · event ${impactAge >= 0 ? "+" : ""}${impactAge.toFixed(3)}s`;
+      timingBeam.style.opacity = preset.visual === "laser" && before && age > .35 ? String(Math.min(.95, (age - .35) * 1.2)) : preset.visual === "archangel" && before ? String(.35 + age / moment * .55) : "0";
+      timingBeam.style.transform = preset.visual === "archangel" ? "rotate(25deg)" : "rotate(-18deg)";
+      timingRays.forEach(ray => {
+        ray.style.opacity = preset.visual === "splinter" && age > .35 && before ? String(age > moment - .45 ? .95 : .22) : "0";
+      });
+      const starsVisible = preset.visual === "stars" && age >= moment && age < moment + .55;
+      timingStarLine.style.opacity = starsVisible ? ".92" : "0";
+      timingCircle.style.opacity = preset.visual === "circle" && age > .3 && before ? ".9" : "0";
+      timingRune.style.opacity = preset.visual === "rune" && age > .3 && before ? "1" : "0";
+      timingBubble.style.opacity = preset.visual === "protection" && impactAge >= 0 && impactAge < .9
+        ? String(Math.min(1, impactAge * 8) * Math.max(0, 1 - impactAge / .9))
+        : preset.visual === "archangel" && before ? ".35" : "0";
+      timingOrbs.forEach((orb, index) => {
+        if (preset.visual !== "orb" || age < moment - 1 || !before) {
+          orb.style.opacity = "0";
+          return;
+        }
+        const progress = Math.max(0, Math.min(1, age - (moment - 1)));
+        const radius = 125 * (1 - progress * progress);
+        const angle = index * Math.PI / 2 + progress * .65;
+        orb.style.opacity = "1";
+        orb.style.transform = `translate(${Math.cos(angle) * radius}px, ${Math.sin(angle) * radius}px)`;
+      });
+      const flash = impactAge >= 0 && impactAge < .28;
+      timingImpact.style.opacity = flash && ["laser", "splinter", "orb", "mistake", "wipe", "archangel"].includes(preset.visual)
+        ? String(Math.max(0, 1 - impactAge / .28) * (preset.visual === "wipe" ? 1 : .62))
+        : "0";
+      timingImpact.style.background = preset.visual === "wipe"
+        ? "rgba(130,0,42,.58)"
+        : "radial-gradient(circle, rgba(255,255,255,.72), rgba(168,85,255,.25) 18%, transparent 48%)";
+    }
+
+    async function runTimingIteration() {
+      if (!timingPlaying) return;
+      const ctx = audioContext();
+      await ctx.resume();
+      const { preset, offset, rate } = timingValues();
+      const buffer = await getEffectBuffer(preset.sound);
+      if (!timingPlaying) return;
+      const delay = .08;
+      timingStartedAt = performance.now() + delay * 1000;
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.playbackRate.value = rate;
+      source.connect(ctx.destination);
+      source.start(ctx.currentTime + delay + preset.moment + offset);
+      timingSource = source;
+      timingTimer = window.setTimeout(runTimingIteration, (delay + preset.loop) * 1000);
+    }
+
+    function animateTiming() {
+      if (!timingPlaying) return;
+      const preset = timingPreset();
+      const age = Math.max(0, (performance.now() - timingStartedAt) / 1000) % preset.loop;
+      renderTimingVisual(age);
+      timingFrame = requestAnimationFrame(animateTiming);
+    }
+
+    function stopTiming() {
+      timingPlaying = false;
+      window.clearTimeout(timingTimer);
+      cancelAnimationFrame(timingFrame);
+      try { timingSource?.stop(); } catch (_) {}
+      timingSource = null;
+      renderTimingVisual(0);
+    }
+
+    function restartTimingLoop() {
+      stopTiming();
+      timingPlaying = true;
+      runTimingIteration().catch(error => {
+        stopTiming();
+        timingStatus.textContent = error.message;
+      });
+      timingFrame = requestAnimationFrame(animateTiming);
+      timingStatus.textContent = "Looping. Adjustments restart on the next clean visual cycle.";
+    }
 
     grid.innerHTML = voices.map(voice => `
       <article class="card">
@@ -312,6 +559,7 @@
     }
 
     function stop() {
+      stopTiming();
       active.forEach(source => { try { source.stop(); } catch (_) {} });
       active = [];
       if (activeEffect) {
@@ -321,6 +569,33 @@
       }
       document.querySelectorAll(".playing").forEach(button => button.classList.remove("playing"));
     }
+
+    timingCue.addEventListener("change", loadTimingPreset);
+    timingOffset.addEventListener("input", persistTiming);
+    timingRate.addEventListener("input", persistTiming);
+    document.querySelector("#timing-play").addEventListener("click", restartTimingLoop);
+    document.querySelector("#timing-stop").addEventListener("click", stopTiming);
+    document.querySelector("#timing-reset").addEventListener("click", () => {
+      const preset = timingPreset();
+      timingSaved[preset.id] = { offset: preset.offset, rate: preset.rate };
+      localStorage.setItem("lura-sfx-timing-review", JSON.stringify(timingSaved));
+      loadTimingPreset();
+      timingStatus.textContent = "Restored the waveform-measured starting point.";
+    });
+    document.querySelector("#timing-copy").addEventListener("click", async () => {
+      const rows = timingPresets.map(preset => {
+        const value = timingSaved[preset.id] || { offset: preset.offset, rate: preset.rate };
+        return `| ${preset.id} | ${Math.round(value.offset * 1000)} ms | ${Number(value.rate).toFixed(2)}× |`;
+      }).join("\n");
+      const review = `Lura sound timing review\n\n| Cue | Start offset | Playback rate |\n| --- | ---: | ---: |\n${rows}`;
+      try {
+        await navigator.clipboard.writeText(review);
+        timingStatus.textContent = "Timing table copied to clipboard.";
+      } catch {
+        timingStatus.textContent = "Clipboard access was blocked.";
+      }
+    });
+    loadTimingPreset();
 
     async function schedule(key, when, button) {
       const ctx = audioContext();

@@ -1,22 +1,44 @@
 # Lura voice soundboard
 
-This is an isolated local audition tool. It does not read or replace the
-production clips in `sounds/tts/`, and it is not imported by the game.
+This is an isolated local audition tool. It does not replace the production
+clips in `sounds/tts/`, and it is not imported by the game. It also presents
+the current spell-effect candidates from `sounds/` without wiring them into
+encounter mechanics.
 
 Open `index.html` in a browser to compare individual **Left**, **Right**, and
 **Move** commands. Each voice also has a left–right–left preview scheduled on
 the Web Audio clock at `0.000s`, `1.000s`, and `2.000s`; this avoids the timing
-drift of chained media-element playback. Notes and the preferred radio button
-are saved only in that browser's local storage.
+drift of chained media-element playback. Notes, the preferred voice, and the
+SFX shortlist are saved only in that browser's local storage. **Copy review**
+exports that feedback as plain text.
 
 Some browsers restrict `file://` audio loading. If the clips do not play, serve
 this directory locally:
 
 ```sh
-python3 -m http.server 8090 --directory tools/voice-soundboard
+python3 -m http.server 8090
 ```
 
-Then open <http://localhost:8090>.
+Then open <http://localhost:8090/tools/voice-soundboard/>. Serving the
+repository root is required so the board can load the candidate files from
+`sounds/`. Existing review data from the old URL remains available because
+browser local storage belongs to the same `localhost:8090` origin.
+
+## Spell-effect candidates
+
+The lower board currently compares five locally supplied candidates:
+
+| Candidate | Suggested mechanic |
+| --- | --- |
+| Arcane laser | Boss beams in P1/P2/P3 |
+| Light cast | Cast completion, rune, or crystal activation |
+| Magical whoosh | Starsplinter launch or returning orbs |
+| Small bell | Soak or memory-game success |
+| Error pulse | Mistake or wipe feedback |
+
+Selection is intentionally separate from production integration. A shortlisted
+clip still needs its source/license recorded before it is shipped with the
+game.
 
 ## Candidates
 

@@ -67,8 +67,16 @@
     .sequence:hover { color: #151023; background: linear-gradient(110deg, #b9a6ff, #dfd4ff); }
     .pick { display: flex; gap: 8px; align-items: center; margin-top: 14px; color: var(--muted); }
     .pick input { accent-color: var(--mint); }
+    .section-heading { margin: 42px 0 16px; }
+    .section-heading h2 { font-size: 32px; }
+    .section-heading p { max-width: 720px; margin: 5px 0 0; color: var(--muted); }
+    .sfx-card button { width: 100%; padding: 15px; color: #151023; background: linear-gradient(110deg, var(--mint), #a8f3d7); }
+    .sfx-card button:hover { color: #151023; background: linear-gradient(110deg, #8ff3cf, #c4fae6); }
+    .sfx-card .character { min-height: 3em; }
     .notes { margin-top: 16px; padding: 22px; }
     .notes h2 { font-size: 18px; }
+    .notes-actions { display: flex; gap: 9px; margin-top: 12px; }
+    .notes-actions button { padding: 10px 14px; }
     textarea {
       width: 100%;
       min-height: 110px;
@@ -104,9 +112,20 @@
 
     <section class="grid" id="voices" aria-label="Voice candidates"></section>
 
+    <div class="section-heading">
+      <div class="eyebrow">Encounter sound candidates</div>
+      <h2>Audition the spell kit.</h2>
+      <p>These clips are review material only. Play them against the suggested mechanic, shortlist the useful ones, and leave the final mapping in your notes.</p>
+    </div>
+    <section class="grid" id="effects" aria-label="Spell sound candidates"></section>
+
     <section class="notes">
       <h2>Audition notes</h2>
       <textarea id="notes" placeholder="Example: SLT is clearest. RMS has more urgency. Left feels 40ms slower than right…"></textarea>
+      <div class="notes-actions">
+        <button type="button" id="copy-review">Copy review</button>
+        <button type="button" id="clear-review">Clear review</button>
+      </div>
       <div class="saved" id="saved" aria-live="polite"></div>
     </section>
 
@@ -123,10 +142,19 @@
       { id: "kal16", name: "KAL16", character: "US male diphone · fuller KAL rendering" }
     ];
     const words = ["left", "right", "move"];
+    const effects = [
+      { id: "laser", name: "Arcane laser", use: "Boss beams · P1/P2/P3 laser telegraphs", file: "../../sounds/freesound_community-rayo-laser-101851.mp3" },
+      { id: "cast", name: "Light cast", use: "Player cast completion · rune or crystal activation", file: "../../sounds/u_o6py8docsy-cast-light-288736.mp3" },
+      { id: "whoosh", name: "Magical whoosh", use: "Splinter launch · returning orb movement", file: "../../sounds/u_hyed0v3ux9-magical-whoosh-148459.mp3" },
+      { id: "success", name: "Small bell", use: "Soak cleared · memory game completed", file: "../../sounds/oxidvideos-ding-small-bell-sfx-411945.mp3" },
+      { id: "error", name: "Error pulse", use: "Mistake · failed mechanic · wipe feedback", file: "../../sounds/rikk_nextsoft-error_sound-221445.mp3" }
+    ];
     const grid = document.querySelector("#voices");
+    const effectGrid = document.querySelector("#effects");
     const buffers = new Map();
     let context;
     let active = [];
+    let activeEffect;
 
     grid.innerHTML = voices.map(voice => `
       <article class="card">
@@ -139,6 +167,16 @@
         </div>
         <button type="button" class="sequence" data-sequence="${voice.id}">▶ Left · Right · Left — exact 1s cadence</button>
         <label class="pick"><input type="radio" name="preferred" value="${voice.id}"> Mark as preferred</label>
+      </article>
+    `).join("");
+    effectGrid.innerHTML = effects.map(effect => `
+      <article class="card sfx-card">
+        <div class="card-head">
+          <div><h2>${effect.name}</h2><p class="character">${effect.use}</p></div>
+          <span class="badge">${effect.id}</span>
+        </div>
+        <button type="button" data-effect="${effect.id}">▶ Play candidate</button>
+        <label class="pick"><input type="checkbox" name="shortlist" value="${effect.id}"> Keep in shortlist</label>
       </article>
     `).join("");
 
@@ -163,6 +201,11 @@
     function stop() {
       active.forEach(source => { try { source.stop(); } catch (_) {} });
       active = [];
+      if (activeEffect) {
+        activeEffect.pause();
+        activeEffect.currentTime = 0;
+        activeEffect = null;
+      }
       document.querySelectorAll(".playing").forEach(button => button.classList.remove("playing"));
     }
 
@@ -199,6 +242,23 @@
         active.push(source);
       });
     });
+    effectGrid.addEventListener("click", event => {
+      const button = event.target.closest("[data-effect]");
+      if (!button) return;
+      stop();
+      const effect = effects.find(candidate => candidate.id === button.dataset.effect);
+      if (!effect) return;
+      activeEffect = new Audio(effect.file);
+      button.classList.add("playing");
+      activeEffect.addEventListener("ended", () => {
+        button.classList.remove("playing");
+        activeEffect = null;
+      }, { once: true });
+      activeEffect.play().catch(() => {
+        button.classList.remove("playing");
+        saved.textContent = "Could not load this candidate. Serve the repository root as described in README.md.";
+      });
+    });
     document.querySelector("#stop").addEventListener("click", stop);
 
     const notes = document.querySelector("#notes");
@@ -206,6 +266,8 @@
     notes.value = localStorage.getItem("lura-voice-notes") || "";
     const priorPick = localStorage.getItem("lura-voice-pick");
     if (priorPick) document.querySelector(`[name="preferred"][value="${priorPick}"]`)?.click();
+    const priorShortlist = JSON.parse(localStorage.getItem("lura-sfx-shortlist") || "[]");
+    priorShortlist.forEach(id => document.querySelector(`[name="shortlist"][value="${id}"]`)?.click());
     let saveTimer;
     notes.addEventListener("input", () => {
       clearTimeout(saveTimer);
@@ -220,6 +282,32 @@
         localStorage.setItem("lura-voice-pick", event.target.value);
         saved.textContent = `${event.target.value.toUpperCase()} marked as preferred.`;
       }
+    });
+    effectGrid.addEventListener("change", event => {
+      if (event.target.name !== "shortlist") return;
+      const shortlist = [...document.querySelectorAll('[name="shortlist"]:checked')].map(input => input.value);
+      localStorage.setItem("lura-sfx-shortlist", JSON.stringify(shortlist));
+      saved.textContent = "SFX shortlist saved in this browser.";
+    });
+    document.querySelector("#copy-review").addEventListener("click", async () => {
+      const voice = document.querySelector('[name="preferred"]:checked')?.value?.toUpperCase() || "None";
+      const shortlist = [...document.querySelectorAll('[name="shortlist"]:checked')].map(input => input.value).join(", ") || "None";
+      const review = `Lura audio review\nPreferred voice: ${voice}\nSFX shortlist: ${shortlist}\nNotes:\n${notes.value || "None"}`;
+      try {
+        await navigator.clipboard.writeText(review);
+        saved.textContent = "Review copied to clipboard.";
+      } catch {
+        saved.textContent = "Clipboard access was blocked.";
+      }
+    });
+    document.querySelector("#clear-review").addEventListener("click", () => {
+      if (!window.confirm("Clear the saved voice, SFX shortlist, and notes?")) return;
+      localStorage.removeItem("lura-voice-notes");
+      localStorage.removeItem("lura-voice-pick");
+      localStorage.removeItem("lura-sfx-shortlist");
+      notes.value = "";
+      document.querySelectorAll('[name="preferred"], [name="shortlist"]').forEach(input => { input.checked = false; });
+      saved.textContent = "Saved review cleared.";
     });
   </script>
 </body>

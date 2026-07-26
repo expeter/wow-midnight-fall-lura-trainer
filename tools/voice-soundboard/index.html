@@ -81,6 +81,7 @@
     .candidate { padding: 8px 10px; text-align: left; font-size: 13px; }
     .candidate.shortlisted { box-shadow: inset 0 0 0 1px var(--gold); }
     .candidate.playing { color: #151023; background: linear-gradient(110deg, var(--mint), #a8f3d7); }
+    .intentional-silence { color: var(--muted); font-style: italic; }
     select, .cue-comment {
       width: 100%;
       min-width: 165px;
@@ -135,7 +136,7 @@
     <div class="section-heading">
       <div class="eyebrow">Encounter sound candidates</div>
       <h2>Audition the spell kit.</h2>
-      <p>Review every planned mechanic in one pass. Each row has four playable candidates, one saved choice, and one saved comment. Sounds remain disconnected from the game until this table is approved.</p>
+      <p>Review the active mechanics at their real encounter lengths. Each active row compares the best earlier candidate with three new dark-arcane variants; mechanics already marked unnecessary remain intentionally silent. Sounds remain disconnected from the game until this table is approved.</p>
     </div>
     <p class="legacy-review" id="legacy-review"></p>
     <div class="review-table-wrap">
@@ -169,54 +170,80 @@
     ];
     const words = ["left", "right", "move"];
     const effects = [
-      { id: "laser-magical-whoosh", name: "Magical Whoosh" },
+      { id: "laser-magical-whoosh", name: "Magical Whoosh", seconds: .93 },
       { id: "laser-void-sweep", name: "Void Sweep" },
-      { id: "laser-prismatic-cut", name: "Prismatic Cut" },
-      { id: "laser-arc-burn", name: "Arc Burn" },
-      { id: "orb-arcane-laser", name: "Arcane Laser" },
+      { id: "laser-prismatic-cut", name: "Prismatic Cut", seconds: .48 },
+      { id: "laser-arc-burn", name: "Arc Burn", seconds: .64 },
+      { id: "orb-arcane-laser", name: "Arcane Laser", seconds: 1.18 },
       { id: "orb-orb-recall", name: "Orb Recall" },
       { id: "orb-gravity-pearl", name: "Gravity Pearl" },
       { id: "orb-celestial-return", name: "Celestial Return" },
-      { id: "cast-light-loud", name: "Light Cast · 2× louder" },
+      { id: "cast-light-loud", name: "Light Cast · 2× louder", seconds: 1.08 },
       { id: "cast-arcane-release", name: "Arcane Release" },
-      { id: "cast-crystal-spark", name: "Crystal Spark" },
+      { id: "cast-crystal-spark", name: "Crystal Spark", seconds: .34 },
       { id: "cast-spell-impact", name: "Spell Impact" },
-      { id: "success-small-bell", name: "Small Bell" },
-      { id: "success-rune-clear", name: "Rune Clear" },
+      { id: "success-small-bell", name: "Small Bell", seconds: .63 },
+      { id: "success-rune-clear", name: "Rune Clear", seconds: .58 },
       { id: "success-soak-complete", name: "Soak Complete" },
       { id: "success-crystal-chime", name: "Crystal Chime" },
-      { id: "error-pulse-fast", name: "Error Pulse · faster attack" },
+      { id: "error-pulse-fast", name: "Error Pulse · faster attack", seconds: .69 },
       { id: "error-void-warning", name: "Void Warning" },
       { id: "error-rune-fail", name: "Rune Fail" },
       { id: "error-crystal-danger", name: "Crystal Danger" }
     ];
+    const midnightCueLengths = {
+      "laser-charge": 2.8, "laser-fire": .62, "stars-connect": 1.8,
+      "splinter-detonate": .28, "orb-return": 1, "personal-circle": .55,
+      "soak-progress": 3, "soak-complete": .55, "rune-match": .45,
+      "archangel-charge": 5, "protection-active": .7, "add-destroyed": .28,
+      "mistake": .25, "wipe": .9
+    };
+    const midnightVariants = ["veil", "rift", "abyss"];
+    const midnightNames = { veil: "Veil", rift: "Rift", abyss: "Abyss" };
+    Object.entries(midnightCueLengths).forEach(([cue, seconds]) => {
+      midnightVariants.forEach(variant => effects.push({
+        id: `midnight-${cue}-${variant}`,
+        name: `${midnightNames[variant]} ${cue.replaceAll("-", " ")}`,
+        seconds
+      }));
+    });
+    const auditions = (cue, earlier) => [earlier, ...midnightVariants.map(variant => `midnight-${cue}-${variant}`)];
     const soundCues = [
-      ["laser-charge", "Boss beam telegraph", "Low rising charge with a clear peak.", ["laser-void-sweep", "laser-arc-burn", "laser-magical-whoosh", "orb-gravity-pearl"]],
-      ["laser-fire", "Boss beam becomes lethal", "Tight discharge reused by Intermission, P2, and P3 Stars.", ["laser-magical-whoosh", "laser-prismatic-cut", "laser-arc-burn", "cast-spell-impact"]],
-      ["stars-connect", "P3 Stars lattice connects", "Electrical link that makes the visible edge timing obvious.", ["laser-prismatic-cut", "laser-arc-burn", "laser-magical-whoosh", "orb-arcane-laser"]],
-      ["splinter-mark", "Starsplinter assigned", "Short crystalline warning for Intermission and P4.", ["success-crystal-chime", "cast-crystal-spark", "success-small-bell", "success-rune-clear"]],
-      ["splinter-detonate", "Starsplinter resolves", "Sharp six-way energy burst.", ["cast-spell-impact", "laser-prismatic-cut", "cast-arcane-release", "error-crystal-danger"]],
-      ["orb-charge", "P2 orbs start glowing", "Pulsing magical charge before the return.", ["orb-orb-recall", "orb-gravity-pearl", "orb-celestial-return", "orb-arcane-laser"]],
-      ["orb-return", "P2 orbs jump inward", "Fast inward flight cue.", ["orb-arcane-laser", "orb-celestial-return", "laser-magical-whoosh", "orb-orb-recall"]],
-      ["pull", "P2 raid pull begins", "Sustained suction or wind rise.", ["laser-void-sweep", "orb-gravity-pearl", "orb-orb-recall", "laser-arc-burn"]],
-      ["personal-circle", "P2 spread circles resolve", "Soft area pulse rather than an explosion.", ["success-soak-complete", "success-rune-clear", "success-crystal-chime", "success-small-bell"]],
-      ["soak-progress", "P3 Soak gains valid occupancy", "Quiet confirming hum while enough players stand inside.", ["orb-gravity-pearl", "orb-orb-recall", "orb-celestial-return", "laser-void-sweep"]],
-      ["soak-complete", "P3 Soak finishes", "Clean confirmation pulse.", ["success-soak-complete", "success-small-bell", "success-rune-clear", "success-crystal-chime"]],
-      ["rune-reveal", "Memory rune appears", "Related tonal note for each revealed rune.", ["success-rune-clear", "success-small-bell", "cast-crystal-spark", "orb-celestial-return"]],
-      ["rune-match", "Correct rune partner resolves", "Positive paired chime.", ["success-rune-clear", "success-crystal-chime", "success-small-bell", "success-soak-complete"]],
-      ["archangel-charge", "Dark Archangel begins", "Dark sustained beam charge.", ["laser-void-sweep", "laser-arc-burn", "orb-gravity-pearl", "error-crystal-danger"]],
-      ["protection-active", "Crystal bubble protects raid", "Warm shield activation.", ["success-crystal-chime", "cast-crystal-spark", "success-soak-complete", "cast-arcane-release"]],
-      ["heaven-hell", "P4 quarter becomes unsafe", "Deep sector-wide impact.", ["cast-spell-impact", "error-crystal-danger", "laser-arc-burn", "error-void-warning"]],
-      ["add-destroyed", "P4 add is destroyed", "Small dry impact for tank cone or splinter.", ["cast-spell-impact", "laser-prismatic-cut", "cast-light-loud", "cast-arcane-release"]],
-      ["main-ability-release", "Main Ability cast completes", "Player projectile release after the one-second cast.", ["cast-light-loud", "cast-arcane-release", "cast-crystal-spark", "cast-spell-impact"]],
-      ["mistake", "Non-wipe point loss", "Restrained, immediate error tick.", ["error-pulse-fast", "error-rune-fail", "error-crystal-danger", "error-void-warning"]],
-      ["wipe", "Terminal failure", "Distinct low failure hit.", ["error-void-warning", "error-crystal-danger", "error-rune-fail", "cast-spell-impact"]]
+      ["laser-charge", "Boss beam telegraph", "2.8-second rise aligned to the actionable telegraph.", auditions("laser-charge", "laser-magical-whoosh")],
+      ["laser-fire", "Boss beam becomes lethal", "Compact discharge shared by boss beams and Stars.", auditions("laser-fire", "laser-magical-whoosh")],
+      ["stars-connect", "P3 Stars lattice connects", "1.8-second electrical bed for the visible connection.", auditions("stars-connect", "laser-arc-burn")],
+      ["splinter-mark", "Starsplinter assigned", "Intentionally silent; the visual and TTS assignment are enough.", []],
+      ["splinter-detonate", "Starsplinter resolves", "Very short six-way energy snap.", auditions("splinter-detonate", "laser-prismatic-cut")],
+      ["orb-charge", "P2 orbs start glowing", "Intentionally silent; the earlier glow is the telegraph.", []],
+      ["orb-return", "P2 orbs jump inward", "Exactly one second to match the inward flight.", auditions("orb-return", "orb-arcane-laser")],
+      ["pull", "P2 raid pull begins", "Intentionally silent to avoid a long repetitive layer.", []],
+      ["personal-circle", "P2 spread circles resolve", "Soft area pulse rather than an explosion.", auditions("personal-circle", "success-small-bell")],
+      ["soak-progress", "P3 Soak gains valid occupancy", "Three-second low bass hum designed for quiet looping.", auditions("soak-progress", "orb-gravity-pearl")],
+      ["soak-complete", "P3 Soak finishes", "Clean short confirmation pulse.", auditions("soak-complete", "success-rune-clear")],
+      ["rune-reveal", "Memory rune appears", "Intentionally silent; the order panel carries this information.", []],
+      ["rune-match", "Correct rune partner resolves", "Positive paired confirmation without a long tail.", auditions("rune-match", "success-rune-clear")],
+      ["archangel-charge", "Dark Archangel begins", "Five-second sustained warning aligned to the cast.", auditions("archangel-charge", "error-crystal-danger")],
+      ["protection-active", "Crystal bubble protects raid", "Warm shield activation when the bubble appears.", auditions("protection-active", "cast-crystal-spark")],
+      ["heaven-hell", "P4 quarter becomes unsafe", "Intentionally silent; Move and the void visual carry it.", []],
+      ["add-destroyed", "P4 add is destroyed", "Small dry impact that can repeat without clutter.", auditions("add-destroyed", "cast-light-loud")],
+      ["main-ability-release", "Main Ability cast completes", "Intentionally silent; projectiles remain visual feedback.", []],
+      ["mistake", "Non-wipe point loss", "Immediate restrained error tick.", auditions("mistake", "error-pulse-fast")],
+      ["wipe", "Terminal failure", "Heavier terminal version of the error character.", auditions("wipe", "error-pulse-fast")]
     ].map(([id, mechanic, use, candidates]) => ({ id, mechanic, use, candidates }));
     const explicitDefaults = {
+      "laser-charge": { pick: "laser-magical-whoosh", comment: "Earlier pick retained as the comparison baseline." },
       "laser-fire": { pick: "laser-magical-whoosh", comment: "Magical Whoosh fits the lasers." },
+      "stars-connect": { pick: "laser-arc-burn", comment: "Earlier pick; requested 10% quieter for production." },
+      "splinter-detonate": { pick: "laser-prismatic-cut", comment: "Earlier pick; requested at double speed." },
       "orb-return": { pick: "orb-arcane-laser", comment: "Arcane Laser fits the P2 orbs flying inward." },
-      "main-ability-release": { pick: "cast-light-loud", comment: "Light Cast could fit when the cast fires; auditioned at 2× loudness." },
-      "mistake": { pick: "error-pulse-fast", comment: "Error Pulse has the right character; use the faster, trimmed attack." }
+      "personal-circle": { pick: "success-small-bell", comment: "Earlier selected personal-circle pulse." },
+      "soak-complete": { pick: "success-rune-clear", comment: "Earlier selected Soak confirmation." },
+      "rune-match": { pick: "success-rune-clear", comment: "Earlier selected rune confirmation." },
+      "archangel-charge": { pick: "error-crystal-danger", comment: "Earlier pick, but the mechanic requires a five-second version." },
+      "protection-active": { pick: "cast-crystal-spark", comment: "Play directly when the protection bubble begins." },
+      "add-destroyed": { pick: "cast-light-loud", comment: "Earlier pick; requested substantially quieter in production." },
+      "mistake": { pick: "error-pulse-fast", comment: "Error Pulse has the right character; use the faster, trimmed attack." },
+      "wipe": { pick: "error-pulse-fast", comment: "Use the same motif with a heavier terminal shape." }
     };
     const grid = document.querySelector("#voices");
     const reviewTable = document.querySelector("#sound-review");
@@ -239,6 +266,10 @@
       </article>
     `).join("");
     const effectName = id => effects.find(effect => effect.id === id)?.name || id;
+    const effectLabel = id => {
+      const effect = effects.find(candidate => candidate.id === id);
+      return `${effectName(id)}${effect?.seconds ? ` · ${effect.seconds.toFixed(effect.seconds < 1 ? 2 : 1)}s` : ""}`;
+    };
     let savedRows = {};
     try { savedRows = JSON.parse(localStorage.getItem("lura-sfx-row-review") || "{}"); } catch (_) {}
     let priorShortlist = [];
@@ -252,8 +283,8 @@
       <tr data-cue="${cue.id}">
         <td><strong>${cue.mechanic}</strong><span class="cue-id">${cue.id}</span></td>
         <td class="cue-use">${cue.use}</td>
-        <td><div class="candidate-list">${cue.candidates.map(candidate => `<button type="button" class="candidate${priorShortlist.includes(candidate) ? " shortlisted" : ""}" data-effect="${candidate}">▶ ${effectName(candidate)}</button>`).join("")}</div></td>
-        <td><select aria-label="Pick for ${cue.mechanic}" data-pick><option value="">Not chosen</option>${cue.candidates.map(candidate => `<option value="${candidate}"${savedRows[cue.id]?.pick === candidate ? " selected" : ""}>${effectName(candidate)}</option>`).join("")}</select></td>
+        <td>${cue.candidates.length ? `<div class="candidate-list">${cue.candidates.map(candidate => `<button type="button" class="candidate${priorShortlist.includes(candidate) ? " shortlisted" : ""}" data-effect="${candidate}">▶ ${effectLabel(candidate)}</button>`).join("")}</div>` : `<span class="intentional-silence">No effect by design</span>`}</td>
+        <td><select aria-label="Pick for ${cue.mechanic}" data-pick ${cue.candidates.length ? "" : "disabled"}><option value="">${cue.candidates.length ? "Not chosen" : "No sound"}</option>${cue.candidates.map(candidate => `<option value="${candidate}"${savedRows[cue.id]?.pick === candidate ? " selected" : ""}>${effectName(candidate)}</option>`).join("")}</select></td>
         <td><input class="cue-comment" aria-label="Comment for ${cue.mechanic}" data-comment value="${(savedRows[cue.id]?.comment || "").replaceAll("&", "&amp;").replaceAll('"', "&quot;")}" placeholder="Your feedback…"></td>
       </tr>
     `).join("");

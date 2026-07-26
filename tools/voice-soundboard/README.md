@@ -9,9 +9,11 @@ Open `index.html` in a browser to compare individual **Left**, **Right**, and
 **Move** commands. Each voice also has a left–right–left preview scheduled on
 the Web Audio clock at `0.000s`, `1.000s`, and `2.000s`; this avoids the timing
 drift of chained media-element playback. Notes, the preferred voice, and the
-20-row encounter table are saved only in that browser's local storage. Each
-sound row has four playable candidates, one choice, and one comment. **Copy
-review** exports the complete decision table as Markdown in one pass.
+20-row encounter table are saved only in that browser's local storage.
+Fourteen active rows compare the strongest prior candidate with three new
+dark-arcane variants; the other six rows preserve the review decision to use no
+effect. Candidate buttons show their exact duration. **Copy review** exports
+the complete decision table as Markdown in one pass.
 
 Some browsers restrict `file://` audio loading. If the clips do not play, serve
 this directory locally:
@@ -25,10 +27,12 @@ tool, so playback does not depend on paths outside the served directory.
 
 ## Spell-effect review table
 
-The lower board maps five candidate families across the complete SPEC-009
-shopping list. Reuse is deliberate: a coherent beam character can be auditioned
-for its telegraph, discharge, and P3 lattice without producing 80 unrelated
-files.
+The lower board maps the complete SPEC-009 shopping list. The second audition
+pass uses encounter-length variants: 2.8 seconds for a boss-beam charge, one
+second for returning-orb travel, three seconds for the optional Soak hum, five
+seconds for Dark Archangel, and compact sub-second resolution cues. The
+deterministic `Veil`, `Rift`, and `Abyss` treatments share a dark arcane palette
+without being identical.
 
 | Group | Supplied starting point | Original alternatives |
 | --- | --- | --- |

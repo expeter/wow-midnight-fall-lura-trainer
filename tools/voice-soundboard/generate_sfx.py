@@ -29,6 +29,14 @@ class Tone:
     wobble: float = 0
 
 
+@dataclass(frozen=True)
+class MidnightCue:
+    duration: float
+    low: float
+    high: float
+    noise: float
+
+
 SOUNDS: dict[str, tuple[float, list[Tone], float]] = {
     "laser-void-sweep": (.72, [Tone(0, .72, 1700, 260, .55, 34), Tone(.02, .56, 820, 1850, .3, 17)], .09),
     "laser-prismatic-cut": (.48, [Tone(0, .48, 2450, 680, .48, 55), Tone(.04, .32, 3900, 1500, .22)], .045),
@@ -54,6 +62,24 @@ SUPPLIED = {
     "success-small-bell": ("oxidvideos-ding-small-bell-sfx-411945.mp3", "atrim=start=0.02:end=0.65,afade=t=out:st=0.52:d=0.1,loudnorm=I=-18:TP=-1:LRA=6"),
     "error-pulse-fast": ("rikk_nextsoft-error_sound-221445.mp3", "atrim=start=0.1:end=0.92,atempo=1.18,afade=t=in:d=0.005,afade=t=out:st=0.58:d=0.1,loudnorm=I=-16:TP=-1:LRA=5"),
 }
+
+MIDNIGHT_CUES = {
+    "laser-charge": MidnightCue(2.8, 72, 1760, .035),
+    "laser-fire": MidnightCue(.62, 2100, 150, .12),
+    "stars-connect": MidnightCue(1.8, 310, 2640, .045),
+    "splinter-detonate": MidnightCue(.28, 2900, 240, .15),
+    "orb-return": MidnightCue(1.0, 180, 1620, .045),
+    "personal-circle": MidnightCue(.55, 190, 760, .025),
+    "soak-progress": MidnightCue(3.0, 58, 105, .008),
+    "soak-complete": MidnightCue(.55, 260, 1040, .018),
+    "rune-match": MidnightCue(.45, 520, 1560, .012),
+    "archangel-charge": MidnightCue(5.0, 46, 1380, .055),
+    "protection-active": MidnightCue(.7, 210, 1880, .02),
+    "add-destroyed": MidnightCue(.28, 760, 120, .12),
+    "mistake": MidnightCue(.25, 480, 110, .08),
+    "wipe": MidnightCue(.9, 220, 38, .11),
+}
+MIDNIGHT_VARIANTS = ("veil", "rift", "abyss")
 
 
 def envelope(age: float, duration: float) -> float:
@@ -89,6 +115,22 @@ def synthesize(name: str, duration: float, tones: list[Tone], noise_gain: float)
         output.writeframes(b"".join(samples))
 
 
+def synthesize_midnight_variants() -> None:
+    for cue, spec in MIDNIGHT_CUES.items():
+        for variant_index, variant in enumerate(MIDNIGHT_VARIANTS):
+            pitch = (.88, 1.0, 1.14)[variant_index]
+            wobble = (7, 17, 29)[variant_index]
+            duration = spec.duration
+            tones = [
+                Tone(0, duration, spec.low * pitch, spec.high / pitch, .42, wobble),
+                Tone(duration * .04, duration * .88, spec.low * 1.5, spec.high * .62, .27, wobble * 1.7),
+                Tone(duration * .18, duration * .68, max(34, spec.high * .46), max(30, spec.low * 2.4), .2, wobble * .7),
+            ]
+            name = f"midnight-{cue}-{variant}"
+            synthesize(name, duration, tones, spec.noise * (1 + variant_index * .18))
+            print((OUTPUT / f"{name}.wav").relative_to(HERE))
+
+
 def polish_supplied(ffmpeg: str, name: str, source_name: str, audio_filter: str) -> None:
     source = ROOT / "sounds" / source_name
     if not source.exists():
@@ -108,6 +150,7 @@ def main() -> None:
     for name, (duration, tones, noise_gain) in SOUNDS.items():
         synthesize(name, duration, tones, noise_gain)
         print((OUTPUT / f"{name}.wav").relative_to(HERE))
+    synthesize_midnight_variants()
     for name, (source, audio_filter) in SUPPLIED.items():
         polish_supplied(ffmpeg, name, source, audio_filter)
         print((OUTPUT / f"{name}.wav").relative_to(HERE))

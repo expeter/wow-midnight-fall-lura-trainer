@@ -6,6 +6,7 @@ export interface PhaseResult {
   points: number
   time: number
   recovery?: 'passed' | 'missed'
+  mistakes?: number
 }
 
 export const PHASE_LABELS: Record<PhaseKey, string> = {
@@ -15,13 +16,14 @@ export const PHASE_LABELS: Record<PhaseKey, string> = {
   p4: 'Phase 4',
 }
 
-export function buildPhaseResult(key: PhaseKey, startScore: number, endScore: number, startTime: number, endTime: number, recovery?: 'passed' | 'missed'): PhaseResult {
+export function buildPhaseResult(key: PhaseKey, startScore: number, endScore: number, startTime: number, endTime: number, recovery?: 'passed' | 'missed', mistakes?: number): PhaseResult {
   return {
     key,
     label: PHASE_LABELS[key],
     points: Math.max(0, Math.round(1000 + endScore - startScore)),
     time: Math.max(0, endTime - startTime),
     ...(recovery ? { recovery } : {}),
+    ...(typeof mistakes === 'number' ? { mistakes: Math.max(0, Math.round(mistakes)) } : {}),
   }
 }
 
@@ -31,7 +33,7 @@ export function isFullSequenceCompletion(results: PhaseResult[]): boolean {
 }
 
 export interface Achievement {
-  id: 'practice-clear' | 'movement-master' | 'flawless' | 'all-options' | 'superhuman-flawless' | 'early-kill'
+  id: string
   label: string
   detail: string
 }
@@ -46,6 +48,13 @@ export interface AchievementSummary {
   shieldEnabled: boolean
   mainAbilityEnabled: boolean
   earlyKill?: boolean
+  phaseResults?: PhaseResult[]
+  wipeCount?: number
+  pauseCycle?: boolean
+  crystalFailures?: number
+  runeFailures?: number
+  allPhaseRecovery?: boolean
+  mainAbilityCasts?: number
 }
 
 export function completionAchievements(summary: AchievementSummary): Achievement[] {

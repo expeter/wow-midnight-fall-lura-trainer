@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
 import { bossBeamHitsPlayer, canPickupCrystal, canRecoverFromWipe, crystalCarrierPosition, crystalWipeReason, difficultySettings, distance, distanceToSegment, isOnAssignedP3Side, isP3ConsumedSectorLethal, isInSafeAnnulus, isP3ProtectionCrystalPlaced, isProtectedByP3Bubble, isProtectedByP3Light, moveRelativeToCamera, moveWithIncreasingPull, npcEntryPosition, OPENING_BOOST_SECONDS, orientedAssignments, p1PositioningWipeReason, p2NpcCrystalDrops, p2PhaseTransitionCountdown, p2ReturningOrbPositions, P1_FINAL_RECOVERY_SECONDS, P1_STAR_LENGTH, P2_BEAM_SECONDS, P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS, P2_ORB_GLOW_LEAD_SECONDS, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_POSITIONING_SECONDS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p3ActiveCrystalAssignments, P3_APPROACH_SECONDS, p3ArchangelStackPosition, p3AssignmentForRound, p3BossPosition, p3FlightPosition, P3_FINAL_SECTOR_MOVE_SECONDS, P3_FLIGHT_SECONDS, p3LandingPlanIndex, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3LightHealthRate, p3MemoryResolved, p3PoolCenters, p3PoolSoakRate, p3ProtectionBubbleCenter, p3RuneDeadline, p3RuneEdges, p3RuneOrbs, p3RuneStepAt, p3SideForPosition, p3StarsTiming, p3UnsafePenaltyTicks, p3WrongRuneContact, P3_LANDING_SOAK_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_MEMORY_STEP_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, P3_SAFE_ZONE_PENALTY_PER_SECOND, P3_SECTOR_SECONDS, p4BossHealth, p4EncounterBoxStates, p4GroupPosition, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4SplinterStartSeconds, p4StackPosition, p4TransitionStartPosition, P4_CYCLE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, P4_SPLINTER_INTERVAL_SECONDS, personalCircleHitsCrystal, personalCircleHitsPlayer, PLAYER_COLLISION_PENALTY, randomCrystalDropDuty, randomizeP3PoolLayout, roamingNpcPosition, setP3BossPlan, shouldShowP2OrbReturnCounter, translateSelectedPoints, walkTowards, WIPE_PENALTY, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type Role, type RuneSymbol } from './game'
-import { buildPhaseResult, completionAchievements, completionShareText, isFullSequenceCompletion, type PhaseKey, type PhaseResult } from './completion'
+import { buildPhaseResult, completionShareText, isFullSequenceCompletion, type PhaseKey, type PhaseResult } from './completion'
 import { bossDamageScoreBonus, isInsideP3Pool, p4BossHealthWithPlayerDamage, p4FrontSoakerPosition, p4TankKillsBox, starsplinterHitsCrystalCarrier } from './game'
 import { p4TimedVoiceCues, timedVoiceDelaySeconds, ttsCuesForState, type P4VoiceClip } from './audio'
 import AchievementCollection, { AchievementBadgeSummary } from './AchievementCollection'
@@ -17,7 +17,7 @@ const HEALTH_REACTION_EVENTS = new Set<EventKind>(['beam', 'splinter', 'p2-orbs'
 interface GameStats { score: number; hits: number; crystalDropped: boolean; time: number }
 interface Assignment { x: number; y: number }
 interface Mistake { id: number; time: number; label: string; penalty: number }
-interface PhaseStart { key: PhaseKey; score: number; time: number }
+interface PhaseStart { key: PhaseKey; score: number; time: number; hits: number }
 type RecoveryStatus = 'disabled' | 'pending' | 'passed' | 'missed'
 interface PhaseCrystalAssignments { intermission: number[]; p2: number[]; p3: number[] }
 interface RaidPlan { positions: Assignment[]; p2Positions: Assignment[]; p2SpreadPositions: Assignment[]; p3Positions: Assignment[]; p3BossPositions: Assignment[]; startSlots: Assignment[]; profiles: PlayerProfile[]; crystalAssignments: PhaseCrystalAssignments }
@@ -487,7 +487,7 @@ export default function App() {
   const timeRef = useRef(0)
   const statsRef = useRef(stats)
   const phaseResultsRef = useRef<PhaseResult[]>([])
-  const phaseStartRef = useRef<PhaseStart>({ key: 'intermission', score: 1000, time: 0 })
+  const phaseStartRef = useRef<PhaseStart>({ key: 'intermission', score: 1000, time: 0, hits: 0 })
   const phaseRecoveryRef = useRef<{ key: PhaseKey; status: RecoveryStatus }>({ key: 'intermission', status: 'disabled' })
   const droppedForPackRef = useRef(false)
   const healthRef = useRef(100)
@@ -496,6 +496,11 @@ export default function App() {
   const healthPotUsedRef = useRef(false)
   const shieldUsedRef = useRef(false)
   const mainAbilityCastRef = useRef<MainAbilityCastState>(idleMainAbilityCast())
+  const mainAbilityCastCountRef = useRef(0)
+  const playerCrystalFailuresRef = useRef(0)
+  const playerRuneFailuresRef = useRef(0)
+  const playerPauseStartedRef = useRef(false)
+  const playerPauseCycleRef = useRef(false)
   const bossHealthRef = useRef(100)
   const bossPlayerDamageRef = useRef(0)
   const jumpUntilRef = useRef(0)
@@ -718,6 +723,11 @@ export default function App() {
     return () => window.removeEventListener('keydown', togglePause)
   }, [screen, keyBindings.pause])
   useEffect(() => {
+    if (screen !== 'game' || wipeRef.current) return
+    if (paused) playerPauseStartedRef.current = true
+    else if (playerPauseStartedRef.current) playerPauseCycleRef.current = true
+  }, [screen, paused])
+  useEffect(() => {
     if (event === 'countdown' || event === 'p2-countdown' || event === 'p3-countdown' || event === 'p4-countdown' || event === 'p3-flight') keysHeld.current.clear()
     softWipeGuardRef.current = false
     if (event.startsWith('p3-')) hitRef.current = false
@@ -781,7 +791,7 @@ export default function App() {
     const recovery = phaseRecoveryRef.current.key === key && (phaseRecoveryRef.current.status === 'passed' || phaseRecoveryRef.current.status === 'missed')
       ? phaseRecoveryRef.current.status
       : undefined
-    const result = buildPhaseResult(key, start.score, statsRef.current.score, start.time, timeRef.current, recovery)
+    const result = buildPhaseResult(key, start.score, statsRef.current.score, start.time, timeRef.current, recovery, statsRef.current.hits - start.hits)
     const next = [...phaseResultsRef.current, result]
     phaseResultsRef.current = next
     setPhaseResults(next)
@@ -791,7 +801,7 @@ export default function App() {
     const active = phaseStartRef.current
     if (active.key === key) return
     finishTrackedPhase(active.key)
-    phaseStartRef.current = { key, score: statsRef.current.score, time: timeRef.current }
+    phaseStartRef.current = { key, score: statsRef.current.score, time: timeRef.current, hits: statsRef.current.hits }
     resetPhaseRecovery(key)
   }
   function finishP4AndShowResults(killedEarly = false) {
@@ -835,7 +845,7 @@ export default function App() {
       setLuraKilledEarly(false)
     }
     jumpUntilRef.current = 0; jumpKeysRef.current.clear(); p4LastBoxHitRef.current = -Infinity; setPersonalJumpProgress(0); setMusicPreviewing(false); restartMusic()
-    setPhasePositions(oriented); setStartSlot(slot); playerRef.current = startPosition; jumpOriginRef.current = startPosition; pullOriginRef.current = startPosition; p3FlightOriginRef.current = startPosition; crystalAgeRef.current = 0; eventTimeRef.current = 0; p3UnsafeSecondsRef.current = 0; if (!preserveScore) timeRef.current = 0; droppedForPackRef.current = false; healthRef.current = 100; criticalDeadlineRef.current = 0; nextCriticalRef.current = Infinity; healthPotUsedRef.current = false; shieldUsedRef.current = false; mainAbilityCastRef.current = idleMainAbilityCast(); setMainCastState(mainAbilityCastRef.current); setHealth(100); setCriticalRemaining(0); setHealthPotUsed(false); setShieldUsed(false); setBossHealth(100); if (!preserveScore) setMainAbilityUsed(false); setMainProjectileFiredAt(null); setPlayer(startPosition); setCrystal(null); setCrystalSpent(false); setCrystalAge(0); setNpcSplinters([]); setNpcCrystals([]); setNpcCarrier(null); setNpcCrystalAge(0); setPlayerSplinterRotation(0); setP3ArchangelDuty(randomCrystalDropDuty()); if (preserveScore) setStats(current => ({ ...current, crystalDropped: false })); else { statsRef.current = { score: 1000, hits: 0, crystalDropped: false, time: 0 }; setStats(statsRef.current); setMistakes([]); wipeCountRef.current = 0; phaseResultsRef.current = []; setPhaseResults([]); phaseStartRef.current = { key: phaseForEntry(entryMode), score: 1000, time: 0 }; resetPhaseRecovery(phaseForEntry(entryMode)); const nextAttempt = Math.max(0, Number(localStorage.getItem('lura-attempt-count')) || 0) + 1; localStorage.setItem('lura-attempt-count', String(nextAttempt)); setAttemptNumber(nextAttempt); setCompletionCopyStatus('') } lastMistakeRef.current = { label: '', time: -Infinity }; setWipeReason(''); setSoftWipeNotice(''); announceCrystalDuty([], entryCrystalAssignments, entryMode === 'arena1' ? 'Intermission' : entryMode === 'arena2' ? 'P2' : entryMode === 'arena3' ? 'P3' : 'P4', true); setEvent(entryMode === 'arena2' ? 'p2-countdown' : entryMode === 'arena3' ? 'p3-countdown' : entryMode === 'arena4' ? 'p4-countdown' : 'countdown'); setEventTime(0); setCycle(1); setP2Cycle(1); setP2Soaked(false); setP2OrbReturnAge(-1); p2OrbPlayerHitRef.current = false; p2OrbReturnAgeRef.current = -1; p2OrbReturnHitRef.current = false; p2ReturnSoakCheckedRef.current = false; setP3Round(1); setP3PoolHealth(Array(6).fill(P3_POOL_HEALTH)); setP3RuneOrder(shuffledRunes()); setP3RuneStep(0); p3ResolvedRunesRef.current = []; setP3ResolvedRunes([]); p3RuneCheckedRef.current = false; setP3ResolvedRunes([]); p3RuneCheckedRef.current = false; p3RuneContactRef.current = false; p3WrongRuneSinceRef.current = { rune: null, since: 0 }; p3WrongRuneContactRef.current = false; p3RuneFailedRef.current = false; p3StarsCycleRef.current = -1; p3LandingRequiredRef.current = difficulty === 'hard' || difficulty === 'normal' && Math.random() < .5; hitRef.current = false; unsafeRef.current = false; wipeRef.current = false; softWipeGuardRef.current = false; chooseBossPattern(oriented[assignment]); setPaused(false); setScreen('game')
+    setPhasePositions(oriented); setStartSlot(slot); playerRef.current = startPosition; jumpOriginRef.current = startPosition; pullOriginRef.current = startPosition; p3FlightOriginRef.current = startPosition; crystalAgeRef.current = 0; eventTimeRef.current = 0; p3UnsafeSecondsRef.current = 0; if (!preserveScore) timeRef.current = 0; droppedForPackRef.current = false; healthRef.current = 100; criticalDeadlineRef.current = 0; nextCriticalRef.current = Infinity; healthPotUsedRef.current = false; shieldUsedRef.current = false; mainAbilityCastRef.current = idleMainAbilityCast(); setMainCastState(mainAbilityCastRef.current); setHealth(100); setCriticalRemaining(0); setHealthPotUsed(false); setShieldUsed(false); setBossHealth(100); if (!preserveScore) setMainAbilityUsed(false); setMainProjectileFiredAt(null); setPlayer(startPosition); setCrystal(null); setCrystalSpent(false); setCrystalAge(0); setNpcSplinters([]); setNpcCrystals([]); setNpcCarrier(null); setNpcCrystalAge(0); setPlayerSplinterRotation(0); setP3ArchangelDuty(randomCrystalDropDuty()); if (preserveScore) setStats(current => ({ ...current, crystalDropped: false })); else { statsRef.current = { score: 1000, hits: 0, crystalDropped: false, time: 0 }; setStats(statsRef.current); setMistakes([]); wipeCountRef.current = 0; mainAbilityCastCountRef.current = 0; playerCrystalFailuresRef.current = 0; playerRuneFailuresRef.current = 0; playerPauseStartedRef.current = false; playerPauseCycleRef.current = false; phaseResultsRef.current = []; setPhaseResults([]); phaseStartRef.current = { key: phaseForEntry(entryMode), score: 1000, time: 0, hits: 0 }; resetPhaseRecovery(phaseForEntry(entryMode)); const nextAttempt = Math.max(0, Number(localStorage.getItem('lura-attempt-count')) || 0) + 1; localStorage.setItem('lura-attempt-count', String(nextAttempt)); setAttemptNumber(nextAttempt); setCompletionCopyStatus('') } lastMistakeRef.current = { label: '', time: -Infinity }; setWipeReason(''); setSoftWipeNotice(''); announceCrystalDuty([], entryCrystalAssignments, entryMode === 'arena1' ? 'Intermission' : entryMode === 'arena2' ? 'P2' : entryMode === 'arena3' ? 'P3' : 'P4', true); setEvent(entryMode === 'arena2' ? 'p2-countdown' : entryMode === 'arena3' ? 'p3-countdown' : entryMode === 'arena4' ? 'p4-countdown' : 'countdown'); setEventTime(0); setCycle(1); setP2Cycle(1); setP2Soaked(false); setP2OrbReturnAge(-1); p2OrbPlayerHitRef.current = false; p2OrbReturnAgeRef.current = -1; p2OrbReturnHitRef.current = false; p2ReturnSoakCheckedRef.current = false; setP3Round(1); setP3PoolHealth(Array(6).fill(P3_POOL_HEALTH)); setP3RuneOrder(shuffledRunes()); setP3RuneStep(0); p3ResolvedRunesRef.current = []; setP3ResolvedRunes([]); p3RuneCheckedRef.current = false; setP3ResolvedRunes([]); p3RuneCheckedRef.current = false; p3RuneContactRef.current = false; p3WrongRuneSinceRef.current = { rune: null, since: 0 }; p3WrongRuneContactRef.current = false; p3RuneFailedRef.current = false; p3StarsCycleRef.current = -1; p3LandingRequiredRef.current = difficulty === 'hard' || difficulty === 'normal' && Math.random() < .5; hitRef.current = false; unsafeRef.current = false; wipeRef.current = false; softWipeGuardRef.current = false; chooseBossPattern(oriented[assignment]); setPaused(false); setScreen('game')
     if (preserveScore) {
       bossHealthRef.current = preservedBossHealth
       setBossHealth(preservedBossHealth)
@@ -933,7 +943,7 @@ export default function App() {
         }
         if (nextOrbAge >= returnFlightEnds && !p2OrbReturnHitRef.current) {
           p2OrbReturnHitRef.current = true
-          if (crystal && distance(crystal, WORLD.center) <= 15) triggerWipe('Returning orbs exploded into the dropped crystal')
+          if (crystal && distance(crystal, WORLD.center) <= 15) triggerPlayerCrystalFailure('Returning orbs exploded into the dropped crystal')
         }
         if (nextOrbAge >= P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS && event === 'p2-wait') {
           p2OrbReturnAgeRef.current = -1
@@ -973,6 +983,7 @@ export default function App() {
         })
         if (!p3RuneCheckedRef.current && !p3RuneFailedRef.current && eventTimeRef.current >= p3RuneDeadline(p3RuneOrder, requiredRune) + .4) {
           p3RuneFailedRef.current = true
+          playerRuneFailuresRef.current += 1
           const ended = triggerWipe(`Missed rune ${requiredRune} during its turn`)
           if (!ended) {
             p3RuneCheckedRef.current = true
@@ -989,6 +1000,7 @@ export default function App() {
       mainAbilityCastRef.current = mainCastAdvance.state
       setMainCastState(mainCastAdvance.state)
       if (mainCastAdvance.completed > 0) {
+        mainAbilityCastCountRef.current += mainCastAdvance.completed
         const previousDamage = bossPlayerDamageRef.current
         const nextDamage = Math.min(100, previousDamage + .5)
         const damageBonus = bossDamageScoreBonus(previousDamage, nextDamage)
@@ -1056,7 +1068,7 @@ export default function App() {
         : isCarrier && !crystal
           ? 'The cross beam hit your carried crystal'
           : ''
-      if (crystalFailure && triggerWipe(crystalFailure)) return
+      if (crystalFailure && triggerPlayerCrystalFailure(crystalFailure)) return
       p2OrbReturnAgeRef.current = 0
       p2OrbReturnHitRef.current = false
       p2OrbPlayerHitRef.current = false
@@ -1089,7 +1101,7 @@ export default function App() {
       const circleHitCrystal = Boolean(crystal && [player, ...npcSpreadPositions].some(target => distance(target, crystal) < P2_PERSONAL_CIRCLE_OUTER_RADIUS))
       const playerHitNpcCrystal = personalCircleHitsCrystal(player, npcCrystals)
       const crystalFailure = placementFailure ? 'Crystal was not dropped in the middle before the circles' : playerHitNpcCrystal ? 'Your personal circle hit another player’s crystal' : circleHitCrystal ? 'A personal circle hit the crystal' : ''
-      if (crystalFailure && triggerWipe(crystalFailure)) return
+      if (crystalFailure && triggerPlayerCrystalFailure(crystalFailure)) return
       if (crystalFailure) {
         setCrystal(null)
         setCrystalAge(0)
@@ -1150,7 +1162,10 @@ export default function App() {
         p3ResolvedRunesRef.current = [...p3RuneOrder]
         setP3ResolvedRunes([...p3RuneOrder])
       }
-      if (!p3RuneCheckedRef.current && triggerWipe(`Failed to match rune ${playerRune(assignment)} in order`)) return
+      if (!p3RuneCheckedRef.current) {
+        playerRuneFailuresRef.current += 1
+        if (triggerWipe(`Failed to match rune ${playerRune(assignment)} in order`)) return
+      }
       setP3RuneStep(3)
       setEvent('p3-big-boom')
     } else if (event === 'p3-big-boom') {
@@ -1158,7 +1173,10 @@ export default function App() {
     } else if (event === 'p3-rune-preview') {
       setEvent('p3-lattice-memory')
     } else if (event === 'p3-lattice-memory') {
-      if (!p3RuneCheckedRef.current && triggerWipe(`Failed to match rune ${playerRune(assignment)} in order`)) return
+      if (!p3RuneCheckedRef.current) {
+        playerRuneFailuresRef.current += 1
+        if (triggerWipe(`Failed to match rune ${playerRune(assignment)} in order`)) return
+      }
       setP3RuneStep(3)
       setEvent('p3-lattice-second')
     } else if (event === 'p3-lattice-second') {
@@ -1485,6 +1503,7 @@ export default function App() {
             p3WrongRuneSinceRef.current = { rune: wrongRune, since: timeRef.current }
             p3WrongRuneContactRef.current = false
           } else if (!p3WrongRuneContactRef.current && timeRef.current - p3WrongRuneSinceRef.current.since >= .2) {
+            playerRuneFailuresRef.current += 1
             recordMistake(`Bumped into wrong rune ${wrongRune}`, PLAYER_COLLISION_PENALTY)
             p3WrongRuneContactRef.current = true
           }
@@ -1495,6 +1514,7 @@ export default function App() {
             resolveP3Rune(requiredRune)
           } else {
             p3RuneFailedRef.current = true
+            playerRuneFailuresRef.current += 1
             const ended = triggerWipe(`Matched rune ${requiredRune} out of order`)
             if (!ended) {
               p3RuneCheckedRef.current = true
@@ -1513,7 +1533,7 @@ export default function App() {
       return
     }
     if (event.startsWith('p2-')) {
-      if (event === 'p2-orbs' && eventTimeRef.current >= P2_BEAM_SECONDS - .35 && crystal && (Math.abs(crystal.x - WORLD.center.x) < 7 || Math.abs(crystal.y - WORLD.center.y) < 7)) triggerWipe('The cross beam hit the crystal')
+      if (event === 'p2-orbs' && eventTimeRef.current >= P2_BEAM_SECONDS - .35 && crystal && (Math.abs(crystal.x - WORLD.center.x) < 7 || Math.abs(crystal.y - WORLD.center.y) < 7)) triggerPlayerCrystalFailure('The cross beam hit the crystal')
       return
     }
     if (event === 'countdown' || event === 'positioning') return
@@ -1548,10 +1568,10 @@ export default function App() {
     const npcHitsPlayerCrystal = Boolean(crystal && splinterResolving && npcOrigins.some((origin, index) => rayHitsAny(crystal, origin, npcRotations[index])))
     const bossHitsPlayerCrystal = Boolean(event === 'beam' && crystal && bossBeamHitsPlayer(crystal, WORLD.center, beamAngles, 12, liveEventTime))
     const playerCrystalFailure = crystalWipeReason({ assigned: activeCrystalAssignments.includes(assignment), splinterResolving, dropped: droppedForPackRef.current, crystalHit: playerHitsOwnCrystal, expired: false })
-    if (bossHitsPlayerCrystal) { triggerWipe('A boss beam hit your crystal'); return }
-    if (playerCrystalFailure) { triggerWipe(playerCrystalFailure); return }
-    if (playerHitsCrystalCarrier) { triggerWipe('Your Starsplinter hit a crystal carrier'); return }
-    if (playerHitsRaidCrystal) { triggerWipe('Your Starsplinter hit another player’s crystal'); return }
+    if (bossHitsPlayerCrystal) { triggerPlayerCrystalFailure('A boss beam hit your crystal'); return }
+    if (playerCrystalFailure) { triggerPlayerCrystalFailure(playerCrystalFailure); return }
+    if (playerHitsCrystalCarrier) { triggerPlayerCrystalFailure('Your Starsplinter hit a crystal carrier'); return }
+    if (playerHitsRaidCrystal) { triggerPlayerCrystalFailure('Your Starsplinter hit another player’s crystal'); return }
     if (npcHitsPlayerCrystal) { triggerWipe('Another player’s Starsplinter hit your crystal'); return }
     if (hitByNpcSplinter && activeCrystalAssignments.includes(assignment) && !crystal) { triggerWipe('Another player’s Starsplinter hit you while carrying the crystal'); return }
     if (bossHit || hitByNpcSplinter || playerHitsNpc) {
@@ -1595,6 +1615,10 @@ export default function App() {
     setPaused(true)
     return true
   }
+  function triggerPlayerCrystalFailure(label: string, penalty = WIPE_PENALTY): boolean {
+    playerCrystalFailuresRef.current += 1
+    return triggerWipe(label, penalty)
+  }
   const fullSequenceComplete = isFullSequenceCompletion(phaseResults)
   const resultProfile = profiles[assignment]
   const effectivePlayerName = playerName.trim() || resultProfile.name
@@ -1624,10 +1648,17 @@ export default function App() {
     healthPotEnabled,
     shieldEnabled,
     mainAbilityEnabled: mainAbilityUsed,
+    mainAbilityCasts: mainAbilityCastCountRef.current,
+    phaseResults,
+    wipeCount: wipeCountRef.current,
+    pauseCycle: playerPauseCycleRef.current,
+    crystalFailures: playerCrystalFailuresRef.current,
+    runeFailures: playerRuneFailuresRef.current,
+    allPhaseRecovery: fullSequenceComplete && phaseResults.every(result => result.recovery === 'passed'),
     earlyKill: luraKilledEarly,
   }
-  const achievements = completionAchievements(achievementSummary)
-  const collectibleAwards = collectibleAchievements(achievementSummary)
+  const collectibleAwards = collectibleAchievements(achievementSummary, achievementCollection, attemptNumber)
+  const achievements = collectibleAwards
   const collectibleAwardSignature = collectibleAwards.map(achievement => achievement.key).join('|')
   useEffect(() => {
     if (screen !== 'results' || completionPreview || !collectibleAwardSignature) return
@@ -1635,13 +1666,15 @@ export default function App() {
       const updated = mergeEarnedAchievements(current, collectibleAwards, new Date().toISOString(), {
         attempt: attemptNumber,
         playerName: effectivePlayerName,
+        summary: achievementSummary,
       })
       if (updated !== current) localStorage.setItem(ACHIEVEMENT_STORAGE_KEY, serializeAchievementCollection(updated))
       return updated
     })
   }, [screen, completionPreview, collectibleAwardSignature])
-  const primaryAchievement = achievements.find(achievement => achievement.id === 'superhuman-flawless')
-    ?? achievements.find(achievement => achievement.id === 'flawless')
+  const primaryAchievement = achievements.find(achievement => achievement.id === 'superhuman-both-duties')
+    ?? achievements.find(achievement => achievement.id === 'hard-score-flawless')
+    ?? achievements.find(achievement => achievement.id === 'not-a-scratch')
     ?? achievements[0]
   async function copyCompletion() {
     const text = `${completionPreview ? 'PREVIEW DATA — NOT A COMPLETED RUN\n' : ''}${completionShareText({

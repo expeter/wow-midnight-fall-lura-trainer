@@ -35,7 +35,26 @@ describe('Intermission game rules', () => {
   it('splits Phase 3 landings and pool assignments across both room halves', () => { const center = { x: 480, y: 270 }; expect(p3LandingPosition(0, center).x).toBeLessThan(center.x); expect(p3LandingPosition(10, center).x).toBeGreaterThan(center.x); expect(p3PoolCenters(-1, center, 1)).toHaveLength(3); expect(p3PoolCenters(1, center, 1).every(point => point.x > center.x)).toBe(true) })
   it('lands the raid in six compact groups with independent randomized soak locations', () => { const center = { x: 480, y: 270 }; const centers = Array.from({ length: 20 }, (_, index) => p3LandingGroupCenter(index, center)); expect(P3_OUTER_RADIUS).toBe(199); expect(new Set(centers.map(point => `${point.x.toFixed(2)}:${point.y.toFixed(2)}`)).size).toBe(6); expect(Math.min(...centers.map(point => point.x))).toBeLessThan(center.x); expect(Math.max(...centers.map(point => point.x))).toBeGreaterThan(center.x); expect(Math.min(...centers.map(point => point.y))).toBeLessThan(center.y); expect(Math.max(...centers.map(point => point.y))).toBeGreaterThan(center.y); expect(new Set(Array.from({ length: 20 }, (_, index) => p3LandingGroupIndex(index))).size).toBe(6); expect(distance(p3LandingPosition(0, center), p3LandingPosition(2, center))).toBeLessThan(8); expect(p3LandingSoakPositions(0, center, 1234)).toEqual(p3LandingSoakPositions(2, center, 1234)); expect(p3LandingSoakPositions(0, center, 1234)).not.toEqual(p3LandingSoakPositions(0, center, 5678)); const landing = p3LandingGroupCenter(0, center); const soaks = p3LandingSoakPositions(0, center, 1234); expect(soaks.every(point => distance(landing, point) >= 21 && distance(landing, point) <= 28.01)).toBe(true); expect(distance(soaks[0], landing)).toBeGreaterThanOrEqual(distance(soaks[1], landing)); const layouts = Array.from({ length: 100 }, (_, seed) => p3LandingSoakPositions(0, center, seed)); expect(Math.min(...layouts.map(points => distance(points[0], points[1])))).toBeGreaterThanOrEqual(P3_LANDING_SOAK_RADIUS * 2); expect(Math.min(...layouts.flatMap(points => points.flatMap(point => [0, 1, 2].map(member => distance(point, p3LandingPosition(member, center))))))).toBeGreaterThanOrEqual(15); expect(p3LandingSoakPositions(0, center, 1234)).not.toEqual(p3LandingSoakPositions(3, center, 1234)) })
   it('moves the P2 stack visibly through the full two-second P3 knockback', () => { const origin = { x: 480, y: 270 }; const target = { x: 320, y: 170 }; expect(p3FlightPosition(origin, target, 0)).toEqual(origin); const midpoint = p3FlightPosition(origin, target, P3_FLIGHT_SECONDS / 2); expect(distance(midpoint, origin)).toBeGreaterThan(0); expect(distance(midpoint, target)).toBeGreaterThan(0); expect(p3FlightPosition(origin, target, P3_FLIGHT_SECONDS)).toEqual(target) })
-  it('shows only the player’s ten-person room half during P3', () => { expect(Array.from({ length: 20 }, (_, index) => index).filter(index => isP3RaidMemberVisible(3, index, true))).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]); expect(Array.from({ length: 20 }, (_, index) => index).filter(index => isP3RaidMemberVisible(14, index, true))).toEqual([10, 11, 12, 13, 14, 15, 16, 17, 18, 19]); expect(isP3RaidMemberVisible(3, 14, false)).toBe(true) })
+  it('derives the active P3 room half from raid-plan positions instead of roster indices', () => {
+    const center = { x: 480, y: 270 }
+    const player = { x: 420, y: 360 }
+    expect(isP3RaidMemberVisible(player, { x: 430, y: 390 }, center, true)).toBe(true)
+    expect(isP3RaidMemberVisible(player, { x: 530, y: 390 }, center, true)).toBe(false)
+    expect(isP3RaidMemberVisible(player, { x: 530, y: 390 }, center, false)).toBe(true)
+  })
+  it('keeps cross-roster P3 crystal assignments together on their planned side', () => {
+    const center = { x: 480, y: 270 }
+    const assignments = [8, 11, 12, 15, 16, 18]
+    const positions = Array.from({ length: 20 }, (_, index) => ({ x: index < 10 ? 420 : 540, y: 360 }))
+    positions[16] = { x: 410, y: 390 }
+    positions[18] = { x: 440, y: 380 }
+    positions[11] = { x: 550, y: 380 }
+    positions[12] = { x: 540, y: 390 }
+    positions[15] = { x: 530, y: 370 }
+    const active = p3ActiveCrystalAssignments(assignments, 19, null, false, 1, 'p3-light-pools', 1234, positions, center)
+    expect(active.filter(index => positions[index].x < center.x)).toEqual([8, 16, 18])
+    expect(active.filter(index => positions[index].x >= center.x)).toEqual([11, 12, 15])
+  })
   it('keeps three P3 crystals per side until Dark Archangel consumes one per side', () => {
     const assignments = [1, 4, 7, 11, 14, 17]
     expect(p3ActiveCrystalAssignments(assignments, 0, null, false, 1, 'p3-light-pools')).toEqual(assignments)

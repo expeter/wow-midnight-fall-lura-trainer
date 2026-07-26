@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
-import { angleToward, assignmentRevealDistance, crystalCarrierPosition, distance, distanceToSegment, hasActiveP3CrystalLight, jumpHeights, npcEntryPosition, OPENING_BOOST_SECONDS, P1_STAR_LENGTH, P2_BEAM_SECONDS, P2_ORBIT_SPEED, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_INNER_RADIUS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p2NpcRoamingPosition, p2NpcShouldReturnToSoak, p2OrbReturnState, p2ReturningOrbPositions, p3ActiveCrystalAssignments, p3ArchangelStackPosition, p3BossPosition, p3FlightPosition, P3_FLIGHT_SECONDS, p3LandingGroupIndex, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3NpcPoolAssignment, p3NpcRuneReactionDelay, p3NpcSoaksActive, p3PoolCenters, p3ProtectionBubbleCenter, p3RuneEdges, p3RuneOrbs, p3RunePartnerPosition, p3StarsTiming, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, p4EncounterBoxStates, p4FrontSoakerPosition, p4GroupPosition, p4NpcRelocationPace, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterRotation, p4StackPosition, p4TankConeActive, P4_FRONT_CONE_RANGE, P4_HEAVEN_MOVE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, roamingNpcPosition, separateP3NpcTarget, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type RuneSymbol } from './game'
+import { angleToward, assignmentRevealDistance, crystalCarrierPosition, distance, distanceToSegment, hasActiveP3CrystalLight, jumpHeights, npcEntryPosition, OPENING_BOOST_SECONDS, P1_STAR_LENGTH, P2_BEAM_SECONDS, P2_ORBIT_SPEED, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_INNER_RADIUS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p2NpcRoamingPosition, p2NpcShouldReturnToSoak, p2OrbReturnState, p2ReturningOrbPositions, p3ActiveCrystalAssignments, p3ArchangelStackPosition, p3BossPosition, p3FlightPosition, P3_FLIGHT_SECONDS, p3LandingGroupIndex, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3NpcPoolAssignment, p3NpcRuneReactionDelay, p3NpcSoaksActive, p3PoolCenters, p3ProtectionBubbleCenter, p3RuneEdges, p3RuneOrbs, p3RunePartnerPosition, p3SideForPosition, p3StarsTiming, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, p4EncounterBoxStates, p4FrontSoakerPosition, p4GroupPosition, p4NpcRelocationPace, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterRotation, p4StackPosition, p4TankConeActive, P4_FRONT_CONE_RANGE, P4_HEAVEN_MOVE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, roamingNpcPosition, separateP3NpcTarget, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type RuneSymbol } from './game'
 import { p3SpreadPosition, p4TankKillsBox } from './game'
 import { isP3RaidMemberVisible } from './game'
 
@@ -136,8 +136,8 @@ function avoidP3Stars(position: Point, target: Point, field: P3StarsField, index
   const direction = index % 2 ? 1 : -1
   return { x: target.x - dy / length * 13 * direction, y: target.y + dx / length * 13 * direction }
 }
-function p3NpcTarget(index: number, crystal: boolean, round: number, event: SceneProps['event'], eventTime: number, landingSeed = 0, crystalSlot = -1): Point {
-  const side: -1 | 1 = index < 10 ? -1 : 1
+function p3NpcTarget(index: number, crystal: boolean, round: number, event: SceneProps['event'], eventTime: number, landingSeed = 0, crystalSlot = -1, assignedSide?: -1 | 1): Point {
+  const side: -1 | 1 = assignedSide ?? (index < 10 ? -1 : 1)
   const landing = p3LandingPosition(index, WORLD.center)
   if (event === 'p3-countdown') return WORLD.center
   if (event === 'p3-flight') {
@@ -150,7 +150,7 @@ function p3NpcTarget(index: number, crystal: boolean, round: number, event: Scen
     const soaks = p3LandingSoakPositions(index, WORLD.center, landingSeed)
     return member < 2 ? soaks[member] : landing
   }
-  const generatedSpread = p3SpreadPosition(index, crystal, WORLD.center, round, crystalSlot)
+  const generatedSpread = p3SpreadPosition(index, crystal, WORLD.center, round, crystalSlot, side)
   const safeCenter = p3LightCenters(side, WORLD.center, round)[crystal && crystalSlot >= 0 ? crystalSlot % 3 : index % 3]
   const safeOffset = distance(generatedSpread, safeCenter)
   const safeSpread = safeOffset <= P3_LIGHT_RADIUS - 1
@@ -169,7 +169,7 @@ function p3NpcTarget(index: number, crystal: boolean, round: number, event: Scen
   if (event === 'p3-big-boom') return safeSpread
   if (event === 'p3-archangel-position' || event === 'p3-archangel') return p3ArchangelStackPosition(side, WORLD.center, round)
   if (event === 'p3-sector-move') {
-    return p3NpcTarget(index, crystal, Math.min(2, round + 1), 'p3-light-pools', 0, landingSeed, crystalSlot)
+    return p3NpcTarget(index, crystal, Math.min(2, round + 1), 'p3-light-pools', 0, landingSeed, crystalSlot, side)
   }
   if (event === 'p4-transition' || event === 'p4-cycle') {
     const lane = (index % 10 - 4.5) * 3.2
@@ -649,6 +649,8 @@ export default function GameScene(props: SceneProps) {
 
     const render = () => {
       const state = latest.current
+      const p3SideOf = (profileIndex: number) => p3SideForPosition(state.positions[profileIndex], WORLD.center)
+      const playerP3Side = p3SideOf(state.assignment)
       if (state.event === 'p4-cycle' && previousEvent === 'p4-cycle' && state.eventTime < previousEventTime) p4VisualCycle = Math.min(5, p4VisualCycle + 1)
       if (state.event === 'p4-countdown' || state.event === 'p4-transition') p4VisualCycle = 1
       previousEventTime = state.eventTime
@@ -670,9 +672,8 @@ export default function GameScene(props: SceneProps) {
           orbitSoakTarget = baseTarget + Math.round((orbitAngle - baseTarget) / (Math.PI / 2)) * Math.PI / 2
         }
         if (state.event === 'p3-landing') {
-          const side = state.assignment < 10 ? -1 : 1
           const landing = p3LandingPosition(state.assignment, WORLD.center)
-          const assignedBoss = p3BossPosition(side, WORLD.center, 1)
+          const assignedBoss = p3BossPosition(playerP3Side, WORLD.center, 1)
           const desiredFacing = angleToward(landing, assignedBoss)
           cameraBaseAngle = desiredFacing - yawOffset - Math.PI
           applyFacing(desiredFacing)
@@ -695,8 +696,7 @@ export default function GameScene(props: SceneProps) {
         if (turnDirection) applyFacing((facingAngle ?? currentCameraForwardAngle) + turnDirection * rotationSpeed * renderDelta)
       }
       if ((state.event === 'p3-light-pools' || state.event === 'p3-pools-overlap') && p3PlayerSoakEngagedRound !== state.p3Round) {
-        const playerSide: -1 | 1 = state.assignment < 10 ? -1 : 1
-        if (p3PoolCenters(playerSide, WORLD.center, state.p3Round).some(pool => distance(state.player, pool) <= P3_POOL_RADIUS)) p3PlayerSoakEngagedRound = state.p3Round
+        if (p3PoolCenters(playerP3Side, WORLD.center, state.p3Round).some(pool => distance(state.player, pool) <= P3_POOL_RADIUS)) p3PlayerSoakEngagedRound = state.p3Round
       }
       const p4JumpHeight = state.event === 'p4-transition' ? Math.sin(Math.min(1, state.eventTime / P4_KNOCKUP_SECONDS) * Math.PI) * 30 : 0
       const p3FlightHeight = state.event === 'p3-flight' ? Math.sin(Math.min(1, state.eventTime / P3_FLIGHT_SECONDS) * Math.PI) * 46 : 0
@@ -735,19 +735,19 @@ export default function GameScene(props: SceneProps) {
       playerBody.material.color.setHex(playerBody.userData.baseColor)
       const playerCarriedCrystal = player.getObjectByName('carried-crystal')
       if (playerCarriedCrystal) playerCarriedCrystal.visible = !phaseFour && state.playerIsCrystal && !state.playerCrystalSpent && !state.crystal
-      const partnerNpcOrdinal = npcProfileIndices.findIndex(profileIndex => (profileIndex < 10) === (state.assignment < 10))
+      const partnerNpcOrdinal = npcProfileIndices.findIndex(profileIndex => p3SideOf(profileIndex) === playerP3Side)
       const markedNpcOrdinals = npcProfileIndices.map((profileIndex, ordinal) => ({ profileIndex, ordinal }))
-        .filter(candidate => (candidate.profileIndex < 10) === (state.assignment < 10) && candidate.ordinal !== partnerNpcOrdinal)
+        .filter(candidate => p3SideOf(candidate.profileIndex) === playerP3Side && candidate.ordinal !== partnerNpcOrdinal)
         .slice(0, 4)
         .map(candidate => candidate.ordinal)
       const assignedP3Crystals = state.profiles
         .map((profile, profileIndex) => profile.crystal ? profileIndex : -1)
         .filter(profileIndex => profileIndex >= 0)
       const activeP3Crystals = phaseThree
-        ? p3ActiveCrystalAssignments(assignedP3Crystals, state.assignment, state.p3ArchangelDuty, state.playerCrystalSpent, state.p3Round, state.event, state.p4PatternSeed)
+        ? p3ActiveCrystalAssignments(assignedP3Crystals, state.assignment, state.p3ArchangelDuty, state.playerCrystalSpent, state.p3Round, state.event, state.p4PatternSeed, state.positions, WORLD.center)
         : assignedP3Crystals
       const p3CrystalSlot = (profileIndex: number) => assignedP3Crystals
-        .filter(candidate => (candidate < 10) === (profileIndex < 10))
+        .filter(candidate => p3SideOf(candidate) === p3SideOf(profileIndex))
         .indexOf(profileIndex)
       const plannedP3Pools = [[0, 0, 0], [0, 0, 0]]
       const playerLightActive = phaseThree
@@ -756,9 +756,11 @@ export default function GameScene(props: SceneProps) {
       const plannedP3Targets: Array<{ point: Point; crystal: boolean }> = [{ point: state.player, crystal: playerLightActive }]
       const npcPositions = npcs.map((sprite, index) => {
         const baseIndex = npcProfileIndices[index]
+        const npcP3Side = p3SideOf(baseIndex)
         const npcP3CrystalActive = activeP3Crystals.includes(baseIndex)
         const crystalSlot = p3CrystalSlot(baseIndex)
-        sprite.visible = isP3RaidMemberVisible(state.assignment, baseIndex, phaseThree)
+        const localP3Member = isP3RaidMemberVisible(state.positions[state.assignment], state.positions[baseIndex], WORLD.center, phaseThree)
+        sprite.visible = localP3Member
         const soakTarget = state.p2SoakPositions[baseIndex]
         const spreadTarget = state.p2SpreadPositions[baseIndex]
         const intermissionPosition = npcPosition(index, state.time, state.intermissionPositions, state.assignment, state.event, state.eventTime, state.beamAngles, state.raidStart, state.movementSpeed, state.movementBonus)
@@ -767,7 +769,7 @@ export default function GameScene(props: SceneProps) {
         const p2WaitTarget = p2NpcShouldReturnToSoak(state.p2OrbReturnAge)
           ? soakTarget
           : p2NpcRoamingPosition(soakTarget, index, state.time, p2ReturningOrbPositions(state.p2OrbReturnAge, state.p2Cycle, state.time, WORLD.center), WORLD.center, P2_RADIUS - 2)
-        let p3Target = p3NpcTarget(baseIndex, npcP3CrystalActive, state.p3Round, state.event, state.eventTime, state.p4PatternSeed, crystalSlot)
+        let p3Target = p3NpcTarget(baseIndex, npcP3CrystalActive, state.p3Round, state.event, state.eventTime, state.p4PatternSeed, crystalSlot, npcP3Side)
         let p4SplinterReturnBoost = false
         let p3RunePartnerApproach = false
         let p3RunePairApproach = false
@@ -808,13 +810,13 @@ export default function GameScene(props: SceneProps) {
           }
         }
         if (state.event === 'p3-light-pools') {
-          const side: -1 | 1 = baseIndex < 10 ? -1 : 1
+          const side = npcP3Side
           const sidePlayers = state.profiles
             .map((profile, profileIndex) => ({ profile, profileIndex }))
-            .filter(candidate => (candidate.profileIndex < 10 ? -1 : 1) === side && candidate.profileIndex !== state.assignment)
+            .filter(candidate => p3SideOf(candidate.profileIndex) === side && candidate.profileIndex !== state.assignment)
             .map(candidate => candidate.profileIndex)
           const sideOrdinal = sidePlayers.indexOf(baseIndex)
-          const playerSide = side === (state.assignment < 10 ? -1 : 1)
+          const playerSide = side === playerP3Side
           const requiredPlayerPool = state.assignment % 3
           const sidePoolHealth = state.p3PoolHealth.slice(side < 0 ? 0 : 3, side < 0 ? 3 : 6)
           const npcSoaksActive = p3NpcSoaksActive(p3PlayerSoakEngagedRound === state.p3Round, state.p3Round, state.eventTime)
@@ -825,25 +827,24 @@ export default function GameScene(props: SceneProps) {
           const spreadAngle = Math.max(0, sideOrdinal) * 2.399963
           p3Target = poolCenter
             ? { x: poolCenter.x + Math.cos(spreadAngle) * 6, y: poolCenter.y + Math.sin(spreadAngle) * 6 }
-            : p3NpcTarget(baseIndex, npcP3CrystalActive, state.p3Round, state.event, state.eventTime, state.p4PatternSeed, crystalSlot)
+            : p3NpcTarget(baseIndex, npcP3CrystalActive, state.p3Round, state.event, state.eventTime, state.p4PatternSeed, crystalSlot, npcP3Side)
         }
         if (state.event === 'p3-archangel-position' || state.event === 'p3-archangel') {
-          const spreadOrigin = p3NpcTarget(baseIndex, npcP3CrystalActive, state.p3Round, 'p3-big-boom', 0, state.p4PatternSeed, crystalSlot)
+          const spreadOrigin = p3NpcTarget(baseIndex, npcP3CrystalActive, state.p3Round, 'p3-big-boom', 0, state.p4PatternSeed, crystalSlot, npcP3Side)
           const travelTime = state.eventTime + (state.event === 'p3-archangel' ? 4 : 0)
           p3Target = walkTowards(spreadOrigin, p3Target, travelTime, state.movementSpeed)
         } else if (state.event === 'p3-sector-move') {
-          const side: -1 | 1 = baseIndex < 10 ? -1 : 1
-          const stackOrigin = p3ArchangelStackPosition(side, WORLD.center, state.p3Round)
+          const stackOrigin = p3ArchangelStackPosition(npcP3Side, WORLD.center, state.p3Round)
           const transitionTarget = state.p3Round >= 2 ? p4StackPosition(1, WORLD.center) : p3Target
           p3Target = walkAroundArena(stackOrigin, transitionTarget, state.eventTime, state.movementSpeed * 2)
         }
         const runePartnerDelay = p3NpcRuneReactionDelay(state.p4PatternSeed, state.assignment, state.p3Round)
-        if (state.event === 'p3-lattice-memory' && state.difficulty !== 'hard' && index === partnerNpcOrdinal && state.eventTime >= runePartnerDelay) p3Target = p3RunePartnerPosition(state.assignment, WORLD.center, state.p3Round)
+        if (state.event === 'p3-lattice-memory' && state.difficulty !== 'hard' && index === partnerNpcOrdinal && state.eventTime >= runePartnerDelay) p3Target = p3RunePartnerPosition(state.assignment, WORLD.center, state.p3Round, playerP3Side)
         if (state.event === 'p3-light-pools' && state.difficulty !== 'hard' && state.eventTime >= P3_MEMORY_START_SECONDS && index === partnerNpcOrdinal) {
           const playerRune = (['T', 'X', 'O'] as RuneSymbol[])[state.assignment % 3]
           const activeRune = state.p3RuneOrder[state.p3RuneStep]
           if (activeRune === playerRune && !state.p3ResolvedRunes.includes(playerRune) && state.eventTime >= P3_MEMORY_PANEL_SECONDS + runePartnerDelay) {
-            const bossPoint = p3BossPosition(state.assignment < 10 ? -1 : 1, WORLD.center, state.p3Round)
+            const bossPoint = p3BossPosition(playerP3Side, WORLD.center, state.p3Round)
             const towardBoss = { x: bossPoint.x - state.player.x, y: bossPoint.y - state.player.y }
             const towardBossLength = Math.hypot(towardBoss.x, towardBoss.y) || 1
             p3Target = { x: state.player.x + towardBoss.x / towardBossLength * 4, y: state.player.y + towardBoss.y / towardBossLength * 4 }
@@ -877,7 +878,7 @@ export default function GameScene(props: SceneProps) {
           const stars = p3StarsTiming(state.eventTime)
           if (stars.active && stars.localTime >= 2.5 && stars.localTime <= 4.5) {
             const current = renderedNpcPositions[index] ?? p3Target
-            p3Target = avoidP3Stars(current, p3Target, p3StarsField(baseIndex < 10 ? -1 : 1, state.p3Round, stars.cycle), index)
+            p3Target = avoidP3Stars(current, p3Target, p3StarsField(npcP3Side, state.p3Round, stars.cycle), index)
           }
         }
         const normal = phaseThree || phaseFour
@@ -938,7 +939,7 @@ export default function GameScene(props: SceneProps) {
         return position
       })
       const npcP3LightCenters = phaseThree
-        ? npcPositions.filter((_, npcIndex) => isP3RaidMemberVisible(state.assignment, npcProfileIndices[npcIndex], true) && activeP3Crystals.includes(npcProfileIndices[npcIndex]))
+        ? npcPositions.filter((_, npcIndex) => isP3RaidMemberVisible(state.positions[state.assignment], state.positions[npcProfileIndices[npcIndex]], WORLD.center, true) && activeP3Crystals.includes(npcProfileIndices[npcIndex]))
         : []
       state.onP3LightCenters(npcP3LightCenters)
       if (state.event === 'p3-light-pools' || state.event === 'p3-pools-overlap') {
@@ -952,7 +953,7 @@ export default function GameScene(props: SceneProps) {
         const otherRunes = (['T', 'X', 'O'] as RuneSymbol[]).filter(symbol => symbol !== rune)
         const localNpcOrdinals = npcPositions
           .map((_, npcIndex) => npcIndex)
-          .filter(npcIndex => npcIndex !== partnerNpcOrdinal && (npcProfileIndices[npcIndex] < 10) === (state.assignment < 10))
+          .filter(npcIndex => npcIndex !== partnerNpcOrdinal && p3SideOf(npcProfileIndices[npcIndex]) === playerP3Side)
           .slice(0, 4)
         localNpcOrdinals.forEach((npcIndex, index) => {
           if (distance(state.player, npcPositions[npcIndex]) <= 4.5) contacts.push(otherRunes[Math.floor(index / 2)])
@@ -1056,7 +1057,7 @@ export default function GameScene(props: SceneProps) {
         if (state.playerIsCrystal) addGroundRing(hazards, WORLD.center, 4, 8, 0xffe05a, .65)
       }
       if (phaseThree) {
-        const playerSide: -1 | 1 = state.assignment < 10 ? -1 : 1
+        const playerSide = playerP3Side
         const landingGroups = new Set([p3LandingGroupIndex(state.assignment), ...state.profiles.map((profile, index) => profile.crystal ? p3LandingGroupIndex(index) : -1).filter(group => group >= 0)])
         const landingSoaks = [...landingGroups].flatMap(group => {
           const representative = state.profiles.findIndex((_, index) => p3LandingGroupIndex(index) === group)
@@ -1140,7 +1141,7 @@ export default function GameScene(props: SceneProps) {
           const localNpcs = npcPositions.filter((_, npcIndex) => {
             if (npcIndex === partnerNpcOrdinal) return false
             const baseIndex = npcProfileIndices[npcIndex]
-            return (baseIndex < 10 ? -1 : 1) === playerSide
+            return p3SideOf(baseIndex) === playerSide
           }).slice(0, 4)
           localNpcs.forEach((point, index) => {
             const npcRune = npcRunes[index]

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
-import { bossBeamHitsPlayer, canPickupCrystal, canRecoverFromWipe, crystalCarrierPosition, crystalWipeReason, difficultySettings, distance, distanceToSegment, isP3ConsumedSectorLethal, isInSafeAnnulus, isP3ProtectionCrystalPlaced, isProtectedByP3Bubble, isProtectedByP3Light, moveRelativeToCamera, moveWithIncreasingPull, npcEntryPosition, OPENING_BOOST_SECONDS, orientedAssignments, p1PositioningWipeReason, p2NpcCrystalDrops, p2ReturningOrbPositions, P1_STAR_LENGTH, P2_BEAM_SECONDS, P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_POSITIONING_SECONDS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p3ActiveCrystalAssignments, p3ArchangelStackPosition, p3AssignmentForRound, p3BossPosition, p3FlightPosition, P3_FLIGHT_SECONDS, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3LightHealthRate, p3MemoryResolved, p3PoolCenters, p3PoolSoakRate, p3ProtectionBubbleCenter, p3RuneDeadline, p3RuneEdges, p3RuneOrbs, p3RuneStepAt, p3StarsTiming, p3WrongRuneContact, P3_LANDING_SOAK_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_MEMORY_STEP_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, P3_SECTOR_SECONDS, p4BossHealth, p4EncounterBoxStates, p4GroupPosition, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4SplinterStartSeconds, p4StackPosition, P4_CYCLE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, P4_SPLINTER_INTERVAL_SECONDS, personalCircleHitsCrystal, personalCircleHitsPlayer, PLAYER_COLLISION_PENALTY, randomCrystalDropDuty, randomizeP3PoolLayout, roamingNpcPosition, setP3BossPlan, translateSelectedPoints, walkTowards, WIPE_PENALTY, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type Role, type RuneSymbol } from './game'
+import { bossBeamHitsPlayer, canPickupCrystal, canRecoverFromWipe, crystalCarrierPosition, crystalWipeReason, difficultySettings, distance, distanceToSegment, isP3ConsumedSectorLethal, isInSafeAnnulus, isP3ProtectionCrystalPlaced, isProtectedByP3Bubble, isProtectedByP3Light, moveRelativeToCamera, moveWithIncreasingPull, npcEntryPosition, OPENING_BOOST_SECONDS, orientedAssignments, p1PositioningWipeReason, p2NpcCrystalDrops, p2ReturningOrbPositions, P1_STAR_LENGTH, P2_BEAM_SECONDS, P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_POSITIONING_SECONDS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p3ActiveCrystalAssignments, p3ArchangelStackPosition, p3AssignmentForRound, p3BossPosition, p3FlightPosition, P3_FLIGHT_SECONDS, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3LightHealthRate, p3MemoryResolved, p3PoolCenters, p3PoolSoakRate, p3ProtectionBubbleCenter, p3RuneDeadline, p3RuneEdges, p3RuneOrbs, p3RuneStepAt, p3SideForPosition, p3StarsTiming, p3WrongRuneContact, P3_LANDING_SOAK_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_MEMORY_STEP_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, P3_SECTOR_SECONDS, p4BossHealth, p4EncounterBoxStates, p4GroupPosition, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4SplinterStartSeconds, p4StackPosition, P4_CYCLE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, P4_SPLINTER_INTERVAL_SECONDS, personalCircleHitsCrystal, personalCircleHitsPlayer, PLAYER_COLLISION_PENALTY, randomCrystalDropDuty, randomizeP3PoolLayout, roamingNpcPosition, setP3BossPlan, translateSelectedPoints, walkTowards, WIPE_PENALTY, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type Role, type RuneSymbol } from './game'
 import { buildPhaseResult, completionShareText, isFullSequenceCompletion, type PhaseKey, type PhaseResult } from './completion'
 import { p4FrontSoakerPosition, p4TankKillsBox } from './game'
 import GameScene from './GameScene'
@@ -965,7 +965,7 @@ export default function App() {
       droppedForPackRef.current = false
       setEvent('p3-archangel')
     } else if (event === 'p3-archangel') {
-      const bubble = p3ArchangelStack(assignment, p3Round)
+      const bubble = p3ArchangelStackPosition(p3SideForPosition(p3Positions[assignment], WORLD.center), WORLD.center, p3Round)
       const duty = activeCrystalAssignments.includes(assignment) ? p3ArchangelDuty : null
       const protectionCenter = p3ProtectionBubbleCenter(bubble, crystal, duty, p3Round)
       const protectedByBubble = isProtectedByP3Bubble(player, protectionCenter)
@@ -1122,7 +1122,7 @@ export default function App() {
   }
   function updateP3Pools(position: Point, dt: number) {
     if (event !== 'p3-light-pools' && event !== 'p3-pools-overlap') return
-    const side: -1 | 1 = assignment < 10 ? -1 : 1
+    const side = p3SideForPosition(p3Positions[assignment], WORLD.center)
     const centers = p3PoolCenters(side, WORLD.center, p3Round)
     setP3PoolHealth(current => current.map((healthValue, index) => {
       const poolSide: -1 | 1 = index < 3 ? -1 : 1
@@ -1137,14 +1137,15 @@ export default function App() {
     if (!event.startsWith('p3-') || event === 'p3-countdown' || event === 'p3-flight' || event === 'p3-landing' || event === 'p3-approach' || wipeRef.current) return
     const inArena = distance(position, WORLD.center) >= WORLD.innerRadius && distance(position, WORLD.center) <= P3_OUTER_RADIUS
     const inConsumedSector = isP3ConsumedSectorLethal(position, WORLD.center, WORLD.innerRadius, P3_OUTER_RADIUS, p3Round, event, eventTimeRef.current)
-    const activeP3Crystals = p3ActiveCrystalAssignments(activeCrystalAssignments, assignment, activeCrystalAssignments.includes(assignment) ? p3ArchangelDuty : null, crystalSpent, p3Round, event, p4PatternSeed)
-    const fallbackLights = activeP3Crystals.filter(index => index !== assignment && (index < 10) === (assignment < 10)).map(index => {
-      const sideAssignments = activeCrystalAssignments.filter(candidate => (candidate < 10) === (index < 10))
-      return p3LightCenters(index < 10 ? -1 : 1, WORLD.center, p3Round)[sideAssignments.indexOf(index) % 3]
+    const playerSide = p3SideForPosition(p3Positions[assignment], WORLD.center)
+    const activeP3Crystals = p3ActiveCrystalAssignments(activeCrystalAssignments, assignment, activeCrystalAssignments.includes(assignment) ? p3ArchangelDuty : null, crystalSpent, p3Round, event, p4PatternSeed, p3Positions, WORLD.center)
+    const fallbackLights = activeP3Crystals.filter(index => index !== assignment && p3SideForPosition(p3Positions[index], WORLD.center) === playerSide).map(index => {
+      const sideAssignments = activeCrystalAssignments.filter(candidate => p3SideForPosition(p3Positions[candidate], WORLD.center) === playerSide)
+      return p3LightCenters(playerSide, WORLD.center, p3Round)[sideAssignments.indexOf(index) % 3]
     })
     const carrierLights = p3NpcLightCentersRef.current.length ? p3NpcLightCentersRef.current : fallbackLights
     const protectedByLight = isProtectedByP3Light(position, activeP3Crystals.includes(assignment), carrierLights)
-    const archangelStack = p3ArchangelStack(assignment, p3Round)
+    const archangelStack = p3ArchangelStackPosition(playerSide, WORLD.center, p3Round)
     const duty = activeCrystalAssignments.includes(assignment) ? p3ArchangelDuty : null
     const correctlyPositioned = event === 'p3-archangel' || event === 'p3-archangel-position'
       ? isProtectedByP3Bubble(position, p3ProtectionBubbleCenter(archangelStack, crystal, duty, p3Round))
@@ -1239,7 +1240,7 @@ export default function App() {
         || event === 'p3-lattice-second' && eventTimeRef.current >= 2.5 && eventTimeRef.current <= 4.5
         || event === 'p3-pools-overlap' && eventTimeRef.current >= 6.5 && eventTimeRef.current <= 8.5
       if (latticeActive && !hitRef.current) {
-        const side: -1 | 1 = assignment < 10 ? -1 : 1
+        const side = p3SideForPosition(p3Positions[assignment], WORLD.center)
         const orbs = p3RuneOrbs(side, WORLD.center, p3Round, event === 'p3-light-pools' ? starsTiming.cycle : 0)
         const hit = p3RuneEdges(side, WORLD.center, p3Round, orbs).some(([from, to]) => distanceToSegment(position, orbs[from], orbs[to]) < 2.8)
         if (hit) { hitRef.current = true; triggerWipe('Touched a Stars beam') }
@@ -1562,11 +1563,6 @@ function nearestNpc(player: Point, time: number, positions: Assignment[], player
 function safestSplinterRotation(origin: Point, obstacles: Point[]): number { let best = 0; let bestHits = Infinity; for (let step = 0; step < 12; step++) { const rotation = step * Math.PI / 36; const hits = obstacles.filter(point => distance(point, origin) > 9 && rayHitsAny(point, origin, rotation)).length; if (hits < bestHits) { best = rotation; bestHits = hits } } return best }
 function shuffledRunes(): RuneSymbol[] { const runes: RuneSymbol[] = ['T', 'X', 'O']; return runes.sort(() => Math.random() - .5) }
 function playerRune(assignment: number): RuneSymbol { return (['T', 'X', 'O'] as RuneSymbol[])[assignment % 3] }
-function p3ArchangelStack(assignment: number, round: number): Point {
-  const side: -1 | 1 = assignment < 10 ? -1 : 1
-  return p3ArchangelStackPosition(side, WORLD.center, round)
-}
-
 function CrystalAssignmentEditor({ phaseLabel, assignments, profiles, onChange }: { phaseLabel: string; assignments: number[]; profiles: PlayerProfile[]; onChange: (slot: number, playerIndex: number) => void }) {
   return <section className="phase-crystal-editor" aria-label={`${phaseLabel} crystal assignments`}>
     <header><div><p className="eyebrow">{phaseLabel.toUpperCase()} CRYSTALS</p><h3>Six crystal carriers</h3></div><p>Each dropdown assigns crystal duty to one raid-plan spot for this phase only.</p></header>
@@ -1788,7 +1784,7 @@ function GameArena(props: { mainAbilityEnabled: boolean; bossHealth: number; mai
   const phaseLabel = phaseFour
     ? 'PHASE 4 · RAID STACK · HEAVEN & HELL'
     : phaseThree
-      ? `PHASE 3 · SECTOR ${props.p3Round} / 2 · ${props.assignment < 10 ? 'L’URA SIDE' : 'IMAGE SIDE'} · ${props.role === 'carrier' ? 'CRYSTAL CARRIER' : 'NON-CARRIER'}`
+      ? `PHASE 3 · SECTOR ${props.p3Round} / 2 · ${p3SideForPosition(props.positions[props.assignment], WORLD.center) < 0 ? 'L’URA SIDE' : 'IMAGE SIDE'} · ${props.role === 'carrier' ? 'CRYSTAL CARRIER' : 'NON-CARRIER'}`
       : phaseTwo
         ? `PHASE 2 · CYCLE ${props.p2Cycle} / 3 · SPOT ${props.assignment + 1} · ${props.role === 'carrier' ? 'CRYSTAL CARRIER' : 'NON-CARRIER'}`
         : `INTERMISSION · ${countdown || positioning ? `${props.startSlotName.toUpperCase()} START` : `PACK ${props.cycle} / 6`} · ${props.role === 'carrier' ? 'CRYSTAL CARRIER' : 'NON-CARRIER'}`

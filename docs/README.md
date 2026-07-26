@@ -97,6 +97,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-024` | Implemented | Hide the opposite ten-player half-raid and its crystal-light visuals during Phase 3 while continuing its off-screen simulation and restoring everyone for Phase 4. |
 | `BUG-025` | Implemented | Give the three Phase 3 crystal carriers on each side distinct moving light anchors, then consume exactly one crystal per side after each resolved Dark Archangel. | [`screen-p3-bug23.png`](../images/screen-p3-bug23.png) |
 | `BUG-026` | Implemented | Shorten the pause keybinding label to “(Un)pause” so it remains on one line in the keyboard grid. |
+| `BUG-027` | Implemented | Determine Phase 3 side ownership, local carriers, lights, bosses, Soaks, Stars, runes, and movement from each raid-plan position relative to the divider instead of roster slots 1–10/11–20. |
 
 ## Implemented feature inventory
 

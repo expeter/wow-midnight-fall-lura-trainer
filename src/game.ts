@@ -80,8 +80,12 @@ export function assignmentRevealDistance(difficulty: Difficulty): number {
   return difficulty === 'test' || difficulty === 'easy' ? Infinity : difficulty === 'normal' ? 45 : 22
 }
 
-export function isP3RaidMemberVisible(playerAssignment: number, memberAssignment: number, phaseThree: boolean): boolean {
-  return !phaseThree || (playerAssignment < 10) === (memberAssignment < 10)
+export function p3SideForPosition(position: Point, center: Point): -1 | 1 {
+  return position.x < center.x ? -1 : 1
+}
+
+export function isP3RaidMemberVisible(playerPosition: Point, memberPosition: Point, center: Point, phaseThree: boolean): boolean {
+  return !phaseThree || p3SideForPosition(playerPosition, center) === p3SideForPosition(memberPosition, center)
 }
 
 export function p3LandingGroupIndex(index: number): number {
@@ -215,12 +219,17 @@ export function p3ActiveCrystalAssignments(
   round: number,
   event: string,
   attemptSeed = 0,
+  positions?: Point[],
+  center: Point = ARENA.center,
 ): number[] {
   const resolvedArchangels = event === 'p3-sector-move' ? round : Math.max(0, round - 1)
   const active = new Set(assignments)
   for (const side of [-1, 1] as const) {
     for (let resolvedRound = 1; resolvedRound <= resolvedArchangels; resolvedRound += 1) {
-      const sideAssignments = assignments.filter(index => (index < 10 ? -1 : 1) === side && active.has(index))
+      const sideAssignments = assignments.filter(index => {
+        const assignmentSide = positions?.[index] ? p3SideForPosition(positions[index], center) : index < 10 ? -1 : 1
+        return assignmentSide === side && active.has(index)
+      })
       const playerSpentThisRound = sideAssignments.includes(playerAssignment)
         && playerDuty === resolvedRound
         && playerSpent
@@ -235,8 +244,8 @@ export function p3ActiveCrystalAssignments(
   return assignments.filter(index => active.has(index))
 }
 
-export function p3SpreadPosition(index: number, crystal: boolean, center: Point, round: number, crystalSlot = -1): Point {
-  const side: -1 | 1 = index < 10 ? -1 : 1
+export function p3SpreadPosition(index: number, crystal: boolean, center: Point, round: number, crystalSlot = -1, assignedSide?: -1 | 1): Point {
+  const side: -1 | 1 = assignedSide ?? (index < 10 ? -1 : 1)
   const sideIndex = index % 10
   const cluster = crystal && crystalSlot >= 0 ? crystalSlot % 3 : sideIndex % 3
   const member = Math.floor(sideIndex / 3)
@@ -533,8 +542,8 @@ export function translateSelectedPoints(points: Point[], selected: number[], anc
     : { ...point })
 }
 
-export function p3RunePartnerPosition(assignment: number, center: Point, round: number): Point {
-  const side: -1 | 1 = assignment < 10 ? -1 : 1
+export function p3RunePartnerPosition(assignment: number, center: Point, round: number, assignedSide?: -1 | 1): Point {
+  const side: -1 | 1 = assignedSide ?? (assignment < 10 ? -1 : 1)
   return p3LightCenters(side, center, round)[assignment % 3]
 }
 

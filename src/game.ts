@@ -841,6 +841,11 @@ export function shouldShowP2OrbReturnCounter(event: string, orbReturnAge: number
     && orbReturnAge >= 0
     && orbReturnAge < P2_ORB_RETURN_SECONDS + P2_ORB_RETURN_GLOW_SECONDS + P2_ORB_RETURN_TRAVEL_SECONDS + .5
 }
+export function p2PhaseTransitionCountdown(event: string, cycle: number, orbReturnAge: number): number | null {
+  const returnFlightEnds = P2_ORB_RETURN_SECONDS + P2_ORB_RETURN_GLOW_SECONDS + P2_ORB_RETURN_TRAVEL_SECONDS
+  if (event !== 'p2-wait' || cycle < 3 || orbReturnAge < returnFlightEnds) return null
+  return Math.max(0, P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS - orbReturnAge)
+}
 export function p2NpcRoamingPosition(base: Point, index: number, time: number, orbs: Point[], center: Point, maximumRadius: number): Point {
   const clampToArena = (point: Point): Point => {
     const dx = point.x - center.x

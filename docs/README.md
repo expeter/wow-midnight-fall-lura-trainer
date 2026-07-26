@@ -115,6 +115,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-049` | Implemented | Restyle the setup jump menu as quiet inline “On this page” navigation, smoothly scroll between sections while respecting reduced-motion preferences, and add a compact Back to top link to each top-level setup section without adding links to phase subsections. |
 | `CR-050` | Implemented | Position a Phase 3 crystal NPC beside each otherwise-uncovered ground Soak where possible, keeping the carrier outside the puddle while its yellow safe zone covers the players inside and preserving raid separation. |
 | `CR-051` | Deferred | In the second Phase 3 sequence, swap the memory-game and ground-Soak ordering. Preserve the first sequence as currently timed and revisit the exact second-sequence overlap before implementation. |
+| `CR-052` | Planned | Increase the Phase 3 ground-Soak radius by 15% so nearby players can commit to the pool more reliably. |
 | `SPEC-001` | Implemented | Define the stable ticket lifecycle: assign an ID, record intent, add focused regression coverage, validate, and commit. |
 | `SPEC-002` | Implemented | Define the creator business card’s stable content, readability, compact layout, and external-link behavior. |
 | `SPEC-003` | Implemented | Define the P3-to-P4 north gather, shared knockup origin, and phase-local HUD boundary. |
@@ -156,6 +157,8 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-038` | Implemented | Keep all difficulty labels readable at narrow desktop widths and browser zoom by arranging Test, Easy, Normal, and Hard in a stable two-by-two grid without allowing the Game settings cards to overlap. |
 | `BUG-039` | Implemented | Keep every Phase 4 NPC—including active Starsplinter players and the front soaker—inside the moving yellow protection zone, and keep collision positions aligned with their visible return to the stack. |
 | `BUG-040` | Implemented | Keep a short Phase 4 pause/resume from being mistaken for a completed quarter when a queued clock render is slightly older than the previous frame. |
+| `BUG-041` | Implemented | After the final Phase 2 orb return has resolved, replace the misleading next-beam countdown with a countdown toward the Phase 3 transition. |
+| `BUG-042` | Planned | During Phase 3 Soaks, let nearby assisting NPCs close the final gap into an active pool instead of holding spread spacing just outside it. |
 
 ## Implemented feature inventory
 

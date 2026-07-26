@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
-import { angleToward, assignmentRevealDistance, crystalCarrierPosition, distance, distanceToSegment, jumpHeights, nearestRuneEdges, npcEntryPosition, OPENING_BOOST_SECONDS, P1_STAR_LENGTH, P2_ORBIT_SPEED, P2_PERSONAL_CIRCLE_INNER_RADIUS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, p2OrbReturnState, p2ReturningOrbPositions, p3ArchangelStackPosition, p3BossPosition, p3LandingGroupIndex, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3NpcPoolAssignment, p3NpcSoaksActive, p3PoolCenters, p3ProtectionBubbleCenter, p3RuneOrbs, p3RunePartnerPosition, p3StarsTiming, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, p4EncounterBoxStates, p4FrontSoakerPosition, p4GroupPosition, p4NpcRelocationPace, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterRotation, p4StackPosition, p4TankConeActive, P4_FRONT_CONE_RANGE, P4_HEAVEN_MOVE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, roamingNpcPosition, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type RuneSymbol } from './game'
+import { angleToward, assignmentRevealDistance, crystalCarrierPosition, distance, distanceToSegment, jumpHeights, nearestRuneEdges, npcEntryPosition, OPENING_BOOST_SECONDS, P1_STAR_LENGTH, P2_BEAM_SECONDS, P2_ORBIT_SPEED, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_INNER_RADIUS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p2OrbReturnState, p2ReturningOrbPositions, p3ArchangelStackPosition, p3BossPosition, p3LandingGroupIndex, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3NpcPoolAssignment, p3NpcSoaksActive, p3PoolCenters, p3ProtectionBubbleCenter, p3RuneOrbs, p3RunePartnerPosition, p3StarsTiming, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, p4EncounterBoxStates, p4FrontSoakerPosition, p4GroupPosition, p4NpcRelocationPace, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterRotation, p4StackPosition, p4TankConeActive, P4_FRONT_CONE_RANGE, P4_HEAVEN_MOVE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, roamingNpcPosition, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type RuneSymbol } from './game'
 import { p3SpreadPosition, p4TankKillsBox } from './game'
 
 interface SceneProps {
@@ -637,7 +637,7 @@ export default function GameScene(props: SceneProps) {
         previousEvent = state.event
       }
       if (state.event === 'p2-orbs') {
-        const progress = THREE.MathUtils.clamp(state.eventTime / 6, 0, 1)
+        const progress = THREE.MathUtils.clamp(state.eventTime / P2_BEAM_SECONDS, 0, 1)
         const eased = progress * progress * (3 - 2 * progress)
         orbitAngle = THREE.MathUtils.lerp(orbitSoakStart, orbitSoakTarget, eased)
       } else if (state.event.startsWith('p2-')) orbitAngle += renderDelta * P2_ORBIT_SPEED
@@ -698,7 +698,7 @@ export default function GameScene(props: SceneProps) {
         const soakTarget = state.p2SoakPositions[baseIndex]
         const spreadTarget = state.p2SpreadPositions[baseIndex]
         const intermissionPosition = npcPosition(index, state.time, state.intermissionPositions, state.assignment, state.event, state.eventTime, state.beamAngles, state.raidStart, state.movementSpeed, state.movementBonus)
-        const spreadResolutionPosition = walkTowards(WORLD.center, spreadTarget, 3, state.movementSpeed)
+        const spreadResolutionPosition = walkTowards(WORLD.center, spreadTarget, P2_SPREAD_SECONDS, state.movementSpeed)
         const recoveredSoakPosition = state.p2Cycle === 1 ? soakTarget : walkTowards(spreadResolutionPosition, soakTarget, 8, state.movementSpeed)
         let p3Target = p3NpcTarget(baseIndex, state.profiles[baseIndex].crystal, state.p3Round, state.event, state.eventTime, state.p4PatternSeed)
         let p4SplinterReturnBoost = false
@@ -811,7 +811,7 @@ export default function GameScene(props: SceneProps) {
               : state.event === 'p2-recover'
                 ? soakTarget
                 : state.event === 'p2-pull'
-                  ? walkTowards(recoveredSoakPosition, WORLD.center, Math.pow(state.eventTime / 5, 3) * distance(recoveredSoakPosition, WORLD.center) / state.movementSpeed, state.movementSpeed)
+                  ? walkTowards(recoveredSoakPosition, WORLD.center, Math.pow(state.eventTime / P2_PULL_SECONDS, 3) * distance(recoveredSoakPosition, WORLD.center) / state.movementSpeed, state.movementSpeed)
                   : state.event === 'p2-spread'
                     ? walkTowards(WORLD.center, spreadTarget, state.eventTime, state.movementSpeed)
                     : state.event === 'p2-fetch'
@@ -932,16 +932,21 @@ export default function GameScene(props: SceneProps) {
           addOrb(hazards, { x: WORLD.center.x + Math.cos(angle) * 82, y: WORLD.center.y + Math.sin(angle) * 82 }, currentBeamTarget ? 0x70edff : 0xb170ff)
         }
         const returning = p2OrbReturnState(state.p2OrbReturnAge)
-        if (returning.phase === 'orbiting' || returning.phase === 'returning') {
+        if (returning.phase === 'orbiting' || returning.phase === 'charging' || returning.phase === 'returning') {
           p2ReturningOrbPositions(state.p2OrbReturnAge, state.p2Cycle, state.time, WORLD.center).forEach((point, localIndex) => {
-            const pulse = .75 + Math.sin(state.time * 9 + localIndex) * .2
+            const pulse = returning.phase === 'charging'
+              ? 1 + Math.sin(state.time * 15 + localIndex) * .25
+              : .75 + Math.sin(state.time * 9 + localIndex) * .2
             addOrb(hazards, point, 0xffe66d, 6.2, pulse)
             addGroundRing(hazards, point, 8, 10, 0xfff2a6, pulse * .75, 3)
             if (returning.phase === 'returning') addFlatBeam(hazards, point, Math.atan2(WORLD.center.y - point.y, WORLD.center.x - point.x), returning.radius, 2.2, 0xffe88a, .68)
           })
-        } else if (state.p2OrbReturnAge >= 11 && state.p2OrbReturnAge < 11.5) {
-          const pulseRadius = 8 + (state.p2OrbReturnAge - 11) * 55
-          addGroundRing(hazards, WORLD.center, pulseRadius - 2, pulseRadius + 2, 0xffefa2, 1 - (state.p2OrbReturnAge - 11) * 1.5, 4)
+        } else {
+          const returnImpact = P2_ORB_RETURN_SECONDS + P2_ORB_RETURN_GLOW_SECONDS + P2_ORB_RETURN_TRAVEL_SECONDS
+          if (state.p2OrbReturnAge >= returnImpact && state.p2OrbReturnAge < returnImpact + .5) {
+            const pulseRadius = 8 + (state.p2OrbReturnAge - returnImpact) * 55
+            addGroundRing(hazards, WORLD.center, pulseRadius - 2, pulseRadius + 2, 0xffefa2, 1 - (state.p2OrbReturnAge - returnImpact) * 1.5, 4)
+          }
         }
       }
       if (state.event === 'p2-orbs') {
@@ -955,7 +960,7 @@ export default function GameScene(props: SceneProps) {
         }
       }
       if (state.event === 'p2-pull') {
-        const pullProgress = THREE.MathUtils.clamp(state.eventTime / 5, 0, 1)
+        const pullProgress = THREE.MathUtils.clamp(state.eventTime / P2_PULL_SECONDS, 0, 1)
         addGroundRing(hazards, WORLD.center, 8 + pullProgress * 15, 10 + pullProgress * 15, 0xd981ff, .72)
       }
       if (state.event === 'p2-spread') {

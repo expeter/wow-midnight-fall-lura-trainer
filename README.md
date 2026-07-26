@@ -14,7 +14,7 @@ and screenshot index](docs/README.md) document how the simulator evolved.
 
 - Six Intermission Starsplinter and boss-beam sets
 - Crystal carrier drop, avoidance, and recovery timing
-- Phase 2 cross-beam positioning, glowing ten-second orb returns, and center explosions
+- Phase 2 cross-beam positioning, timed orb charges and returns, and center explosions
 - Center pulls, personal-circle spreads, and crystal recovery
 - Phase 3 outward flight, trio landing soaks, split-room positioning, light
   zones, dark-pool draining, runic lattices, ordered rune matching, and Dark

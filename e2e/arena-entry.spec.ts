@@ -30,7 +30,7 @@ test('selects Arena 2 and enters the Phase 2 countdown', async ({ page }) => {
   await expect(page.getByText('Soak your assigned beam.')).toBeVisible({ timeout: MECHANIC_TIMEOUT })
   await expect(page.getByText('WAIT TO DROP')).toHaveCount(0)
   await expect(beamCountdown).toBeVisible({ timeout: MECHANIC_TIMEOUT })
-  await expect(beamCountdown).toContainText(/BEAM IN [1-4]/)
+  await expect(beamCountdown).toContainText(/BEAM IN [1-5]/)
 })
 
 test('shows the early crystal drop warning on Easy only', async ({ page }) => {

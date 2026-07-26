@@ -44,6 +44,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-002` | Implemented | Randomize the two P3 landing impacts per attempt and make a valid three-player Soak glow without revealing remaining progress outside Test/Easy. |
 | `CR-003` | Implemented | Generate the two P3 landing impacts independently within their group area; the crystal carrier takes the nearer impact and the helper takes the farther one. |
 | `CR-004` | Implemented | Add a subtle top-left version indicator with the package version and UTC build timestamp on every screen. |
+| `CR-005` | Implemented | Retune Phase 2 to five seconds of initial positioning, seven-second cross beams, a five-second pull and spread, a one-second orb charge plus one-second return, and a fixed thirty-second beam cadence. |
 | `BUG-008` | Implemented | Remove the premature 20-second P3 Soak failure; unfinished pools are now checked only when Big Boom resolves at 40 seconds. |
 | `BUG-009` | Implemented | Enforce P3 Stars orb spacing and isolate the southwest/southeast fields with clearance from the room divider. |
 | `BUG-010` | Implemented | Use the NPC protection bubble when the player's crystal duty belongs to the other Dark Archangel set; only consume the player's crystal on its assigned set. |
@@ -103,13 +104,28 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 - Direct entry or continuous transition from Intermission.
 - Twelve orbiting orbs arranged as three groups of four.
 - Boss cross-beams destroy the assigned orbs; struck orbs glow, continue
-  orbiting for ten seconds, and return to the center.
+  orbiting, charge for one second, and return to the center over one second.
 - Beam countdowns, crystal drop/recovery, orb-return collision handling, and
   crystal safety checks.
 - Increasing center pull followed by large blue personal circles and a
   dedicated spread assignment.
 - Three complete cycles with walking NPC transitions and a successful flight
   into Phase 3.
+
+The first cycle has five seconds of assignment positioning before its beam.
+Each cross-beam cycle then follows this base timeline; the global timing
+multiplier scales the complete simulation uniformly.
+
+| Time from beam start | Event |
+| ---: | --- |
+| `0s` | Cross beams begin. |
+| `7s` | Beams resolve and strike the four outside orbs; the five-second pull begins. |
+| `12s` | The raid reaches the middle and the five-second personal-circle spread begins. |
+| `17s` | Personal circles resolve. |
+| `20s` | Struck orbs glow and charge. |
+| `21s` | Orbs launch toward the middle. |
+| `22s` | Orbs arrive and explode. |
+| `30s` | The next cross beams begin. |
 
 ### Phase 3
 

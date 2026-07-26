@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
-import { bossBeamHitsPlayer, canPickupCrystal, canRecoverFromWipe, crystalCarrierPosition, crystalWipeReason, difficultySettings, distance, distanceToSegment, isP3ConsumedSectorLethal, isInSafeAnnulus, isProtectedByP3Bubble, moveRelativeToCamera, moveWithIncreasingPull, nearestRuneEdges, npcEntryPosition, OPENING_BOOST_SECONDS, orientedAssignments, p2NpcCrystalDrops, p2ReturningOrbPositions, P1_STAR_LENGTH, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, p3ArchangelStackPosition, p3AssignmentForRound, p3BossPosition, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3LightHealthRate, p3PoolCenters, p3PoolSoakRate, p3ProtectionBubbleCenter, p3RuneDeadline, p3RuneOrbs, p3RuneStepAt, p3StarsTiming, p3WrongRuneContact, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_MEMORY_STEP_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, P3_SECTOR_SECONDS, p4BossHealth, p4EncounterBoxStates, p4GroupPosition, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4SplinterStartSeconds, p4StackPosition, P4_CYCLE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, P4_SPLINTER_INTERVAL_SECONDS, personalCircleHitsCrystal, PLAYER_COLLISION_PENALTY, randomCrystalDropDuty, randomizeP3PoolLayout, roamingNpcPosition, setP3BossPlan, translateSelectedPoints, WIPE_PENALTY, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type Role, type RuneSymbol } from './game'
+import { bossBeamHitsPlayer, canPickupCrystal, canRecoverFromWipe, crystalCarrierPosition, crystalWipeReason, difficultySettings, distance, distanceToSegment, isP3ConsumedSectorLethal, isInSafeAnnulus, isProtectedByP3Bubble, moveRelativeToCamera, moveWithIncreasingPull, nearestRuneEdges, npcEntryPosition, OPENING_BOOST_SECONDS, orientedAssignments, p2NpcCrystalDrops, p2ReturningOrbPositions, P1_STAR_LENGTH, P2_BEAM_SECONDS, P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_POSITIONING_SECONDS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p3ArchangelStackPosition, p3AssignmentForRound, p3BossPosition, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3LightHealthRate, p3PoolCenters, p3PoolSoakRate, p3ProtectionBubbleCenter, p3RuneDeadline, p3RuneOrbs, p3RuneStepAt, p3StarsTiming, p3WrongRuneContact, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_MEMORY_STEP_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, P3_SECTOR_SECONDS, p4BossHealth, p4EncounterBoxStates, p4GroupPosition, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4SplinterStartSeconds, p4StackPosition, P4_CYCLE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, P4_SPLINTER_INTERVAL_SECONDS, personalCircleHitsCrystal, PLAYER_COLLISION_PENALTY, randomCrystalDropDuty, randomizeP3PoolLayout, roamingNpcPosition, setP3BossPlan, translateSelectedPoints, WIPE_PENALTY, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type Role, type RuneSymbol } from './game'
 import { buildPhaseResult, completionShareText, isFullSequenceCompletion, type PhaseKey, type PhaseResult } from './completion'
 import { p4FrontSoakerPosition, p4TankKillsBox } from './game'
 import GameScene from './GameScene'
@@ -658,20 +658,38 @@ export default function App() {
           hitRef.current = false
         }
       }
-      if (p2OrbReturnAgeRef.current >= 0 && p2OrbReturnAgeRef.current < P2_ORB_RETURN_SECONDS + P2_ORB_RETURN_TRAVEL_SECONDS + .5) {
+      if (p2OrbReturnAgeRef.current >= 0 && p2OrbReturnAgeRef.current < P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS + .5) {
         const nextOrbAge = p2OrbReturnAgeRef.current + dt
         p2OrbReturnAgeRef.current = nextOrbAge
         setP2OrbReturnAge(nextOrbAge)
-        if (nextOrbAge >= P2_ORB_RETURN_SECONDS && nextOrbAge < P2_ORB_RETURN_SECONDS + P2_ORB_RETURN_TRAVEL_SECONDS && !p2OrbPlayerHitRef.current) {
+        const returnFlightStarts = P2_ORB_RETURN_SECONDS + P2_ORB_RETURN_GLOW_SECONDS
+        const returnFlightEnds = returnFlightStarts + P2_ORB_RETURN_TRAVEL_SECONDS
+        if (nextOrbAge >= returnFlightStarts && nextOrbAge < returnFlightEnds && !p2OrbPlayerHitRef.current) {
           const returningOrbs = p2ReturningOrbPositions(nextOrbAge, p2Cycle, timeRef.current, WORLD.center)
           if (returningOrbs.some(orb => distance(playerRef.current, orb) <= 8)) {
             p2OrbPlayerHitRef.current = true
             recordMistake('Hit by a returning orb', PLAYER_COLLISION_PENALTY)
           }
         }
-        if (nextOrbAge >= P2_ORB_RETURN_SECONDS + P2_ORB_RETURN_TRAVEL_SECONDS && !p2OrbReturnHitRef.current) {
+        if (nextOrbAge >= returnFlightEnds && !p2OrbReturnHitRef.current) {
           p2OrbReturnHitRef.current = true
           if (crystal && distance(crystal, WORLD.center) <= 15) triggerWipe('Returning orbs exploded into the dropped crystal')
+        }
+        if (nextOrbAge >= P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS && event === 'p2-wait') {
+          p2OrbReturnAgeRef.current = -1
+          p2OrbReturnHitRef.current = false
+          p2OrbPlayerHitRef.current = false
+          setP2OrbReturnAge(-1)
+          if (p2Cycle >= 3) {
+            beginP3()
+          } else {
+            setP2Cycle(current => current + 1)
+            setP2Soaked(false)
+            droppedForPackRef.current = false
+            setEvent('p2-orbs')
+            eventTimeRef.current = 0
+            setEventTime(0)
+          }
         }
       }
       if (event === 'p3-lattice-memory') {
@@ -711,7 +729,7 @@ export default function App() {
       updateHealth(dt)
       if (crystal) setCrystalAge(age => { const next = age + dt; crystalAgeRef.current = next; return next })
       if (npcCrystals.length) setNpcCrystalAge(age => age + dt)
-      setPlayer(p => { const speedBonusActive = movementBonus && event === 'positioning' && eventTimeRef.current <= OPENING_BOOST_SECONDS; const openingSpeed = movementSpeed * (speedBonusActive ? 1.4 : 1); const p4Speed = event === 'p4-cycle' ? openingSpeed * P4_MOVEMENT_MULTIPLIER : openingSpeed; const activeMovementSpeed = event === 'p3-sector-move' ? openingSpeed * 2 : event === 'p3-approach' && eventTimeRef.current < 5 ? openingSpeed * 1.4 : p4Speed; const bounds = { minX: 30, maxX: WORLD.width - 30, minY: 30, maxY: WORLD.height - 30 }; const movementKeys = scriptedP4Jump ? new Set<string>() : jumping ? jumpKeysRef.current : keys; const movementForward = jumping ? jumpCameraForwardRef.current : cameraForward.current; let next: Point; if (event === 'countdown' || event === 'p2-countdown' || event === 'p3-countdown' || event === 'p4-countdown') next = p; else if (event === 'p2-jump') { const progress = Math.min(1, eventTimeRef.current / 1.4); const eased = 1 - Math.pow(1 - progress, 3); next = { x: jumpOriginRef.current.x + (WORLD.center.x - jumpOriginRef.current.x) * eased, y: jumpOriginRef.current.y + (WORLD.center.y - jumpOriginRef.current.y) * eased } } else if (event === 'p3-flight') { const progress = Math.min(1, eventTimeRef.current / 2); const eased = 1 - Math.pow(1 - progress, 3); const target = p3LandingPosition(assignment, WORLD.center); next = { x: p3FlightOriginRef.current.x + (target.x - p3FlightOriginRef.current.x) * eased, y: p3FlightOriginRef.current.y + (target.y - p3FlightOriginRef.current.y) * eased } } else if (event === 'p2-pull') next = moveWithIncreasingPull(p, movementKeys, activeMovementSpeed, dt, movementForward, bounds, WORLD.center, eventTimeRef.current / 5); else next = moveRelativeToCamera(p, movementKeys, activeMovementSpeed, dt, movementForward, bounds); playerRef.current = next; if (event === 'p2-orbs' && eventTimeRef.current >= 5 && distance(next, p2Positions[assignment]) <= 8) setP2Soaked(true); if (crystal && event !== 'p3-archangel' && canPickupCrystal(next, crystal, crystalAgeRef.current)) { setCrystal(null); setCrystalAge(0); crystalAgeRef.current = 0; setStats(s => ({ ...s, crystalDropped: false })) } updateP3Pools(next, dt); updateP3PositionHealth(next, dt); checkHazards(next, now / 1000, dt); return next })
+      setPlayer(p => { const speedBonusActive = movementBonus && event === 'positioning' && eventTimeRef.current <= OPENING_BOOST_SECONDS; const openingSpeed = movementSpeed * (speedBonusActive ? 1.4 : 1); const p4Speed = event === 'p4-cycle' ? openingSpeed * P4_MOVEMENT_MULTIPLIER : openingSpeed; const activeMovementSpeed = event === 'p3-sector-move' ? openingSpeed * 2 : event === 'p3-approach' && eventTimeRef.current < 5 ? openingSpeed * 1.4 : p4Speed; const bounds = { minX: 30, maxX: WORLD.width - 30, minY: 30, maxY: WORLD.height - 30 }; const movementKeys = scriptedP4Jump ? new Set<string>() : jumping ? jumpKeysRef.current : keys; const movementForward = jumping ? jumpCameraForwardRef.current : cameraForward.current; let next: Point; if (event === 'countdown' || event === 'p2-countdown' || event === 'p3-countdown' || event === 'p4-countdown') next = p; else if (event === 'p2-jump') { const progress = Math.min(1, eventTimeRef.current / 1.4); const eased = 1 - Math.pow(1 - progress, 3); next = { x: jumpOriginRef.current.x + (WORLD.center.x - jumpOriginRef.current.x) * eased, y: jumpOriginRef.current.y + (WORLD.center.y - jumpOriginRef.current.y) * eased } } else if (event === 'p3-flight') { const progress = Math.min(1, eventTimeRef.current / 2); const eased = 1 - Math.pow(1 - progress, 3); const target = p3LandingPosition(assignment, WORLD.center); next = { x: p3FlightOriginRef.current.x + (target.x - p3FlightOriginRef.current.x) * eased, y: p3FlightOriginRef.current.y + (target.y - p3FlightOriginRef.current.y) * eased } } else if (event === 'p2-pull') next = moveWithIncreasingPull(p, movementKeys, activeMovementSpeed, dt, movementForward, bounds, WORLD.center, eventTimeRef.current / P2_PULL_SECONDS); else next = moveRelativeToCamera(p, movementKeys, activeMovementSpeed, dt, movementForward, bounds); playerRef.current = next; if (event === 'p2-orbs' && eventTimeRef.current >= P2_BEAM_SECONDS - 1 && distance(next, p2Positions[assignment]) <= 8) setP2Soaked(true); if (crystal && event !== 'p3-archangel' && canPickupCrystal(next, crystal, crystalAgeRef.current)) { setCrystal(null); setCrystalAge(0); crystalAgeRef.current = 0; setStats(s => ({ ...s, crystalDropped: false })) } updateP3Pools(next, dt); updateP3PositionHealth(next, dt); checkHazards(next, now / 1000, dt); return next })
       frame = requestAnimationFrame(tick)
     }
     frame = requestAnimationFrame(tick)
@@ -720,7 +738,7 @@ export default function App() {
 
   useEffect(() => {
     if (screen !== 'game' || paused) return
-    const duration = event === 'positioning' ? 10 : event === 'p1-recover' ? 2 : event === 'p2-jump' ? 1.4 : event === 'p2-positioning' ? 4 : event === 'p2-orbs' ? 6 : event === 'p2-recover' || event === 'p2-fetch' ? crystal ? Infinity : 0 : event === 'p2-spread' ? 3 : event === 'p2-pull' ? 5 : event === 'p2-wait' ? 3.5 : event === 'p3-flight' ? 2 : event === 'p3-landing' ? 3 : event === 'p3-approach' ? 5 : event === 'p3-light-pools' ? P3_SECTOR_SECONDS : event === 'p3-pools-overlap' ? 15 : event === 'p3-rune-preview' ? 2 : event === 'p3-lattice-memory' ? 10 : event === 'p3-lattice-second' ? 4.5 : event === 'p3-big-boom' ? 1 : event === 'p3-archangel-position' ? 4 : event === 'p3-archangel' ? 6 : event === 'p3-sector-move' ? p3Round >= 2 ? 9 : 5 : event === 'p4-countdown' ? 3 : event === 'p4-transition' ? P4_KNOCKUP_SECONDS : event === 'p4-cycle' ? P4_CYCLE_SECONDS : 3
+    const duration = event === 'positioning' ? 10 : event === 'p1-recover' ? 2 : event === 'p2-jump' ? 1.4 : event === 'p2-positioning' ? P2_POSITIONING_SECONDS : event === 'p2-orbs' ? P2_BEAM_SECONDS : event === 'p2-recover' || event === 'p2-fetch' ? crystal ? Infinity : 0 : event === 'p2-spread' ? P2_SPREAD_SECONDS : event === 'p2-pull' ? P2_PULL_SECONDS : event === 'p2-wait' ? Infinity : event === 'p3-flight' ? 2 : event === 'p3-landing' ? 3 : event === 'p3-approach' ? 5 : event === 'p3-light-pools' ? P3_SECTOR_SECONDS : event === 'p3-pools-overlap' ? 15 : event === 'p3-rune-preview' ? 2 : event === 'p3-lattice-memory' ? 10 : event === 'p3-lattice-second' ? 4.5 : event === 'p3-big-boom' ? 1 : event === 'p3-archangel-position' ? 4 : event === 'p3-archangel' ? 6 : event === 'p3-sector-move' ? p3Round >= 2 ? 9 : 5 : event === 'p4-countdown' ? 3 : event === 'p4-transition' ? P4_KNOCKUP_SECONDS : event === 'p4-cycle' ? P4_CYCLE_SECONDS : 3
     if (eventTime < duration) return
     eventTimeRef.current = 0
     setEventTime(0)
@@ -806,16 +824,6 @@ export default function App() {
         crystalAgeRef.current = 0
       }
       setEvent('p2-wait')
-    } else if (event === 'p2-wait') {
-      p2OrbReturnAgeRef.current = -1
-      p2OrbReturnHitRef.current = false
-      p2OrbPlayerHitRef.current = false
-      setP2OrbReturnAge(-1)
-      if (p2Cycle >= 3) { beginP3(); return }
-      setP2Cycle(current => current + 1)
-      setP2Soaked(false)
-      droppedForPackRef.current = false
-      setEvent('p2-orbs')
     } else if (event === 'p3-countdown') {
       beginP3()
     } else if (event === 'p3-flight') {
@@ -1180,7 +1188,7 @@ export default function App() {
       return
     }
     if (event.startsWith('p2-')) {
-      if (event === 'p2-orbs' && eventTimeRef.current >= 5.65 && crystal && (Math.abs(crystal.x - WORLD.center.x) < 7 || Math.abs(crystal.y - WORLD.center.y) < 7)) triggerWipe('The cross beam hit the crystal')
+      if (event === 'p2-orbs' && eventTimeRef.current >= P2_BEAM_SECONDS - .35 && crystal && (Math.abs(crystal.x - WORLD.center.x) < 7 || Math.abs(crystal.y - WORLD.center.y) < 7)) triggerWipe('The cross beam hit the crystal')
       return
     }
     if (event === 'countdown' || event === 'positioning') return
@@ -1610,13 +1618,13 @@ function GameArena(props: { mainAbilityEnabled: boolean; bossHealth: number; mai
   const p2Copy: Partial<Record<EventKind, { title: string; mechanic: string; detail: string; counter: string; duration: number }>> = {
     'p2-countdown': { title: 'Get ready for Phase 2.', mechanic: 'CENTER STACK', detail: 'The raid begins stacked in the middle.', counter: 'STARTING', duration: 3 },
     'p2-jump': { title: 'Into the center.', mechanic: 'FORCED CENTER STACK', detail: 'The whole raid is jumping into one stack in the middle.', counter: 'STACK', duration: 1.4 },
-    'p2-positioning': { title: 'Find your soak position.', mechanic: 'CROSS POSITIONING', detail: 'Move from the stack to your cross-beam assignment.', counter: 'POSITION', duration: 4 },
-    'p2-orbs': { title: props.p2Soaked ? 'Beam soaked.' : 'Soak your assigned beam.', mechanic: props.p2Soaked ? 'BEAM SOAKED' : 'CROSS-BEAM SOAK', detail: 'Stand on your cross assignment while the beam destroys its outside orb. Crystal carriers must time their drop so the crystal remains down at resolution.', counter: props.p2Soaked ? 'SOAKED' : 'BEAM', duration: 6 },
+    'p2-positioning': { title: 'Find your soak position.', mechanic: 'CROSS POSITIONING', detail: 'Move from the stack to your cross-beam assignment.', counter: 'POSITION', duration: P2_POSITIONING_SECONDS },
+    'p2-orbs': { title: props.p2Soaked ? 'Beam soaked.' : 'Soak your assigned beam.', mechanic: props.p2Soaked ? 'BEAM SOAKED' : 'CROSS-BEAM SOAK', detail: 'Stand on your cross assignment while the beam destroys its outside orb. Crystal carriers must time their drop so the crystal remains down at resolution.', counter: props.p2Soaked ? 'SOAKED' : 'BEAM', duration: P2_BEAM_SECONDS },
     'p2-recover': { title: 'Recover the crystal.', mechanic: 'CRYSTAL RECOVERY', detail: 'Walk onto the crystal before its six-second ground timer expires. The struck orbs keep glowing and orbiting.', counter: 'RECOVER', duration: 6 },
-    'p2-pull': { title: 'Pulled to the center.', mechanic: 'INCREASING PULL', detail: 'The five-second pull starts weak enough to move against, then becomes overwhelming while the struck orbs continue orbiting.', counter: 'PULL', duration: 5 },
-    'p2-spread': { title: 'Spread your circle.', mechanic: 'PERSONAL CIRCLES', detail: 'Move to your spread-plan assignment. A carrier leaves the crystal in the center, then must recover it before the orbs return.', counter: 'SPREAD', duration: 3 },
+    'p2-pull': { title: 'Pulled to the center.', mechanic: 'INCREASING PULL', detail: 'The five-second pull starts weak enough to move against, then becomes overwhelming while the struck orbs continue orbiting.', counter: 'PULL', duration: P2_PULL_SECONDS },
+    'p2-spread': { title: 'Spread your circle.', mechanic: 'PERSONAL CIRCLES', detail: 'Use the full five-second spread window to reach your assignment. A carrier leaves the crystal in the center, then recovers it before the orbs return.', counter: 'SPREAD', duration: P2_SPREAD_SECONDS },
     'p2-fetch': { title: 'Fetch the crystal.', mechanic: 'CRYSTAL RECOVERY', detail: 'Return to the middle and pick the crystal up before the returning orbs explode there.', counter: 'FETCH', duration: 6 },
-    'p2-wait': { title: 'Orbs return to the middle.', mechanic: 'ORB RETURN', detail: 'The glowing orbs launch inward after ten seconds. The next cross begins after their center explosion.', counter: 'RETURN', duration: 3.5 },
+    'p2-wait': { title: 'Orbs return to the middle.', mechanic: 'ORB RETURN', detail: 'Twenty seconds after the cross begins, the struck orbs glow for one second and fly inward for one second. Cross beams repeat every thirty seconds.', counter: 'NEXT BEAM', duration: P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS },
   }
   const p2 = p2Copy[props.event]
   const p3Copy: Partial<Record<EventKind, { title: string; detail: string; counter: string; duration: number }>> = {
@@ -1707,8 +1715,8 @@ function GameArena(props: { mainAbilityEnabled: boolean; bossHealth: number; mai
         </aside>
         {props.softWipeNotice && <div className="soft-wipe-notice" role="status"><span>{props.difficulty === 'test' ? 'Test mode · run continues' : 'Strike 1 / 2 · −500 points'}</span><strong>{props.softWipeNotice}</strong><small>Practice continues</small></div>}
         {phaseThree && (props.event === 'p3-rune-preview' || props.event === 'p3-lattice-memory' || props.event === 'p3-light-pools' && props.eventTime >= P3_MEMORY_PANEL_SECONDS + 3 && props.eventTime < P3_MEMORY_START_SECONDS + P3_MEMORY_STEP_SECONDS * 3) && <div className="rune-order" role="status"><span>RUNE ORDER</span>{props.p3RuneOrder.map((rune, index) => <strong className={props.p3ResolvedRunes.includes(rune) ? 'done' : memoryGameActive && index === props.p3RuneStep ? 'active' : memoryGameActive && index < props.p3RuneStep ? 'done' : ''} key={`${rune}-${index}`}>{rune}</strong>)}</div>}
-        {props.event === 'p2-orbs' && (props.difficulty === 'easy' || props.difficulty === 'test' || props.eventTime >= 2) && <div className={`beam-drop-counter${props.eventTime >= 2 ? ' safe' : ''}`} style={{ left: `${props.hudLayout.beam.x}%`, top: `${props.hudLayout.beam.y}%` }}>{props.eventTime < 2 ? <strong>WAIT TO DROP</strong> : <>{props.difficulty === 'easy' || props.difficulty === 'test' ? 'SAFE TO DROP · ' : ''}BEAM IN <strong>{Math.max(1, Math.ceil(6 - props.eventTime))}</strong></>}</div>}
-        {props.p2OrbReturnAge >= 0 && props.p2OrbReturnAge < P2_ORB_RETURN_SECONDS + P2_ORB_RETURN_TRAVEL_SECONDS + .5 && <div className="beam-drop-counter orb-return-counter" style={{ left: `${props.hudLayout.beam.x}%`, top: `${props.hudLayout.beam.y}%` }}>{props.p2OrbReturnAge < P2_ORB_RETURN_SECONDS ? <>ORBS RETURN IN <strong>{Math.max(1, Math.ceil(P2_ORB_RETURN_SECONDS - props.p2OrbReturnAge))}</strong></> : <strong>ORBS RETURNING</strong>}</div>}
+        {props.event === 'p2-orbs' && (props.difficulty === 'easy' || props.difficulty === 'test' || props.eventTime >= 2) && <div className={`beam-drop-counter${props.eventTime >= 2 ? ' safe' : ''}`} style={{ left: `${props.hudLayout.beam.x}%`, top: `${props.hudLayout.beam.y}%` }}>{props.eventTime < 2 ? <strong>WAIT TO DROP</strong> : <>{props.difficulty === 'easy' || props.difficulty === 'test' ? 'SAFE TO DROP · ' : ''}BEAM IN <strong>{Math.max(1, Math.ceil(P2_BEAM_SECONDS - props.eventTime))}</strong></>}</div>}
+        {props.p2OrbReturnAge >= 0 && props.p2OrbReturnAge < P2_ORB_RETURN_SECONDS + P2_ORB_RETURN_GLOW_SECONDS + P2_ORB_RETURN_TRAVEL_SECONDS + .5 && <div className="beam-drop-counter orb-return-counter" style={{ left: `${props.hudLayout.beam.x}%`, top: `${props.hudLayout.beam.y}%` }}>{props.p2OrbReturnAge < P2_ORB_RETURN_SECONDS ? <>ORBS RETURN IN <strong>{Math.max(1, Math.ceil(P2_ORB_RETURN_SECONDS - props.p2OrbReturnAge))}</strong></> : props.p2OrbReturnAge < P2_ORB_RETURN_SECONDS + P2_ORB_RETURN_GLOW_SECONDS ? <strong>ORBS CHARGING</strong> : <strong>ORBS RETURNING</strong>}</div>}
         {props.wipeReason && (wipeMinimized
           ? <div className="wipe-minimized" role="alert"><span>WIPED</span><strong>{props.wipeReason}</strong><button type="button" onClick={() => setWipeMinimized(false)}>Restore wipe details</button></div>
           : <div className="wipe-overlay" role="alert"><section className="wipe-dialog"><button className="wipe-minimize" type="button" aria-label="Minimize wipe details" onClick={() => setWipeMinimized(true)}>−</button><p>Raid wiped</p><h2>Wiped due to:</h2><strong>{props.wipeReason}</strong><div><button onClick={props.onRetry}>Try again</button><button className="secondary" onClick={props.onExit}>Change setup</button></div></section></div>)}
@@ -1723,7 +1731,7 @@ function GameArena(props: { mainAbilityEnabled: boolean; bossHealth: number; mai
             : p3
               ? <><span>{p3.counter} <strong>{Math.max(0, p3.duration - props.eventTime).toFixed(1)}s</strong></span>{props.role === 'carrier' && <span className={props.crystalSpent ? 'spent' : ''}>{props.crystalSpent ? 'CRYSTAL SPENT' : `CRYSTAL · DROP ${props.p3ArchangelDuty}`}</span>}</>
               : p2
-                ? <>{p2.counter} <strong>{props.event === 'p2-recover' || props.event === 'p2-fetch' ? Math.max(0, 6 - props.crystalAge).toFixed(1) : Math.max(0, p2.duration - props.eventTime).toFixed(1)}s</strong></>
+                ? <>{p2.counter} <strong>{props.event === 'p2-recover' || props.event === 'p2-fetch' ? Math.max(0, 6 - props.crystalAge).toFixed(1) : props.event === 'p2-wait' ? Math.max(0, P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS - props.p2OrbReturnAge).toFixed(1) : Math.max(0, p2.duration - props.eventTime).toFixed(1)}s</strong></>
                 : countdown
                   ? <>STARTING <strong>{Math.max(0, 3 - props.eventTime).toFixed(1)}s</strong></>
                   : positioning

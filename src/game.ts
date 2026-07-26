@@ -37,6 +37,7 @@ export const P3_APPROACH_SECONDS = 10
 export const P3_SAFE_ZONE_GRACE_SECONDS = 5
 export const P3_SAFE_ZONE_PENALTY_PER_SECOND = 10
 export const P3_POOL_RADIUS = 12.65
+export const P3_POOL_OCCUPANCY_TOLERANCE = 2
 export const P3_POOL_HEALTH = 29.75
 export const P3_POOL_CRYSTAL_CLEARANCE = .5
 export const P3_LANDING_SOAK_RADIUS = 12
@@ -226,6 +227,9 @@ export function p3ProtectionBubbleCenter(stack: Point, crystal: Point | null, pl
 }
 export function p3PoolSoakRate(occupants: number): number {
   return occupants >= 3 ? occupants : 0
+}
+export function isInsideP3Pool(point: Point, pool: Point, radius = P3_POOL_RADIUS): boolean {
+  return distance(point, pool) <= radius + P3_POOL_OCCUPANCY_TOLERANCE
 }
 
 export function keepP3NpcInSoak(target: Point, pool: Point, padding = 1): Point {

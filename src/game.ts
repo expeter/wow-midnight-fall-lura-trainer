@@ -628,6 +628,13 @@ export function nearestRuneEdges(points: Point[], maximumConnections = 3, maximu
   return edges
 }
 
+export function p3RuneEdges(side: -1 | 1, center: Point, round: number, orbs: Point[]): Array<[number, number]> {
+  const pools = p3PoolCenters(side, center, round)
+  return nearestRuneEdges(orbs).filter(([from, to]) =>
+    pools.every(pool => distanceToSegment(pool, orbs[from], orbs[to]) >= P3_POOL_RADIUS + 3)
+  )
+}
+
 function segmentsIntersect(a: Point, b: Point, c: Point, d: Point): boolean {
   const cross = (origin: Point, first: Point, second: Point) =>
     (first.x - origin.x) * (second.y - origin.y) - (first.y - origin.y) * (second.x - origin.x)

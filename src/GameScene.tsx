@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
-import { angleToward, assignmentRevealDistance, crystalCarrierPosition, distance, distanceToSegment, jumpHeights, nearestRuneEdges, npcEntryPosition, OPENING_BOOST_SECONDS, P1_STAR_LENGTH, P2_BEAM_SECONDS, P2_ORBIT_SPEED, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_INNER_RADIUS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p2OrbReturnState, p2ReturningOrbPositions, p3ArchangelStackPosition, p3BossPosition, p3LandingGroupIndex, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3NpcPoolAssignment, p3NpcRuneReactionDelay, p3NpcSoaksActive, p3PoolCenters, p3ProtectionBubbleCenter, p3RuneOrbs, p3RunePartnerPosition, p3StarsTiming, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, p4EncounterBoxStates, p4FrontSoakerPosition, p4GroupPosition, p4NpcRelocationPace, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterRotation, p4StackPosition, p4TankConeActive, P4_FRONT_CONE_RANGE, P4_HEAVEN_MOVE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, roamingNpcPosition, separateP3NpcTarget, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type RuneSymbol } from './game'
+import { angleToward, assignmentRevealDistance, crystalCarrierPosition, distance, distanceToSegment, jumpHeights, npcEntryPosition, OPENING_BOOST_SECONDS, P1_STAR_LENGTH, P2_BEAM_SECONDS, P2_ORBIT_SPEED, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_INNER_RADIUS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p2OrbReturnState, p2ReturningOrbPositions, p3ArchangelStackPosition, p3BossPosition, p3LandingGroupIndex, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3NpcPoolAssignment, p3NpcRuneReactionDelay, p3NpcSoaksActive, p3PoolCenters, p3ProtectionBubbleCenter, p3RuneEdges, p3RuneOrbs, p3RunePartnerPosition, p3StarsTiming, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, p4EncounterBoxStates, p4FrontSoakerPosition, p4GroupPosition, p4NpcRelocationPace, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterRotation, p4StackPosition, p4TankConeActive, P4_FRONT_CONE_RANGE, P4_HEAVEN_MOVE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, roamingNpcPosition, separateP3NpcTarget, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type RuneSymbol } from './game'
 import { p3SpreadPosition, p4TankKillsBox } from './game'
 
 interface SceneProps {
@@ -104,7 +104,7 @@ function walkAroundArena(origin: Point, target: Point, seconds: number, speed: n
 }
 function avoidP3Stars(position: Point, target: Point, side: -1 | 1, round: number, cycle: number, index: number): Point {
   const orbs = p3RuneOrbs(side, WORLD.center, round, cycle)
-  const nearby = nearestRuneEdges(orbs).find(([from, to]) => distanceToSegment(position, orbs[from], orbs[to]) < 8 || distanceToSegment(target, orbs[from], orbs[to]) < 5)
+  const nearby = p3RuneEdges(side, WORLD.center, round, orbs).find(([from, to]) => distanceToSegment(position, orbs[from], orbs[to]) < 8 || distanceToSegment(target, orbs[from], orbs[to]) < 5)
   if (!nearby) return target
   const start = orbs[nearby[0]]
   const end = orbs[nearby[1]]
@@ -1040,7 +1040,7 @@ export default function GameScene(props: SceneProps) {
               addOrb(hazards, point, 0x17477f, 3.05, .88)
               addGroundRing(hazards, point, 4.25, 5.05, 0x3fa5ff, beamsVisible ? .38 : .62, 2.8)
             })
-            if (beamsVisible) nearestRuneEdges(orbs).forEach(([from, to]) => {
+            if (beamsVisible) p3RuneEdges(side, WORLD.center, state.p3Round, orbs).forEach(([from, to]) => {
               const start = orbs[from]
               const end = orbs[to]
               addLaserBeam(hazards, start, Math.atan2(end.y - start.y, end.x - start.x), distance(start, end), 2.2, 0x258dff, .76)

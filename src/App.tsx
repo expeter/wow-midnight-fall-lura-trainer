@@ -1563,7 +1563,7 @@ function CrystalAssignmentEditor({ phaseLabel, assignments, profiles, onChange }
   return <section className="phase-crystal-editor" aria-label={`${phaseLabel} crystal assignments`}>
     <header><div><p className="eyebrow">{phaseLabel.toUpperCase()} CRYSTALS</p><h3>Six crystal carriers</h3></div><p>Each dropdown assigns crystal duty to one raid-plan spot for this phase only.</p></header>
     <div className="phase-crystal-grid">
-      {assignments.map((playerIndex, slot) => <label key={slot}>Crystal {slot + 1}<select aria-label={`${phaseLabel} crystal ${slot + 1}`} value={playerIndex} onChange={event => onChange(slot, Number(event.target.value))}>{profiles.map((profile, index) => <option value={index} key={index}>Spot {index + 1} · {profile.name}</option>)}</select></label>)}
+      {assignments.map((playerIndex, slot) => <label key={slot}><span><i aria-hidden="true">◆</i> Crystal <b>{String(slot + 1).padStart(2, '0')}</b></span><select aria-label={`${phaseLabel} crystal ${slot + 1}`} value={playerIndex} onChange={event => onChange(slot, Number(event.target.value))}>{profiles.map((profile, index) => <option value={index} key={index}>Spot {index + 1} · {profile.name}</option>)}</select></label>)}
     </div>
   </section>
 }

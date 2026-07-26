@@ -570,6 +570,10 @@ export function p3MemoryResolved(order: RuneSymbol[], resolved: RuneSymbol[]): b
   return order.every(rune => resolved.includes(rune))
 }
 
+export function p3NpcRuneReactionDelay(seed: number, assignment: number, round: number): number {
+  return 1 + seededUnit(seed, assignment * 7 + round * 31) * 5
+}
+
 export function p3StarsTiming(eventTime: number): { active: boolean; cycle: number; localTime: number } {
   if (eventTime < P3_STARS_START_SECONDS) return { active: false, cycle: 0, localTime: 0 }
   const elapsed = eventTime - P3_STARS_START_SECONDS

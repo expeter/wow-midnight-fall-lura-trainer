@@ -54,7 +54,8 @@ export const LASER_CHARGE_SOUND_SECONDS = 1.86
 export const INTERMISSION_BEAM_FIRE_SECONDS = 2.78
 export const ORB_RETURN_SOUND_DELAY_SECONDS = 1
 export const ARCHANGEL_SOUND_DELAY_SECONDS = 1
-export const SPLINTER_SOUND_LEAD_SECONDS = .1
+export const SPLINTER_SOUND_TRANSIENT_LEAD_SECONDS = .02
+export const INTERMISSION_SPLINTER_VISUAL_END_SECONDS = 3
 
 export interface EncounterSoundCue {
   id: string
@@ -82,7 +83,7 @@ export function encounterSoundCuesForState(state: EncounterSoundState): Encounte
   if (state.event === 'beam' && state.eventTime >= INTERMISSION_BEAM_FIRE_SECONDS - LASER_CHARGE_SOUND_SECONDS) {
     cues.push({ id: `intermission-${state.cycle}-laser-charge`, sound: 'laser-charge' })
   }
-  if (state.event === 'splinter' && state.eventTime >= 2.65 - SPLINTER_SOUND_LEAD_SECONDS) {
+  if (state.event === 'splinter' && state.eventTime >= INTERMISSION_SPLINTER_VISUAL_END_SECONDS - SPLINTER_SOUND_TRANSIENT_LEAD_SECONDS) {
     cues.push({ id: `intermission-${state.cycle}-splinter-detonate`, sound: 'splinter-detonate' })
   }
 
@@ -118,7 +119,7 @@ export function encounterSoundCuesForState(state: EncounterSoundState): Encounte
     const splinterStart = p4SplinterStartSeconds(state.p4Cycle)
     for (let ordinal = 0; ordinal < 3; ordinal += 1) {
       const detonation = splinterStart + ordinal * P4_SPLINTER_INTERVAL_SECONDS + P4_SPLINTER_DETONATION_SECONDS
-      if (state.eventTime >= detonation - SPLINTER_SOUND_LEAD_SECONDS) {
+      if (state.eventTime >= detonation - SPLINTER_SOUND_TRANSIENT_LEAD_SECONDS) {
         cues.push({ id: `p4-${state.p4Cycle}-splinter-${ordinal}`, sound: 'splinter-detonate' })
       }
     }

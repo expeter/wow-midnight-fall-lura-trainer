@@ -7,6 +7,35 @@ const MECHANIC_TIMEOUT = 20_000
 
 test.setTimeout(60_000)
 
+test('a shared hash plan overrides stale storage and survives a clean reload', async ({ page }) => {
+  const profiles = Array.from({ length: 20 }, (_, index) => ({ name: index === 14 ? 'Zoxzy' : index === 19 ? 'Pestivator' : `Player ${index + 1}`, playerClass: 'mage', crystal: index < 6 }))
+  const plan = {
+    positions: Array.from({ length: 20 }, (_, index) => ({ x: index < 10 ? 420 : 540, y: 360 })),
+    p2Positions: Array.from({ length: 20 }, () => ({ x: 480, y: 270 })),
+    p2SpreadPositions: Array.from({ length: 20 }, () => ({ x: 480, y: 270 })),
+    p3Positions: Array.from({ length: 20 }, (_, index) => index === 14 ? { x: 553, y: 398 } : index === 19 ? { x: 409, y: 421 } : { x: index < 10 ? 420 : 540, y: 400 }),
+    p3BossPositions: [{ x: 406, y: 398 }, { x: 554, y: 398 }],
+    startSlots: [{ x: 480, y: 510 }, { x: 240, y: 270 }, { x: 720, y: 270 }, { x: 480, y: 30 }],
+    profiles,
+    crystalAssignments: { intermission: [0, 1, 2, 3, 4, 5], p2: [0, 1, 2, 3, 4, 5], p3: [0, 1, 2, 3, 4, 5] },
+  }
+  const stale = Array.from({ length: 20 }, () => ({ x: 410, y: 400 }))
+  await page.addInitScript(value => {
+    if (sessionStorage.getItem('stale-plan-seeded')) return
+    localStorage.setItem('lura-p3-player-positions', JSON.stringify(value))
+    sessionStorage.setItem('stale-plan-seeded', 'true')
+  }, stale)
+  const code = Buffer.from(encodeURIComponent(JSON.stringify(plan))).toString('base64')
+  await page.goto(`/#raidplan=${code}`)
+
+  await expect(page.getByText('Shared raid plan loaded')).toBeVisible()
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('lura-p3-player-positions') || '[]')[14])).toEqual({ x: 553, y: 398 })
+  expect(await page.getByRole('button', { name: 'Move P3 player 15' }).evaluate(element => parseFloat((element as HTMLElement).style.left))).toBeGreaterThan(50)
+
+  await page.goto('/')
+  expect(await page.getByRole('button', { name: 'Move P3 player 15' }).evaluate(element => parseFloat((element as HTMLElement).style.left))).toBeGreaterThan(50)
+})
+
 test('selects Arena 2 and enters the Phase 2 countdown', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('lura-game-speed', '2.5'))
   await page.goto('/')

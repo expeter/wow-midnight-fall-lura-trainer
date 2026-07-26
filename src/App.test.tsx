@@ -23,7 +23,47 @@ describe('player menu', () => {
   it('creates a shareable raid-plan link and supports P pause/resume', async () => { const user = userEvent.setup(); render(<App />); await user.click(screen.getByRole('button', { name: /copy share link/i })); expect((screen.getByLabelText(/raid plan share code/i) as HTMLInputElement).value).toContain('#raidplan='); await user.click(screen.getByRole('button', { name: /enter arena/i })); await user.keyboard('p'); expect(screen.getByRole('button', { name: /resume/i })).toBeInTheDocument(); await user.keyboard('p'); expect(screen.getByRole('button', { name: /^pause$/i })).toBeInTheDocument() })
   it('shows the Season 2 recruitment banner outside the arena only', async () => { const user = userEvent.setup(); render(<App />); const link = screen.getByRole('link', { name: /asgard.*raider\.io/i }); expect(link).toHaveAttribute('href', 'https://raider.io/guilds/eu/blackrock/IAsgardI'); await user.click(screen.getByRole('button', { name: /enter arena/i })); expect(screen.queryByRole('link', { name: /asgard.*raider\.io/i })).not.toBeInTheDocument() })
   it('centers the phase title in a three-column header and moves build information to the status bar', async () => { const user = userEvent.setup(); render(<App />); await user.click(screen.getByRole('button', { name: /enter arena/i })); const title = screen.getByRole('heading', { name: 'Get ready.' }); expect(title.parentElement).toHaveClass('game-top'); const build = screen.getByLabelText(/build information/i); expect(build).toHaveClass('game-build-indicator'); expect(build.parentElement).toHaveClass('controls') })
-  it('loads a raid plan when the hash changes without a page reload', async () => { const user = userEvent.setup(); render(<App />); const name = screen.getByLabelText(/raid position name/i); await user.clear(name); await user.type(name, 'Shared Player'); await user.click(screen.getByRole('button', { name: /copy share link/i })); const link = (screen.getByLabelText(/raid plan share code/i) as HTMLInputElement).value; await user.clear(name); await user.type(name, 'Local Player'); window.location.hash = new URL(link).hash; await waitFor(() => expect(name).toHaveValue('Shared Player')); expect(screen.getByText('Shared raid plan loaded')).toBeInTheDocument() })
+  it('loads and persists a hash raid plan instead of falling back to an older local layout', async () => {
+    const user = userEvent.setup()
+    const view = render(<App />)
+    const name = screen.getByLabelText(/raid position name/i)
+    await user.clear(name)
+    await user.type(name, 'Shared Player')
+    await user.click(screen.getByRole('button', { name: /copy share link/i }))
+    const link = (screen.getByLabelText(/raid plan share code/i) as HTMLInputElement).value
+    const payload = JSON.parse(decodeURIComponent(atob(link.split('#raidplan=')[1])))
+    payload.profiles[14].name = 'Zoxzy'
+    payload.p3Positions[14] = { x: 553, y: 398 }
+    payload.p3Positions[19] = { x: 409, y: 421 }
+    localStorage.setItem('lura-p3-player-positions', JSON.stringify(Array.from({ length: 20 }, () => ({ x: 410, y: 400 }))))
+    window.location.hash = `#raidplan=${btoa(encodeURIComponent(JSON.stringify(payload)))}`
+    await waitFor(() => expect(name).toHaveValue('Shared Player'))
+    expect(screen.getByText('Shared raid plan loaded')).toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem('lura-p3-player-positions') || '[]')[14]).toEqual({ x: 553, y: 398 })
+    expect(JSON.parse(localStorage.getItem('lura-p3-player-positions') || '[]')[19]).toEqual({ x: 409, y: 421 })
+    expect(parseFloat(screen.getByRole('button', { name: 'Move P3 player 15' }).style.left)).toBeGreaterThan(50)
+    view.unmount()
+    window.location.hash = ''
+    render(<App />)
+    expect(parseFloat(screen.getByRole('button', { name: 'Move P3 player 15' }).style.left)).toBeGreaterThan(50)
+  })
+  it('persists a manually loaded raid plan immediately', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await user.clear(screen.getByLabelText(/raid position name/i))
+    await user.type(screen.getByLabelText(/raid position name/i), 'Manual Shared')
+    await user.click(screen.getByRole('button', { name: /copy share link/i }))
+    const link = (screen.getByLabelText(/raid plan share code/i) as HTMLInputElement).value
+    await user.clear(screen.getByLabelText(/raid position name/i))
+    await user.type(screen.getByLabelText(/raid position name/i), 'Stale Local Player')
+    fireEvent.change(screen.getByLabelText(/raid plan share code/i), { target: { value: link } })
+    await user.click(screen.getByRole('button', { name: /load shared plan/i }))
+    expect(screen.getByText('Shared raid plan loaded and saved')).toBeInTheDocument()
+    expect(JSON.parse(localStorage.getItem('lura-player-profiles') || '[]')[0].name).toBe('Manual Shared')
+    expect(JSON.parse(localStorage.getItem('lura-p3-player-positions') || '[]')).toHaveLength(20)
+    expect(JSON.parse(localStorage.getItem('lura-p3-boss-positions') || '[]')).toHaveLength(2)
+    expect(JSON.parse(localStorage.getItem('lura-p3-crystal-assignments') || '[]')).toHaveLength(6)
+  })
   it('persists a player-name override and keeps the raid position on the result certificate', async () => { const user = userEvent.setup(); render(<App />); await user.clear(screen.getByLabelText(/raid position name/i)); await user.type(screen.getByLabelText(/raid position name/i), 'Assigned Mage'); await user.type(screen.getByLabelText(/your player name/i), 'Pestivator'); await waitFor(() => expect(localStorage.getItem('lura-player-name')).toBe('Pestivator')); await user.click(screen.getByRole('button', { name: 'test' })); await user.click(screen.getByRole('button', { name: /preview final screen/i })); expect(screen.getByRole('heading', { name: 'Pestivator' })).toHaveClass('completion-player-name'); expect(screen.getByText(/Played position: Assigned Mage — Spot 1/i)).toBeInTheDocument() })
   it('explains the independent look, facing, and zoom controls', async () => { const user = userEvent.setup(); render(<App />); await user.click(screen.getByRole('button', { name: /enter arena/i })); expect(screen.getByText(/left-drag look · right-drag view \+ face · wheel zoom/i)).toBeInTheDocument() })
   it('persists independent horizontal and vertical camera inversion', async () => { const user = userEvent.setup(); render(<App />); const horizontal = screen.getByLabelText(/invert camera horizontal/i); const vertical = screen.getByLabelText(/invert camera vertical/i); expect(horizontal).not.toBeChecked(); expect(vertical).not.toBeChecked(); await user.click(horizontal); await user.click(vertical); await waitFor(() => { expect(localStorage.getItem('lura-invert-camera-x')).toBe('true'); expect(localStorage.getItem('lura-invert-camera-y')).toBe('true') }) })

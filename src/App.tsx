@@ -15,6 +15,7 @@ interface Mistake { id: number; time: number; label: string; penalty: number }
 interface PhaseStart { key: PhaseKey; score: number; time: number }
 type RecoveryStatus = 'disabled' | 'pending' | 'passed' | 'missed'
 interface PhaseCrystalAssignments { intermission: number[]; p2: number[]; p3: number[] }
+interface RaidPlan { positions: Assignment[]; p2Positions: Assignment[]; p2SpreadPositions: Assignment[]; p3Positions: Assignment[]; p3BossPositions: Assignment[]; startSlots: Assignment[]; profiles: PlayerProfile[]; crystalAssignments: PhaseCrystalAssignments }
 interface KeyBindings { forward: string; backward: string; left: string; right: string; turnLeft: string; turnRight: string; jump: string; crystal: string; pause: string; healthPot: string; shield: string; mainAbility: string }
 type HudElement = 'mechanic' | 'beam' | 'crystal' | 'playerHealth' | 'bossHealth' | 'castbar'
 type HudLayout = Record<HudElement, Point>
@@ -274,7 +275,7 @@ function loadAssignment(): number {
 function encodeRaidPlan(value: unknown): string {
   return btoa(encodeURIComponent(JSON.stringify(value)))
 }
-function decodeRaidPlan(value: string): { positions: Assignment[]; p2Positions: Assignment[]; p2SpreadPositions: Assignment[]; p3Positions: Assignment[]; p3BossPositions: Assignment[]; startSlots: Assignment[]; profiles: PlayerProfile[]; crystalAssignments: PhaseCrystalAssignments } | null {
+function decodeRaidPlan(value: string): RaidPlan | null {
   try {
     const raw = value.includes('#raidplan=') ? value.split('#raidplan=')[1] : value
     const plan = JSON.parse(decodeURIComponent(atob(raw.trim())))
@@ -293,6 +294,31 @@ function decodeRaidPlan(value: string): { positions: Assignment[]; p2Positions: 
     }
     return { ...plan, p2Positions, p2SpreadPositions, p3Positions, p3BossPositions, crystalAssignments }
   } catch { return null }
+}
+function normalizeRaidPlanForUse(plan: RaidPlan): RaidPlan {
+  return {
+    positions: plan.positions.map(clampToSafeBand),
+    p2Positions: plan.p2Positions.map(clampToP2Arena),
+    p2SpreadPositions: plan.p2SpreadPositions.map(clampToP2Arena),
+    p3Positions: orientP3OpeningSouth(plan.p3Positions).map(clampToP3Arena),
+    p3BossPositions: orientP3OpeningSouth(plan.p3BossPositions),
+    startSlots: plan.startSlots.map(clampStartSlot),
+    profiles: plan.profiles.map((profile, index) => ({ ...profile, crystal: plan.crystalAssignments.intermission.includes(index) })),
+    crystalAssignments: plan.crystalAssignments,
+  }
+}
+function persistRaidPlan(plan: RaidPlan) {
+  localStorage.setItem('lura-player-positions', JSON.stringify(plan.positions))
+  localStorage.setItem('lura-p2-player-positions', JSON.stringify(plan.p2Positions))
+  localStorage.setItem('lura-p2-spread-positions', JSON.stringify(plan.p2SpreadPositions))
+  localStorage.setItem('lura-p3-player-positions', JSON.stringify(plan.p3Positions))
+  localStorage.setItem('lura-p3-boss-positions', JSON.stringify(plan.p3BossPositions))
+  localStorage.setItem('lura-player-profiles', JSON.stringify(plan.profiles))
+  localStorage.setItem('lura-crystal-assignments', JSON.stringify(plan.crystalAssignments.intermission))
+  localStorage.setItem('lura-intermission-crystal-assignments', JSON.stringify(plan.crystalAssignments.intermission))
+  localStorage.setItem('lura-p2-crystal-assignments', JSON.stringify(plan.crystalAssignments.p2))
+  localStorage.setItem('lura-p3-crystal-assignments', JSON.stringify(plan.crystalAssignments.p3))
+  localStorage.setItem('lura-start-slots', JSON.stringify(plan.startSlots))
 }
 function loadStartSlots(): Assignment[] {
   try {
@@ -525,16 +551,7 @@ export default function App() {
     const loadHashPlan = () => {
       const hashPlan = window.location.hash.startsWith('#raidplan=') ? decodeRaidPlan(window.location.hash) : null
       if (!hashPlan) return
-      setPositions(hashPlan.positions.map(clampToSafeBand))
-      setP2Positions(hashPlan.p2Positions.map(clampToP2Arena))
-      setP2SpreadPositions(hashPlan.p2SpreadPositions.map(clampToP2Arena))
-      setP3Positions(orientP3OpeningSouth(hashPlan.p3Positions).map(clampToP3Arena))
-      setP3BossPositions(orientP3OpeningSouth(hashPlan.p3BossPositions))
-      setStartSlots(hashPlan.startSlots.map(clampStartSlot))
-      setProfiles(hashPlan.profiles)
-      setIntermissionCrystalAssignments(hashPlan.crystalAssignments.intermission)
-      setP2CrystalAssignments(hashPlan.crystalAssignments.p2)
-      setP3CrystalAssignments(hashPlan.crystalAssignments.p3)
+      loadRaidPlanIntoApp(hashPlan)
       setShareInput(window.location.href)
       setShareStatus('Shared raid plan loaded')
     }
@@ -1565,11 +1582,13 @@ export default function App() {
     <div className="actions"><button onClick={start}>Run it again</button><button className="secondary" onClick={() => setScreen('menu')}>Change setup</button></div>
   </main>
   function updateProfile(update: Partial<PlayerProfile>) { setProfiles(current => current.map((profile, index) => index === assignment ? { ...profile, ...update } : profile)) }
-  function savePositions() { localStorage.setItem('lura-player-positions', JSON.stringify(positions)); localStorage.setItem('lura-p2-player-positions', JSON.stringify(p2Positions)); localStorage.setItem('lura-p2-spread-positions', JSON.stringify(p2SpreadPositions)); localStorage.setItem('lura-p3-player-positions', JSON.stringify(p3Positions)); localStorage.setItem('lura-p3-boss-positions', JSON.stringify(p3BossPositions)); localStorage.setItem('lura-player-profiles', JSON.stringify(profiles.map((profile, index) => ({ ...profile, crystal: intermissionCrystalAssignments.includes(index) })))); localStorage.setItem('lura-crystal-assignments', JSON.stringify(intermissionCrystalAssignments)); localStorage.setItem('lura-intermission-crystal-assignments', JSON.stringify(intermissionCrystalAssignments)); localStorage.setItem('lura-p2-crystal-assignments', JSON.stringify(p2CrystalAssignments)); localStorage.setItem('lura-p3-crystal-assignments', JSON.stringify(p3CrystalAssignments)); localStorage.setItem('lura-start-slots', JSON.stringify(startSlots)); setShareStatus('Layout saved') }
+  function currentRaidPlan(): RaidPlan { return normalizeRaidPlanForUse({ positions, p2Positions, p2SpreadPositions, p3Positions, p3BossPositions, startSlots, profiles, crystalAssignments: phaseCrystalAssignments }) }
+  function loadRaidPlanIntoApp(sourcePlan: RaidPlan) { const plan = normalizeRaidPlanForUse(sourcePlan); persistRaidPlan(plan); setPositions(plan.positions); setP2Positions(plan.p2Positions); setP2SpreadPositions(plan.p2SpreadPositions); setP3Positions(plan.p3Positions); setP3BossPositions(plan.p3BossPositions); setStartSlots(plan.startSlots); setProfiles(plan.profiles); setIntermissionCrystalAssignments(plan.crystalAssignments.intermission); setP2CrystalAssignments(plan.crystalAssignments.p2); setP3CrystalAssignments(plan.crystalAssignments.p3) }
+  function savePositions() { persistRaidPlan(currentRaidPlan()); setShareStatus('Layout saved') }
   function resetPositions() { const defaults = DEFAULT_ASSIGNMENTS.map(point => ({ ...point })); const defaultP2 = DEFAULT_P2_ASSIGNMENTS.map(point => ({ ...point })); const defaultP2Spread = DEFAULT_P2_SPREAD_ASSIGNMENTS.map(point => ({ ...point })); const defaultP3 = DEFAULT_P3_ASSIGNMENTS.map(point => ({ ...point })); const defaultStarts = DEFAULT_START_SLOTS.map(point => ({ ...point })); const defaultProfiles = DEFAULT_PROFILES.map(profile => ({ ...profile })); const defaultCrystals = normalizeCrystalAssignments(DEFAULT_PROFILES.map((profile, index) => profile.crystal ? index : -1)); setPositions(defaults); setP2Positions(defaultP2); setP2SpreadPositions(defaultP2Spread); setP3Positions(defaultP3); setStartSlots(defaultStarts); setProfiles(defaultProfiles); setIntermissionCrystalAssignments(defaultCrystals); setP2CrystalAssignments(defaultCrystals); setP3CrystalAssignments(defaultCrystals); localStorage.setItem('lura-player-positions', JSON.stringify(defaults)); localStorage.setItem('lura-p2-player-positions', JSON.stringify(defaultP2)); localStorage.setItem('lura-p2-spread-positions', JSON.stringify(defaultP2Spread)); localStorage.setItem('lura-p3-player-positions', JSON.stringify(defaultP3)); localStorage.setItem('lura-player-profiles', JSON.stringify(defaultProfiles)); localStorage.setItem('lura-intermission-crystal-assignments', JSON.stringify(defaultCrystals)); localStorage.setItem('lura-p2-crystal-assignments', JSON.stringify(defaultCrystals)); localStorage.setItem('lura-p3-crystal-assignments', JSON.stringify(defaultCrystals)); localStorage.setItem('lura-start-slots', JSON.stringify(defaultStarts)); setShareStatus('Default layout restored') }
-  function raidPlanCode() { return encodeRaidPlan({ positions, p2Positions, p2SpreadPositions, p3Positions, p3BossPositions, startSlots, profiles: profiles.map((profile, index) => ({ ...profile, crystal: intermissionCrystalAssignments.includes(index) })), crystalAssignments: phaseCrystalAssignments }) }
+  function raidPlanCode() { return encodeRaidPlan(currentRaidPlan()) }
   async function copyRaidPlan() { const link = `${window.location.origin}${window.location.pathname}#raidplan=${raidPlanCode()}`; setShareInput(link); try { await navigator.clipboard?.writeText(link); setShareStatus('Share link copied') } catch { setShareStatus('Share link ready to copy') } }
-  function applyRaidPlan() { const plan = decodeRaidPlan(shareInput); if (!plan) { setShareStatus('Invalid raid-plan code'); return } setPositions(plan.positions.map(clampToSafeBand)); setP2Positions(plan.p2Positions.map(clampToP2Arena)); setP2SpreadPositions(plan.p2SpreadPositions.map(clampToP2Arena)); setP3Positions(orientP3OpeningSouth(plan.p3Positions).map(clampToP3Arena)); setP3BossPositions(orientP3OpeningSouth(plan.p3BossPositions)); setStartSlots(plan.startSlots.map(clampStartSlot)); setProfiles(plan.profiles); setIntermissionCrystalAssignments(plan.crystalAssignments.intermission); setP2CrystalAssignments(plan.crystalAssignments.p2); setP3CrystalAssignments(plan.crystalAssignments.p3); setShareStatus('Shared raid plan loaded') }
+  function applyRaidPlan() { const plan = decodeRaidPlan(shareInput); if (!plan) { setShareStatus('Invalid raid-plan code'); return } loadRaidPlanIntoApp(plan); setShareStatus('Shared raid plan loaded and saved') }
   function chooseBossPattern(target: Point) { const pattern = Math.random() < .5 ? 'line' : 'gap'; const count = Math.random() < .5 ? 11 : 13; const spacing = Math.PI * 2 / count; const targetAngle = Math.atan2(target.y - WORLD.center.y, target.x - WORLD.center.x); setBeamPattern(pattern); setBeamAngles(Array.from({ length: count }, (_, index) => { const anchor = targetAngle + (pattern === 'gap' ? spacing / 2 : 0) + index * spacing; const preservePlayerPattern = index === 0 || pattern === 'gap' && index === count - 1; return anchor + (preservePlayerPattern ? 0 : (Math.random() - .5) * spacing * .42) })) }
   const activePositions = event.startsWith('p3-') ? p3Positions.map(point => p3AssignmentForRound(point, WORLD.center, p3Round)) : event === 'p2-spread' || event === 'p2-fetch' || event === 'p2-wait' ? p2SpreadPositions : event.startsWith('p2-') ? p2Positions : phasePositions
   return <GameArena mainAbilityEnabled={mainAbilityEnabled} bossHealth={bossHealth} mainCastRemaining={mainCastRemaining} personalJumpProgress={personalJumpProgress} musicMuted={musicMuted} softWipeNotice={softWipeNotice} crystalDutyNotice={crystalDutyNotice} hudLayout={hudLayout} positions={activePositions} intermissionPositions={phasePositions} p2SoakPositions={p2Positions} p2SpreadPositions={p2SpreadPositions} p3Positions={p3Positions} profiles={gameProfiles} raidStart={startSlots[startSlot]} movementSpeed={movementSpeed} movementBonus={movementBonus} gameSpeed={gameSpeed} p2Cycle={p2Cycle} p2Soaked={p2Soaked} p2OrbReturnAge={p2OrbReturnAge} p3Round={p3Round} p3ArchangelDuty={activeCrystalAssignments.includes(assignment) ? p3ArchangelDuty : null} crystalSpent={crystalSpent} p4Cycle={p4Cycle} p4PatternSeed={p4PatternSeed} p3PoolHealth={p3PoolHealth} onP3PoolOccupancy={occupancy => { p3PoolOccupancyRef.current = occupancy }} onP3LightCenters={centers => { p3NpcLightCentersRef.current = centers }} onP3RuneContacts={runes => { p3RuneContactsRef.current = runes }} p3RuneOrder={p3RuneOrder} p3RuneStep={p3RuneStep} p3ResolvedRunes={p3ResolvedRunes} health={health} criticalRemaining={criticalRemaining} healthPotEnabled={difficulty !== 'easy' && difficulty !== 'test' && healthPotEnabled} shieldEnabled={difficulty !== 'easy' && difficulty !== 'test' && shieldEnabled} healthPotUsed={healthPotUsed} shieldUsed={shieldUsed} keyBindings={keyBindings} crystalCarriers={activeCrystalCarriers} beamPattern={beamPattern} failureFlash={failureFlash} wipeReason={wipeReason} player={player} crystal={crystal} npcCrystals={npcCrystals} npcCarrier={npcCarrier} npcCrystalAge={npcCrystalAge} playerSplinterRotation={playerSplinterRotation} crystalAge={crystalAge} role={activeCrystalAssignments.includes(assignment) ? 'carrier' : 'non-carrier'} difficulty={difficulty} assignment={assignment} stats={stats} mistakes={mistakes} startSlotName={`S${startSlot + 1}`} paused={paused} event={event} eventTime={eventTime} beamAngles={beamAngles} npcSplinters={npcSplinters} cycle={cycle} setPaused={setPaused} setMusicMuted={setMusicMuted} onRetry={start} onExit={() => setScreen('menu')} onDrop={toggleCrystal} onCameraDirection={direction => { cameraForward.current = direction }} />

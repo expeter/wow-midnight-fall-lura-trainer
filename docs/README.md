@@ -50,6 +50,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-007` | Implemented | Increase the setup, planner, in-game HUD, failure, and completion interface type scales for readability at native browser zoom. |
 | `CR-008` | Implemented | Enlarge the desktop Phase 3 raid-plan canvas without transforming or resetting the saved player and boss world coordinates. |
 | `CR-009` | Implemented | Link Pestivator's avatar and business card to Raider.IO and remove the redundant Solana-address copy control. |
+| `CR-010` | Implemented | Link the version/build string to the public GitHub project. |
 | `BUG-008` | Implemented | Remove the premature 20-second P3 Soak failure; unfinished pools are now checked only when Big Boom resolves at 40 seconds. |
 | `BUG-009` | Implemented | Enforce P3 Stars orb spacing and isolate the southwest/southeast fields with clearance from the room divider. |
 | `BUG-010` | Implemented | Use the NPC protection bubble when the player's crystal duty belongs to the other Dark Archangel set; only consume the player's crystal on its assigned set. |

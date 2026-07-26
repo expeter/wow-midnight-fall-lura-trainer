@@ -1567,7 +1567,7 @@ function BuildIndicator({ inGame = false }: { inGame?: boolean }) {
   const timestamp = Number.isNaN(built.getTime())
     ? APP_BUILD_TIME
     : `${built.toISOString().slice(0, 16).replace('T', ' ')} UTC`
-  return <aside className={`build-indicator${inGame ? ' game-build-indicator' : ''}`} aria-label="Build information" title={`Built ${built.toISOString()}`}>v{APP_VERSION} · {timestamp}</aside>
+  return <aside className={`build-indicator${inGame ? ' game-build-indicator' : ''}`} aria-label="Build information" title={`Built ${built.toISOString()}`}><a href="https://github.com/expeter/wow-midnight-fall-lura-trainer" target="_blank" rel="noreferrer">v{APP_VERSION} · {timestamp} · GitHub ↗</a></aside>
 }
 
 function HudLayoutEditor({ layout, onChange, onReset }: { layout: HudLayout; onChange: (counter: HudElement, point: Point) => void; onReset: () => void }) {

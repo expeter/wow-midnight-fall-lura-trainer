@@ -96,7 +96,7 @@ const CLASS_OPTIONS: { value: PlayerClass; label: string; color: string }[] = [
   { value: 'evoker', label: 'Evoker', color: '#33937f' },
   { value: 'shaman', label: 'Shaman', color: '#0070dd' },
   { value: 'hunter', label: 'Hunter', color: '#aad372' },
-  { value: 'monk', label: 'Monk', color: '#00ff98' },
+  { value: 'monk', label: 'Monk', color: '#00a98f' },
 ]
 const DEFAULT_PROFILES: PlayerProfile[] = Array.from({ length: 20 }, (_, index) => ({
   name: `Player ${index + 1}`,

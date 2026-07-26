@@ -66,7 +66,7 @@ function loadCameraSettings(): CameraSettings {
 const CLASS_COLORS: Record<PlayerClass, number> = {
   mage: 0x3fc7eb, warlock: 0x8788ee, augmentation: 0x33937f, priest: 0xffffff,
   'death-knight': 0xc41e3a, 'demon-hunter': 0xa330c9, warrior: 0xc69b6d,
-  paladin: 0xf48cba, druid: 0xff7c0a, evoker: 0x33937f, shaman: 0x0070dd, hunter: 0xaad372, monk: 0x00ff98,
+  paladin: 0xf48cba, druid: 0xff7c0a, evoker: 0x33937f, shaman: 0x0070dd, hunter: 0xaad372, monk: 0x00a98f,
 }
 
 function npcPosition(index: number, time: number, positions: Point[], playerAssignment: number, event: SceneProps['event'], eventTime: number, beamAngles: number[], raidStart: Point, movementSpeed: number, movementBonus: boolean): Point {

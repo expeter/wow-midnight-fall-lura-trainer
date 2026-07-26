@@ -1,8 +1,8 @@
 # Audio cue catalog
 
-Status: `SPEC-009` planning reference. Music is available now and defaults to
-off. Encounter sounds and TTS remain disabled until suitable short files and
-final call timings are approved.
+Status: `SPEC-009` audio reference. Music is available and defaults to off.
+Browser TTS implements the calls below as an opt-in helper. Encounter sounds
+remain disabled until suitable short files are approved.
 
 Keep the channels independent:
 
@@ -15,8 +15,8 @@ Keep the channels independent:
 
 | Phase | Call | Proposed trigger | Purpose |
 | --- | --- | --- | --- |
-| Intermission | `DODGE` | Boss laser telegraph becomes actionable | Remind the player to clear the wide center beam |
-| Intermission | `DROP CRYSTAL` | Player is a carrier and their Starsplinter set begins | Start the drop–move–recover sequence |
+| Intermission (Easy only) | `DODGE` | Boss laser telegraph becomes actionable | Remind the player to clear the wide center beam |
+| Intermission (Easy only) | `DROP CRYSTAL` | Player is a carrier and their Starsplinter set begins | Start the drop–move–recover sequence |
 | P2 | `SOAK BEAM` | Cross-beam telegraph begins | Move onto the assigned beam |
 | P2 | `DROP CRYSTAL` | Carrier’s beam countdown reaches 3 seconds | Leave the crystal outside the beam before resolution |
 | P2 | `SPREAD` | The pull finishes with the raid in the middle | Move to the personal-circle assignment |
@@ -32,6 +32,10 @@ Keep the channels independent:
 
 TTS should call only the player’s actual assignment. For example, a player
 without a P4 Starsplinter should not hear `LEFT` or `RIGHT`.
+
+Direct Intermission, P2, P3, and P4 entries also speak the visible `3`, `2`,
+`1` countdown. Seamless transitions between phases do not add another spoken
+countdown.
 
 ## Sound-effect shopping list
 

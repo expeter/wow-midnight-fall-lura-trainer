@@ -10,6 +10,29 @@ Object.defineProperty(HTMLMediaElement.prototype, 'pause', {
   value: vi.fn(),
 })
 
+class MockSpeechSynthesisUtterance {
+  text: string
+  lang = ''
+  rate = 1
+  volume = 1
+
+  constructor(text: string) {
+    this.text = text
+  }
+}
+
+Object.defineProperty(globalThis, 'SpeechSynthesisUtterance', {
+  configurable: true,
+  value: MockSpeechSynthesisUtterance,
+})
+Object.defineProperty(window, 'speechSynthesis', {
+  configurable: true,
+  value: {
+    speak: vi.fn(),
+    cancel: vi.fn(),
+  },
+})
+
 Object.defineProperty(globalThis, 'fetch', {
   configurable: true,
   value: vi.fn().mockResolvedValue({

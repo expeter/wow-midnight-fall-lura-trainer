@@ -101,7 +101,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `FR-026` | Backlog | Add distinct, synchronized sound effects for major lasers, Starsplinter warnings/detonations, and orb actions, with suitable volume balance and a way to mute effects independently of music. |
 | `FR-027` | Backlog | Add an optional API-backed leaderboard and achievement tracker. Keep anonymous play fully available, optionally identify persistent/public results through Battle.net OAuth, and validate run timing and mechanics server-side rather than treating OAuth or a client-submitted score as proof of a legitimate run. |
 | `FR-028` | Implemented | Restore optional background music with only the two newly selected licensed tracks, default playback to off, and add a dedicated Audio settings row for Music, future encounter Sounds, and deferred TTS. |
-| `FR-029` | Planned | Implement opt-in browser TTS for the approved phase-aware raid-lead calls, suppress repeated/stale speech across render updates and pause states, and gracefully disable the option when speech synthesis is unavailable. |
+| `FR-029` | Implemented | Implement opt-in browser TTS for the approved phase-aware raid-lead calls, suppress repeated/stale speech across render updates and pause states, and gracefully disable the option when speech synthesis is unavailable. |
 | `CR-037` | Superseded | A direct Discord profile needs a numeric user ID. The generic Discord application link was removed again; Twitch remains the direct creator contact. |
 | `CR-038` | Implemented | Link the displayed BattleTag to Pestivator’s Raider.IO profile because Battle.net has no stable public friend-add URL for a BattleTag. |
 | `CR-039` | Implemented | Record every tagged request before implementation and require focused automated regression coverage before marking it implemented. |
@@ -120,6 +120,8 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-052` | Implemented | Increase the Phase 3 ground-Soak radius by 15% so nearby players can commit to the pool more reliably. |
 | `CR-053` | Implemented | Increase the enlarged Phase 3 ground-Soak radius by another 10%, reduce its health by 15%, and preserve full crystal-light coverage from outside the pool. |
 | `CR-054` | Implemented | Preserve the P2 orbs’ existing rotational direction as they transition into their inward return, and begin their glow telegraph one second earlier. |
+| `CR-055` | Implemented | Speak the visible 3, 2, 1 countdown when TTS is enabled and a phase is entered directly; do not announce another countdown during seamless phase transitions. |
+| `CR-056` | Implemented | Limit the Intermission `Dodge` and carrier `Drop crystal` TTS coaching calls to Easy mode; do not provide those two mechanic hints in Test, Normal, or Hard. |
 | `SPEC-001` | Implemented | Define the stable ticket lifecycle: assign an ID, record intent, add focused regression coverage, validate, and commit. |
 | `SPEC-002` | Implemented | Define the creator business card’s stable content, readability, compact layout, and external-link behavior. |
 | `SPEC-003` | Implemented | Define the P3-to-P4 north gather, shared knockup origin, and phase-local HUD boundary. |
@@ -335,7 +337,6 @@ assets:
 
 ## Deferred ideas
 
-- Text-to-speech mechanic warnings.
 - `FR-022`: Player-controlled Phase 4 tank cone.
 - `FR-023`: Random player/NPC ownership of the Phase 4 protection zone.
 - `FR-024`: Main-ability projectiles on successful cast completion.

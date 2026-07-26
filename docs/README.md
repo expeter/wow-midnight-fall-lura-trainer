@@ -95,6 +95,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-022` | Implemented | Persist each phase crystal roster immediately so a configured Phase 3 carrier assignment survives reload/navigation before entering P3 directly. |
 | `BUG-023` | Implemented | Let the phase crystal editor explanation use its available header width so its final word does not wrap alone on desktop. |
 | `BUG-024` | Implemented | Hide the opposite ten-player half-raid and its crystal-light visuals during Phase 3 while continuing its off-screen simulation and restoring everyone for Phase 4. |
+| `BUG-025` | Implemented | Give the three Phase 3 crystal carriers on each side distinct moving light anchors, then consume exactly one crystal per side after each resolved Dark Archangel. | [`screen-p3-bug23.png`](../images/screen-p3-bug23.png) |
 
 ## Implemented feature inventory
 

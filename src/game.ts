@@ -207,10 +207,38 @@ export function p3BossPosition(side: -1 | 1, center: Point, round: number): Poin
   return { x: center.x + Math.cos(angle) * radius, y: center.y + Math.sin(angle) * radius }
 }
 
-export function p3SpreadPosition(index: number, crystal: boolean, center: Point, round: number): Point {
+export function p3ActiveCrystalAssignments(
+  assignments: number[],
+  playerAssignment: number,
+  playerDuty: 1 | 2 | null,
+  playerSpent: boolean,
+  round: number,
+  event: string,
+  attemptSeed = 0,
+): number[] {
+  const resolvedArchangels = event === 'p3-sector-move' ? round : Math.max(0, round - 1)
+  const active = new Set(assignments)
+  for (const side of [-1, 1] as const) {
+    for (let resolvedRound = 1; resolvedRound <= resolvedArchangels; resolvedRound += 1) {
+      const sideAssignments = assignments.filter(index => (index < 10 ? -1 : 1) === side && active.has(index))
+      const playerSpentThisRound = sideAssignments.includes(playerAssignment)
+        && playerDuty === resolvedRound
+        && playerSpent
+      const npcCandidates = sideAssignments.filter(index => index !== playerAssignment)
+      const randomIndex = npcCandidates.length
+        ? ((attemptSeed + (side < 0 ? 2654435761 : 2246822519) + resolvedRound * 3266489917) >>> 0) % npcCandidates.length
+        : -1
+      const spentAssignment = playerSpentThisRound ? playerAssignment : npcCandidates[randomIndex]
+      if (spentAssignment !== undefined) active.delete(spentAssignment)
+    }
+  }
+  return assignments.filter(index => active.has(index))
+}
+
+export function p3SpreadPosition(index: number, crystal: boolean, center: Point, round: number, crystalSlot = -1): Point {
   const side: -1 | 1 = index < 10 ? -1 : 1
   const sideIndex = index % 10
-  const cluster = sideIndex % 3
+  const cluster = crystal && crystalSlot >= 0 ? crystalSlot % 3 : sideIndex % 3
   const member = Math.floor(sideIndex / 3)
   const safeCenter = p3LightCenters(side, center, round)[cluster]
   const boss = p3BossPosition(side, center, round)

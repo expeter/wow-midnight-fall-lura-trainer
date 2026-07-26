@@ -4,7 +4,7 @@ import { P3_MEMORY_START_SECONDS, P3_RUNE_HALF_CLEARANCE, P3_SECTOR_SECONDS } fr
 import { p3ProtectionBubbleCenter } from './game'
 import type { Point } from './game'
 import { P3_LIGHT_RADIUS, p3SpreadPosition, p4TankKillsBox, P4_TANK_KILL_RADIUS } from './game'
-import { isP3RaidMemberVisible } from './game'
+import { isP3RaidMemberVisible, p3ActiveCrystalAssignments } from './game'
 
 describe('Intermission game rules', () => {
   it('creates six deterministic stars for a seed', () => { expect(seededStars(42)).toEqual(seededStars(42)); expect(seededStars(42)).toHaveLength(6) })
@@ -36,6 +36,22 @@ describe('Intermission game rules', () => {
   it('lands the raid in six compact groups with independent randomized soak locations', () => { const center = { x: 480, y: 270 }; const centers = Array.from({ length: 20 }, (_, index) => p3LandingGroupCenter(index, center)); expect(P3_OUTER_RADIUS).toBe(199); expect(new Set(centers.map(point => `${point.x.toFixed(2)}:${point.y.toFixed(2)}`)).size).toBe(6); expect(Math.min(...centers.map(point => point.x))).toBeLessThan(center.x); expect(Math.max(...centers.map(point => point.x))).toBeGreaterThan(center.x); expect(Math.min(...centers.map(point => point.y))).toBeLessThan(center.y); expect(Math.max(...centers.map(point => point.y))).toBeGreaterThan(center.y); expect(new Set(Array.from({ length: 20 }, (_, index) => p3LandingGroupIndex(index))).size).toBe(6); expect(distance(p3LandingPosition(0, center), p3LandingPosition(2, center))).toBeLessThan(8); expect(p3LandingSoakPositions(0, center, 1234)).toEqual(p3LandingSoakPositions(2, center, 1234)); expect(p3LandingSoakPositions(0, center, 1234)).not.toEqual(p3LandingSoakPositions(0, center, 5678)); const landing = p3LandingGroupCenter(0, center); const soaks = p3LandingSoakPositions(0, center, 1234); expect(soaks.every(point => distance(landing, point) >= 21 && distance(landing, point) <= 28.01)).toBe(true); expect(distance(soaks[0], landing)).toBeGreaterThanOrEqual(distance(soaks[1], landing)); const layouts = Array.from({ length: 100 }, (_, seed) => p3LandingSoakPositions(0, center, seed)); expect(Math.min(...layouts.map(points => distance(points[0], points[1])))).toBeGreaterThanOrEqual(P3_LANDING_SOAK_RADIUS * 2); expect(Math.min(...layouts.flatMap(points => points.flatMap(point => [0, 1, 2].map(member => distance(point, p3LandingPosition(member, center))))))).toBeGreaterThanOrEqual(15); expect(p3LandingSoakPositions(0, center, 1234)).not.toEqual(p3LandingSoakPositions(3, center, 1234)) })
   it('moves the P2 stack visibly through the full two-second P3 knockback', () => { const origin = { x: 480, y: 270 }; const target = { x: 320, y: 170 }; expect(p3FlightPosition(origin, target, 0)).toEqual(origin); const midpoint = p3FlightPosition(origin, target, P3_FLIGHT_SECONDS / 2); expect(distance(midpoint, origin)).toBeGreaterThan(0); expect(distance(midpoint, target)).toBeGreaterThan(0); expect(p3FlightPosition(origin, target, P3_FLIGHT_SECONDS)).toEqual(target) })
   it('shows only the player’s ten-person room half during P3', () => { expect(Array.from({ length: 20 }, (_, index) => index).filter(index => isP3RaidMemberVisible(3, index, true))).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]); expect(Array.from({ length: 20 }, (_, index) => index).filter(index => isP3RaidMemberVisible(14, index, true))).toEqual([10, 11, 12, 13, 14, 15, 16, 17, 18, 19]); expect(isP3RaidMemberVisible(3, 14, false)).toBe(true) })
+  it('keeps three P3 crystals per side until Dark Archangel consumes one per side', () => {
+    const assignments = [1, 4, 7, 11, 14, 17]
+    expect(p3ActiveCrystalAssignments(assignments, 0, null, false, 1, 'p3-light-pools')).toEqual(assignments)
+    const npcDrop = p3ActiveCrystalAssignments(assignments, 0, null, false, 1, 'p3-sector-move', 1234)
+    expect(npcDrop.filter(index => index < 10)).toHaveLength(2)
+    expect(npcDrop.filter(index => index >= 10)).toHaveLength(2)
+    expect(p3ActiveCrystalAssignments(assignments, 1, 1, true, 1, 'p3-sector-move', 1234)).not.toContain(1)
+    expect(p3ActiveCrystalAssignments(assignments, 1, 2, false, 2, 'p3-light-pools', 1234)).toContain(1)
+    const randomNpcDrops = new Set(Array.from({ length: 8 }, (_, seed) => p3ActiveCrystalAssignments(assignments, 0, null, false, 1, 'p3-sector-move', seed).join(',')))
+    expect(randomNpcDrops.size).toBeGreaterThan(1)
+  })
+  it('gives each same-side P3 crystal carrier a distinct light anchor', () => {
+    const center = { x: 480, y: 270 }
+    const carriers = [1, 4, 7].map((index, slot) => p3SpreadPosition(index, true, center, 1, slot))
+    expect(carriers.every((carrier, index) => carriers.slice(index + 1).every(other => distance(carrier, other) > 30))).toBe(true)
+  })
   it('makes Phase 3 light recovery gentler and faster than its damage', () => { expect(p3LightHealthRate(true)).toBe(12); expect(p3LightHealthRate(false)).toBe(-2); expect(p3LightHealthRate(true)).toBeGreaterThan(Math.abs(p3LightHealthRate(false))) })
   it('removes a crystal carrier’s moving P3 light after Dark Archangel spends the crystal', () => { expect(hasActiveP3CrystalLight(true, false)).toBe(true); expect(hasActiveP3CrystalLight(true, true)).toBe(false); expect(hasActiveP3CrystalLight(false, false)).toBe(false) })
   it('protects the player using the same moving NPC light center that is rendered', () => { const movingLight = { x: 140, y: 100 }; expect(isProtectedByP3Light({ x: 165, y: 100 }, false, [movingLight])).toBe(true); expect(isProtectedByP3Light({ x: 168.1, y: 100 }, false, [movingLight])).toBe(false) })

@@ -100,6 +100,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `FR-025` | Backlog | Add a continuous encounter-length background theme that survives phase transitions and loops cleanly when necessary, with the existing audio feature flag and mute/volume controls restored only when suitable licensed music is selected. |
 | `FR-026` | Backlog | Add distinct, synchronized sound effects for major lasers, Starsplinter warnings/detonations, and orb actions, with suitable volume balance and a way to mute effects independently of music. |
 | `FR-027` | Backlog | Add an optional API-backed leaderboard and achievement tracker. Keep anonymous play fully available, optionally identify persistent/public results through Battle.net OAuth, and validate run timing and mechanics server-side rather than treating OAuth or a client-submitted score as proof of a legitimate run. |
+| `FR-028` | Planned | Restore optional background music with only the two newly selected licensed tracks, default playback to off, and add a dedicated Audio settings row for Music, future encounter Sounds, and deferred TTS. |
 | `CR-037` | Superseded | A direct Discord profile needs a numeric user ID. The generic Discord application link was removed again; Twitch remains the direct creator contact. |
 | `CR-038` | Implemented | Link the displayed BattleTag to Pestivator’s Raider.IO profile because Battle.net has no stable public friend-add URL for a BattleTag. |
 | `CR-039` | Implemented | Record every tagged request before implementation and require focused automated regression coverage before marking it implemented. |
@@ -116,6 +117,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-050` | Implemented | Position a Phase 3 crystal NPC beside each otherwise-uncovered ground Soak where possible, keeping the carrier outside the puddle while its yellow safe zone covers the players inside and preserving raid separation. |
 | `CR-051` | Deferred | In the second Phase 3 sequence, swap the memory-game and ground-Soak ordering. Preserve the first sequence as currently timed and revisit the exact second-sequence overlap before implementation. |
 | `CR-052` | Implemented | Increase the Phase 3 ground-Soak radius by 15% so nearby players can commit to the pool more reliably. |
+| `CR-053` | Implemented | Increase the enlarged Phase 3 ground-Soak radius by another 10%, reduce its health by 15%, and preserve full crystal-light coverage from outside the pool. |
 | `SPEC-001` | Implemented | Define the stable ticket lifecycle: assign an ID, record intent, add focused regression coverage, validate, and commit. |
 | `SPEC-002` | Implemented | Define the creator business card’s stable content, readability, compact layout, and external-link behavior. |
 | `SPEC-003` | Implemented | Define the P3-to-P4 north gather, shared knockup origin, and phase-local HUD boundary. |
@@ -124,6 +126,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `SPEC-006` | Implemented | Define Phase 4 movement parity and the 21-second Starsplinter/Heaven & Hell cadence. |
 | `SPEC-007` | Implemented | Define the setup-page hierarchy and responsive grouping for game, input, HUD, sharing, and phase planning. Every top-level topic uses the same eyebrow, title, and helper-text pattern: Game settings / Practice configuration, Keyboard settings / Keyboard & mouse controls, Interface / HUD positions, Raid planning / Layouts and sharing, followed by an individually titled section for every phase map. The top setup menu links only to the four top-level topics and scrolls without replacing a shared raid-plan hash. |
 | `SPEC-008` | Implemented | Define Phase 3 ground-Soak light coverage: crystal NPCs support from outside the puddle, coverage takes priority over ideal separation, and non-crystal players perform the Soak. |
+| `SPEC-009` | Planned | Define the independent Music, encounter Sounds, and TTS controls plus the phase-by-phase raid-lead and mechanic cue catalog before sound effects are sourced. |
 | `BUG-008` | Implemented | Remove the premature 20-second P3 Soak failure; unfinished pools are now checked only when Big Boom resolves at 40 seconds. |
 | `BUG-009` | Implemented | Enforce P3 Stars orb spacing and isolate the southwest/southeast fields with clearance from the room divider. |
 | `BUG-010` | Implemented | Use the NPC protection bubble when the player's crystal duty belongs to the other Dark Archangel set; only consume the player's crystal on its assigned set. |

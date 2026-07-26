@@ -92,21 +92,22 @@ describe('Intermission game rules', () => {
   })
   it('makes Phase 3 light recovery gentler and faster than its damage', () => { expect(p3LightHealthRate(true)).toBe(12); expect(p3LightHealthRate(false)).toBe(-2); expect(p3LightHealthRate(true)).toBeGreaterThan(Math.abs(p3LightHealthRate(false))) })
   it('removes a crystal carrier’s moving P3 light after Dark Archangel spends the crystal', () => { expect(hasActiveP3CrystalLight(true, false)).toBe(true); expect(hasActiveP3CrystalLight(true, true)).toBe(false); expect(hasActiveP3CrystalLight(false, false)).toBe(false) })
-  it('protects the player using the same moving NPC light center that is rendered', () => { const movingLight = { x: 140, y: 100 }; expect(isProtectedByP3Light({ x: 165, y: 100 }, false, [movingLight])).toBe(true); expect(isProtectedByP3Light({ x: 168.1, y: 100 }, false, [movingLight])).toBe(false) })
+  it('protects the player using the same moving NPC light center that is rendered', () => { const movingLight = { x: 140, y: 100 }; expect(isProtectedByP3Light({ x: 169, y: 100 }, false, [movingLight])).toBe(true); expect(isProtectedByP3Light({ x: 169.1, y: 100 }, false, [movingLight])).toBe(false) })
   it('keeps P3 NPC bodies apart and reserves non-overlapping light zones for crystal carriers', () => { const occupied = [{ point: { x: 100, y: 100 }, crystal: false }, { point: { x: 130, y: 100 }, crystal: true }]; expect(distance(separateP3NpcTarget({ x: 102, y: 100 }, false, occupied), occupied[0].point)).toBeGreaterThanOrEqual(7); expect(distance(separateP3NpcTarget({ x: 132, y: 100 }, true, occupied), occupied[1].point)).toBeGreaterThanOrEqual(P3_LIGHT_RADIUS * 2) })
   it('keeps an assisting P3 NPC inside its assigned Soak after formation spacing', () => {
     const pool = { x: 100, y: 100 }
     const inside = { x: 106, y: 100 }
     expect(keepP3NpcInSoak(inside, pool)).toEqual(inside)
-    expect(distance(keepP3NpcInSoak({ x: 114, y: 100 }, pool), pool)).toBe(P3_POOL_RADIUS - 1)
+    expect(distance(keepP3NpcInSoak({ x: 114, y: 100 }, pool), pool)).toBeCloseTo(P3_POOL_RADIUS - 1)
   })
   it('gives the assisting memory partner a stable one-to-six-second reaction delay', () => { const delay = p3NpcRuneReactionDelay(1234, 7, 2); expect(delay).toBe(p3NpcRuneReactionDelay(1234, 7, 2)); expect(delay).toBeGreaterThanOrEqual(1); expect(delay).toBeLessThan(6); expect(new Set(Array.from({ length: 12 }, (_, seed) => p3NpcRuneReactionDelay(seed, 7, 2).toFixed(2))).size).toBeGreaterThan(4) })
-  it('counts the visible player footprint at the edge of Dark Archangel protection', () => { const bubble = { x: 100, y: 100 }; expect(isProtectedByP3Bubble({ x: 128, y: 100 }, bubble)).toBe(true); expect(isProtectedByP3Bubble({ x: 128.1, y: 100 }, bubble)).toBe(false) })
-  it('accepts a protection crystal anywhere inside the visible Dark Archangel protection area', () => { const stack = { x: 100, y: 100 }; expect(isP3ProtectionCrystalPlaced({ x: 124, y: 100 }, stack)).toBe(true); expect(isP3ProtectionCrystalPlaced({ x: 124.1, y: 100 }, stack)).toBe(false) })
+  it('counts the visible player footprint at the edge of Dark Archangel protection', () => { const bubble = { x: 100, y: 100 }; expect(isProtectedByP3Bubble({ x: 130, y: 100 }, bubble)).toBe(true); expect(isProtectedByP3Bubble({ x: 130.1, y: 100 }, bubble)).toBe(false) })
+  it('accepts a protection crystal anywhere inside the visible Dark Archangel protection area', () => { const stack = { x: 100, y: 100 }; expect(isP3ProtectionCrystalPlaced({ x: 126, y: 100 }, stack)).toBe(true); expect(isP3ProtectionCrystalPlaced({ x: 126.1, y: 100 }, stack)).toBe(false) })
   it('uses NPC protection when the player is assigned to the other Dark Archangel', () => { const stack = { x: 100, y: 100 }; const prematurePlayerCrystal = { x: 150, y: 150 }; expect(p3ProtectionBubbleCenter(stack, prematurePlayerCrystal, 2, 1)).toEqual(stack); expect(p3ProtectionBubbleCenter(stack, prematurePlayerCrystal, 2, 2)).toEqual(prematurePlayerCrystal) })
-  it('requires three players and accelerates a P3 Soak for every extra player', () => { expect(P3_POOL_HEALTH).toBe(35); expect(p3PoolSoakRate(0)).toBe(0); expect(p3PoolSoakRate(1)).toBe(0); expect(p3PoolSoakRate(2)).toBe(0); expect(p3PoolSoakRate(3)).toBe(3); expect(p3PoolSoakRate(4)).toBe(4); expect(p3PoolSoakRate(5)).toBe(5); expect(p3PoolSoakRate(6)).toBe(6); expect(P3_POOL_HEALTH / p3PoolSoakRate(3)).toBeCloseTo(11.67, 2) })
-  it('uses the enlarged 11.5-yard Phase 3 Soak radius for gameplay and rendering', () => {
-    expect(P3_POOL_RADIUS).toBe(11.5)
+  it('requires three players and accelerates a P3 Soak for every extra player', () => { expect(P3_POOL_HEALTH).toBe(29.75); expect(p3PoolSoakRate(0)).toBe(0); expect(p3PoolSoakRate(1)).toBe(0); expect(p3PoolSoakRate(2)).toBe(0); expect(p3PoolSoakRate(3)).toBe(3); expect(p3PoolSoakRate(4)).toBe(4); expect(p3PoolSoakRate(5)).toBe(5); expect(p3PoolSoakRate(6)).toBe(6); expect(P3_POOL_HEALTH / p3PoolSoakRate(3)).toBeCloseTo(9.92, 2) })
+  it('uses the enlarged 12.65-yard Phase 3 Soak radius for gameplay and rendering', () => {
+    expect(P3_POOL_RADIUS).toBe(12.65)
+    expect(P3_LIGHT_RADIUS).toBe(26)
   })
   it('leaves the player pool one NPC short and biases extra help toward the other two pools', () => {
     expect(P3_SECOND_SOAK_NPC_DELAY_SECONDS).toBe(4)

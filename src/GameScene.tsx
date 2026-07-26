@@ -4,7 +4,7 @@ import { angleToward, assignmentRevealDistance, constrainP3NpcTargetToSide, crys
 import { p3SpreadPosition, p4TankKillsBox } from './game'
 import { isP3RaidMemberVisible } from './game'
 import { isInsideP3Pool } from './game'
-import { combatProjectilePosition, combatProjectileShape, combatProjectilesActive, COMBAT_PROJECTILE_TRAVEL_SECONDS, MAX_VISIBLE_NPC_PROJECTILES, npcProjectileShots, type CombatProjectileShape } from './projectiles'
+import { combatProjectileImpactPoint, combatProjectilePosition, combatProjectileShape, combatProjectileTravelSeconds, combatProjectilesActive, COMBAT_PROJECTILE_IMPACT_SECONDS, MAX_VISIBLE_NPC_PROJECTILES, npcProjectileShots, type CombatProjectileShape } from './projectiles'
 
 interface SceneProps {
   combatProjectilesEnabled: boolean
@@ -417,35 +417,37 @@ function makeCrystal() {
 }
 interface CombatProjectileVisual {
   group: THREE.Group
+  impact: THREE.Mesh
   materials: THREE.MeshBasicMaterial[]
   shapes: Record<CombatProjectileShape, THREE.Object3D>
 }
+const COMBAT_PROJECTILE_COLORS: Record<CombatProjectileShape, number> = {
+  firebolt: 0xff5b22,
+  frostbolt: 0x69caff,
+  lightning: 0x9be8ff,
+  arrow: 0xe4c789,
+  spear: 0xbec8d8,
+  shadowbolt: 0x9a63e8,
+  naturebolt: 0x71d66a,
+  holybolt: 0xffe887,
+}
 function makeCombatProjectile(): CombatProjectileVisual {
   const group = new THREE.Group()
-  const colors: Record<CombatProjectileShape, number> = {
-    firebolt: 0xff5b22,
-    frostbolt: 0x69caff,
-    lightning: 0x9be8ff,
-    arrow: 0xe4c789,
-    spear: 0xbec8d8,
-    shadowbolt: 0x9a63e8,
-    naturebolt: 0x71d66a,
-    holybolt: 0xffe887,
-  }
   const materials: THREE.MeshBasicMaterial[] = []
   const material = (shape: CombatProjectileShape) => {
-    const next = new THREE.MeshBasicMaterial({ color: colors[shape], transparent: true, opacity: .94, depthWrite: false })
+    const next = new THREE.MeshBasicMaterial({ color: COMBAT_PROJECTILE_COLORS[shape], transparent: true, opacity: .94, depthWrite: false })
     materials.push(next)
     return next
   }
   const magicBolt = (shape: CombatProjectileShape) => {
     const bolt = new THREE.Group()
-    const glow = new THREE.Mesh(new THREE.SphereGeometry(1.35, 10, 7), material(shape))
-    glow.position.x = 1.3
-    const tail = new THREE.Mesh(new THREE.ConeGeometry(.9, 4.2, 8), material(shape))
+    const core = new THREE.Mesh(new THREE.CylinderGeometry(.42, .56, 3.1, 8), material(shape))
+    core.rotation.z = Math.PI / 2
+    core.position.x = .55
+    const tail = new THREE.Mesh(new THREE.ConeGeometry(.5, 3.4, 8), material(shape))
     tail.rotation.z = -Math.PI / 2
-    tail.position.x = -.7
-    bolt.add(glow, tail)
+    tail.position.x = -2.05
+    bolt.add(core, tail)
     return bolt
   }
   const thrownWeapon = (shape: 'arrow' | 'spear', length: number) => {
@@ -479,24 +481,41 @@ function makeCombatProjectile(): CombatProjectileVisual {
   }
   Object.values(shapes).forEach(shape => group.add(shape))
   group.visible = false
-  return { group, materials, shapes }
+  const impactMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false, depthTest: false })
+  const impact = new THREE.Mesh(new THREE.SphereGeometry(1.15, 10, 7), impactMaterial)
+  impact.visible = false
+  materials.push(impactMaterial)
+  return { group, impact, materials, shapes }
 }
 function updateCombatProjectile(visual: CombatProjectileVisual, origin: Point, target: Point, age: number, playerClass: PlayerClass, scale = 1, shotOrdinal = 0) {
-  const active = age >= 0 && age <= COMBAT_PROJECTILE_TRAVEL_SECONDS
-  visual.group.visible = active
-  if (!active) return
   const shape = combatProjectileShape(playerClass, shotOrdinal)
+  const travelSeconds = combatProjectileTravelSeconds(shape)
+  const projectileActive = age >= 0 && age < travelSeconds
+  const impactAge = age - travelSeconds
+  const impactActive = impactAge >= 0 && impactAge <= COMBAT_PROJECTILE_IMPACT_SECONDS
+  visual.group.visible = projectileActive
+  visual.impact.visible = impactActive
+  if (!projectileActive && !impactActive) return
   Object.entries(visual.shapes).forEach(([name, mesh]) => { mesh.visible = name === shape })
-  const position = combatProjectilePosition(origin, target, age)
-  const progress = Math.max(0, Math.min(1, age / COMBAT_PROJECTILE_TRAVEL_SECONDS))
-  visual.group.position.set(position.x, 7 + Math.sin(progress * Math.PI) * 3, position.y)
+  const position = combatProjectilePosition(origin, target, age, travelSeconds)
+  const progress = Math.max(0, Math.min(1, age / travelSeconds))
+  visual.group.position.set(position.x, 7 + Math.sin(progress * Math.PI) * (2 + shotOrdinal % 3), position.y)
   visual.group.rotation.y = -Math.atan2(target.y - origin.y, target.x - origin.x)
   visual.group.scale.setScalar(scale)
+  if (impactActive) {
+    const pulse = Math.sin(impactAge / COMBAT_PROJECTILE_IMPACT_SECONDS * Math.PI)
+    const impactMaterial = visual.impact.material as THREE.MeshBasicMaterial
+    impactMaterial.color.setHex(COMBAT_PROJECTILE_COLORS[shape])
+    impactMaterial.opacity = pulse * (shape === 'arrow' || shape === 'spear' ? .55 : .9)
+    visual.impact.position.set(target.x, 8 + (shotOrdinal % 3) * 1.2, target.y)
+    visual.impact.scale.setScalar(scale * pulse * (shape === 'lightning' ? 1.8 : shape === 'arrow' || shape === 'spear' ? .7 : 1.25))
+  }
 }
 function disposeCombatProjectile(visual: CombatProjectileVisual) {
   Object.values(visual.shapes).forEach(shape => shape.traverse(child => {
     if (child instanceof THREE.Mesh) child.geometry.dispose()
   }))
+  visual.impact.geometry.dispose()
   visual.materials.forEach(material => material.dispose())
 }
 function rayHits(point: Point, origin: Point, rotation: number) {
@@ -564,8 +583,9 @@ export default function GameScene(props: SceneProps) {
     const boss = new THREE.Mesh(new THREE.SphereGeometry(WORLD.innerRadius, 64, 32, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x38143f, transparent: true, opacity: .58, depthWrite: false, side: THREE.DoubleSide }))
     boss.position.set(WORLD.center.x, 0, WORLD.center.y)
     scene.add(boss)
-    const p2Boss = new THREE.Mesh(new THREE.SphereGeometry(10.5, 32, 20), new THREE.MeshBasicMaterial({ color: 0x9b4d9b, transparent: true, opacity: .48, depthWrite: false }))
+    const p2Boss = new THREE.Mesh(new THREE.SphereGeometry(10.5, 32, 20), new THREE.MeshBasicMaterial({ color: 0x9b4d9b, transparent: true, opacity: .48, depthWrite: false, depthTest: false }))
     p2Boss.position.set(WORLD.center.x, 10.5, WORLD.center.y)
+    p2Boss.renderOrder = 7
     p2Boss.visible = false
     scene.add(p2Boss)
     const p3Bosses = [-1, 1].map((side, index) => {
@@ -628,8 +648,8 @@ export default function GameScene(props: SceneProps) {
     })
     const playerProjectile = makeCombatProjectile()
     const npcProjectiles = Array.from({ length: MAX_VISIBLE_NPC_PROJECTILES }, makeCombatProjectile)
-    scene.add(playerProjectile.group)
-    npcProjectiles.forEach(projectile => scene.add(projectile.group))
+    scene.add(playerProjectile.group, playerProjectile.impact)
+    npcProjectiles.forEach(projectile => scene.add(projectile.group, projectile.impact))
     const crystal = makeCrystal()
     crystal.visible = false
     scene.add(crystal)
@@ -810,11 +830,12 @@ export default function GameScene(props: SceneProps) {
       boss.visible = !phaseTwo && !phaseFour
       ;(boss.material as THREE.MeshBasicMaterial).opacity = phaseThree ? .42 : .58
       ;(boss.material as THREE.MeshBasicMaterial).depthWrite = phaseThree
-      p2Boss.visible = phaseTwo
-      if (phaseFour) {
-        p2Boss.visible = true
-        p2Boss.position.set(WORLD.center.x, 10.5, WORLD.center.y)
-      }
+      const centralBossVisible = phaseTwo || phaseFour || !phaseThree
+      p2Boss.visible = centralBossVisible
+      const enlargedCentralBoss = phaseFour || !phaseTwo && !phaseThree
+      p2Boss.scale.setScalar(enlargedCentralBoss ? 1.52 : 1)
+      p2Boss.position.set(WORLD.center.x, enlargedCentralBoss ? 16 : 10.5, WORLD.center.y)
+      ;(p2Boss.material as THREE.MeshBasicMaterial).opacity = enlargedCentralBoss ? .9 : .48
       p3Bosses.forEach((object, index) => {
         object.visible = phaseThree
         const side: -1 | 1 = index === 0 ? -1 : 1
@@ -1084,24 +1105,33 @@ export default function GameScene(props: SceneProps) {
       state.onP3LightCenters(npcP3LightCenters)
       const playerProjectileVisible = state.combatProjectilesEnabled
       const projectilesVisible = state.combatProjectilesEnabled && combatProjectilesActive(state.event)
-      const projectileTarget = phaseThree ? p3BossPosition(playerP3Side, WORLD.center, state.p3Round) : WORLD.center
+      const projectileBossCenter = phaseThree ? p3BossPosition(playerP3Side, WORLD.center, state.p3Round) : WORLD.center
+      const projectileBossRadius = phaseThree || phaseTwo ? 10.5 : 16
       const playerProjectileAge = state.mainProjectileFiredAt === null ? Infinity : state.time - state.mainProjectileFiredAt
-      if (playerProjectileVisible) updateCombatProjectile(playerProjectile, state.player, projectileTarget, playerProjectileAge, state.profiles[state.assignment].playerClass, 1.12)
-      else playerProjectile.group.visible = false
+      const playerProjectileTarget = combatProjectileImpactPoint(state.player, projectileBossCenter, projectileBossRadius, state.assignment + Math.floor((state.mainProjectileFiredAt ?? 0) * 10))
+      if (playerProjectileVisible) updateCombatProjectile(playerProjectile, state.player, playerProjectileTarget, playerProjectileAge, state.profiles[state.assignment].playerClass, 1.12)
+      else {
+        playerProjectile.group.visible = false
+        playerProjectile.impact.visible = false
+      }
       const ambientShots = projectilesVisible ? npcProjectileShots(state.time, npcs.length) : []
       npcProjectiles.forEach((visual, slot) => {
         const shot = ambientShots[slot]
         if (!shot) {
           visual.group.visible = false
+          visual.impact.visible = false
           return
         }
         const profileIndex = npcProfileIndices[shot.npcOrdinal]
         const visibleOnPlayerSide = !phaseThree || isP3RaidMemberVisible(state.positions[state.assignment], state.positions[profileIndex], WORLD.center, true)
         if (!visibleOnPlayerSide) {
           visual.group.visible = false
+          visual.impact.visible = false
           return
         }
-        updateCombatProjectile(visual, npcPositions[shot.npcOrdinal], projectileTarget, shot.age, state.profiles[profileIndex].playerClass, .88, shot.shotOrdinal)
+        const origin = npcPositions[shot.npcOrdinal]
+        const target = combatProjectileImpactPoint(origin, projectileBossCenter, projectileBossRadius, profileIndex * 101 + shot.shotOrdinal)
+        updateCombatProjectile(visual, origin, target, shot.age, state.profiles[profileIndex].playerClass, .88, shot.shotOrdinal)
       })
       if (state.event === 'p3-light-pools' || state.event === 'p3-pools-overlap') {
         const occupancy = ([-1, 1] as const).flatMap(side => p3PoolCenters(side, WORLD.center, state.p3Round).map(pool => npcPositions.filter(position => isInsideP3Pool(position, pool)).length))

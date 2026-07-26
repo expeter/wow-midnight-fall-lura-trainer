@@ -8,7 +8,8 @@ export interface NpcProjectileShot {
   shotOrdinal: number
 }
 
-export const COMBAT_PROJECTILE_TRAVEL_SECONDS = .72
+export const COMBAT_PROJECTILE_TRAVEL_SECONDS = 1.15
+export const COMBAT_PROJECTILE_IMPACT_SECONDS = .16
 export const NPC_PROJECTILE_MIN_INTERVAL_SECONDS = 1
 export const NPC_PROJECTILE_MAX_INTERVAL_SECONDS = 3
 export const MAX_VISIBLE_NPC_PROJECTILES = 20
@@ -29,17 +30,34 @@ export function combatProjectileShape(playerClass: PlayerClass, shotOrdinal = 0)
   return 'holybolt'
 }
 
+export function combatProjectileTravelSeconds(shape: CombatProjectileShape): number {
+  if (shape === 'arrow') return 1.15
+  if (shape === 'spear') return .92
+  if (shape === 'lightning') return .64
+  return .52
+}
+
 export function npcProjectileIntervalSeconds(npcOrdinal: number): number {
   return NPC_PROJECTILE_MIN_INTERVAL_SECONDS
     + deterministicUnit(npcOrdinal * 17 + 11) * (NPC_PROJECTILE_MAX_INTERVAL_SECONDS - NPC_PROJECTILE_MIN_INTERVAL_SECONDS)
 }
 
-export function combatProjectilePosition(origin: Point, target: Point, age: number): Point {
-  const progress = Math.max(0, Math.min(1, age / COMBAT_PROJECTILE_TRAVEL_SECONDS))
+export function combatProjectilePosition(origin: Point, target: Point, age: number, travelSeconds = COMBAT_PROJECTILE_TRAVEL_SECONDS): Point {
+  const progress = Math.max(0, Math.min(1, age / travelSeconds))
   const eased = 1 - (1 - progress) * (1 - progress)
   return {
     x: origin.x + (target.x - origin.x) * eased,
     y: origin.y + (target.y - origin.y) * eased,
+  }
+}
+
+export function combatProjectileImpactPoint(origin: Point, bossCenter: Point, bossRadius: number, shotOrdinal = 0): Point {
+  const baseAngle = Math.atan2(origin.y - bossCenter.y, origin.x - bossCenter.x)
+  const angleOffset = (deterministicUnit(shotOrdinal * 43 + 29) - .5) * .72
+  const angle = baseAngle + angleOffset
+  return {
+    x: bossCenter.x + Math.cos(angle) * bossRadius,
+    y: bossCenter.y + Math.sin(angle) * bossRadius,
   }
 }
 
@@ -52,7 +70,7 @@ export function npcProjectileShots(time: number, npcCount: number): NpcProjectil
     if (time < firstShot) continue
     const shotOrdinal = Math.floor((time - firstShot) / interval)
     const age = time - (firstShot + shotOrdinal * interval)
-    if (age <= COMBAT_PROJECTILE_TRAVEL_SECONDS) shots.push({ age, npcOrdinal, shotOrdinal })
+    if (age <= COMBAT_PROJECTILE_TRAVEL_SECONDS + COMBAT_PROJECTILE_IMPACT_SECONDS) shots.push({ age, npcOrdinal, shotOrdinal })
   }
   return shots
 }

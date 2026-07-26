@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { combatProjectilePosition, combatProjectileShape, combatProjectilesActive, COMBAT_PROJECTILE_TRAVEL_SECONDS, MAX_VISIBLE_NPC_PROJECTILES, NPC_PROJECTILE_MAX_INTERVAL_SECONDS, NPC_PROJECTILE_MIN_INTERVAL_SECONDS, npcProjectileIntervalSeconds, npcProjectileShots } from './projectiles'
+import { combatProjectileImpactPoint, combatProjectilePosition, combatProjectileShape, combatProjectileTravelSeconds, combatProjectilesActive, COMBAT_PROJECTILE_TRAVEL_SECONDS, MAX_VISIBLE_NPC_PROJECTILES, NPC_PROJECTILE_MAX_INTERVAL_SECONDS, NPC_PROJECTILE_MIN_INTERVAL_SECONDS, npcProjectileIntervalSeconds, npcProjectileShots } from './projectiles'
 
 describe('cosmetic combat projectiles', () => {
   it('uses recognizable class-specific attacks', () => {
@@ -14,6 +14,20 @@ describe('cosmetic combat projectiles', () => {
   it('travels from the caster to the boss only after a shot exists', () => {
     expect(combatProjectilePosition({ x: 10, y: 20 }, { x: 110, y: 70 }, 0)).toEqual({ x: 10, y: 20 })
     expect(combatProjectilePosition({ x: 10, y: 20 }, { x: 110, y: 70 }, COMBAT_PROJECTILE_TRAVEL_SECONDS)).toEqual({ x: 110, y: 70 })
+  })
+
+  it('makes arrows slowest, thrown weapons intermediate, and magical bolts fastest', () => {
+    expect(combatProjectileTravelSeconds('arrow')).toBeGreaterThan(combatProjectileTravelSeconds('spear'))
+    expect(combatProjectileTravelSeconds('spear')).toBeGreaterThan(combatProjectileTravelSeconds('firebolt'))
+    expect(combatProjectileTravelSeconds('lightning')).toBeGreaterThan(combatProjectileTravelSeconds('frostbolt'))
+  })
+
+  it('fans impacts across the boss surface instead of aiming through its center', () => {
+    const center = { x: 480, y: 270 }
+    const first = combatProjectileImpactPoint({ x: 400, y: 350 }, center, 16, 1)
+    const second = combatProjectileImpactPoint({ x: 400, y: 350 }, center, 16, 2)
+    expect(Math.hypot(first.x - center.x, first.y - center.y)).toBeCloseTo(16)
+    expect(first).not.toEqual(second)
   })
 
   it('gives every NPC its own one-to-three-second attack cadence', () => {

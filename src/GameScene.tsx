@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
-import { angleToward, assignmentRevealDistance, crystalCarrierPosition, distance, distanceToSegment, hasActiveP3CrystalLight, jumpHeights, keepP3PointOnSide, npcEntryPosition, OPENING_BOOST_SECONDS, P1_STAR_LENGTH, P2_BEAM_SECONDS, P2_ORBIT_SPEED, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_INNER_RADIUS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p2NpcRoamingPosition, p2NpcShouldReturnToSoak, p2OrbReturnState, p2ReturningOrbPositions, p3ActiveCrystalAssignments, p3ArchangelStackPosition, p3BossPosition, p3FlightPosition, P3_FLIGHT_SECONDS, p3LandingGroupIndex, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3NpcPoolAssignment, p3NpcRuneReactionDelay, p3NpcSoaksActive, p3PoolCenters, p3ProtectionBubbleCenter, p3RuneEdges, p3RuneOrbs, p3RunePartnerPosition, p3SideForPosition, p3StarsTiming, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, p4EncounterBoxStates, p4FrontSoakerPosition, p4GroupPosition, p4NpcRelocationPace, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4StackPosition, p4TankConeActive, P4_FRONT_CONE_RANGE, P4_HEAVEN_MOVE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, roamingNpcPosition, separateP3NpcTarget, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type RuneSymbol } from './game'
+import { angleToward, assignmentRevealDistance, crystalCarrierPosition, distance, distanceToSegment, hasActiveP3CrystalLight, jumpHeights, keepP3PointOnSide, npcEntryPosition, OPENING_BOOST_SECONDS, P1_STAR_LENGTH, P2_BEAM_SECONDS, P2_ORBIT_SPEED, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_INNER_RADIUS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p2NpcRoamingPosition, p2NpcShouldReturnToSoak, p2OrbReturnState, p2ReturningOrbPositions, p3ActiveCrystalAssignments, P3_APPROACH_NPC_SPEED_MULTIPLIER, p3ArchangelStackPosition, p3BossPosition, p3FlightPosition, P3_FLIGHT_SECONDS, p3LandingGroupIndex, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3NpcPoolAssignment, p3NpcRuneReactionDelay, p3NpcSoaksActive, p3PoolCenters, p3ProtectionBubbleCenter, p3RuneEdges, p3RuneOrbs, p3RunePartnerPosition, p3SideForPosition, p3StarsTiming, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, p4EncounterBoxStates, p4FrontSoakerPosition, p4GroupPosition, p4NpcRelocationPace, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4StackPosition, p4TankConeActive, P4_FRONT_CONE_RANGE, P4_HEAVEN_MOVE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, roamingNpcPosition, separateP3NpcTarget, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type RuneSymbol } from './game'
 import { p3SpreadPosition, p4TankKillsBox } from './game'
 import { isP3RaidMemberVisible } from './game'
 
@@ -936,7 +936,7 @@ export default function GameScene(props: SceneProps) {
         const p4Relocation = state.event === 'p4-cycle' ? p4RelocationProgress(p4VisualCycle, state.eventTime) : null
         const openingMultiplier = state.event === 'p3-sector-move'
           ? 2
-          : state.event === 'p3-approach' ? 1.4
+          : state.event === 'p3-approach' ? P3_APPROACH_NPC_SPEED_MULTIPLIER
           : state.event === 'p4-transition' ? 4
           : p4SplinterReturnBoost ? 1
           : p3RunePartnerApproach ? .75
@@ -1098,14 +1098,6 @@ export default function GameScene(props: SceneProps) {
             hazards.add(drop)
           }
         })
-        if (state.event !== 'p3-countdown' && state.event !== 'p3-flight' && state.event !== 'p3-landing') {
-          const carrierLights = [...npcP3LightCenters]
-          if (playerLightActive) carrierLights.push(state.player)
-          carrierLights.forEach(point => {
-            addGroundDisc(hazards, point, P3_LIGHT_RADIUS, 0xffd94a, .09, 2.1)
-            addGroundRing(hazards, point, P3_LIGHT_RADIUS - 1.1, P3_LIGHT_RADIUS, 0xffefa1, .36, 2.25)
-          })
-        }
         if (state.event === 'p3-light-pools' || state.event === 'p3-pools-overlap') {
           ;([-1, 1] as const).forEach((side, sideIndex) => {
             p3PoolCenters(side, WORLD.center, state.p3Round).forEach((point, poolIndex) => {
@@ -1123,6 +1115,14 @@ export default function GameScene(props: SceneProps) {
               beacon.position.set(point.x, 4.1, point.y)
               hazards.add(beacon)
             })
+          })
+        }
+        if (state.event !== 'p3-countdown' && state.event !== 'p3-flight' && state.event !== 'p3-landing') {
+          const carrierLights = [...npcP3LightCenters]
+          if (playerLightActive) carrierLights.push(state.player)
+          carrierLights.forEach(point => {
+            addGroundDisc(hazards, point, P3_LIGHT_RADIUS, 0xffd94a, .13, 3.1)
+            addGroundRing(hazards, point, P3_LIGHT_RADIUS - 1.35, P3_LIGHT_RADIUS, 0xffefa1, .58, 3.25)
           })
         }
         const starsTiming = p3StarsTiming(state.eventTime)

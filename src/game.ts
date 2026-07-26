@@ -30,6 +30,7 @@ export const P2_ORBIT_SPEED = .12
 export const P1_STAR_LENGTH = 38.8
 export const P3_OUTER_RADIUS = 199
 export const P3_LIGHT_RADIUS = 24
+export const P3_APPROACH_NPC_SPEED_MULTIPLIER = 1.5
 export const P3_POOL_RADIUS = 10
 export const P3_POOL_HEALTH = 35
 export const P3_LANDING_SOAK_RADIUS = 12

@@ -306,29 +306,40 @@ function addOrb(group: THREE.Group, point: Point, color = 0xb170ff, size = 5.4, 
   group.add(orb)
   addGroundRing(group, point, size + .6, size + 2.4, color, opacity * .42)
 }
-function addFlyingSaucer(group: THREE.Group, point: Point, color = 0x89cfff) {
+function addFlyingSaucer(group: THREE.Group, point: Point, rotation: number, color = 0x89cfff) {
   const body = new THREE.Mesh(
-    cachedTransientGeometry('p1-glaive-saucer-body', () => new THREE.CylinderGeometry(7.6, 7.6, 1.15, 28)),
+    cachedTransientGeometry('p1-glaive-saucer-body-large', () => new THREE.CylinderGeometry(11.4, 11.4, 1.35, 28)),
     new THREE.MeshBasicMaterial({ color, transparent: true, opacity: .94, depthWrite: true }),
   )
   body.position.set(point.x, 8.2, point.y)
   body.renderOrder = 12
   group.add(body)
   const crown = new THREE.Mesh(
-    cachedTransientGeometry('p1-glaive-saucer-crown', () => new THREE.CylinderGeometry(3.2, 4.5, 1.7, 24)),
+    cachedTransientGeometry('p1-glaive-saucer-crown-large', () => new THREE.CylinderGeometry(4.8, 6.75, 2.2, 24)),
     new THREE.MeshBasicMaterial({ color: 0xd8f5ff, transparent: true, opacity: .9, depthWrite: true }),
   )
   crown.position.set(point.x, 9.55, point.y)
   crown.renderOrder = 13
   group.add(crown)
   const rim = new THREE.Mesh(
-    cachedTransientGeometry('p1-glaive-saucer-rim', () => new THREE.TorusGeometry(7.55, .48, 8, 32)),
+    cachedTransientGeometry('p1-glaive-saucer-rim-large', () => new THREE.TorusGeometry(11.3, .62, 8, 32)),
     new THREE.MeshBasicMaterial({ color: 0xe8fbff, transparent: true, opacity: .96, depthWrite: false, blending: THREE.AdditiveBlending }),
   )
   rim.rotation.x = Math.PI / 2
   rim.position.set(point.x, 8.2, point.y)
   rim.renderOrder = 14
   group.add(rim)
+  for (let markerIndex = 0; markerIndex < 3; markerIndex += 1) {
+    const angle = rotation + markerIndex * Math.PI * 2 / 3
+    const marker = new THREE.Mesh(
+      cachedTransientGeometry('p1-glaive-saucer-spin-marker', () => new THREE.BoxGeometry(4.8, .35, 1.2)),
+      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .95, depthWrite: false }),
+    )
+    marker.rotation.y = -angle
+    marker.position.set(point.x + Math.cos(angle) * 7.1, 9.05, point.y + Math.sin(angle) * 7.1)
+    marker.renderOrder = 15
+    group.add(marker)
+  }
 }
 function makeMarkerTexture(symbol: string, color: string) {
   const canvas = document.createElement('canvas')
@@ -894,7 +905,7 @@ export default function GameScene(props: SceneProps) {
       p2Boss.visible = centralBossVisible
       const enlargedCentralBoss = phaseFour || !phaseOne && !phaseTwo && !phaseThree
       p2Boss.scale.setScalar(enlargedCentralBoss ? 1.52 : 1)
-      const p1Boss = p1BossEncounterPosition(state.raidStart, state.positions.slice(0, 2), state.p1Sequence, state.event, state.eventTime)
+      const p1Boss = p1BossEncounterPosition(state.raidStart, state.positions.slice(0, 2), state.p1Sequence, state.event, state.eventTime, WORLD.center)
       const p1OutwardAngle = Math.atan2(p1Boss.y - WORLD.center.y, p1Boss.x - WORLD.center.x)
       p2Boss.position.set(phaseOne ? p1Boss.x : WORLD.center.x, enlargedCentralBoss ? 16 : 10.5, phaseOne ? p1Boss.y : WORLD.center.y)
       ;(p2Boss.material as THREE.MeshBasicMaterial).opacity = 1
@@ -1026,9 +1037,10 @@ export default function GameScene(props: SceneProps) {
           }
           p1Target = p1NpcMemoryPosition(p1Target, index, state.eventTime, state.event === 'p1-memory-position')
         } else if (state.event === 'p1-beam-telegraph' || state.event === 'p1-beams') {
-          const openingBoss = p1BossEncounterPosition(state.raidStart, state.positions.slice(0, 2), state.p1Sequence, 'p1-beam-telegraph', 0)
+          const openingBoss = p1BossEncounterPosition(state.raidStart, state.positions.slice(0, 2), state.p1Sequence, 'p1-beam-telegraph', 0, WORLD.center)
           const beams = p1RotatingBeams(state.p1Seed, state.p1Sequence, 0, Math.PI / 16, Math.atan2(openingBoss.y - WORLD.center.y, openingBoss.x - WORLD.center.x))
-          p1Target = p1NpcBeamPosition(state.positions[baseIndex], index, beams, p1ContinuousBeamTime(state.event, state.eventTime), WORLD.center)
+          const elapsed = p1ContinuousBeamTime(state.event, state.eventTime)
+          p1Target = p1NpcBeamPosition(index, elapsed, p1Boss, p1BeamAngles(beams, elapsed)[0])
         } else if (state.event === 'p1-transition') {
           p1Target = state.intermissionPositions[baseIndex]
         }
@@ -1310,7 +1322,7 @@ export default function GameScene(props: SceneProps) {
       const p4Stack = state.event === 'p4-cycle'
         ? p4GroupPosition(p4VisualCycle, state.eventTime, WORLD.center)
         : p4StackPosition(1, WORLD.center)
-      const p1MemoryBoss = p1BossEncounterPosition(state.raidStart, state.positions.slice(0, 2), state.p1Sequence, state.event, state.eventTime)
+      const p1MemoryBoss = p1BossEncounterPosition(state.raidStart, state.positions.slice(0, 2), state.p1Sequence, state.event, state.eventTime, WORLD.center)
       const p1MemoryAssignment = {
         x: p1MemoryBoss.x + Math.cos(p1MemorySlotAngle(state.p1MemoryOrder, playerP1Rune, p1OutwardAngle)) * P1_MEMORY_RADIUS,
         y: p1MemoryBoss.y + Math.sin(p1MemorySlotAngle(state.p1MemoryOrder, playerP1Rune, p1OutwardAngle)) * P1_MEMORY_RADIUS,
@@ -1358,7 +1370,7 @@ export default function GameScene(props: SceneProps) {
             })
           } else {
             set.glaives.forEach(glaive => {
-              addFlyingSaucer(hazards, glaive.position)
+              addFlyingSaucer(hazards, glaive.position, state.time * 5.5 + glaive.id * .8)
             })
           }
         })
@@ -1374,7 +1386,7 @@ export default function GameScene(props: SceneProps) {
           }
         }
         if (state.event === 'p1-beam-telegraph' || state.event === 'p1-beams') {
-          const openingBoss = p1BossEncounterPosition(state.raidStart, state.positions.slice(0, 2), state.p1Sequence, 'p1-beam-telegraph', 0)
+          const openingBoss = p1BossEncounterPosition(state.raidStart, state.positions.slice(0, 2), state.p1Sequence, 'p1-beam-telegraph', 0, WORLD.center)
           const beams = p1RotatingBeams(state.p1Seed, state.p1Sequence, 0, Math.PI / 16, Math.atan2(openingBoss.y - WORLD.center.y, openingBoss.x - WORLD.center.x))
           const angles = p1BeamAngles(beams, p1ContinuousBeamTime(state.event, state.eventTime))
           const active = state.event === 'p1-beams'

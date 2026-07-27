@@ -6,6 +6,7 @@ import {
   P1_INTERMISSION_POSITION_SECONDS,
   P1_MAX_GLAIVE_SETS,
   P1_OUTER_RADIUS,
+  P1_ROTATING_BEAM_ACTIVE_SECONDS,
   p1AddGlaiveSet,
   p1AdvanceGlaiveSet,
   p1BeamAngles,
@@ -141,29 +142,35 @@ describe('P1 headless mechanics', () => {
   })
 
   it('keeps the beam angle continuous while the low telegraph becomes lethal and moves L’ura between tank positions', () => {
+    const center = { x: 480, y: 270 }
     const opening = { x: 300, y: 430 }
     const tanks = [{ x: 390, y: 420 }, { x: 520, y: 410 }]
     const beams = p1RotatingBeams(17, 1, 0, Math.PI / 16, 1.2)
     const telegraphEnd = p1BeamAngles(beams, p1ContinuousBeamTime('p1-beam-telegraph', 2))[0]
     const activeStart = p1BeamAngles(beams, p1ContinuousBeamTime('p1-beams', 0))[0]
+    const activeEnd = p1BeamAngles(beams, p1ContinuousBeamTime('p1-beams', P1_ROTATING_BEAM_ACTIVE_SECONDS))[0]
     expect(activeStart).toBeCloseTo(telegraphEnd)
-    expect(p1BossEncounterPosition(opening, tanks, 1, 'p1-memory-sweep', 4)).toEqual(opening)
-    expect(p1BossEncounterPosition(opening, tanks, 1, 'p1-beams', 8)).toEqual(tanks[0])
-    expect(p1BossEncounterPosition(opening, tanks, 2, 'p1-interrupts', 0)).toEqual(tanks[0])
+    expect(Math.abs(activeEnd - activeStart)).toBeCloseTo(Math.PI / 4)
+    expect(p1BossEncounterPosition(opening, tanks, 1, 'p1-memory-sweep', 4, center)).toEqual(opening)
+    const firstStop = p1BossEncounterPosition(opening, tanks, 1, 'p1-beams', P1_ROTATING_BEAM_ACTIVE_SECONDS, center)
+    const openingAngle = Math.atan2(opening.y - center.y, opening.x - center.x)
+    const firstStopAngle = Math.atan2(firstStop.y - center.y, firstStop.x - center.x)
+    expect(Math.abs(Math.atan2(Math.sin(firstStopAngle - openingAngle), Math.cos(firstStopAngle - openingAngle)))).toBeLessThanOrEqual(Math.PI / 4)
+    expect(p1BossEncounterPosition(opening, tanks, 2, 'p1-interrupts', 0, center)).toEqual(firstStop)
   })
 
   it('lets memory NPCs roam before settling and makes beam NPCs cross then follow a rotating ray', () => {
     const target = { x: 400, y: 400 }
     expect(p1NpcMemoryPosition(target, 3, 1, true)).not.toEqual(target)
     expect(p1NpcMemoryPosition(target, 3, 7, true)).toEqual(target)
-    const center = { x: 480, y: 270 }
-    const assignment = { x: 480, y: 450 }
-    const beams = p1RotatingBeams(91, 1, 0, Math.PI / 16, Math.PI / 2)
-    const crossing = p1NpcBeamPosition(assignment, 3, beams, .5, center)
-    const following = p1NpcBeamPosition(assignment, 3, beams, 2.5, center)
+    const boss = { x: 400, y: 420 }
+    const crossing = p1NpcBeamPosition(3, .5, boss, Math.PI / 3)
+    const following = p1NpcBeamPosition(3, 2.5, boss, Math.PI / 3)
     expect(crossing).not.toEqual(following)
-    expect(Math.hypot(following.x - center.x, following.y - center.y)).toBeGreaterThan(P1_INNER_RADIUS)
-    expect(Math.hypot(following.x - center.x, following.y - center.y)).toBeLessThan(P1_OUTER_RADIUS)
+    const movedBoss = { x: 430, y: 390 }
+    const movedWithBoss = p1NpcBeamPosition(3, 3, movedBoss, Math.PI / 3)
+    expect(movedWithBoss.x - following.x).toBeCloseTo(movedBoss.x - boss.x)
+    expect(movedWithBoss.y - following.y).toBeCloseTo(movedBoss.y - boss.y)
   })
 
   it('gives idle P1 NPCs deterministic cast-and-move waypoints around L’ura', () => {

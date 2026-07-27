@@ -32,6 +32,10 @@
 - CR-112: Replaced static P1 NPC downtime with deterministic cast-and-move
   waypoints around L’ura while preserving crystal pickups, memory alignment,
   and rotating-beam movement; tracked from the linked inbox capture.
+- CR-113 / CR-114: Enlarged the spinning P1 Heaven Glaive saucers, aligned
+  their collision radius, shortened lethal beams to one 45-degree sweep, and
+  made the compact NPC raid follow L’ura along a tank-led arc; tracked from
+  the linked inbox capture.
 
 ## 0.2.0 — 2026-07-27
 

@@ -1073,14 +1073,14 @@ export default function App() {
           .filter(set => set.expiresAt > timeRef.current)
         setP1GlaiveSets(p1GlaiveSetsRef.current)
         const hitByGlaive = p1GlaiveSetsRef.current.some(set =>
-          timeRef.current >= set.launchesAt && set.glaives.some(glaive => distance(playerRef.current, glaive.position) <= 7.6))
+          timeRef.current >= set.launchesAt && set.glaives.some(glaive => distance(playerRef.current, glaive.position) <= 11.4))
         if (hitByGlaive && !hitRef.current) {
           hitRef.current = true
           triggerWipe('Hit by a roaming Heaven Glaive')
         }
       }
       if (event === 'p1-beams' && !p1SoakHitRef.current) {
-        const p1Boss = p1BossEncounterPosition(p1BossOpening, p1Positions.slice(0, 2), p1Sequence, 'p1-beam-telegraph', 0)
+        const p1Boss = p1BossEncounterPosition(p1BossOpening, p1Positions.slice(0, 2), p1Sequence, 'p1-beam-telegraph', 0, WORLD.center)
         const beams = p1RotatingBeams(p1Seed, p1Sequence, 0, Math.PI / 16, Math.atan2(p1Boss.y - WORLD.center.y, p1Boss.x - WORLD.center.x))
         const angles = p1BeamAngles(beams, p1ContinuousBeamTime(event, eventTimeRef.current))
         const beamHit = angles.some(angle => distanceToSegment(playerRef.current, WORLD.center, {
@@ -1237,7 +1237,7 @@ export default function App() {
     } else if (event === 'p1-crystals') {
       const assignedPickup = activeCrystalAssignments.slice((p1Sequence - 1) * 3, p1Sequence * 3).includes(assignment)
       if (assignedPickup && !p1CrystalCollected && triggerWipe('Assigned Phase 1 crystal was not collected within five seconds')) return
-      const p1Boss = p1BossEncounterPosition(p1BossOpening, p1Positions.slice(0, 2), p1Sequence, event, eventTimeRef.current)
+      const p1Boss = p1BossEncounterPosition(p1BossOpening, p1Positions.slice(0, 2), p1Sequence, event, eventTimeRef.current, WORLD.center)
       const set = p1GlaiveSet(p1Seed, p1Sequence, p1Boss, timeRef.current, {
         speed: movementSpeed * 3,
         reflectedSpeed: movementSpeed * 1.1,
@@ -1250,7 +1250,7 @@ export default function App() {
       setEvent('p1-memory-position')
     } else if (event === 'p1-memory-position') {
       const rune = (['T', 'X', 'O', 'V', '+'] as P1Rune[])[assignment % 5]
-      const memoryBoss = p1BossEncounterPosition(p1BossOpening, p1Positions.slice(0, 2), p1Sequence, event, eventTimeRef.current)
+      const memoryBoss = p1BossEncounterPosition(p1BossOpening, p1Positions.slice(0, 2), p1Sequence, event, eventTimeRef.current, WORLD.center)
       const outwardAngle = Math.atan2(memoryBoss.y - WORLD.center.y, memoryBoss.x - WORLD.center.x)
       if (!p1MemorySlotValid(playerRef.current, memoryBoss, p1MemoryOrderState, rune, outwardAngle) && triggerWipe(`Rune ${rune} was out of order around L’ura`)) return
       setEvent('p1-memory-sweep')
@@ -2552,11 +2552,11 @@ function GameArena(props: { p1Sequence: number; p1Seed: number; p1InterruptAssig
     'p1-countdown': { title: `Kick ${props.p1InterruptAssignment + 1} · ${p1PickupSequence ? `Crystal pickup ${p1PickupSequence}` : 'No crystal pickup'}.`, detail: `Kick cast ${props.p1InterruptAssignment + 1} of 5 with ${keyLabel(props.keyBindings.interrupt)}. ${p1PickupSequence ? `Your assigned ground crystal belongs to sequence ${p1PickupSequence}; collect it before the NPCs move.` : 'You have no ground-crystal pickup in either demonstrated sequence.'}`, counter: 'STARTING', duration: 3 },
     'p1-interrupts': { title: `Interrupt cast ${props.p1InterruptAssignment + 1}.`, detail: 'Five consecutive two-second casts resolve. Red is not yours, yellow means next, and green is your interrupt window.', counter: 'CAST', duration: P1_INTERRUPT_CAST_COUNT * P1_INTERRUPT_CAST_SECONDS },
     'p1-crystals': { title: 'Collect the assigned crystals.', detail: 'Three assigned carriers have five seconds to collect their crystals from the Phase 1 raid plan.', counter: 'PICKUP', duration: P1_CRYSTAL_PICKUP_SECONDS },
-    'p1-glaives': { title: 'Heaven Glaives.', detail: 'Five fast discs launch from L’ura, slow over time, and ricochet between the outer wall and middle bubble for sixty seconds.', counter: 'GLAIVES', duration: P1_GLAIVE_TELEGRAPH_SECONDS + P1_MEMORY_DELAY_SECONDS },
+    'p1-glaives': { title: 'Heaven Glaives.', detail: 'Five fast spinning discs launch from L’ura, slow after their first impact, and ricochet between the outer wall and middle bubble for sixty seconds.', counter: 'GLAIVES', duration: P1_GLAIVE_TELEGRAPH_SECONDS + P1_MEMORY_DELAY_SECONDS },
     'p1-memory-position': { title: 'Arrange the memory order.', detail: 'Use the TXOV+ panel to take your correct clockwise slot around L’ura. Radial distance does not matter.', counter: 'POSITION', duration: P1_MEMORY_POSITION_SECONDS },
     'p1-memory-sweep': { title: 'Memory sweep.', detail: 'The rotating beam checks every rune in the displayed order.', counter: 'SWEEP', duration: P1_MEMORY_SWEEP_SECONDS },
     'p1-beam-telegraph': { title: 'Move beam.', detail: 'Eight rotating beams are safe during their two-second telegraph. Cross the nearest beam, then follow it.', counter: 'TELEGRAPH', duration: P1_ROTATING_BEAM_TELEGRAPH_SECONDS },
-    'p1-beams': { title: 'Follow the rotating beam.', detail: 'Avoid all eight beams while the Heaven Glaives continue to ricochet.', counter: 'BEAMS', duration: P1_ROTATING_BEAM_ACTIVE_SECONDS },
+    'p1-beams': { title: 'Follow the rotating beam.', detail: 'Cross, then follow the raid and L’ura through the 45-degree sweep while Heaven Glaives continue to ricochet.', counter: 'BEAMS', duration: P1_ROTATING_BEAM_ACTIVE_SECONDS },
     'p1-soaks': { title: 'Soak the open circle.', detail: 'NPCs immediately cover one impact. Reach the remaining blue Soak before it expires.', counter: 'SOAK', duration: P1_REACTIVE_SOAK_SECONDS },
     'p1-transition': { title: 'Reach your Intermission position.', detail: 'The P1 sequence is complete. You have fifteen seconds to reach the existing Intermission assignment.', counter: 'INTERMISSION', duration: P1_INTERMISSION_POSITION_SECONDS },
   }

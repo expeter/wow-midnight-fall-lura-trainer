@@ -22,7 +22,8 @@ export const P1_MEMORY_SWEEP_SECONDS = 5
 export const P1_ROTATING_BEAM_COUNT = 8
 export const P1_ROTATING_BEAM_OFFSET_DEGREES = 10
 export const P1_ROTATING_BEAM_TELEGRAPH_SECONDS = 2
-export const P1_ROTATING_BEAM_ACTIVE_SECONDS = 8
+export const P1_ROTATING_BEAM_ACTIVE_SECONDS = 4
+export const P1_ROTATING_BEAM_MAX_BOSS_ARC = Math.PI / 4
 export const P1_REACTIVE_SOAK_SECONDS = 2
 export const P1_SEQUENCE_COUNT = 2
 export const P1_INTERMISSION_POSITION_SECONDS = 15
@@ -291,9 +292,23 @@ export function p1BossEncounterPosition(
   sequence: number,
   event: string,
   eventTime: number,
+  arenaCenter: P1Point,
 ): P1Point {
-  const start = sequence <= 1 ? opening : tankPositions[sequence - 2] ?? opening
-  const target = tankPositions[sequence - 1] ?? start
+  const stops: P1Point[] = []
+  tankPositions.forEach(candidate => {
+    const start = stops.at(-1) ?? opening
+    const startAngle = Math.atan2(start.y - arenaCenter.y, start.x - arenaCenter.x)
+    const candidateAngle = Math.atan2(candidate.y - arenaCenter.y, candidate.x - arenaCenter.x)
+    const delta = Math.atan2(Math.sin(candidateAngle - startAngle), Math.cos(candidateAngle - startAngle))
+    const arc = Math.max(-P1_ROTATING_BEAM_MAX_BOSS_ARC, Math.min(P1_ROTATING_BEAM_MAX_BOSS_ARC, delta))
+    const radius = Math.max(P1_INNER_RADIUS + 24, Math.hypot(candidate.x - arenaCenter.x, candidate.y - arenaCenter.y))
+    stops.push({
+      x: arenaCenter.x + Math.cos(startAngle + arc) * radius,
+      y: arenaCenter.y + Math.sin(startAngle + arc) * radius,
+    })
+  })
+  const start = sequence <= 1 ? opening : stops[sequence - 2] ?? opening
+  const target = stops[sequence - 1] ?? start
   if (event === 'p1-soaks') return { ...target }
   if (event !== 'p1-beam-telegraph' && event !== 'p1-beams') return { ...start }
   const progress = Math.max(0, Math.min(1, p1ContinuousBeamTime(event, eventTime)
@@ -338,31 +353,19 @@ export function p1NpcRoamingPosition(
 }
 
 export function p1NpcBeamPosition(
-  assignment: P1Point,
   npcIndex: number,
-  beams: P1RotatingBeams,
   elapsed: number,
-  arenaCenter: P1Point,
+  boss: P1Point,
+  beamAngle: number,
 ): P1Point {
-  const assignmentAngle = Math.atan2(assignment.y - arenaCenter.y, assignment.x - arenaCenter.x)
-  const initialAngles = p1BeamAngles(beams, 0)
-  let beamIndex = 0
-  let nearest = Infinity
-  initialAngles.forEach((angle, index) => {
-    const delta = Math.abs(Math.atan2(Math.sin(assignmentAngle - angle), Math.cos(assignmentAngle - angle)))
-    if (delta < nearest) {
-      nearest = delta
-      beamIndex = index
-    }
-  })
-  const beamAngle = p1BeamAngles(beams, elapsed)[beamIndex]
-  const crossingSide = elapsed < 1 ? 1 : -1
-  const followOffset = beams.direction * crossingSide * (elapsed < 1 ? .2 : .13)
-  const radius = Math.max(P1_INNER_RADIUS + 24, Math.min(P1_OUTER_RADIUS - 28, Math.hypot(assignment.x - arenaCenter.x, assignment.y - arenaCenter.y)))
-  const spread = (npcIndex % 5 - 2) * 2.2
+  const formationAngle = npcIndex * 2.399963
+  const formationRadius = 8 + npcIndex % 4 * 3.2
+  const crossingOffset = elapsed < P1_ROTATING_BEAM_TELEGRAPH_SECONDS
+    ? 10 - elapsed / P1_ROTATING_BEAM_TELEGRAPH_SECONDS * 16
+    : -6
   return {
-    x: arenaCenter.x + Math.cos(beamAngle + followOffset) * (radius + spread),
-    y: arenaCenter.y + Math.sin(beamAngle + followOffset) * (radius + spread),
+    x: boss.x + Math.cos(formationAngle) * formationRadius - Math.sin(beamAngle) * crossingOffset,
+    y: boss.y + Math.sin(formationAngle) * formationRadius + Math.cos(beamAngle) * crossingOffset,
   }
 }
 

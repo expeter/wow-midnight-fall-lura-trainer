@@ -172,6 +172,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-089` | Implemented | Keep health under steady combat pressure while making critical potion/shield recovery windows occasional instead of repeatedly returning to full health. |
 | `CR-090` | Implemented | Apply the approved soundboard timing review to encounter audio: persist all ten selected clips and playback rates, and align beam, Stars, Starsplinter, orb-return, personal-circle, rune, Archangel, protection, mistake, and wipe cues to their calibrated visual boundaries. |
 | `CR-091` | Implemented | Apply the second soundboard timing pass, including exact-boundary boss beams, a 95ms-early Stars pop, a post-impact Archangel pulse, and the revised protection playback rate. Preserve boundary sounds across encounter event transitions. |
+| `CR-092` | Implemented | Prevent Intermission and P2 beam/Starsplinter sounds from feeling swapped across consecutive mechanics: start each selected clip by its effective playback duration so it ends at the visual resolution and does not carry into the following spell. |
 | `SPEC-001` | Implemented | Define the stable ticket lifecycle: assign an ID, record intent, add focused regression coverage, validate, and commit. |
 | `SPEC-002` | Implemented | Define the creator business card’s stable content, readability, compact layout, and external-link behavior. |
 | `SPEC-003` | Implemented | Define the P3-to-P4 north gather, shared knockup origin, and phase-local HUD boundary. |

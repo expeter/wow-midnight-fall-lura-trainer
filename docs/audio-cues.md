@@ -49,11 +49,11 @@ with a separate `SOAK CRYSTAL` instruction.
 
 | ID | Mechanic | Desired sound | Length | Reuse |
 | --- | --- | --- | --- | --- |
-| `laser-charge` | Boss beam resolves | Midnight Wipe Abyss at 1.88× | Calibrated | Intermission and P2 |
+| `laser-charge` | Ends as the boss beam resolves; starts 0.479s early | Midnight Wipe Abyss at 1.88× | 0.479s effective | Intermission and P2 |
 | `laser-fire` | Reserved / currently silent | A separate discharge duplicated the charge cue and is disabled while the revised mix is reviewed | — | Intermission and P2 |
 | `stars-connect` | 0.095s before the P3 Stars lattice connects | Splinter Arc Pop at 2.25× | Calibrated | P3 only |
 | `splinter-mark` | Starsplinter assigned | Short crystalline warning/chime | 0.4–0.8s | Intermission and P4 |
-| `splinter-detonate` | 0.02s before Starsplinter rays disappear | Sharp six-way energy burst; waveform analysis places its main attack about 0.02s after playback begins at the in-game 2× rate | 0.5–1s | Intermission and P4 |
+| `splinter-detonate` | Ends as Starsplinter rays disappear; starts 0.24s early | Prismatic Cut at 2×, contained within the resolving mechanic | 0.24s effective | Intermission and P4 |
 | `orb-charge` | P2 returning orbs start glowing | Pulsing magical charge | 0.8–1.2s | P2 |
 | `orb-return` | 0.271s before P2 orbs reach L’ura | Arcane Laser at 1.00× | Calibrated | P2 |
 | `pull` | P2 raid pull begins | Sustained suction/wind rise | 2–4s loop | P2 |

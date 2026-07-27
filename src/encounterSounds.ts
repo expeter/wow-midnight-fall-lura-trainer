@@ -2,6 +2,7 @@ import {
   P2_ORB_RETURN_GLOW_SECONDS,
   P2_ORB_RETURN_SECONDS,
   P2_ORB_RETURN_TRAVEL_SECONDS,
+  P2_BEAM_SECONDS,
   P2_SPREAD_SECONDS,
   P4_SPLINTER_DETONATION_SECONDS,
   P4_SPLINTER_INTERVAL_SECONDS,
@@ -40,9 +41,9 @@ export interface EncounterSoundSpec {
 }
 
 export const ENCOUNTER_SOUND_SPECS: Record<EncounterSoundName, EncounterSoundSpec> = {
-  'laser-charge': { url: laserWhooshUrl, volume: .78, playbackRate: 1.88, startOffsetMs: 0 },
+  'laser-charge': { url: laserWhooshUrl, volume: .78, playbackRate: 1.88, startOffsetMs: -479 },
   'stars-connect': { url: starsConnectUrl, volume: .72, playbackRate: 2.25, startOffsetMs: -95 },
-  'splinter-detonate': { url: splinterDetonateUrl, volume: .82, playbackRate: 2, startOffsetMs: -20 },
+  'splinter-detonate': { url: splinterDetonateUrl, volume: .82, playbackRate: 2, startOffsetMs: -240 },
   'orb-return': { url: orbReturnUrl, volume: .78, playbackRate: 1, startOffsetMs: -271 },
   'personal-circle': { url: personalCircleUrl, volume: .72, playbackRate: 1, startOffsetMs: -70 },
   'rune-match': { url: runeClearUrl, volume: .66, playbackRate: 1.08, startOffsetMs: -20 },
@@ -53,6 +54,7 @@ export const ENCOUNTER_SOUND_SPECS: Record<EncounterSoundName, EncounterSoundSpe
 }
 
 export const INTERMISSION_SPLINTER_VISUAL_END_SECONDS = 3
+export const INTERMISSION_BEAM_VISUAL_END_SECONDS = 3
 const offsetSeconds = (name: EncounterSoundName) => ENCOUNTER_SOUND_SPECS[name].startOffsetMs / 1000
 export const LASER_CHARGE_START_OFFSET_SECONDS = offsetSeconds('laser-charge')
 export const STARS_CONNECT_START_OFFSET_SECONDS = offsetSeconds('stars-connect')
@@ -84,7 +86,7 @@ export interface EncounterSoundState {
 export function encounterSoundCuesForState(state: EncounterSoundState): EncounterSoundCue[] {
   const cues: EncounterSoundCue[] = []
 
-  if (state.event === 'splinter' && state.eventTime >= LASER_CHARGE_START_OFFSET_SECONDS) {
+  if (state.event === 'beam' && state.eventTime >= INTERMISSION_BEAM_VISUAL_END_SECONDS + LASER_CHARGE_START_OFFSET_SECONDS) {
     cues.push({ id: `intermission-${state.cycle}-laser-charge`, sound: 'laser-charge' })
   }
   if (state.event === 'splinter' && state.eventTime >= INTERMISSION_SPLINTER_VISUAL_END_SECONDS + SPLINTER_SOUND_START_OFFSET_SECONDS) {
@@ -92,8 +94,8 @@ export function encounterSoundCuesForState(state: EncounterSoundState): Encounte
   }
 
   if (
-    (state.event === 'p2-recover' || state.event === 'p2-pull')
-    && state.p2OrbReturnAge >= LASER_CHARGE_START_OFFSET_SECONDS
+    state.event === 'p2-orbs'
+    && state.eventTime >= P2_BEAM_SECONDS + LASER_CHARGE_START_OFFSET_SECONDS
   ) {
     cues.push({ id: `p2-${state.p2Cycle}-laser-charge`, sound: 'laser-charge' })
   }

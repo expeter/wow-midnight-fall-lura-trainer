@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P3_POOL_HEALTH, P4_SPLINTER_DETONATION_SECONDS, p4SplinterStartSeconds } from './game'
-import { ARCHANGEL_SOUND_START_OFFSET_SECONDS, encounterSoundCuesForState, ENCOUNTER_SOUND_SPECS, INTERMISSION_SPLINTER_VISUAL_END_SECONDS, LASER_CHARGE_START_OFFSET_SECONDS, ORB_RETURN_SOUND_START_OFFSET_SECONDS, SPLINTER_SOUND_START_OFFSET_SECONDS, STARS_CONNECT_START_OFFSET_SECONDS } from './encounterSounds'
+import { P2_BEAM_SECONDS, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P3_POOL_HEALTH, P4_SPLINTER_DETONATION_SECONDS, p4SplinterStartSeconds } from './game'
+import { ARCHANGEL_SOUND_START_OFFSET_SECONDS, encounterSoundCuesForState, ENCOUNTER_SOUND_SPECS, INTERMISSION_BEAM_VISUAL_END_SECONDS, INTERMISSION_SPLINTER_VISUAL_END_SECONDS, LASER_CHARGE_START_OFFSET_SECONDS, ORB_RETURN_SOUND_START_OFFSET_SECONDS, SPLINTER_SOUND_START_OFFSET_SECONDS, STARS_CONNECT_START_OFFSET_SECONDS } from './encounterSounds'
 
 const base = {
   event: 'countdown',
@@ -20,11 +20,12 @@ const base = {
 describe('encounter sound cues', () => {
   it('uses the approved production transformations', () => {
     expect(ENCOUNTER_SOUND_SPECS['laser-charge'].playbackRate).toBe(1.88)
-    expect(ENCOUNTER_SOUND_SPECS['laser-charge'].startOffsetMs).toBe(0)
+    expect(ENCOUNTER_SOUND_SPECS['laser-charge'].startOffsetMs).toBe(-479)
     expect(ENCOUNTER_SOUND_SPECS['stars-connect'].volume).toBe(.72)
     expect(ENCOUNTER_SOUND_SPECS['stars-connect'].playbackRate).toBe(2.25)
     expect(ENCOUNTER_SOUND_SPECS['stars-connect'].startOffsetMs).toBe(-95)
     expect(ENCOUNTER_SOUND_SPECS['splinter-detonate'].playbackRate).toBe(2)
+    expect(ENCOUNTER_SOUND_SPECS['splinter-detonate'].startOffsetMs).toBe(-240)
     expect(ENCOUNTER_SOUND_SPECS['personal-circle'].startOffsetMs).toBe(-70)
     expect(ENCOUNTER_SOUND_SPECS['archangel-charge'].playbackRate).toBe(1.01)
     expect(ENCOUNTER_SOUND_SPECS['archangel-charge'].startOffsetMs).toBe(125)
@@ -32,10 +33,12 @@ describe('encounter sound cues', () => {
     expect(ENCOUNTER_SOUND_SPECS.mistake.playbackRate).toBeGreaterThan(1)
   })
 
-  it('plays the Intermission beam cue exactly as the encounter enters its resolution event', () => {
-    expect(encounterSoundCuesForState({ ...base, event: 'beam', eventTime: 3 })).toEqual([])
-    expect(encounterSoundCuesForState({ ...base, event: 'splinter', eventTime: LASER_CHARGE_START_OFFSET_SECONDS }))
+  it('contains the Intermission beam sound within the beam mechanic', () => {
+    const soundAt = INTERMISSION_BEAM_VISUAL_END_SECONDS + LASER_CHARGE_START_OFFSET_SECONDS
+    expect(encounterSoundCuesForState({ ...base, event: 'beam', eventTime: soundAt - .01 })).toEqual([])
+    expect(encounterSoundCuesForState({ ...base, event: 'beam', eventTime: soundAt }))
       .toContainEqual(expect.objectContaining({ sound: 'laser-charge' }))
+    expect(encounterSoundCuesForState({ ...base, event: 'splinter', eventTime: 0 }).some(cue => cue.sound === 'laser-charge')).toBe(false)
   })
 
   it('aligns the Starsplinter transient with each phase visual disappearing', () => {
@@ -49,10 +52,12 @@ describe('encounter sound cues', () => {
     expect(encounterSoundCuesForState({ ...base, event: 'p4-cycle', eventTime: p4SoundAt }).filter(cue => cue.sound === 'splinter-detonate')).toHaveLength(1)
   })
 
-  it('plays the P2 beam cue after the cross-beam resolves into recovery or pull', () => {
-    expect(encounterSoundCuesForState({ ...base, event: 'p2-orbs', eventTime: 7 })).toEqual([])
-    expect(encounterSoundCuesForState({ ...base, event: 'p2-pull', p2OrbReturnAge: LASER_CHARGE_START_OFFSET_SECONDS }))
+  it('contains the P2 beam sound within the cross-beam mechanic', () => {
+    const soundAt = P2_BEAM_SECONDS + LASER_CHARGE_START_OFFSET_SECONDS
+    expect(encounterSoundCuesForState({ ...base, event: 'p2-orbs', eventTime: soundAt - .01 })).toEqual([])
+    expect(encounterSoundCuesForState({ ...base, event: 'p2-orbs', eventTime: soundAt }))
       .toContainEqual(expect.objectContaining({ sound: 'laser-charge' }))
+    expect(encounterSoundCuesForState({ ...base, event: 'p2-pull', p2OrbReturnAge: 0 }).some(cue => cue.sound === 'laser-charge')).toBe(false)
   })
 
   it('starts the orb-return cue 271ms before the orbs reach L’ura', () => {

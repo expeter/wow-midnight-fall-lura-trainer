@@ -88,7 +88,7 @@ describe('raid-lead TTS cues', () => {
     const start = p4SplinterStartSeconds(base.p4Cycle)
     const finalEnd = start + P4_SPLINTER_INTERVAL_SECONDS * 2 + P4_SPLINTER_DETONATION_SECONDS
     const cues = p4TimedVoiceCues(base.p4Cycle)
-    expect(P4_TIMED_VOICE_LEAD_SECONDS).toBe(1)
+    expect(P4_TIMED_VOICE_LEAD_SECONDS).toBe(0)
     expect(P4_SPLINTER_VOICE_LEAD_SECONDS).toBe(0)
     expect(cues.map(cue => cue.clip)).toEqual(['left', 'right', 'left', 'move'])
     expect(cues.slice(0, 3).map(cue => cue.at)).toEqual([
@@ -98,7 +98,7 @@ describe('raid-lead TTS cues', () => {
     ])
     expect(cues[1].at - cues[0].at).toBeCloseTo(P4_SPLINTER_INTERVAL_SECONDS)
     expect(cues[2].at - cues[1].at).toBeCloseTo(P4_SPLINTER_INTERVAL_SECONDS)
-    expect(cues[3].at).toBeCloseTo(finalEnd - 1)
+    expect(cues[3].at).toBeCloseTo(finalEnd)
     expect(timedVoiceDelaySeconds(cues[1].at, cues[0].at, 1)).toBeCloseTo(P4_SPLINTER_INTERVAL_SECONDS)
     expect(timedVoiceDelaySeconds(cues[1].at, cues[0].at, 2.5)).toBeCloseTo(P4_SPLINTER_INTERVAL_SECONDS / 2.5)
     expect(timedVoiceDelaySeconds(cues[2].at, cues[1].at - .25, 1)).toBeCloseTo(P4_SPLINTER_INTERVAL_SECONDS + .25)

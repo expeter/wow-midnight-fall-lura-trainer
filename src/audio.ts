@@ -27,7 +27,7 @@ export interface TimedVoiceCue {
   at: number
 }
 
-export const P4_TIMED_VOICE_LEAD_SECONDS = 1
+export const P4_TIMED_VOICE_LEAD_SECONDS = 0
 export const P4_SPLINTER_VOICE_LEAD_SECONDS = 0
 
 export function timedVoiceSupported(featureEnabled: boolean, audioContextAvailable: boolean): boolean {

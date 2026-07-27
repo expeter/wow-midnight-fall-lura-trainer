@@ -34,6 +34,26 @@ test('exposes the complete Phase 1 preview only on localhost and begins its assi
   await expect(interrupt).toContainText(/WAIT|NEXT|KICK/)
 })
 
+test('keeps both Phase 1 Heaven Glaive sets alive when the second set launches', async ({ page }) => {
+  test.setTimeout(90_000)
+  await page.addInitScript(() => {
+    localStorage.setItem('lura-game-speed', '2.5')
+    localStorage.setItem('lura-selected-position', '0')
+  })
+  await page.goto('/')
+  await page.getByRole('button', { name: 'test', exact: true }).click()
+  await page.getByRole('button', { name: 'P1', exact: true }).click()
+  await page.getByRole('button', { name: /Enter P1/ }).click()
+
+  const arena = page.locator('.arena-wrap')
+  await expect(arena).toHaveAttribute('data-p1-glaive-sets', '1', { timeout: 25_000 })
+  await expect(arena).toHaveAttribute('data-p1-glaive-sets', '2', { timeout: 55_000 })
+  const firstTime = Number(await arena.getAttribute('data-event-time'))
+  await page.waitForTimeout(500)
+  const laterTime = Number(await arena.getAttribute('data-event-time'))
+  expect(laterTime).not.toBe(firstTime)
+})
+
 test('unlocks and schedules the complete prerecorded P4 raidlead in the browser', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('lura-tts-enabled', 'true')

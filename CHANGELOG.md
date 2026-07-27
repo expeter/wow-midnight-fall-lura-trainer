@@ -61,6 +61,21 @@
   collected a crystal. Non-carriers now lose points and continue, while
   carriers receive two P3-opening-style yellow circles; tracked from the
   linked inbox screenshot.
+- BUG-080 / CR-124: Reworked P1 NPC movement into compact boss-relative
+  roaming, moved crystal trios into readable boss-to-center lanes, anchored
+  NPC beam movement to the real center ray, and standardized every rotating
+  beam to one clockwise direction.
+- BUG-081 / CR-126: Preserved both 60-second Heaven Glaive sets across the
+  second sequence and let otherwise-free NPCs sidestep an approaching glaive;
+  browser coverage verifies that the live overlap continues to advance.
+- BUG-082: Kept non-carrier rotating-beam penalties from aborting the P1
+  animation tick; only collected-crystal carriers enter reactive Soaks.
+- CR-125 / CR-129: Extended the P1 memory sweep to a darker, slightly raised
+  40-yard Starsplinter visual, clear each rune as it resolves, and keep all
+  roaming NPC targets inside the playable arena.
+- CR-127 / CR-128: Move L’ura smoothly to the Intermission center during the
+  P1 handoff, and ship the reviewed P1 positions/boss marker as the maintained
+  I Asgard I fallback for plans without P1 data.
 
 ## 0.2.0 — 2026-07-27
 

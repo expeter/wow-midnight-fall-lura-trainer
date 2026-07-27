@@ -13,7 +13,7 @@ phase-specific raid-plan persistence.
 ## Planning and assignments
 
 - Add a dedicated P1 raid plan. When no P1 plan exists, initialize it from the
-  Phase 2 raid plan.
+  maintained I Asgard I P1 assignments and outside L’ura marker.
 - Track six phase-specific crystal carriers.
 - Use a wider 260-yard P1 annulus around the existing 102-yard middle bubble.
   The arena visibly collapses to the smaller Intermission ring during handoff.
@@ -41,8 +41,9 @@ phase-specific raid-plan persistence.
 
 ## Crystal pickup
 
-- After the interrupts, three crystals spawn at the assigned Phase 1 raid-plan
-  positions. Slots 1–3 belong to sequence one; slots 4–6 to sequence two.
+- After the interrupts, three crystals spawn in a readable lane between L’ura
+  and the center bubble. Slots 1–3 belong to sequence one; slots 4–6 to
+  sequence two, and the configured carrier order determines each pickup lane.
 - Assigned carriers have five seconds to collect them.
 - If the controlled player belongs to the active trio, NPC carriers wait until
   the player collects their crystal before moving to their own pickups.
@@ -69,9 +70,11 @@ phase-specific raid-plan persistence.
 - Glaives reflect from both the 260-yard outer wall and the 102-yard middle
   bubble, so they never pass through the protected center.
 - The glaives continue roaming while later mechanics occur.
+- Unassigned NPCs make short sidesteps out of approaching glaive lanes when
+  that does not conflict with a crystal, memory, or rotating-beam duty.
 - Each glaive remains active for 60 seconds and then disappears. Keep
   the lifetime configurable for tuning and cap the live hazard field at two
-  generated sets.
+  generated sets, allowing the first and second sequence sets to overlap.
 - Contact is a 500-point wipe. Leaving a disc and touching that same disc again
   starts another contact and therefore another wipe; remaining continuously
   inside it does not spam duplicate failures every frame.
@@ -82,10 +85,12 @@ phase-specific raid-plan persistence.
   from `T`, `X`, `O`, `V`, and `+`.
 - Players have seven seconds to arrange around the boss in that order; radial
   distance is not scored.
-- A single 35-yard Starsplinter-style beam begins on the boss-to-outside ray
+- A single 40-yard dark-blue Starsplinter-style beam begins on the boss-to-outside ray
   and rotates clockwise 360 degrees around the boss. The first rune stands on
   that outward ray and the remaining symbols stand clockwise in displayed
   order. Each marked player touched by the beam must match the next symbol.
+- Each resolved rune disappears as the sweep passes it. A slim raised laser
+  core keeps the beam readable without making the complete wedge taller.
 - An incorrect order wipes the attempt.
 - The configured P1 boss marker is the single origin for rendering, NPC rune
   placement, the visible sweep, and gameplay validation. The verdict is
@@ -102,12 +107,12 @@ phase-specific raid-plan persistence.
   after two seconds without resetting or discontinuing its rotation.
 - The lethal laser then sweeps exactly 45 degrees before all eight beams
   disappear.
-- One beam begins five degrees to either side of the boss. The intended movement
+- One beam begins two degrees from the boss. The intended movement
   is to cross that beam, then follow it without being caught by another beam,
   while continuing to dodge the glaives.
-- NPCs play the rotating beams perfectly. They cross during the low telegraph,
-  reform compactly around the tank, and follow L’ura for the remainder of the
-  sweep.
+- All eight beams rotate clockwise in both sequences. NPCs play them perfectly:
+  they cross a nearby ray during the low telegraph, reform compactly around the
+  tank, and follow L’ura for the remainder of the same continuous sweep.
 - Raid-plan positions 1 and 2 choose the tank-led direction for sequence one
   and sequence two. Each L’ura relocation covers one visible 45-degree arena
   arc, including when a tank marker happens to share L’ura’s opening angle.
@@ -125,7 +130,8 @@ phase-specific raid-plan persistence.
 
 - Simulate two complete sequences.
 - Afterwards, give the raid 15 seconds to reach the existing Intermission
-  assignments before that phase begins.
+  assignments before that phase begins. L’ura moves smoothly from her final
+  outside stop to the center during this handoff.
 
 ## TTS
 

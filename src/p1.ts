@@ -18,13 +18,13 @@ export const P1_MAX_GLAIVE_SETS = 2
 export const P1_INNER_RADIUS = 102
 export const P1_OUTER_RADIUS = 260
 export const P1_MEMORY_RADIUS = 20
-export const P1_MEMORY_BEAM_LENGTH = 35
+export const P1_MEMORY_BEAM_LENGTH = 40
 export const P1_MEMORY_DELAY_SECONDS = 2
 export const P1_MEMORY_POSITION_SECONDS = 7
 export const P1_MEMORY_NPC_SETTLE_SECONDS = 1.5
 export const P1_MEMORY_SWEEP_SECONDS = 5
 export const P1_ROTATING_BEAM_COUNT = 8
-export const P1_ROTATING_BEAM_OFFSET_DEGREES = 5
+export const P1_ROTATING_BEAM_OFFSET_DEGREES = 2
 export const P1_ROTATING_BEAM_TELEGRAPH_SECONDS = 2
 export const P1_ROTATING_BEAM_ACTIVE_SECONDS = 4
 export const P1_ROTATING_BEAM_MAX_BOSS_ARC = Math.PI / 4
@@ -321,6 +321,13 @@ export function p1BossEncounterPosition(
   })
   const start = sequence <= 1 ? opening : stops[sequence - 2] ?? opening
   const target = stops[sequence - 1] ?? start
+  if (event === 'p1-transition') {
+    const progress = Math.max(0, Math.min(1, eventTime / P1_INTERMISSION_POSITION_SECONDS))
+    return {
+      x: target.x + (arenaCenter.x - target.x) * progress,
+      y: target.y + (arenaCenter.y - target.y) * progress,
+    }
+  }
   if (event === 'p1-soaks') return { ...target }
   if (event !== 'p1-beam-telegraph' && event !== 'p1-beams') return { ...start }
   const progress = Math.max(0, Math.min(1, p1ContinuousBeamTime(event, eventTime)
@@ -356,10 +363,10 @@ export function p1NpcRoamingPosition(
   const assignmentAngle = Math.atan2(assignment.y - boss.y, assignment.x - boss.x)
   const assignmentRadius = Math.hypot(assignment.x - boss.x, assignment.y - boss.y)
   const angleJitter = (seededUnit(seed + npcIndex * 97, step * 2) - .5) * .7
-  const radiusJitter = (seededUnit(seed + npcIndex * 131, step * 2 + 1) - .5) * 24
+  const radiusJitter = (seededUnit(seed + npcIndex * 131, step * 2 + 1) - .5) * 18
   const direction = npcIndex % 2 ? 1 : -1
   const angle = assignmentAngle + direction * step * (.32 + npcIndex % 5 * .035) + angleJitter
-  const radius = Math.max(34, Math.min(88, assignmentRadius + radiusJitter))
+  const radius = Math.max(24, Math.min(58, assignmentRadius + radiusJitter))
   return {
     x: boss.x + Math.cos(angle) * radius,
     y: boss.y + Math.sin(angle) * radius,
@@ -371,15 +378,69 @@ export function p1NpcBeamPosition(
   elapsed: number,
   boss: P1Point,
   beamAngle: number,
+  center: P1Point = boss,
 ): P1Point {
-  const formationAngle = npcIndex * 2.399963
-  const formationRadius = 8 + npcIndex % 4 * 3.2
+  const bossRadius = Math.hypot(boss.x - center.x, boss.y - center.y)
+  const rayPoint = center === boss
+    ? boss
+    : {
+        x: center.x + Math.cos(beamAngle) * bossRadius,
+        y: center.y + Math.sin(beamAngle) * bossRadius,
+      }
+  const alongOffset = (npcIndex % 7 - 3) * 3
+  const laneOffset = (Math.floor(npcIndex / 7) - 1) * 1.8
   const crossingOffset = elapsed < P1_ROTATING_BEAM_TELEGRAPH_SECONDS
-    ? 10 - elapsed / P1_ROTATING_BEAM_TELEGRAPH_SECONDS * 16
-    : -6
+    ? 9 - elapsed / P1_ROTATING_BEAM_TELEGRAPH_SECONDS * 16
+    : -7
   return {
-    x: boss.x + Math.cos(formationAngle) * formationRadius - Math.sin(beamAngle) * crossingOffset,
-    y: boss.y + Math.sin(formationAngle) * formationRadius + Math.cos(beamAngle) * crossingOffset,
+    x: rayPoint.x + Math.cos(beamAngle) * alongOffset - Math.sin(beamAngle) * (crossingOffset + laneOffset),
+    y: rayPoint.y + Math.sin(beamAngle) * alongOffset + Math.cos(beamAngle) * (crossingOffset + laneOffset),
+  }
+}
+
+export function p1NpcGlaiveDodgePosition(
+  position: P1Point,
+  target: P1Point,
+  sets: readonly P1GlaiveSet[],
+  now: number,
+  npcIndex: number,
+): P1Point {
+  const threat = sets
+    .filter(set => now >= set.launchesAt && now <= set.expiresAt)
+    .flatMap(set => set.glaives)
+    .map(glaive => {
+      const dx = position.x - glaive.position.x
+      const dy = position.y - glaive.position.y
+      return {
+        glaive,
+        forward: dx * glaive.direction.x + dy * glaive.direction.y,
+        lateral: dx * -glaive.direction.y + dy * glaive.direction.x,
+      }
+    })
+    .filter(candidate => candidate.forward > 0 && candidate.forward < 52 && Math.abs(candidate.lateral) < 13)
+    .sort((left, right) => left.forward - right.forward)[0]
+  if (!threat) return { ...target }
+  const side = Math.abs(threat.lateral) > .25
+    ? Math.sign(threat.lateral)
+    : npcIndex % 2 ? 1 : -1
+  return {
+    x: target.x - threat.glaive.direction.y * side * 17,
+    y: target.y + threat.glaive.direction.x * side * 17,
+  }
+}
+
+export function p1ClampNpcToArena(
+  point: P1Point,
+  center: P1Point,
+  maximumRadius = P1_OUTER_RADIUS - 10,
+): P1Point {
+  const dx = point.x - center.x
+  const dy = point.y - center.y
+  const radius = Math.hypot(dx, dy)
+  if (radius <= maximumRadius || radius < 1e-6) return { ...point }
+  return {
+    x: center.x + dx / radius * maximumRadius,
+    y: center.y + dy / radius * maximumRadius,
   }
 }
 
@@ -442,13 +503,13 @@ export interface P1RotatingBeams {
 }
 
 export function p1RotatingBeams(
-  seed: number,
-  sequence: number,
+  _seed: number,
+  _sequence: number,
   startsAt: number,
   angularSpeed: number,
   openingAngle = 0,
 ): P1RotatingBeams {
-  const direction = seededUnit(seed, sequence * 29) < .5 ? -1 : 1
+  const direction = 1
   return {
     startsAt,
     telegraphEndsAt: startsAt + P1_ROTATING_BEAM_TELEGRAPH_SECONDS,
@@ -495,6 +556,11 @@ export function p1MemorySweepAngle(startsAt: number, now: number, openingAngle =
   return openingAngle + progress * Math.PI * 2
 }
 
+export function p1MemoryRuneVisible(order: readonly P1Rune[], rune: P1Rune, eventTime: number): boolean {
+  const index = order.indexOf(rune)
+  return index >= 0 && eventTime < index / order.length * P1_MEMORY_SWEEP_SECONDS
+}
+
 export function p1MemorySlotAngle(order: readonly P1Rune[], rune: P1Rune, openingAngle = -Math.PI / 2): number {
   const index = order.indexOf(rune)
   if (index < 0) return openingAngle
@@ -514,13 +580,15 @@ export function p1MemorySlotValid(
   return Math.abs(Math.atan2(Math.sin(actual - expected), Math.cos(actual - expected))) <= toleranceRadians
 }
 
-export function p1CrystalSpawnPosition(assignment: P1Point, center: P1Point, inwardDistance = 14): P1Point {
-  const dx = center.x - assignment.x
-  const dy = center.y - assignment.y
+export function p1CrystalSpawnPosition(boss: P1Point, center: P1Point, pickupIndex: number): P1Point {
+  const dx = center.x - boss.x
+  const dy = center.y - boss.y
   const length = Math.hypot(dx, dy) || 1
+  const forwardDistance = Math.min(64, length * .35)
+  const lateralDistance = (Math.max(0, Math.min(P1_CRYSTAL_COUNT - 1, pickupIndex)) - 1) * 20
   return {
-    x: assignment.x + dx / length * Math.min(inwardDistance, length),
-    y: assignment.y + dy / length * Math.min(inwardDistance, length),
+    x: boss.x + dx / length * forwardDistance - dy / length * lateralDistance,
+    y: boss.y + dy / length * forwardDistance + dx / length * lateralDistance,
   }
 }
 

@@ -110,10 +110,29 @@ const DEFAULT_START_SLOTS: Assignment[] = [
   { x: WORLD.center.x, y: WORLD.center.y - 222 },
   { x: WORLD.center.x + 222, y: WORLD.center.y },
 ]
-const DEFAULT_P1_BOSS_POSITION: Assignment = {
-  x: WORLD.center.x + Math.cos(Math.PI * 2 / 3) * 222,
-  y: WORLD.center.y + Math.sin(Math.PI * 2 / 3) * 222,
-}
+const DEFAULT_P1_ASSIGNMENTS: Assignment[] = [
+  { x: 368.5307864874153, y: 462.59201659297275 },
+  { x: 360.72379912663755, y: 478.1602983988356 },
+  { x: 378.7225201269101, y: 469.32514581863927 },
+  { x: 418.0971615720524, y: 493.26946870451235 },
+  { x: 380.8548034934497, y: 449.9565138282387 },
+  { x: 378.33905284792047, y: 432.1040717020427 },
+  { x: 379.1059874058998, y: 500.4066613180652 },
+  { x: 397.96615720524017, y: 491.2549126637555 },
+  { x: 398.9727074235807, y: 441.89828966521105 },
+  { x: 364.75, y: 437.86917758369725 },
+  { x: 391.9268558951965, y: 419.738173216885 },
+  { x: 408.0316593886463, y: 478.1602983988356 },
+  { x: 415.07751091703057, y: 430.81823144104806 },
+  { x: 351.6648471615721, y: 460.02929403202336 },
+  { x: 399.4297531923521, y: 462.8018647878955 },
+  { x: 331.53384279475983, y: 448.9492358078603 },
+  { x: 400.985807860262, y: 422.7600072780204 },
+  { x: 407.8660333301249, y: 462.41814237432243 },
+  { x: 371.7958515283843, y: 422.7600072780204 },
+  { x: 417.06924802587685, y: 462.03441996074923 },
+]
+const DEFAULT_P1_BOSS_POSITION: Assignment = { x: 378.84170305676855, y: 473.1239082969432 }
 const CLASS_OPTIONS: { value: PlayerClass; label: string; color: string }[] = [
   { value: 'mage', label: 'Mage', color: '#3fc7eb' },
   { value: 'warlock', label: 'Warlock', color: '#8788ee' },
@@ -231,8 +250,8 @@ function loadP1Positions(): Assignment[] {
   try {
     const saved = JSON.parse(localStorage.getItem('lura-p1-player-positions') || 'null')
     if (Array.isArray(saved) && saved.length === 20 && saved.every(point => Number.isFinite(point.x) && Number.isFinite(point.y))) return saved
-  } catch { /* use Phase 2 fallback */ }
-  return loadP2Positions()
+  } catch { /* use maintained guild fallback */ }
+  return DEFAULT_P1_ASSIGNMENTS.map(point => ({ ...point }))
 }
 function loadP1BossPosition(): Assignment {
   try {
@@ -326,7 +345,7 @@ function decodeRaidPlan(value: string): RaidPlan | null {
     if (!plan.positions.every((point: Point) => Number.isFinite(point.x) && Number.isFinite(point.y)) || !plan.startSlots.every((point: Point) => Number.isFinite(point.x) && Number.isFinite(point.y))) return null
     if (!plan.profiles.every((profile: PlayerProfile) => typeof profile.name === 'string' && typeof profile.crystal === 'boolean' && CLASS_OPTIONS.some(option => option.value === profile.playerClass))) return null
     const p2Positions = Array.isArray(plan.p2Positions) && plan.p2Positions.length === 20 && plan.p2Positions.every((point: Point) => Number.isFinite(point.x) && Number.isFinite(point.y)) ? plan.p2Positions : DEFAULT_P2_ASSIGNMENTS
-    const p1Positions = Array.isArray(plan.p1Positions) && plan.p1Positions.length === 20 && plan.p1Positions.every((point: Point) => Number.isFinite(point.x) && Number.isFinite(point.y)) ? plan.p1Positions : p2Positions
+    const p1Positions = Array.isArray(plan.p1Positions) && plan.p1Positions.length === 20 && plan.p1Positions.every((point: Point) => Number.isFinite(point.x) && Number.isFinite(point.y)) ? plan.p1Positions : DEFAULT_P1_ASSIGNMENTS
     const p1BossPosition = Number.isFinite(plan.p1BossPosition?.x) && Number.isFinite(plan.p1BossPosition?.y)
       ? plan.p1BossPosition
       : DEFAULT_P1_BOSS_POSITION
@@ -1096,14 +1115,14 @@ export default function App() {
           const hasCollectedCrystal = p1HasCollectedCrystal(p1CrystalAssignments, assignment, p1Sequence, p1CrystalCollected)
           if (p1BeamHitResolution(hasCollectedCrystal) === 'points') {
             recordMistake('Hit by a Phase 1 rotating beam', PLAYER_COLLISION_PENALTY, 0)
-            return
+          } else {
+            const soaks = p1ReactiveSoaks(p1Seed + p1Sequence, playerRef.current, 0, 18)
+            setP1Soaks(soaks)
+            setP1SoakResolved([0])
+            eventTimeRef.current = 0
+            setEventTime(0)
+            setEvent('p1-soaks')
           }
-          const soaks = p1ReactiveSoaks(p1Seed + p1Sequence, playerRef.current, 0, 18)
-          setP1Soaks(soaks)
-          setP1SoakResolved([0])
-          eventTimeRef.current = 0
-          setEventTime(0)
-          setEvent('p1-soaks')
         }
       }
       if (event === 'p4-cycle') {
@@ -1223,7 +1242,7 @@ export default function App() {
       updateHealth(dt)
       if (crystal) setCrystalAge(age => { const next = age + dt; crystalAgeRef.current = next; return next })
       if (npcCrystals.length) setNpcCrystalAge(age => age + dt)
-      setPlayer(p => { const speedBonusActive = movementBonus && (event === 'positioning' || event === 'p1-transition') && eventTimeRef.current <= OPENING_BOOST_SECONDS; const openingSpeed = movementSpeed * (speedBonusActive ? 1.4 : 1); const p4Speed = event === 'p4-cycle' ? openingSpeed * P4_MOVEMENT_MULTIPLIER : openingSpeed; const activeMovementSpeed = event === 'p3-sector-move' ? openingSpeed * 2 : event === 'p3-approach' && eventTimeRef.current < 5 ? openingSpeed * 1.4 : p4Speed; const backwardMultiplier = difficulty === 'hard' ? .5 : 1; const bounds = { minX: 30, maxX: WORLD.width - 30, minY: 30, maxY: WORLD.height - 30 }; const movementKeys = scriptedP4Jump ? new Set<string>() : jumping ? jumpKeysRef.current : keys; const movementForward = jumping ? jumpCameraForwardRef.current : cameraForward.current; let next: Point; if (event === 'p1-countdown' || event === 'countdown' || event === 'p2-countdown' || event === 'p3-countdown' || event === 'p4-countdown') next = p; else if (event === 'p2-jump') { const progress = Math.min(1, eventTimeRef.current / 1.4); const eased = 1 - Math.pow(1 - progress, 3); next = { x: jumpOriginRef.current.x + (WORLD.center.x - jumpOriginRef.current.x) * eased, y: jumpOriginRef.current.y + (WORLD.center.y - jumpOriginRef.current.y) * eased } } else if (event === 'p3-flight') next = p3FlightPosition(p3FlightOriginRef.current, p3LandingPosition(p3LandingPlanIndex(assignment, p3Positions, WORLD.center), WORLD.center), eventTimeRef.current); else if (event === 'p2-pull') next = moveWithIncreasingPull(p, movementKeys, activeMovementSpeed, dt, movementForward, bounds, WORLD.center, eventTimeRef.current / P2_PULL_SECONDS, backwardMultiplier); else next = moveRelativeToCamera(p, movementKeys, activeMovementSpeed, dt, movementForward, bounds, backwardMultiplier); playerRef.current = next; if (event === 'p1-crystals' && activeCrystalAssignments.slice((p1Sequence - 1) * 3, p1Sequence * 3).includes(assignment) && distance(next, p1CrystalSpawnPosition(p1Positions[assignment], WORLD.center)) <= 7) setP1CrystalCollected(true); if (event === 'p1-soaks') { const playerSoak = p1Soaks.find(soak => soak.assignee === 'player'); if (playerSoak && distance(next, playerSoak.position) <= P1_REACTIVE_SOAK_RADIUS) setP1SoakResolved(current => current.includes(playerSoak.id) ? current : [...current, playerSoak.id]) } if (event === 'p2-orbs' && eventTimeRef.current >= P2_BEAM_SECONDS - 1 && distance(next, p2Positions[assignment]) <= 8) setP2Soaked(true); if (crystal && event !== 'p3-archangel' && canPickupCrystal(next, crystal, crystalAgeRef.current)) { setCrystal(null); setCrystalAge(0); crystalAgeRef.current = 0; setStats(s => ({ ...s, crystalDropped: false })) } updateP3Pools(next, dt); updateP3PositionHealth(next, dt); checkHazards(next, dt); return next })
+      setPlayer(p => { const speedBonusActive = movementBonus && (event === 'positioning' || event === 'p1-transition') && eventTimeRef.current <= OPENING_BOOST_SECONDS; const openingSpeed = movementSpeed * (speedBonusActive ? 1.4 : 1); const p4Speed = event === 'p4-cycle' ? openingSpeed * P4_MOVEMENT_MULTIPLIER : openingSpeed; const activeMovementSpeed = event === 'p3-sector-move' ? openingSpeed * 2 : event === 'p3-approach' && eventTimeRef.current < 5 ? openingSpeed * 1.4 : p4Speed; const backwardMultiplier = difficulty === 'hard' ? .5 : 1; const bounds = { minX: 30, maxX: WORLD.width - 30, minY: 30, maxY: WORLD.height - 30 }; const movementKeys = scriptedP4Jump ? new Set<string>() : jumping ? jumpKeysRef.current : keys; const movementForward = jumping ? jumpCameraForwardRef.current : cameraForward.current; let next: Point; if (event === 'p1-countdown' || event === 'countdown' || event === 'p2-countdown' || event === 'p3-countdown' || event === 'p4-countdown') next = p; else if (event === 'p2-jump') { const progress = Math.min(1, eventTimeRef.current / 1.4); const eased = 1 - Math.pow(1 - progress, 3); next = { x: jumpOriginRef.current.x + (WORLD.center.x - jumpOriginRef.current.x) * eased, y: jumpOriginRef.current.y + (WORLD.center.y - jumpOriginRef.current.y) * eased } } else if (event === 'p3-flight') next = p3FlightPosition(p3FlightOriginRef.current, p3LandingPosition(p3LandingPlanIndex(assignment, p3Positions, WORLD.center), WORLD.center), eventTimeRef.current); else if (event === 'p2-pull') next = moveWithIncreasingPull(p, movementKeys, activeMovementSpeed, dt, movementForward, bounds, WORLD.center, eventTimeRef.current / P2_PULL_SECONDS, backwardMultiplier); else next = moveRelativeToCamera(p, movementKeys, activeMovementSpeed, dt, movementForward, bounds, backwardMultiplier); playerRef.current = next; const currentP1Crystals = activeCrystalAssignments.slice((p1Sequence - 1) * 3, p1Sequence * 3); const p1CrystalSlot = currentP1Crystals.indexOf(assignment); const p1Boss = p1BossEncounterPosition(p1BossOpening, p1Positions.slice(0, 2), p1Sequence, event, eventTimeRef.current, WORLD.center); if (event === 'p1-crystals' && p1CrystalSlot >= 0 && distance(next, p1CrystalSpawnPosition(p1Boss, WORLD.center, p1CrystalSlot)) <= 7) setP1CrystalCollected(true); if (event === 'p1-soaks') { const playerSoak = p1Soaks.find(soak => soak.assignee === 'player'); if (playerSoak && distance(next, playerSoak.position) <= P1_REACTIVE_SOAK_RADIUS) setP1SoakResolved(current => current.includes(playerSoak.id) ? current : [...current, playerSoak.id]) } if (event === 'p2-orbs' && eventTimeRef.current >= P2_BEAM_SECONDS - 1 && distance(next, p2Positions[assignment]) <= 8) setP2Soaked(true); if (crystal && event !== 'p3-archangel' && canPickupCrystal(next, crystal, crystalAgeRef.current)) { setCrystal(null); setCrystalAge(0); crystalAgeRef.current = 0; setStats(s => ({ ...s, crystalDropped: false })) } updateP3Pools(next, dt); updateP3PositionHealth(next, dt); checkHazards(next, dt); return next })
       frame = requestAnimationFrame(tick)
     }
     frame = requestAnimationFrame(tick)
@@ -2161,7 +2180,8 @@ export default function App() {
     const defaultStarts = DEFAULT_START_SLOTS.map(point => ({ ...point }))
     const defaultProfiles = DEFAULT_PROFILES.map(profile => ({ ...profile }))
     const defaultCrystals = normalizeCrystalAssignments(DEFAULT_PROFILES.map((profile, index) => profile.crystal ? index : -1))
-    setP1Positions(defaultP2)
+    const defaultP1 = DEFAULT_P1_ASSIGNMENTS.map(point => ({ ...point }))
+    setP1Positions(defaultP1)
     setP1BossOpening({ ...DEFAULT_P1_BOSS_POSITION })
     setPositions(defaults)
     setP2Positions(defaultP2)
@@ -2174,7 +2194,7 @@ export default function App() {
     setP2CrystalAssignments(defaultCrystals)
     setP3CrystalAssignments(defaultCrystals)
     persistRaidPlan({
-      p1Positions: defaultP2,
+      p1Positions: defaultP1,
       p1BossPosition: { ...DEFAULT_P1_BOSS_POSITION },
       positions: defaults,
       p2Positions: defaultP2,
@@ -2603,6 +2623,7 @@ function GameArena(props: { p1Sequence: number; p1Seed: number; p1BossOpening: P
       <div
         className={`arena-wrap${props.failureFlash ? ' failure-flash' : ''}${props.personalJumpProgress > 0 ? ' personal-jump' : ''}`}
         data-personal-jump={props.personalJumpProgress > 0}
+        data-event={props.event}
         data-event-time={props.eventTime.toFixed(2)}
         data-active-assignment={`${props.positions[props.assignment].x},${props.positions[props.assignment].y}`}
         data-intermission-assignment={`${props.intermissionPositions[props.assignment].x},${props.intermissionPositions[props.assignment].y}`}
@@ -2610,6 +2631,8 @@ function GameArena(props: { p1Sequence: number; p1Seed: number; p1BossOpening: P
         data-p2-spread-assignment={`${props.p2SpreadPositions[props.assignment].x},${props.p2SpreadPositions[props.assignment].y}`}
         data-p3-assignment={`${props.p3Positions[props.assignment].x},${props.p3Positions[props.assignment].y}`}
         data-p3-pool-health={props.p3PoolHealth.join(',')}
+        data-p1-glaive-sets={props.p1GlaiveSets.length}
+        data-p1-glaive-set-ids={props.p1GlaiveSets.map(set => set.id).join(',')}
         data-player-profile={`${props.profiles[props.assignment].name}|${props.profiles[props.assignment].playerClass}`}
       >
         <GameScene

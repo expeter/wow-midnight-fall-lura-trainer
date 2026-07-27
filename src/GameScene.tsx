@@ -5,7 +5,7 @@ import { p3SpreadPosition, p4PlayerSplinterHitsNpc, p4RenderedNpcSplinterHitsRai
 import { isP3RaidMemberVisible } from './game'
 import { isInsideP3Pool } from './game'
 import { combatProjectileBossCenter, combatProjectileHeight, combatProjectileImpactPoint, combatProjectilePosition, combatProjectileShape, combatProjectileTargetHeight, combatProjectileTravelSeconds, combatProjectilesActive, COMBAT_PROJECTILE_IMPACT_SECONDS, MAX_VISIBLE_NPC_PROJECTILES, npcProjectileShots, type CombatProjectileShape } from './projectiles'
-import { P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_MEMORY_BEAM_LENGTH, P1_MEMORY_RADIUS, P1_OUTER_RADIUS, P1_REACTIVE_SOAK_RADIUS, p1BeamAngles, p1BossEncounterPosition, p1ContinuousBeamTime, p1CrystalSpawnPosition, p1MemorySlotAngle, p1MemorySweepAngle, p1NpcBeamPosition, p1NpcCrystalPickupReleased, p1NpcMemoryPosition, p1NpcRoamingPosition, p1RotatingBeams, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
+import { P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_MEMORY_BEAM_LENGTH, P1_MEMORY_RADIUS, P1_OUTER_RADIUS, P1_REACTIVE_SOAK_RADIUS, p1BeamAngles, p1BossEncounterPosition, p1ClampNpcToArena, p1ContinuousBeamTime, p1CrystalSpawnPosition, p1MemoryRuneVisible, p1MemorySlotAngle, p1MemorySweepAngle, p1NpcBeamPosition, p1NpcCrystalPickupReleased, p1NpcGlaiveDodgePosition, p1NpcMemoryPosition, p1NpcRoamingPosition, p1RotatingBeams, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
 
 interface SceneProps {
   p1Sequence: number
@@ -1033,15 +1033,19 @@ export default function GameScene(props: SceneProps) {
           : p2NpcRoamingPosition(soakTarget, index, state.time, p2ReturningOrbPositions(state.p2OrbReturnAge, state.p2Cycle, orbitAngle, WORLD.center), WORLD.center, P2_RADIUS - 2)
         let p1Target = state.positions[baseIndex]
         const currentP1CrystalAssignments = state.p1CrystalAssignments.slice((state.p1Sequence - 1) * 3, state.p1Sequence * 3)
+        const p1CrystalSlot = currentP1CrystalAssignments.indexOf(baseIndex)
+        let p1CanDodgeGlaives = false
         const p1NpcRoams = ['p1-interrupts', 'p1-crystals', 'p1-glaives', 'p1-soaks'].includes(state.event)
         if (p1NpcRoams) {
           p1Target = p1NpcRoamingPosition(state.positions[baseIndex], p1Boss, index, state.time, state.p1Seed + state.p1Sequence * 1009)
+          p1CanDodgeGlaives = true
         }
         if (state.event === 'p1-crystals' && currentP1CrystalAssignments.includes(baseIndex)) {
           const pickupsReleased = p1NpcCrystalPickupReleased(state.p1CrystalAssignments, state.assignment, state.p1Sequence, state.p1CrystalCollected)
           p1Target = pickupsReleased
-            ? p1CrystalSpawnPosition(state.positions[baseIndex], WORLD.center)
+            ? p1CrystalSpawnPosition(p1Boss, WORLD.center, p1CrystalSlot)
             : state.positions[baseIndex]
+          p1CanDodgeGlaives = false
         } else if (state.event === 'p1-memory-position' || state.event === 'p1-memory-sweep') {
           const markedRune = [...p1MarkedProfiles.entries()].find(([, profileIndex]) => profileIndex === baseIndex)?.[0]
           if (markedRune) {
@@ -1051,21 +1055,28 @@ export default function GameScene(props: SceneProps) {
               y: p1Boss.y + Math.sin(angle) * P1_MEMORY_RADIUS,
             }
           } else {
-            const angle = baseIndex * 2.399963
-            p1Target = {
-              x: p1Boss.x + Math.cos(angle) * (P1_MEMORY_RADIUS + 24),
-              y: p1Boss.y + Math.sin(angle) * (P1_MEMORY_RADIUS + 24),
-            }
+            p1Target = p1NpcRoamingPosition(state.positions[baseIndex], p1Boss, index, state.time, state.p1Seed + state.p1Sequence * 1009)
+            p1CanDodgeGlaives = state.event === 'p1-memory-position'
           }
           p1Target = p1NpcMemoryPosition(p1Target, index, state.eventTime, state.event === 'p1-memory-position')
         } else if (state.event === 'p1-beam-telegraph' || state.event === 'p1-beams') {
           const openingBoss = p1BossEncounterPosition(state.p1BossOpening, state.positions.slice(0, 2), state.p1Sequence, 'p1-beam-telegraph', 0, WORLD.center)
           const beams = p1RotatingBeams(state.p1Seed, state.p1Sequence, 0, Math.PI / 16, Math.atan2(openingBoss.y - WORLD.center.y, openingBoss.x - WORLD.center.x))
           const elapsed = p1ContinuousBeamTime(state.event, state.eventTime)
-          p1Target = p1NpcBeamPosition(index, elapsed, p1Boss, p1BeamAngles(beams, elapsed)[0])
+          p1Target = p1NpcBeamPosition(index, elapsed, p1Boss, p1BeamAngles(beams, elapsed)[0], WORLD.center)
         } else if (state.event === 'p1-transition') {
           p1Target = state.intermissionPositions[baseIndex]
         }
+        if (p1CanDodgeGlaives) {
+          p1Target = p1NpcGlaiveDodgePosition(
+            { x: sprite.position.x, y: sprite.position.z },
+            p1Target,
+            state.p1GlaiveSets,
+            state.time,
+            index,
+          )
+        }
+        if (phaseOne) p1Target = p1ClampNpcToArena(p1Target, WORLD.center)
         let p3Target = p3NpcTarget(baseIndex, npcP3CrystalActive, state.p3Round, state.event, state.eventTime, state.p4PatternSeed, crystalSlot, npcP3Side, p3LandingIndexOf(baseIndex))
         if (phaseThree && ['p3-approach', 'p3-light-pools', 'p3-pools-overlap', 'p3-rune-preview', 'p3-lattice-memory', 'p3-lattice-second', 'p3-big-boom'].includes(state.event)) {
           p3Target = state.positions[baseIndex]
@@ -1265,7 +1276,7 @@ export default function GameScene(props: SceneProps) {
         )
         const npcCollectedCurrentP1Crystal = state.event === 'p1-crystals'
           && currentP1CrystalAssignments.includes(baseIndex)
-          && distance(position, p1CrystalSpawnPosition(state.positions[baseIndex], WORLD.center)) <= 4
+          && distance(position, p1CrystalSpawnPosition(p1Boss, WORLD.center, currentP1CrystalAssignments.indexOf(baseIndex))) <= 4
         const npcCrystalVisible = phaseOne
           ? p1CollectedAssignments.includes(baseIndex) || npcCollectedCurrentP1Crystal
           : phaseThree ? npcP3CrystalActive : state.crystalCarriers.includes(index)
@@ -1378,7 +1389,7 @@ export default function GameScene(props: SceneProps) {
           const activeAssignments = state.p1CrystalAssignments.slice((state.p1Sequence - 1) * 3, state.p1Sequence * 3)
           activeAssignments.forEach(profileIndex => {
             if (profileIndex === state.assignment && state.p1CrystalCollected) return
-            const point = p1CrystalSpawnPosition(state.positions[profileIndex], WORLD.center)
+            const point = p1CrystalSpawnPosition(p1Boss, WORLD.center, activeAssignments.indexOf(profileIndex))
             const npcOrdinal = npcProfileIndices.indexOf(profileIndex)
             if (npcOrdinal >= 0 && distance(npcPositions[npcOrdinal], point) <= 4) return
             addGroundCrystal(hazards, point)
@@ -1400,14 +1411,18 @@ export default function GameScene(props: SceneProps) {
           }
         })
         if (state.event === 'p1-memory-position' || state.event === 'p1-memory-sweep') {
-          addRuneMarker(hazards, state.player, p1RuneTextures[playerP1Rune], true)
+          const runeStillVisible = (rune: P1Rune) => state.event === 'p1-memory-position'
+            || p1MemoryRuneVisible(state.p1MemoryOrder, rune, state.eventTime)
+          if (runeStillVisible(playerP1Rune)) addRuneMarker(hazards, state.player, p1RuneTextures[playerP1Rune], true)
           p1MarkedProfiles.forEach((profileIndex, rune) => {
-            if (profileIndex === state.assignment) return
+            if (profileIndex === state.assignment || !runeStillVisible(rune)) return
             const npcOrdinal = npcProfileIndices.indexOf(profileIndex)
             if (npcOrdinal >= 0) addRuneMarker(hazards, npcPositions[npcOrdinal], p1RuneTextures[rune], true)
           })
           if (state.event === 'p1-memory-sweep') {
-            addLaserBeam(hazards, p1MemoryBoss, p1MemorySweepAngle(0, state.eventTime, p1OutwardAngle), P1_MEMORY_BEAM_LENGTH, 3.2, 0x9adfff, .92)
+            const angle = p1MemorySweepAngle(0, state.eventTime, p1OutwardAngle)
+            addSplinterWedge(hazards, p1MemoryBoss, angle, P1_MEMORY_BEAM_LENGTH, 0x2864c7, 1)
+            addLaserBeam(hazards, p1MemoryBoss, angle, P1_MEMORY_BEAM_LENGTH, .34, 0x2864c7, .62)
           }
         }
         if (state.event === 'p1-beam-telegraph' || state.event === 'p1-beams') {

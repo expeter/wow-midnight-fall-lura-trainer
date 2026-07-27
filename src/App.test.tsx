@@ -94,6 +94,8 @@ describe('player menu', () => {
     expect(await screen.findByText('I Asgard I raid plan loaded and saved')).toBeInTheDocument()
     expect(JSON.parse(localStorage.getItem('lura-player-profiles') || '[]')[0].name).toBe('aero')
     expect(JSON.parse(localStorage.getItem('lura-player-positions') || '[]')).toHaveLength(20)
+    expect(JSON.parse(localStorage.getItem('lura-p1-player-positions') || '[]')[0]).toEqual({ x: 368.5307864874153, y: 462.59201659297275 })
+    expect(JSON.parse(localStorage.getItem('lura-p1-boss-position') || 'null')).toEqual({ x: 378.84170305676855, y: 473.1239082969432 })
     expect(JSON.parse(localStorage.getItem('lura-p3-crystal-assignments') || '[]')).toHaveLength(6)
     expect((screen.getByLabelText(/raid plan share code/i) as HTMLInputElement).value).toMatch(/^http:\/\/localhost(?::\d+)?\/#raidplan=/)
     expect(window.location.hash).toBe('')

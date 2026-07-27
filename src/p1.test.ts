@@ -18,6 +18,7 @@ import {
   p1BeamHitResolution,
   p1BossEncounterPosition,
   p1BossPosition,
+  p1ClampNpcToArena,
   p1ContinuousBeamTime,
   p1CrystalExpired,
   p1CrystalPickupSequence,
@@ -31,11 +32,13 @@ import {
   p1InterruptState,
   p1InterruptSucceeded,
   p1MemoryOrder,
+  p1MemoryRuneVisible,
   p1MemorySlotAngle,
   p1MemorySlotValid,
   p1MemorySweepAngle,
   p1NpcBeamPosition,
   p1NpcCrystalPickupReleased,
+  p1NpcGlaiveDodgePosition,
   p1NpcMemoryPosition,
   p1NpcRoamingPosition,
   p1PlayerSoakFailed,
@@ -80,9 +83,16 @@ describe('P1 headless mechanics', () => {
     expect(p1CrystalExpired(crystals[0], 30, 24)).toBe(false)
   })
 
-  it('places pickup crystals inward from their raid-plan assignments', () => {
-    expect(p1CrystalSpawnPosition({ x: 100, y: 0 }, { x: 0, y: 0 })).toEqual({ x: 86, y: 0 })
-    expect(p1CrystalSpawnPosition({ x: 0, y: 0 }, { x: 0, y: 0 })).toEqual({ x: 0, y: 0 })
+  it('places three distinct pickup crystals between L’ura and the arena center', () => {
+    const boss = { x: 100, y: 0 }
+    const center = { x: 0, y: 0 }
+    const crystals = [0, 1, 2].map(index => p1CrystalSpawnPosition(boss, center, index))
+    expect(crystals).toEqual([
+      { x: 65, y: 20 },
+      { x: 65, y: 0 },
+      { x: 65, y: -20 },
+    ])
+    expect(crystals.every(point => point.x > center.x && point.x < boss.x)).toBe(true)
   })
 
   it('splits six configured carriers into two trios and holds NPCs for the player pickup', () => {
@@ -169,6 +179,9 @@ describe('P1 headless mechanics', () => {
     const firstStopAngle = Math.atan2(firstStop.y - center.y, firstStop.x - center.x)
     expect(Math.abs(Math.atan2(Math.sin(firstStopAngle - openingAngle), Math.cos(firstStopAngle - openingAngle)))).toBeCloseTo(Math.PI / 4)
     expect(p1BossEncounterPosition(opening, tanks, 2, 'p1-interrupts', 0, center)).toEqual(firstStop)
+    const finalStop = p1BossEncounterPosition(opening, tanks, 2, 'p1-beams', P1_ROTATING_BEAM_ACTIVE_SECONDS, center)
+    expect(p1BossEncounterPosition(opening, tanks, 2, 'p1-transition', 0, center)).toEqual(finalStop)
+    expect(p1BossEncounterPosition(opening, tanks, 2, 'p1-transition', P1_INTERMISSION_POSITION_SECONDS, center)).toEqual(center)
   })
 
   it('lets memory NPCs roam before settling and makes beam NPCs cross then follow a rotating ray', () => {
@@ -179,13 +192,14 @@ describe('P1 headless mechanics', () => {
     expect(p1NpcMemoryPosition(target, 3, 7, true)).toEqual(target)
     expect(P1_MEMORY_NPC_SETTLE_SECONDS).toBe(1.5)
     const boss = { x: 400, y: 420 }
-    const crossing = p1NpcBeamPosition(3, .5, boss, Math.PI / 3)
-    const following = p1NpcBeamPosition(3, 2.5, boss, Math.PI / 3)
+    const center = { x: 0, y: 0 }
+    const crossing = p1NpcBeamPosition(3, .5, boss, Math.PI / 3, center)
+    const following = p1NpcBeamPosition(3, 2.5, boss, Math.PI / 3, center)
     expect(crossing).not.toEqual(following)
     const movedBoss = { x: 430, y: 390 }
-    const movedWithBoss = p1NpcBeamPosition(3, 3, movedBoss, Math.PI / 3)
-    expect(movedWithBoss.x - following.x).toBeCloseTo(movedBoss.x - boss.x)
-    expect(movedWithBoss.y - following.y).toBeCloseTo(movedBoss.y - boss.y)
+    const movedWithBoss = p1NpcBeamPosition(3, 3, movedBoss, Math.PI / 3, center)
+    expect(Math.hypot(movedWithBoss.x - center.x, movedWithBoss.y - center.y))
+      .toBeGreaterThan(Math.hypot(following.x - center.x, following.y - center.y))
   })
 
   it('gives idle P1 NPCs deterministic cast-and-move waypoints around L’ura', () => {
@@ -196,8 +210,19 @@ describe('P1 headless mechanics', () => {
     const nextMove = p1NpcRoamingPosition(assignment, boss, 4, 2.3, 77)
     expect(heldCast).toEqual(firstCast)
     expect(nextMove).not.toEqual(firstCast)
-    expect(Math.hypot(nextMove.x - boss.x, nextMove.y - boss.y)).toBeGreaterThanOrEqual(34)
-    expect(Math.hypot(nextMove.x - boss.x, nextMove.y - boss.y)).toBeLessThanOrEqual(88)
+    expect(Math.hypot(nextMove.x - boss.x, nextMove.y - boss.y)).toBeGreaterThanOrEqual(24)
+    expect(Math.hypot(nextMove.x - boss.x, nextMove.y - boss.y)).toBeLessThanOrEqual(58)
+  })
+
+  it('sidesteps an approaching Heaven Glaive without running away from its mechanic target', () => {
+    const set = p1GlaiveSet(1, 1, { x: 0, y: 0 }, 0, { speed: 1, telegraphSeconds: 0 })
+    set.glaives = [{ id: 0, position: { x: 0, y: 0 }, direction: { x: 1, y: 0 }, reflected: true }]
+    const position = { x: 30, y: 2 }
+    const target = { x: 34, y: 0 }
+    const dodge = p1NpcGlaiveDodgePosition(position, target, [set], 1, 0)
+    expect(dodge.x).toBe(target.x)
+    expect(Math.abs(dodge.y - target.y)).toBe(17)
+    expect(p1ClampNpcToArena({ x: 300, y: 0 }, { x: 0, y: 0 })).toEqual({ x: 250, y: 0 })
   })
 
   it('removes expired glaives and caps the live field at the newest two sets', () => {
@@ -210,6 +235,10 @@ describe('P1 headless mechanics', () => {
     expect(sets.map(set => set.id)).toEqual([1, 2])
     sets = p1AddGlaiveSet(sets, makeSet(3, 50), 50)
     expect(sets.map(set => set.id)).toEqual([3])
+
+    const firstLiveSet = p1GlaiveSet(7, 1, { x: 0, y: 0 }, 18, { speed: 1 })
+    const secondLiveSet = p1GlaiveSet(8, 2, { x: 20, y: 0 }, 55, { speed: 1 })
+    expect(p1AddGlaiveSet([firstLiveSet], secondLiveSet, 55).map(set => set.id)).toEqual([1, 2])
   })
 
   it('rearms a Heaven Glaive contact only after the player exits it', () => {
@@ -244,18 +273,24 @@ describe('P1 headless mechanics', () => {
     const correct = { x: center.x + Math.cos(angle) * 120, y: center.y + Math.sin(angle) * 120 }
     expect(p1MemorySlotValid(correct, center, order, 'O', outward)).toBe(true)
     expect(p1MemorySlotValid(correct, center, order, 'X', outward)).toBe(false)
-    expect(P1_MEMORY_BEAM_LENGTH).toBe(35)
+    expect(P1_MEMORY_BEAM_LENGTH).toBe(40)
     expect(p1MemorySweepAngle(0, 0, outward)).toBeCloseTo(outward)
     expect(p1MemorySweepAngle(0, 5, outward)).toBeCloseTo(outward + Math.PI * 2)
+    expect(p1MemoryRuneVisible(order, 'T', 0)).toBe(false)
+    expect(p1MemoryRuneVisible(order, 'X', .99)).toBe(true)
+    expect(p1MemoryRuneVisible(order, 'X', 1)).toBe(false)
+    expect(p1MemoryRuneVisible(order, '+', 3.99)).toBe(true)
   })
 
-  it('rotates eight evenly spaced beams from a seeded five-degree side offset', () => {
+  it('rotates eight clockwise beams from a two-degree side offset for every seed', () => {
     const openingAngle = Math.PI * 2 / 3
     const beams = p1RotatingBeams(99, 0, 10, Math.PI / 4, openingAngle)
     const initial = p1BeamAngles(beams, 10)
     const later = p1BeamAngles(beams, 11)
     expect(initial).toHaveLength(8)
-    expect(Math.abs(initial[0] - openingAngle)).toBeCloseTo(Math.PI / 36)
+    expect(beams.direction).toBe(1)
+    expect(p1RotatingBeams(1, 2, 10, Math.PI / 4, openingAngle).direction).toBe(1)
+    expect(Math.abs(initial[0] - openingAngle)).toBeCloseTo(Math.PI / 90)
     expect(initial[1] - initial[0]).toBeCloseTo(Math.PI / 4)
     expect(Math.abs(later[0] - initial[0])).toBeCloseTo(Math.PI / 4)
   })

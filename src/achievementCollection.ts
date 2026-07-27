@@ -27,6 +27,11 @@ export type AchievementId =
   | 'superhuman-both-duties'
   | 'early-kill'
   | 'p3-early-clear'
+  | 'impossible-normal-streak'
+  | 'impossible-hard-streak'
+  | 'phase-clears-10'
+  | 'phase-clears-50'
+  | 'phase-clears-100'
 
 export interface AchievementDefinition extends Achievement {
   id: AchievementId
@@ -54,6 +59,8 @@ export interface AchievementRunRecord {
   totalScore: number
   allOptions: boolean
   allPhaseRecovery: boolean
+  fullRunAttempt?: boolean
+  phaseClears?: number
 }
 
 export interface AchievementCollectionData {
@@ -86,6 +93,11 @@ const DEFINITIONS: AchievementDefinition[] = [
   badge('superhuman-both-duties', 'Feats of Movement', 'Superhuman: Refraction', 'Two duties. Every tool. Not one step out of place.', 'Earn >1,100-point flawless Hard clears as crystal and non-crystal with every combat option handled.', '✪'),
   badge('early-kill', 'Feats of Movement', 'Ahead of the Darkness', 'Bring L’ura down before the final Heaven & Hell can close.', 'Reach 0% boss health before the final Phase 4 sequence.', '⚔'),
   badge('p3-early-clear', 'Feats of Movement', 'The Stars Can Wait', 'Push L’ura’s image beyond its limit before Phase 3 can complete its course.', 'Reduce L’ura to 0% during Phase 3.', '☄'),
+  badge('impossible-normal-streak', 'Feats of Movement', 'The Impossible', 'Five flawless rehearsals in a row. At some point, impossible becomes preparation.', 'Complete five consecutive full runs flawlessly on Normal.', '∞'),
+  badge('impossible-hard-streak', 'Feats of Movement', 'Beyond the Impossible', 'Five perfect journeys through the hardest rehearsal without surrendering a single step.', 'Complete five consecutive full runs flawlessly on Hard.', '♛'),
+  badge('phase-clears-10', 'Foundations', 'Still Standing', 'Ten phases cleared and the floor is beginning to remember your footsteps.', 'Clear 10 phases across all finished attempts.', 'Ⅹ'),
+  badge('phase-clears-50', 'Foundations', 'One More Pull', 'Fifty phases later, “one more pull” remains a perfectly reasonable plan.', 'Clear 50 phases across all finished attempts.', '↻'),
+  badge('phase-clears-100', 'Feats of Movement', 'Can’t Get Enough', 'One hundred phases cleared. L’ura may now be practicing against you.', 'Clear 100 phases across all finished attempts.', '100'),
 ]
 
 function badge(id: AchievementId, cluster: AchievementCluster, label: string, flavor: string, requirement: string, icon: string, available = true): AchievementDefinition {
@@ -147,11 +159,32 @@ function runRecord(summary: AchievementSummary, attempt: number): AchievementRun
     totalScore: summary.totalScore,
     allOptions: summary.healthPotEnabled && summary.shieldEnabled && (summary.mainAbilityCasts ?? 0) > 0,
     allPhaseRecovery: Boolean(summary.allPhaseRecovery),
+    fullRunAttempt: Boolean(summary.fullRunAttempt ?? summary.fullSequence),
+    phaseClears: summary.phaseResults?.length ?? (summary.fullSequence ? 4 : 0),
   }
 }
 
+export function flawlessFullRunStreak(runs: AchievementRunRecord[], difficulty: string): number {
+  const targetDifficulty = normalizedDifficulty(difficulty)
+  let streak = 0
+  for (let index = runs.length - 1; index >= 0; index -= 1) {
+    const run = runs[index]
+    if (run.difficulty !== targetDifficulty || !(run.fullRunAttempt ?? run.fullSequence)) continue
+    if (!run.fullSequence || !run.flawless) break
+    streak += 1
+  }
+  return streak
+}
+
+export function totalPhaseClears(runs: AchievementRunRecord[]): number {
+  return runs.reduce((total, run) => total + (run.phaseClears ?? (run.fullSequence ? 4 : 1)), 0)
+}
+
 export function collectibleAchievements(summary: AchievementSummary, collection: AchievementCollectionData = emptyCollection(), attempt = 0): AchievementDefinition[] {
-  const runs = [...collection.runs, runRecord(summary, attempt)]
+  const currentRun = runRecord(summary, attempt)
+  const runs = collection.runs.some(run => run.attempt === attempt)
+    ? collection.runs
+    : [...collection.runs, currentRun]
   const awards = currentRunAchievements(summary)
   const fullDuties = new Set(runs.filter(run => run.fullSequence).map(run => run.crystalPlayer ? 'crystal' : 'non-crystal'))
   if (fullDuties.size === 2) awards.push(award('both-sides-of-crystal'))
@@ -159,6 +192,12 @@ export function collectibleAchievements(summary: AchievementSummary, collection:
     .filter(run => run.fullSequence && run.difficulty === 'hard' && run.flawless && run.totalScore > 1100 && run.allOptions && run.allPhaseRecovery)
     .map(run => run.crystalPlayer ? 'crystal' : 'non-crystal'))
   if (superhumanDuties.size === 2) awards.push(award('superhuman-both-duties'))
+  if (flawlessFullRunStreak(runs, 'normal') >= 5) awards.push(award('impossible-normal-streak'))
+  if (flawlessFullRunStreak(runs, 'hard') >= 5) awards.push(award('impossible-hard-streak'))
+  const phaseClears = totalPhaseClears(runs)
+  if (phaseClears >= 10) awards.push(award('phase-clears-10'))
+  if (phaseClears >= 50) awards.push(award('phase-clears-50'))
+  if (phaseClears >= 100) awards.push(award('phase-clears-100'))
   return [...new Map(awards.map(entry => [entry.id, entry])).values()]
 }
 
@@ -194,6 +233,8 @@ function validRun(value: unknown): value is AchievementRunRecord {
     && typeof run.totalScore === 'number'
     && typeof run.allOptions === 'boolean'
     && typeof run.allPhaseRecovery === 'boolean'
+    && (typeof run.fullRunAttempt === 'undefined' || typeof run.fullRunAttempt === 'boolean')
+    && (typeof run.phaseClears === 'undefined' || typeof run.phaseClears === 'number' && run.phaseClears >= 0)
 }
 
 const LEGACY_ID_MAP: Record<string, AchievementId[]> = {

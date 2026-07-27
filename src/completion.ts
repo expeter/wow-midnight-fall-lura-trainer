@@ -42,6 +42,7 @@ export interface AchievementSummary {
   difficulty: string
   crystalPlayer: boolean
   fullSequence: boolean
+  fullRunAttempt?: boolean
   mistakes: number
   totalScore: number
   healthPotEnabled: boolean

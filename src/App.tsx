@@ -1750,6 +1750,7 @@ export default function App() {
     difficulty: `${difficulty[0].toUpperCase()}${difficulty.slice(1)}`,
     crystalPlayer: resultCrystalPlayer,
     fullSequence: fullSequenceComplete,
+    fullRunAttempt: entryMode === 'arena1',
     mistakes: stats.hits,
     totalScore: stats.score,
     healthPotEnabled: true,

@@ -4,10 +4,13 @@ import {
   achievementCatalog,
   collectibleAchievements,
   emptyCollection,
+  flawlessFullRunStreak,
   mergeEarnedAchievements,
   newlyEarnedAchievements,
   parseAchievementCollection,
   serializeAchievementCollection,
+  totalPhaseClears,
+  type AchievementRunRecord,
 } from './achievementCollection'
 
 const flawlessPhases: PhaseResult[] = [
@@ -40,6 +43,24 @@ function ids(summary: AchievementSummary) {
 }
 
 describe('canonical achievement rules', () => {
+  const recordedRun = (
+    attempt: number,
+    difficulty: string,
+    overrides: Partial<AchievementRunRecord> = {},
+  ): AchievementRunRecord => ({
+    attempt,
+    difficulty,
+    fullSequence: true,
+    fullRunAttempt: true,
+    crystalPlayer: false,
+    flawless: true,
+    totalScore: 1120,
+    allOptions: true,
+    allPhaseRecovery: true,
+    phaseClears: 4,
+    ...overrides,
+  })
+
   it('awards overlapping full-run and per-phase feats without repeated variants', () => {
     expect(ids(normalFlawless)).toEqual(expect.arrayContaining([
       'ready-for-raid-night',
@@ -108,6 +129,51 @@ describe('canonical achievement rules', () => {
       'superhuman-both-duties',
     ]))
   })
+
+  it('unlocks Normal and Hard impossible streaks only after five matching flawless full attempts', () => {
+    const fourNormal = Array.from({ length: 4 }, (_, index) => recordedRun(index + 1, 'normal'))
+    const directPractice = recordedRun(5, 'normal', {
+      fullSequence: false,
+      fullRunAttempt: false,
+      phaseClears: 1,
+    })
+    const normalHistory = { ...emptyCollection(), runs: [...fourNormal, directPractice] }
+    expect(collectibleAchievements(normalFlawless, normalHistory, 6).map(entry => entry.id))
+      .toContain('impossible-normal-streak')
+    expect(flawlessFullRunStreak([...normalHistory.runs, recordedRun(6, 'normal')], 'normal')).toBe(5)
+
+    const failedNormal = recordedRun(7, 'normal', { fullSequence: false, flawless: false, phaseClears: 2 })
+    expect(flawlessFullRunStreak([...fourNormal, failedNormal], 'normal')).toBe(0)
+    expect(collectibleAchievements(normalFlawless, { ...emptyCollection(), runs: [...fourNormal, failedNormal] }, 8).map(entry => entry.id))
+      .not.toContain('impossible-normal-streak')
+
+    const fourHard = Array.from({ length: 4 }, (_, index) => recordedRun(index + 10, 'hard'))
+    expect(collectibleAchievements({ ...normalFlawless, difficulty: 'Hard' }, { ...emptyCollection(), runs: fourHard }, 14).map(entry => entry.id))
+      .toContain('impossible-hard-streak')
+  })
+
+  it('unlocks only the compact 10, 50, and 100 phase-clear milestones', () => {
+    const history = {
+      ...emptyCollection(),
+      runs: [
+        recordedRun(1, 'normal', { phaseClears: 4 }),
+        recordedRun(2, 'normal', { fullSequence: false, fullRunAttempt: false, phaseClears: 1 }),
+      ],
+    }
+    expect(totalPhaseClears(history.runs)).toBe(5)
+    const ten = collectibleAchievements(normalFlawless, history, 3).map(entry => entry.id)
+    expect(ten).not.toContain('phase-clears-10')
+
+    const fortySixClears = Array.from({ length: 11 }, (_, index) => recordedRun(index + 20, 'normal'))
+      .concat(recordedRun(31, 'normal', { fullSequence: false, fullRunAttempt: false, phaseClears: 2 }))
+    expect(totalPhaseClears(fortySixClears)).toBe(46)
+    expect(collectibleAchievements(normalFlawless, { ...emptyCollection(), runs: fortySixClears }, 32).map(entry => entry.id))
+      .toEqual(expect.arrayContaining(['phase-clears-10', 'phase-clears-50']))
+
+    const ninetySixClears = Array.from({ length: 24 }, (_, index) => recordedRun(index + 40, 'hard'))
+    expect(collectibleAchievements(normalFlawless, { ...emptyCollection(), runs: ninetySixClears }, 70).map(entry => entry.id))
+      .toEqual(expect.arrayContaining(['phase-clears-10', 'phase-clears-50', 'phase-clears-100']))
+  })
 })
 
 describe('persistent achievement collection', () => {
@@ -157,9 +223,9 @@ describe('persistent achievement collection', () => {
     expect(parseAchievementCollection(serializeAchievementCollection(loaded))).toEqual(loaded)
   })
 
-  it('publishes 22 available canonical achievements and one P1 teaser', () => {
+  it('publishes 27 available canonical achievements and one P1 teaser', () => {
     const catalog = achievementCatalog()
-    expect(catalog.filter(achievement => achievement.available)).toHaveLength(22)
+    expect(catalog.filter(achievement => achievement.available)).toHaveLength(27)
     expect(catalog.find(achievement => achievement.id === 'flawless-p1')).toMatchObject({ available: false })
     expect(new Set(catalog.map(achievement => achievement.id)).size).toBe(catalog.length)
   })

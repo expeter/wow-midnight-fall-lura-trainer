@@ -29,6 +29,9 @@
   saucers, added late-settling memory NPC motion and correct rotating-beam NPC
   movement, moved L’ura toward raid-plan tank positions 1/2, and preserved one
   continuous beam angle from the low safe telegraph into the lethal laser.
+- CR-112: Replaced static P1 NPC downtime with deterministic cast-and-move
+  waypoints around L’ura while preserving crystal pickups, memory alignment,
+  and rotating-beam movement; tracked from the linked inbox capture.
 
 ## 0.2.0 — 2026-07-27
 

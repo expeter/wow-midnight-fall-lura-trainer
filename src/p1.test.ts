@@ -28,6 +28,7 @@ import {
   p1NpcBeamPosition,
   p1NpcCrystalPickupReleased,
   p1NpcMemoryPosition,
+  p1NpcRoamingPosition,
   p1PlayerSoakFailed,
   p1Progress,
   p1ReactiveSoaks,
@@ -163,6 +164,18 @@ describe('P1 headless mechanics', () => {
     expect(crossing).not.toEqual(following)
     expect(Math.hypot(following.x - center.x, following.y - center.y)).toBeGreaterThan(P1_INNER_RADIUS)
     expect(Math.hypot(following.x - center.x, following.y - center.y)).toBeLessThan(P1_OUTER_RADIUS)
+  })
+
+  it('gives idle P1 NPCs deterministic cast-and-move waypoints around L’ura', () => {
+    const boss = { x: 350, y: 400 }
+    const assignment = { x: 410, y: 420 }
+    const firstCast = p1NpcRoamingPosition(assignment, boss, 4, .5, 77)
+    const heldCast = p1NpcRoamingPosition(assignment, boss, 4, 1.8, 77)
+    const nextMove = p1NpcRoamingPosition(assignment, boss, 4, 2.3, 77)
+    expect(heldCast).toEqual(firstCast)
+    expect(nextMove).not.toEqual(firstCast)
+    expect(Math.hypot(nextMove.x - boss.x, nextMove.y - boss.y)).toBeGreaterThanOrEqual(34)
+    expect(Math.hypot(nextMove.x - boss.x, nextMove.y - boss.y)).toBeLessThanOrEqual(88)
   })
 
   it('removes expired glaives and caps the live field at the newest two sets', () => {

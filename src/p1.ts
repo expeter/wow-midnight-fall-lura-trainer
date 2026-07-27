@@ -315,6 +315,28 @@ export function p1NpcMemoryPosition(target: P1Point, npcIndex: number, eventTime
   }
 }
 
+export function p1NpcRoamingPosition(
+  assignment: P1Point,
+  boss: P1Point,
+  npcIndex: number,
+  time: number,
+  seed: number,
+): P1Point {
+  const stepSeconds = 2.2 + npcIndex % 4 * .28
+  const step = Math.floor(time / stepSeconds)
+  const assignmentAngle = Math.atan2(assignment.y - boss.y, assignment.x - boss.x)
+  const assignmentRadius = Math.hypot(assignment.x - boss.x, assignment.y - boss.y)
+  const angleJitter = (seededUnit(seed + npcIndex * 97, step * 2) - .5) * .7
+  const radiusJitter = (seededUnit(seed + npcIndex * 131, step * 2 + 1) - .5) * 24
+  const direction = npcIndex % 2 ? 1 : -1
+  const angle = assignmentAngle + direction * step * (.32 + npcIndex % 5 * .035) + angleJitter
+  const radius = Math.max(34, Math.min(88, assignmentRadius + radiusJitter))
+  return {
+    x: boss.x + Math.cos(angle) * radius,
+    y: boss.y + Math.sin(angle) * radius,
+  }
+}
+
 export function p1NpcBeamPosition(
   assignment: P1Point,
   npcIndex: number,

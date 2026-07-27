@@ -5,7 +5,7 @@ import { p3SpreadPosition, p4PlayerSplinterHitsNpc, p4RenderedNpcSplinterHitsRai
 import { isP3RaidMemberVisible } from './game'
 import { isInsideP3Pool } from './game'
 import { combatProjectileBossCenter, combatProjectileHeight, combatProjectileImpactPoint, combatProjectilePosition, combatProjectileShape, combatProjectileTargetHeight, combatProjectileTravelSeconds, combatProjectilesActive, COMBAT_PROJECTILE_IMPACT_SECONDS, MAX_VISIBLE_NPC_PROJECTILES, npcProjectileShots, type CombatProjectileShape } from './projectiles'
-import { P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_MEMORY_RADIUS, P1_OUTER_RADIUS, p1BeamAngles, p1BossEncounterPosition, p1ContinuousBeamTime, p1CrystalSpawnPosition, p1MemorySlotAngle, p1MemorySweepAngle, p1NpcBeamPosition, p1NpcCrystalPickupReleased, p1NpcMemoryPosition, p1RotatingBeams, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
+import { P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_MEMORY_RADIUS, P1_OUTER_RADIUS, p1BeamAngles, p1BossEncounterPosition, p1ContinuousBeamTime, p1CrystalSpawnPosition, p1MemorySlotAngle, p1MemorySweepAngle, p1NpcBeamPosition, p1NpcCrystalPickupReleased, p1NpcMemoryPosition, p1NpcRoamingPosition, p1RotatingBeams, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
 
 interface SceneProps {
   p1Sequence: number
@@ -1000,6 +1000,10 @@ export default function GameScene(props: SceneProps) {
           : p2NpcRoamingPosition(soakTarget, index, state.time, p2ReturningOrbPositions(state.p2OrbReturnAge, state.p2Cycle, orbitAngle, WORLD.center), WORLD.center, P2_RADIUS - 2)
         let p1Target = state.positions[baseIndex]
         const currentP1CrystalAssignments = state.p1CrystalAssignments.slice((state.p1Sequence - 1) * 3, state.p1Sequence * 3)
+        const p1NpcRoams = ['p1-interrupts', 'p1-crystals', 'p1-glaives', 'p1-soaks'].includes(state.event)
+        if (p1NpcRoams) {
+          p1Target = p1NpcRoamingPosition(state.positions[baseIndex], p1Boss, index, state.time, state.p1Seed + state.p1Sequence * 1009)
+        }
         if (state.event === 'p1-crystals' && currentP1CrystalAssignments.includes(baseIndex)) {
           const pickupsReleased = p1NpcCrystalPickupReleased(state.p1CrystalAssignments, state.assignment, state.p1Sequence, state.p1CrystalCollected)
           p1Target = pickupsReleased

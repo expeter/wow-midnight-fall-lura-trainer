@@ -30,6 +30,8 @@ phase-specific raid-plan persistence.
 ## Interrupt sequence
 
 - The boss casts five times; each cast lasts two seconds.
+- Between assigned actions, NPCs alternate short casts with irregular movement
+  waypoints around L’ura instead of freezing on their raid-plan markers.
 - Show the controlled player’s state in a compact box:
   - red: this is not the assigned interrupt;
   - yellow: the player is next;
@@ -44,6 +46,8 @@ phase-specific raid-plan persistence.
 - Assigned carriers have five seconds to collect them.
 - If the controlled player belongs to the active trio, NPC carriers wait until
   the player collects their crystal before moving to their own pickups.
+- Non-carriers keep the ambient cast-and-move orbit while active carriers
+  override it to collect their assigned crystal.
 - The pull countdown states both Kick 1–5 and Crystal pickup 1, Crystal pickup
   2, or no pickup.
 - An uncollected crystal wipes the attempt, consistently with existing crystal

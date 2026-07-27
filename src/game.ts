@@ -928,9 +928,8 @@ export function p2ReturningOrbPositions(age: number, returnSeed: number, center:
   if (state.phase !== 'orbiting' && state.phase !== 'charging' && state.phase !== 'returning') return []
   return Array.from({ length: 4 }, (_, index) => {
     const angleOffset = p2SeededUnit(returnSeed + index * 17) * Math.PI * 2
-    const direction = p2SeededUnit(returnSeed + index * 31 + 7) < .5 ? -1 : 1
     const speed = P2_ORBIT_SPEED * (.82 + p2SeededUnit(returnSeed + index * 47 + 13) * .36)
-    const angle = angleOffset + age * speed * direction
+    const angle = angleOffset - age * speed
     return { x: center.x + Math.cos(angle) * state.radius, y: center.y + Math.sin(angle) * state.radius }
   })
 }
@@ -939,6 +938,9 @@ export function shouldTriggerP3EarlyClear(event: string, playerDamage: number): 
     && event !== 'p3-countdown'
     && event !== 'p3-sector-move'
     && playerDamage >= 100
+}
+export function preP4BossHealth(playerDamage: number): number {
+  return Math.max(0, 100 - Math.max(0, Math.min(100, playerDamage)))
 }
 export function p4StartingBossState(): { health: number; playerDamage: number } {
   return { health: 100, playerDamage: 0 }

@@ -72,9 +72,12 @@ describe('canonical achievement rules', () => {
     expect(ids({ ...normalFlawless, difficulty: 'Hard', totalScore: 1101 })).toContain('hard-score-flawless')
   })
 
-  it('celebrates defeating the Phase 3 image before the north regroup', () => {
+  it('celebrates reducing the Phase 3 image to 0% without revealing transition tactics', () => {
     expect(ids({ ...normalFlawless, p3EarlyClear: true })).toContain('p3-early-clear')
     expect(ids({ ...normalFlawless, p3EarlyClear: false })).not.toContain('p3-early-clear')
+    const achievement = achievementCatalog().find(candidate => candidate.id === 'p3-early-clear')
+    expect(achievement?.requirement).toBe('Reduce L’ura to 0% during Phase 3.')
+    expect(`${achievement?.flavor} ${achievement?.requirement}`).not.toMatch(/regroup|north|phase 4/i)
   })
 
   it('unlocks both-duty feats from canonical cross-run history', () => {

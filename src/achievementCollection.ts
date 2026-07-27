@@ -83,7 +83,7 @@ const DEFINITIONS: AchievementDefinition[] = [
   badge('both-sides-of-crystal', 'Feats of Movement', 'Both Sides of the Crystal', 'Master the burden—and the space around the one who carries it.', 'Complete the full journey once with crystal duty and once without it.', '◈'),
   badge('superhuman-both-duties', 'Feats of Movement', 'Superhuman: Refraction', 'Two duties. Every tool. Not one step out of place.', 'Earn >1,100-point flawless Hard clears as crystal and non-crystal with every combat option handled.', '✪'),
   badge('early-kill', 'Feats of Movement', 'Ahead of the Darkness', 'Bring L’ura down before the final Heaven & Hell can close.', 'Reach 0% boss health before the final Phase 4 sequence.', '⚔'),
-  badge('p3-early-clear', 'Feats of Movement', 'The Stars Can Wait', 'Silence L’ura’s image before every planned sequence can unfold, then answer the call to regroup north.', 'Reduce L’ura to 0% during Phase 3 and reach the north regroup for Phase 4.', '☄'),
+  badge('p3-early-clear', 'Feats of Movement', 'The Stars Can Wait', 'Push L’ura’s image beyond its limit before Phase 3 can complete its course.', 'Reduce L’ura to 0% during Phase 3.', '☄'),
 ]
 
 function badge(id: AchievementId, cluster: AchievementCluster, label: string, flavor: string, requirement: string, icon: string, available = true): AchievementDefinition {

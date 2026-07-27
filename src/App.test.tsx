@@ -226,6 +226,11 @@ describe('player menu', () => {
     expect(within(music).getByRole('button', { name: /play preview/i })).toBeEnabled()
     await user.click(screen.getByRole('button', { name: /enter arena/i }))
     expect(screen.getByRole('button', { name: /disable music/i })).toHaveTextContent('Music on')
+    const raidLead = screen.getByRole('button', { name: /mute raid lead/i })
+    expect(raidLead).toHaveTextContent('Raidlead on')
+    await user.click(raidLead)
+    await waitFor(() => expect(localStorage.getItem('lura-tts-enabled')).toBe('false'))
+    expect(screen.getByRole('button', { name: /enable raid lead/i })).toHaveTextContent('Raidlead muted')
   })
   it('speaks a direct-entry countdown once per number when TTS is enabled', async () => {
     const user = userEvent.setup()

@@ -162,6 +162,8 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-082` | Implemented | Explain each mechanic’s visual boundary in the sound timing lab and expose the complete generated SFX library in every timing selector, with the cue-specific recommendations grouped first. |
 | `CR-083` | Implemented | When player damage reduces L’ura to 0% during Phase 3, end the remaining mechanics and send the raid through the existing north regroup into Phase 4; award “The Stars Can Wait” for doing so. |
 | `CR-084` | Implemented | Replace the pre-Phase-4 boss-health instruction with the atmospheric line “The veil shudders with every step.” |
+| `CR-085` | Implemented | Keep “The Stars Can Wait” focused on reducing L’ura to 0% during Phase 3; remove north-regroup and Phase 4 tactical directions from the achievement and legacy certificate text. |
+| `CR-086` | Implemented | Add an accessible in-arena Raidlead mute button that immediately toggles the separately persisted TTS preference without affecting music or encounter sounds. |
 | `SPEC-001` | Implemented | Define the stable ticket lifecycle: assign an ID, record intent, add focused regression coverage, validate, and commit. |
 | `SPEC-002` | Implemented | Define the creator business card’s stable content, readability, compact layout, and external-link behavior. |
 | `SPEC-003` | Implemented | Define the P3-to-P4 north gather, shared knockup origin, and phase-local HUD boundary. |
@@ -221,7 +223,9 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-054` | Implemented | Remove the misleading Phase 4 add-destroyed sound and its render counter: clustered tank and Starsplinter removals can be coalesced into a delayed cue, while the adds visually disappear rather than producing a readable impact. |
 | `BUG-055` | Implemented | Always reset L’ura to 100% health and clear accumulated player damage at the P3-to-P4 boundary, so defeating her image before Phase 4 can never skip the final phase. |
 | `BUG-056` | Implemented | Preserve the active resolved-orb set through both Phase 2 sequences and render all four glowing orbs throughout their inward return window, matching the second-sequence `Dodge` warning. |
-| `BUG-057` | Implemented | Give every resolved Phase 2 orb set a new stable random seed, with independent angular offsets, speeds, and clockwise/counter-clockwise travel; only the beam resolution starts their shared return clock. |
+| `BUG-057` | Superseded in part by BUG-059 | Give every resolved Phase 2 orb set a new stable random seed, with independent angular offsets, speeds, and rotational travel; only the beam resolution starts their shared return clock. BUG-059 standardizes the travel direction. |
+| `BUG-058` | Implemented | Clamp pre-Phase-4 boss health to the full 0–100% range and explicitly hold it at 0% when the Phase 3 damage clear begins, restoring 100% only at the Phase 4 boundary. |
+| `BUG-059` | Implemented | Keep all Phase 2 orbs rotating continuously counterclockwise with no direction or position discontinuity when they enter the glowing return telegraph; retain randomized lanes and slight speed variance. |
 
 ## Implemented feature inventory
 

@@ -56,6 +56,7 @@ phase-specific raid-plan persistence.
 - Each disc launches from the outside boss at three times player/NPC speed,
   keeps that full speed until its first impact, then continues at 110% of
   configured player speed.
+- Render each disc as a broad, flat luminous flying saucer rather than an orb.
 - Glaives reflect from both the 260-yard outer wall and the 102-yard middle
   bubble, so they never pass through the protected center.
 - The glaives continue roaming while later mechanics occur.
@@ -75,19 +76,23 @@ phase-specific raid-plan persistence.
   remaining symbols stand clockwise in displayed order. Each marked player
   touched by the beam must match the next symbol.
 - An incorrect order wipes the attempt.
-- NPCs solve it with deliberately late movement and may change position during
-  the final second, leaving the controlled player responsible for finding the
-  correct slot.
+- NPCs roam unpredictably during the positioning window, then settle into the
+  correct clockwise order shortly before resolution. The controlled player
+  remains responsible for finding their own slot.
 
 ## Rotating beams and reactive Soaks
 
 - Two seconds after the memory game, eight Intermission-style boss beams
   telegraph for two seconds while already rotating at player speed.
-- Crossing a telegraph during those two seconds is safe.
+- The safe telegraph is a low ground guide. It becomes the full lethal laser
+  after two seconds without resetting or discontinuing its rotation.
 - One beam begins ten degrees to either side of the boss. The intended movement
   is to cross that beam, then follow it without being caught by another beam,
   while continuing to dodge the glaives.
 - NPCs play the rotating beams perfectly.
+- NPCs cross the safe guide and then follow a rotating ray. The designated tank
+  spots—raid-plan positions 1 and 2 for the two demonstrated sequences—lead
+  L’ura toward her next position during this movement.
 - If the controlled player is hit, two fast landing Soaks appear:
   - NPCs immediately resolve one;
   - NPCs speed out of the other, clearly assigning it to the player;

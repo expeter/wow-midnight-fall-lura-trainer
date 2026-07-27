@@ -281,6 +281,69 @@ export function p1BossPosition(opening: P1Point, arenaCenter: P1Point, sequence:
   }
 }
 
+export function p1ContinuousBeamTime(event: string, eventTime: number): number {
+  return event === 'p1-beams' ? P1_ROTATING_BEAM_TELEGRAPH_SECONDS + eventTime : eventTime
+}
+
+export function p1BossEncounterPosition(
+  opening: P1Point,
+  tankPositions: readonly P1Point[],
+  sequence: number,
+  event: string,
+  eventTime: number,
+): P1Point {
+  const start = sequence <= 1 ? opening : tankPositions[sequence - 2] ?? opening
+  const target = tankPositions[sequence - 1] ?? start
+  if (event === 'p1-soaks') return { ...target }
+  if (event !== 'p1-beam-telegraph' && event !== 'p1-beams') return { ...start }
+  const progress = Math.max(0, Math.min(1, p1ContinuousBeamTime(event, eventTime)
+    / (P1_ROTATING_BEAM_TELEGRAPH_SECONDS + P1_ROTATING_BEAM_ACTIVE_SECONDS)))
+  return {
+    x: start.x + (target.x - start.x) * progress,
+    y: start.y + (target.y - start.y) * progress,
+  }
+}
+
+export function p1NpcMemoryPosition(target: P1Point, npcIndex: number, eventTime: number, positioning: boolean): P1Point {
+  if (!positioning) return { ...target }
+  const remainingChaos = Math.max(0, Math.min(1, (P1_MEMORY_POSITION_SECONDS - 1.25 - eventTime) / (P1_MEMORY_POSITION_SECONDS - 1.25)))
+  const radius = remainingChaos * (9 + npcIndex % 4 * 2.5)
+  const angle = npcIndex * 2.399963 + eventTime * (1.35 + npcIndex % 3 * .18)
+  return {
+    x: target.x + Math.cos(angle) * radius,
+    y: target.y + Math.sin(angle) * radius,
+  }
+}
+
+export function p1NpcBeamPosition(
+  assignment: P1Point,
+  npcIndex: number,
+  beams: P1RotatingBeams,
+  elapsed: number,
+  arenaCenter: P1Point,
+): P1Point {
+  const assignmentAngle = Math.atan2(assignment.y - arenaCenter.y, assignment.x - arenaCenter.x)
+  const initialAngles = p1BeamAngles(beams, 0)
+  let beamIndex = 0
+  let nearest = Infinity
+  initialAngles.forEach((angle, index) => {
+    const delta = Math.abs(Math.atan2(Math.sin(assignmentAngle - angle), Math.cos(assignmentAngle - angle)))
+    if (delta < nearest) {
+      nearest = delta
+      beamIndex = index
+    }
+  })
+  const beamAngle = p1BeamAngles(beams, elapsed)[beamIndex]
+  const crossingSide = elapsed < 1 ? 1 : -1
+  const followOffset = beams.direction * crossingSide * (elapsed < 1 ? .2 : .13)
+  const radius = Math.max(P1_INNER_RADIUS + 24, Math.min(P1_OUTER_RADIUS - 28, Math.hypot(assignment.x - arenaCenter.x, assignment.y - arenaCenter.y)))
+  const spread = (npcIndex % 5 - 2) * 2.2
+  return {
+    x: arenaCenter.x + Math.cos(beamAngle + followOffset) * (radius + spread),
+    y: arenaCenter.y + Math.sin(beamAngle + followOffset) * (radius + spread),
+  }
+}
+
 export function p1AddGlaiveSet(
   existing: readonly P1GlaiveSet[],
   next: P1GlaiveSet,

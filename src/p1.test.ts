@@ -9,7 +9,9 @@ import {
   p1AddGlaiveSet,
   p1AdvanceGlaiveSet,
   p1BeamAngles,
+  p1BossEncounterPosition,
   p1BossPosition,
+  p1ContinuousBeamTime,
   p1CrystalExpired,
   p1CrystalPickupSequence,
   p1CrystalSpawnPosition,
@@ -23,7 +25,9 @@ import {
   p1MemorySlotAngle,
   p1MemorySlotValid,
   p1MemorySweepAngle,
+  p1NpcBeamPosition,
   p1NpcCrystalPickupReleased,
+  p1NpcMemoryPosition,
   p1PlayerSoakFailed,
   p1Progress,
   p1ReactiveSoaks,
@@ -133,6 +137,32 @@ describe('P1 headless mechanics', () => {
     const second = p1BossPosition({ x: 480, y: 492 }, { x: 480, y: 270 }, 2)
     expect(second.x).toBeCloseTo(258)
     expect(second.y).toBeCloseTo(270)
+  })
+
+  it('keeps the beam angle continuous while the low telegraph becomes lethal and moves L’ura between tank positions', () => {
+    const opening = { x: 300, y: 430 }
+    const tanks = [{ x: 390, y: 420 }, { x: 520, y: 410 }]
+    const beams = p1RotatingBeams(17, 1, 0, Math.PI / 16, 1.2)
+    const telegraphEnd = p1BeamAngles(beams, p1ContinuousBeamTime('p1-beam-telegraph', 2))[0]
+    const activeStart = p1BeamAngles(beams, p1ContinuousBeamTime('p1-beams', 0))[0]
+    expect(activeStart).toBeCloseTo(telegraphEnd)
+    expect(p1BossEncounterPosition(opening, tanks, 1, 'p1-memory-sweep', 4)).toEqual(opening)
+    expect(p1BossEncounterPosition(opening, tanks, 1, 'p1-beams', 8)).toEqual(tanks[0])
+    expect(p1BossEncounterPosition(opening, tanks, 2, 'p1-interrupts', 0)).toEqual(tanks[0])
+  })
+
+  it('lets memory NPCs roam before settling and makes beam NPCs cross then follow a rotating ray', () => {
+    const target = { x: 400, y: 400 }
+    expect(p1NpcMemoryPosition(target, 3, 1, true)).not.toEqual(target)
+    expect(p1NpcMemoryPosition(target, 3, 7, true)).toEqual(target)
+    const center = { x: 480, y: 270 }
+    const assignment = { x: 480, y: 450 }
+    const beams = p1RotatingBeams(91, 1, 0, Math.PI / 16, Math.PI / 2)
+    const crossing = p1NpcBeamPosition(assignment, 3, beams, .5, center)
+    const following = p1NpcBeamPosition(assignment, 3, beams, 2.5, center)
+    expect(crossing).not.toEqual(following)
+    expect(Math.hypot(following.x - center.x, following.y - center.y)).toBeGreaterThan(P1_INNER_RADIUS)
+    expect(Math.hypot(following.x - center.x, following.y - center.y)).toBeLessThan(P1_OUTER_RADIUS)
   })
 
   it('removes expired glaives and caps the live field at the newest two sets', () => {

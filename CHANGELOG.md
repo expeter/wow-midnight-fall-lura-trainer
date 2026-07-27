@@ -25,6 +25,10 @@
 - FR-050: Recorded the four-player P2 orb-aiming redesign: continuously
   orbiting targets near the cross marks, perfect NPC interception, no crystal
   carrier selection, and a wipe when a selected player misses their orb.
+- CR-110 / CR-111 / BUG-074: Replaced P1 glaive orbs with larger flat flying
+  saucers, added late-settling memory NPC motion and correct rotating-beam NPC
+  movement, moved L’ura toward raid-plan tank positions 1/2, and preserved one
+  continuous beam angle from the low safe telegraph into the lethal laser.
 
 ## 0.2.0 — 2026-07-27
 

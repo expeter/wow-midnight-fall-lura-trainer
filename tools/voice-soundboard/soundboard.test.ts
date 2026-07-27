@@ -8,8 +8,8 @@ describe('audio review soundboard', () => {
   it('covers the complete catalog with candidates for active cues and explicit silence elsewhere', () => {
     const cueRows = [...soundboard.matchAll(/^\s+\["([^"]+)", "[^"]+", "[^"]+", (auditions\("[^"]+", "[^"]+"\)|\[\])\],?$/gm)]
     expect(cueRows).toHaveLength(20)
-    expect(cueRows.filter(([, , candidates]) => candidates.startsWith('auditions'))).toHaveLength(14)
-    expect(cueRows.filter(([, , candidates]) => candidates === '[]')).toHaveLength(6)
+    expect(cueRows.filter(([, , candidates]) => candidates.startsWith('auditions'))).toHaveLength(15)
+    expect(cueRows.filter(([, , candidates]) => candidates === '[]')).toHaveLength(5)
     expect(soundboard).toContain('No effect by design')
   })
 
@@ -55,7 +55,8 @@ describe('audio review soundboard', () => {
   it('carries the approved starting feedback into the relevant rows', () => {
     expect(soundboard).toContain('"laser-fire": { pick: "laser-magical-whoosh"')
     expect(soundboard).toContain('"orb-return": { pick: "orb-arcane-laser"')
-    expect(soundboard).toContain('["main-ability-release", "Main Ability cast completes", "Intentionally silent')
+    expect(soundboard).toContain('["main-ability-release", "Main Ability cast completes", "Tune a compact release')
+    expect(soundboard).toContain('"main-ability-release": { pick: "cast-arcane-release"')
     expect(soundboard).toContain('"mistake": { pick: "error-pulse-fast"')
   })
 
@@ -76,6 +77,7 @@ describe('audio review soundboard', () => {
       'rune-match',
       'archangel-charge',
       'protection-active',
+      'main-ability-release',
       'mistake',
       'wipe',
     ])
@@ -95,6 +97,8 @@ describe('audio review soundboard', () => {
     expect(soundboard).toContain('data-offset-nudge="-1"')
     expect(soundboard).toContain('data-offset-nudge="1"')
     expect(soundboard).toContain('class="timing-sound-marker"')
+    expect(soundboard).toContain('class="timing-castbar"')
+    expect(soundboard).toContain('preset.visual === "main-cast"')
     expect(soundboard).toContain('timingSaved[preset.id] = { offset, rate, sound }')
     expect(soundboard).toContain('| Cue | Sound | Start offset | Playback rate |')
   })

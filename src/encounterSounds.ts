@@ -53,6 +53,14 @@ export const ENCOUNTER_SOUND_SPECS: Record<EncounterSoundName, EncounterSoundSpe
   wipe: { url: errorPulseUrl, volume: 1, playbackRate: .82, startOffsetMs: 0 },
 }
 
+/** Only reviewed cues ship in the live mix; the remaining specs stay available for tuning. */
+export const ACTIVE_ENCOUNTER_SOUNDS = new Set<EncounterSoundName>([
+  'splinter-detonate',
+  'orb-return',
+  'mistake',
+  'wipe',
+])
+
 export const INTERMISSION_SPLINTER_VISUAL_END_SECONDS = 3
 export const INTERMISSION_BEAM_VISUAL_END_SECONDS = 3
 const offsetSeconds = (name: EncounterSoundName) => ENCOUNTER_SOUND_SPECS[name].startOffsetMs / 1000
@@ -142,7 +150,7 @@ export function encounterSoundCuesForState(state: EncounterSoundState): Encounte
   }
   if (state.wipeReason) cues.push({ id: 'wipe', sound: 'wipe' })
 
-  return cues
+  return cues.filter(cue => ACTIVE_ENCOUNTER_SOUNDS.has(cue.sound))
 }
 
 export function playEncounterSound(name: EncounterSoundName, channelVolume: number, gameSpeed = 1): HTMLAudioElement {

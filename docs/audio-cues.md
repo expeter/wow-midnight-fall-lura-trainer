@@ -65,6 +65,7 @@ with a separate `SOAK CRYSTAL` instruction.
 | `archangel-charge` | 0.125s after Dark Archangel impacts | Ward Holy Pulse at 1.01× | Calibrated | P3 |
 | `protection-active` | Crystal bubble protects raid | Crystal Spark at 1.20× | Calibrated | P3 |
 | `heaven-hell` | P4 quarter becomes unsafe | Deep sector-wide impact | 0.8–1.5s | P4 |
+| `main-ability-release` | The full one-second player cast fires its projectile | Tune in the local soundboard; not yet enabled in production | TBD | All phases |
 | `mistake` | Non-wipe point loss | Restrained error tick | 0.2–0.4s | All phases |
 | `wipe` | Terminal failure | Distinct low failure hit | 0.8–1.5s | All phases |
 
@@ -72,3 +73,7 @@ Prefer WAV or high-quality OGG for short effects. Avoid long reverb tails,
 spoken samples, copyrighted franchise sounds, or effects that are already
 mixed with music. Normalize them conservatively so repeated laser mechanics do
 not become fatiguing.
+
+The current production mix intentionally enables only `splinter-detonate`,
+`orb-return`, `mistake`, and `wipe`. Every other row remains a soundboard
+candidate until another review explicitly approves it.

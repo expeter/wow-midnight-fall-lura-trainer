@@ -106,6 +106,7 @@
     .timing-circle { width: 118px; aspect-ratio: 1; border: 4px solid #5eb4ff; border-radius: 50%; box-shadow: 0 0 12px #388cff; }
     .timing-bubble { width: 180px; aspect-ratio: 1; border: 3px solid #ffe777; border-radius: 50%; background: rgba(255,224,80,.12); box-shadow: inset 0 0 30px rgba(255,225,80,.22), 0 0 20px rgba(255,225,80,.4); }
     .timing-rune { color: #91d4ff; font: 900 82px/1 ui-sans-serif, sans-serif; text-shadow: 0 0 16px #3294ff; }
+    .timing-castbar { position: absolute; z-index: 5; width: 50%; height: 14px; left: 25%; top: 72%; border: 2px solid #d9cfff; border-radius: 5px; background: linear-gradient(90deg, #8f68ff, #71e5ff); box-shadow: 0 0 12px rgba(130,112,255,.75); transform: scaleX(0); transform-origin: 0 50%; opacity: 0; }
     .timing-impact { position: absolute; z-index: 7; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(circle, rgba(255,255,255,.72), rgba(168,85,255,.25) 18%, transparent 48%); }
     .timing-clock { position: absolute; z-index: 8; left: 12px; bottom: 10px; color: var(--mint); font: 800 12px ui-monospace, monospace; }
     .timing-controls { display: grid; align-content: start; gap: 14px; }
@@ -208,6 +209,7 @@
         <div class="timing-circle"></div>
         <div class="timing-bubble"></div>
         <div class="timing-rune">X</div>
+        <div class="timing-castbar"></div>
         <div class="timing-impact"></div>
         <div class="timing-sound-marker">SOUND START</div>
         <div class="timing-clock">0.000s</div>
@@ -342,11 +344,12 @@
       "splinter-detonate": ["tune-splinter-glass-break", "tune-splinter-arc-pop", "tune-splinter-prism-collapse"],
       "soak-progress": ["tune-soak-deep-hum", "tune-soak-ward-resonance", "tune-soak-heartbeat-bed"],
       "archangel-charge": ["tune-archangel-doom-rise", "tune-archangel-veil-tear", "tune-archangel-impact-tail"],
-      "protection-active": ["tune-ward-aegis-bloom", "tune-ward-crystal-shell", "tune-ward-holy-pulse"]
+      "protection-active": ["tune-ward-aegis-bloom", "tune-ward-crystal-shell", "tune-ward-holy-pulse"],
+      "main-ability-release": ["cast-spell-impact", "cast-light-loud", "cast-crystal-spark"]
     };
     const auditions = (cue, earlier) => [
       earlier,
-      ...midnightVariants.map(variant => `midnight-${cue}-${variant}`),
+      ...(cue in midnightCueLengths ? midnightVariants.map(variant => `midnight-${cue}-${variant}`) : []),
       ...(fineTuneVariants[cue] || [])
     ];
     const soundCues = [
@@ -367,7 +370,7 @@
       ["protection-active", "Crystal bubble protects raid", "Warm shield activation when the bubble appears.", auditions("protection-active", "cast-crystal-spark")],
       ["heaven-hell", "P4 quarter becomes unsafe", "Intentionally silent; Move and the void visual carry it.", []],
       ["add-destroyed", "P4 add is destroyed", "Small dry impact that can repeat without clutter.", auditions("add-destroyed", "cast-light-loud")],
-      ["main-ability-release", "Main Ability cast completes", "Intentionally silent; projectiles remain visual feedback.", []],
+      ["main-ability-release", "Main Ability cast completes", "Tune a compact release that lands when the full cast bar fires its projectile.", auditions("main-ability-release", "cast-arcane-release")],
       ["mistake", "Non-wipe point loss", "Immediate restrained error tick.", auditions("mistake", "error-pulse-fast")],
       ["wipe", "Terminal failure", "Heavier terminal version of the error character.", auditions("wipe", "error-pulse-fast")]
     ].map(([id, mechanic, use, candidates]) => ({ id, mechanic, use, candidates }));
@@ -383,6 +386,7 @@
       "archangel-charge": { pick: "error-crystal-danger", comment: "Earlier pick, but the mechanic requires a five-second version." },
       "protection-active": { pick: "cast-crystal-spark", comment: "Play directly when the protection bubble begins." },
       "add-destroyed": { pick: "cast-light-loud", comment: "Earlier pick; requested substantially quieter in production." },
+      "main-ability-release": { pick: "cast-arcane-release", comment: "New tuning candidate; land the release when the full cast bar fires its projectile." },
       "mistake": { pick: "error-pulse-fast", comment: "Error Pulse has the right character; use the faster, trimmed attack." },
       "wipe": { pick: "error-pulse-fast", comment: "Use the same motif with a heavier terminal shape." }
     };
@@ -402,6 +406,7 @@
       { id: "rune-match", label: "Memory rune clears", sound: "success-rune-clear", visual: "rune", moment: 1.6, loop: 2.9, offset: -.02, rate: 1.08 },
       { id: "archangel-charge", label: "Dark Archangel impacts", sound: "tune-ward-holy-pulse", visual: "archangel", moment: 6, loop: 7.4, offset: .125, rate: 1.01 },
       { id: "protection-active", label: "Protection bubble appears", sound: "cast-crystal-spark", visual: "protection", moment: 1.4, loop: 2.8, offset: 0, rate: 1.2 },
+      { id: "main-ability-release", label: "Main Ability projectile fires", sound: "cast-arcane-release", visual: "main-cast", moment: 1.4, loop: 2.8, offset: 0, rate: 1 },
       { id: "mistake", label: "Point-loss flash", sound: "error-pulse-fast", visual: "mistake", moment: 1.4, loop: 2.7, offset: -.005, rate: 1.18 },
       { id: "wipe", label: "Wipe overlay", sound: "error-pulse-fast", visual: "wipe", moment: 1.4, loop: 3, offset: 0, rate: .82 }
     ];
@@ -414,6 +419,7 @@
       "rune-match": "The rune above the player disappears immediately when the correct partner is matched.",
       "archangel-charge": "Dark Archangel charges as a broad purple beam behind the protection bubble, then strikes at the flash.",
       "protection-active": "The yellow crystal-protection bubble blooms around the raid at the event boundary.",
+      "main-ability-release": "The one-second player cast bar fills completely, then the class projectile leaves the player at the event boundary.",
       "mistake": "A brief impact flash represents a non-wipe mechanic error and point loss.",
       "wipe": "The arena is covered by the red terminal-failure overlay at the event boundary."
     };
@@ -434,6 +440,7 @@
     const timingCircle = timingStage.querySelector(".timing-circle");
     const timingBubble = timingStage.querySelector(".timing-bubble");
     const timingRune = timingStage.querySelector(".timing-rune");
+    const timingCastbar = timingStage.querySelector(".timing-castbar");
     const timingImpact = timingStage.querySelector(".timing-impact");
     const timingSoundMarker = timingStage.querySelector(".timing-sound-marker");
     const timingRays = Array.from({ length: 6 }, (_, index) => {
@@ -556,6 +563,9 @@
       timingStarLine.style.opacity = starsVisible ? ".92" : "0";
       timingCircle.style.opacity = preset.visual === "circle" && age > .3 && before ? ".9" : "0";
       timingRune.style.opacity = preset.visual === "rune" && age > .3 && before ? "1" : "0";
+      const castProgress = Math.max(0, Math.min(1, age - (moment - 1)));
+      timingCastbar.style.opacity = preset.visual === "main-cast" && age >= moment - 1 && before ? "1" : "0";
+      timingCastbar.style.transform = `scaleX(${preset.visual === "main-cast" ? castProgress : 0})`;
       timingBubble.style.opacity = preset.visual === "protection" && impactAge >= 0 && impactAge < .9
         ? String(Math.min(1, impactAge * 8) * Math.max(0, 1 - impactAge / .9))
         : preset.visual === "archangel" && before ? ".35" : "0";
@@ -571,7 +581,7 @@
         orb.style.transform = `translate(${Math.cos(angle) * radius}px, ${Math.sin(angle) * radius}px)`;
       });
       const flash = impactAge >= 0 && impactAge < .28;
-      timingImpact.style.opacity = flash && ["laser", "splinter", "orb", "mistake", "wipe", "archangel"].includes(preset.visual)
+      timingImpact.style.opacity = flash && ["laser", "splinter", "orb", "mistake", "wipe", "archangel", "main-cast"].includes(preset.visual)
         ? String(Math.max(0, 1 - impactAge / .28) * (preset.visual === "wipe" ? 1 : .62))
         : "0";
       timingImpact.style.background = preset.visual === "wipe"

@@ -9,6 +9,10 @@ complete transition chain or enter any phase directly.
 
 The detailed [feature inventory, request convention, historical bug register,
 and screenshot index](docs/README.md) document how the simulator evolved.
+Contributors and coding agents should begin with the
+[maintainer handoff](docs/maintainer-handoff.md), which records the current
+release boundary, mechanic invariants, plan-loading precedence, and validation
+workflow.
 
 ## What you can practice
 

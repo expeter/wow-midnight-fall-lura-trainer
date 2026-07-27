@@ -5,6 +5,9 @@ summarizes what has been implemented, provides a home for the reference
 screenshots, and defines the lightweight request convention used for future
 work.
 
+For a concise continuation guide, read the
+[maintainer handoff](maintainer-handoff.md) before the historical ticket log.
+
 ## Request convention
 
 New requests can start with one of these prefixes:
@@ -131,6 +134,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-128` | Implemented behind localhost preview | Add the reviewed P1 player positions and L’ura marker to the bundled I Asgard I raid plan. Use those maintained values when an older saved/shared plan has no P1 data, while preserving explicit P1 assignments. |
 | `CR-129` | Superseded in part by CR-130 | Extend the P1 memory sweep by five yards to 40 yards, darken its blue Starsplinter wedge, add a slim raised laser core, remove each rune as the sweep resolves it, and clamp roaming NPC targets inside the playable P1 arena. CR-130 increases its reach and width after visual review. Tracked from [`INBOX-20260727-214658-47c3b4`](../inbox/INBOX-20260727-214658-47c3b4.md). |
 | `CR-130` | Implemented behind localhost preview | Make the P1 memory verification unmistakably read as a sweeping laser through the rune players: extend it to 55 yards, widen the layered Starsplinter blade by 2.35×, and strengthen its raised core without changing the single-beam rotation. Tracked from [`INBOX-20260727-221905-a3fe33`](../inbox/INBOX-20260727-221905-a3fe33.md). |
+| `CR-131` | Implemented | Add a concise maintainer and coding-agent handoff covering release gates, mechanic intent, visual-authority rules, raid-plan precedence, audio boundaries, inbox/ticket workflow, WSL/CI validation, and currently open work. |
 | `FR-031` | Implemented | Add an isolated local voice soundboard with five CMU Flite voices, individual Left/Right/Move auditions, exact clocked rhythm previews, a preferred-voice choice, local notes, reproducible generation, and license guidance. |
 | `FR-032` | Implemented | Prepare a standalone tested P1 rules module for later integration without changing the live game: interrupts, crystals, reflective expiring glaives, ordered runes, rotating beams, reactive Soaks, and the Intermission transition. |
 | `FR-033` | Implemented | Add a persistent browser-local achievement collection beneath raid planning with immutable first-earned timestamps, run history for cross-duty feats, and a compact top-page badge summary linking to the full catalogue. |

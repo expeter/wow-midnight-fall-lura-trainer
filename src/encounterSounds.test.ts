@@ -25,15 +25,20 @@ describe('encounter sound cues', () => {
     expect(ENCOUNTER_SOUND_SPECS['stars-connect'].playbackRate).toBe(2.25)
     expect(ENCOUNTER_SOUND_SPECS['stars-connect'].startOffsetMs).toBe(-95)
     expect(ENCOUNTER_SOUND_SPECS['splinter-detonate'].playbackRate).toBe(2)
-    expect(ENCOUNTER_SOUND_SPECS['splinter-detonate'].startOffsetMs).toBe(-240)
+    expect(ENCOUNTER_SOUND_SPECS['splinter-detonate'].startOffsetMs).toBe(-260)
     expect(ENCOUNTER_SOUND_SPECS['personal-circle'].startOffsetMs).toBe(-70)
     expect(ENCOUNTER_SOUND_SPECS['archangel-charge'].playbackRate).toBe(1.01)
     expect(ENCOUNTER_SOUND_SPECS['archangel-charge'].startOffsetMs).toBe(125)
     expect(ENCOUNTER_SOUND_SPECS['protection-active'].playbackRate).toBe(1.2)
+    expect(ENCOUNTER_SOUND_SPECS['main-ability-release']).toMatchObject({
+      playbackRate: 7,
+      startOffsetMs: -10,
+    })
     expect(ENCOUNTER_SOUND_SPECS.mistake.playbackRate).toBeGreaterThan(1)
     expect([...ACTIVE_ENCOUNTER_SOUNDS]).toEqual([
       'splinter-detonate',
       'orb-return',
+      'main-ability-release',
       'mistake',
       'wipe',
     ])

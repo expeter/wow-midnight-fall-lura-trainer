@@ -1111,6 +1111,11 @@ export default function App() {
         setStats(current => ({ ...current, score: current.score + 1 + damageBonus }))
         setMainAbilityUsed(true)
         setMainProjectileFiredAt(timeRef.current)
+        if (FEATURE_FLAGS.encounterSounds && encounterSoundsEnabled) {
+          const audio = playEncounterSound('main-ability-release', encounterSoundVolume, gameSpeed)
+          activeEncounterSoundsRef.current.add(audio)
+          audio.addEventListener('ended', () => activeEncounterSoundsRef.current.delete(audio), { once: true })
+        }
       }
       updateHealth(dt)
       if (crystal) setCrystalAge(age => { const next = age + dt; crystalAgeRef.current = next; return next })
@@ -1120,7 +1125,7 @@ export default function App() {
     }
     frame = requestAnimationFrame(tick)
     return () => { cancelAnimationFrame(frame); window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); window.removeEventListener('blur', clearMovement) }
-  }, [screen, paused, movementSpeed, movementBonus, gameSpeed, event, beamAngles, npcSplinters, crystal, npcCrystals, keyBindings, difficulty, assignment, p3Round, p3RuneOrder, p3ResolvedRunes, p3Positions, p4PatternSeed])
+  }, [screen, paused, movementSpeed, movementBonus, gameSpeed, event, beamAngles, npcSplinters, crystal, npcCrystals, keyBindings, difficulty, assignment, p3Round, p3RuneOrder, p3ResolvedRunes, p3Positions, p4PatternSeed, encounterSoundsEnabled, encounterSoundVolume])
 
   useEffect(() => {
     if (screen !== 'game' || paused) return

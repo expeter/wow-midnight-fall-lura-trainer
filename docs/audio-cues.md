@@ -53,7 +53,7 @@ with a separate `SOAK CRYSTAL` instruction.
 | `laser-fire` | Reserved / currently silent | A separate discharge duplicated the charge cue and is disabled while the revised mix is reviewed | — | Intermission and P2 |
 | `stars-connect` | 0.095s before the P3 Stars lattice connects | Splinter Arc Pop at 2.25× | Calibrated | P3 only |
 | `splinter-mark` | Starsplinter assigned | Short crystalline warning/chime | 0.4–0.8s | Intermission and P4 |
-| `splinter-detonate` | Ends as Starsplinter rays disappear; starts 0.24s early | Prismatic Cut at 2×, contained within the resolving mechanic | 0.24s effective | Intermission and P4 |
+| `splinter-detonate` | Starts 0.26s before Starsplinter rays disappear | Prismatic Cut at 2×, shifted another 0.02s earlier after live review | 0.24s effective | Intermission and P4 |
 | `orb-charge` | P2 returning orbs start glowing | Pulsing magical charge | 0.8–1.2s | P2 |
 | `orb-return` | 0.271s before P2 orbs reach L’ura | Arcane Laser at 1.00× | Calibrated | P2 |
 | `pull` | P2 raid pull begins | Sustained suction/wind rise | 2–4s loop | P2 |
@@ -65,7 +65,7 @@ with a separate `SOAK CRYSTAL` instruction.
 | `archangel-charge` | 0.125s after Dark Archangel impacts | Ward Holy Pulse at 1.01× | Calibrated | P3 |
 | `protection-active` | Crystal bubble protects raid | Crystal Spark at 1.20× | Calibrated | P3 |
 | `heaven-hell` | P4 quarter becomes unsafe | Deep sector-wide impact | 0.8–1.5s | P4 |
-| `main-ability-release` | The full one-second player cast fires its projectile | Tune in the local soundboard; not yet enabled in production | TBD | All phases |
+| `main-ability-release` | The full one-second player cast fires its projectile | Error Pulse at 7×, calibrated 0.01s early | Calibrated | All phases |
 | `mistake` | Non-wipe point loss | Restrained error tick | 0.2–0.4s | All phases |
 | `wipe` | Terminal failure | Distinct low failure hit | 0.8–1.5s | All phases |
 
@@ -75,5 +75,5 @@ mixed with music. Normalize them conservatively so repeated laser mechanics do
 not become fatiguing.
 
 The current production mix intentionally enables only `splinter-detonate`,
-`orb-return`, `mistake`, and `wipe`. Every other row remains a soundboard
+`orb-return`, `main-ability-release`, `mistake`, and `wipe`. Every other row remains a soundboard
 candidate until another review explicitly approves it.

@@ -29,6 +29,7 @@ export type EncounterSoundName =
   | 'rune-match'
   | 'archangel-charge'
   | 'protection-active'
+  | 'main-ability-release'
   | 'mistake'
   | 'wipe'
 
@@ -43,12 +44,13 @@ export interface EncounterSoundSpec {
 export const ENCOUNTER_SOUND_SPECS: Record<EncounterSoundName, EncounterSoundSpec> = {
   'laser-charge': { url: laserWhooshUrl, volume: .78, playbackRate: 1.88, startOffsetMs: -479 },
   'stars-connect': { url: starsConnectUrl, volume: .72, playbackRate: 2.25, startOffsetMs: -95 },
-  'splinter-detonate': { url: splinterDetonateUrl, volume: .82, playbackRate: 2, startOffsetMs: -240 },
+  'splinter-detonate': { url: splinterDetonateUrl, volume: .82, playbackRate: 2, startOffsetMs: -260 },
   'orb-return': { url: orbReturnUrl, volume: .78, playbackRate: 1, startOffsetMs: -271 },
   'personal-circle': { url: personalCircleUrl, volume: .72, playbackRate: 1, startOffsetMs: -70 },
   'rune-match': { url: runeClearUrl, volume: .66, playbackRate: 1.08, startOffsetMs: -20 },
   'archangel-charge': { url: archangelChargeUrl, volume: .72, playbackRate: 1.01, startOffsetMs: 125 },
   'protection-active': { url: protectionActiveUrl, volume: .82, playbackRate: 1.2, startOffsetMs: 0 },
+  'main-ability-release': { url: errorPulseUrl, volume: .78, playbackRate: 7, startOffsetMs: -10 },
   mistake: { url: errorPulseUrl, volume: .78, playbackRate: 1.18, startOffsetMs: -5 },
   wipe: { url: errorPulseUrl, volume: 1, playbackRate: .82, startOffsetMs: 0 },
 }
@@ -57,6 +59,7 @@ export const ENCOUNTER_SOUND_SPECS: Record<EncounterSoundName, EncounterSoundSpe
 export const ACTIVE_ENCOUNTER_SOUNDS = new Set<EncounterSoundName>([
   'splinter-detonate',
   'orb-return',
+  'main-ability-release',
   'mistake',
   'wipe',
 ])

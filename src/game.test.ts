@@ -5,7 +5,7 @@ import { p3ProtectionBubbleCenter } from './game'
 import type { Point } from './game'
 import { P3_LIGHT_RADIUS, p3SpreadPosition, p4TankKillsBox, P4_TANK_KILL_RADIUS } from './game'
 import { isP3RaidMemberVisible, p3ActiveCrystalAssignments } from './game'
-import { bossDamageScoreBonus, isInsideP3Pool, p4BossHealthWithPlayerDamage, p4StartingBossState, P1_STAR_LENGTH, preP4BossHealth, shouldTriggerP3EarlyClear, starsplinterHitsCrystalCarrier } from './game'
+import { bossDamageScoreBonus, isInsideP3Pool, p4BossHealthWithPlayerDamage, p4StartingBossState, P1_STAR_LENGTH, preP4BossHealth, shouldHoldP3RunePartner, shouldTriggerP3EarlyClear, starsplinterHitsCrystalCarrier } from './game'
 
 describe('Intermission game rules', () => {
   it('creates six deterministic stars for a seed', () => { expect(seededStars(42)).toEqual(seededStars(42)); expect(seededStars(42)).toHaveLength(6) })
@@ -67,6 +67,13 @@ describe('Intermission game rules', () => {
   it('lets Easy and Normal recover from the first wipe while Hard ends immediately', () => { expect(canRecoverFromWipe('easy', 1, 1000, WIPE_PENALTY)).toBe(true); expect(canRecoverFromWipe('normal', 1, 1000, WIPE_PENALTY)).toBe(true); expect(canRecoverFromWipe('normal', 2, 500, WIPE_PENALTY)).toBe(false); expect(canRecoverFromWipe('hard', 1, 1000, WIPE_PENALTY)).toBe(false) })
   it('schedules one optional health response in every enabled phase', () => { expect(healthResponsesPerPhase('test')).toBe(0); expect(healthResponsesPerPhase('easy')).toBe(0); expect(healthResponsesPerPhase('normal')).toBe(1); expect(healthResponsesPerPhase('hard')).toBe(1) })
   it('randomly assigns a crystal carrier to the first or second P3 drop', () => { expect(randomCrystalDropDuty(.1)).toBe(1); expect(randomCrystalDropDuty(.9)).toBe(2) })
+  it('keeps the active player rune partner from evading contact in every game mode', () => {
+    expect(shouldHoldP3RunePartner('p3-light-pools', 'X', 'X', [])).toBe(true)
+    expect(shouldHoldP3RunePartner('p3-lattice-memory', 'X', 'X', [])).toBe(true)
+    expect(shouldHoldP3RunePartner('p3-light-pools', 'T', 'X', [])).toBe(false)
+    expect(shouldHoldP3RunePartner('p3-light-pools', 'X', 'X', ['X'])).toBe(false)
+    expect(shouldHoldP3RunePartner('p3-big-boom', 'X', 'X', [])).toBe(false)
+  })
   it('uses a five-second opening boost and tighter assignment reveals by difficulty', () => { expect(OPENING_BOOST_SECONDS).toBe(5); expect(assignmentRevealDistance('easy')).toBe(Infinity); expect(assignmentRevealDistance('normal')).toBe(45); expect(assignmentRevealDistance('hard')).toBe(22) })
   it('keeps Test mode assisted and recoverable regardless of strike count', () => { expect(difficultySettings('test').helper).toBe(true); expect(assignmentRevealDistance('test')).toBe(Infinity); expect(canRecoverFromWipe('test', 20, 0, WIPE_PENALTY)).toBe(true) })
   it('splits Phase 3 landings and pool assignments across both room halves', () => { const center = { x: 480, y: 270 }; expect(p3LandingPosition(0, center).x).toBeLessThan(center.x); expect(p3LandingPosition(10, center).x).toBeGreaterThan(center.x); expect(p3PoolCenters(-1, center, 1)).toHaveLength(3); expect(p3PoolCenters(1, center, 1).every(point => point.x > center.x)).toBe(true) })

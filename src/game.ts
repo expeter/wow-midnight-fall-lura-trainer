@@ -779,6 +779,17 @@ export function p3NpcRuneReactionDelay(seed: number, assignment: number, round: 
   return 1 + seededUnit(seed, assignment * 7 + round * 31) * 5
 }
 
+export function shouldHoldP3RunePartner(
+  event: string,
+  activeRune: RuneSymbol | undefined,
+  playerRune: RuneSymbol,
+  resolvedRunes: RuneSymbol[],
+): boolean {
+  return (event === 'p3-light-pools' || event === 'p3-lattice-memory')
+    && activeRune === playerRune
+    && !resolvedRunes.includes(playerRune)
+}
+
 export function p3StarsTiming(eventTime: number): { active: boolean; cycle: number; localTime: number } {
   if (eventTime < P3_STARS_START_SECONDS) return { active: false, cycle: 0, localTime: 0 }
   const elapsed = eventTime - P3_STARS_START_SECONDS

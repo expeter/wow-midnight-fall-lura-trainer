@@ -48,6 +48,7 @@ export interface AchievementSummary {
   shieldEnabled: boolean
   mainAbilityEnabled: boolean
   earlyKill?: boolean
+  p3EarlyClear?: boolean
   phaseResults?: PhaseResult[]
   wipeCount?: number
   pauseCycle?: boolean
@@ -71,6 +72,7 @@ export function completionAchievements(summary: AchievementSummary): Achievement
     achievements.push({ id: 'superhuman-flawless', label: 'SUPERHUMAN FLAWLESS', detail: `${summary.difficulty} · Crystal player · 1100+ points` })
   }
   if (summary.earlyKill) achievements.push({ id: 'early-kill', label: 'L’URA DEFEATED EARLY', detail: 'Boss reached 0% before the fourth Heaven & Hell finished' })
+  if (summary.p3EarlyClear) achievements.push({ id: 'p3-early-clear', label: 'THE STARS CAN WAIT', detail: 'L’ura reached 0% in Phase 3 before the raid regrouped north' })
   return achievements
 }
 

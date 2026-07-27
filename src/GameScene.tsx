@@ -21,6 +21,7 @@ interface SceneProps {
   paused: boolean
   p2Cycle: number
   p2OrbReturnAge: number
+  p2OrbReturnSeed: number
   p3Round: number
   p3ArchangelDuty: 1 | 2 | null
   p4Cycle: number
@@ -912,7 +913,7 @@ export default function GameScene(props: SceneProps) {
         const recoveredSoakPosition = state.p2Cycle === 1 ? soakTarget : walkTowards(spreadResolutionPosition, soakTarget, 8, state.movementSpeed)
         const p2WaitTarget = p2NpcShouldReturnToSoak(state.p2OrbReturnAge)
           ? soakTarget
-          : p2NpcRoamingPosition(soakTarget, index, state.time, p2ReturningOrbPositions(state.p2OrbReturnAge, state.p2Cycle, state.time, WORLD.center), WORLD.center, P2_RADIUS - 2)
+          : p2NpcRoamingPosition(soakTarget, index, state.time, p2ReturningOrbPositions(state.p2OrbReturnAge, state.p2OrbReturnSeed, WORLD.center), WORLD.center, P2_RADIUS - 2)
         let p3Target = p3NpcTarget(baseIndex, npcP3CrystalActive, state.p3Round, state.event, state.eventTime, state.p4PatternSeed, crystalSlot, npcP3Side, p3LandingIndexOf(baseIndex))
         if (phaseThree && ['p3-approach', 'p3-light-pools', 'p3-pools-overlap', 'p3-rune-preview', 'p3-lattice-memory', 'p3-lattice-second', 'p3-big-boom'].includes(state.event)) {
           p3Target = state.positions[baseIndex]
@@ -1219,7 +1220,7 @@ export default function GameScene(props: SceneProps) {
         }
         const returning = p2OrbReturnState(state.p2OrbReturnAge)
         if (returning.phase === 'orbiting' || returning.phase === 'charging' || returning.phase === 'returning') {
-          p2ReturningOrbPositions(state.p2OrbReturnAge, state.p2Cycle, state.time, WORLD.center).forEach((point, localIndex) => {
+          p2ReturningOrbPositions(state.p2OrbReturnAge, state.p2OrbReturnSeed, WORLD.center).forEach((point, localIndex) => {
             const pulse = returning.phase === 'charging'
               ? 1 + Math.sin(state.time * 15 + localIndex) * .25
               : .75 + Math.sin(state.time * 9 + localIndex) * .2

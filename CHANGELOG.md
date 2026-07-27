@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Reset L’ura to a fresh 100% health pool for Phase 4 so damage dealt in
+  earlier phases cannot skip the final encounter.
+- End remaining Phase 3 mechanics at 0% player-dealt health, route the raid
+  through the north regroup, and award “The Stars Can Wait” before Phase 4.
+- Replaced the pre-Phase-4 damage instruction beneath L’ura’s health with an
+  atmospheric encounter line.
+- Kept returning orbs visible in both Phase 2 sequences and randomized each
+  resolved set’s return lanes, speeds, and rotational directions while
+  retaining the beam-resolution trigger.
 - Standardized the setup page around explicit Game settings, Keyboard
   settings, Interface, Raid planning, and phase-plan headings, with keyboard
   and mouse controls grouped beneath the Keyboard settings topic.

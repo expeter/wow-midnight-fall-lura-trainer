@@ -72,6 +72,11 @@ describe('canonical achievement rules', () => {
     expect(ids({ ...normalFlawless, difficulty: 'Hard', totalScore: 1101 })).toContain('hard-score-flawless')
   })
 
+  it('celebrates defeating the Phase 3 image before the north regroup', () => {
+    expect(ids({ ...normalFlawless, p3EarlyClear: true })).toContain('p3-early-clear')
+    expect(ids({ ...normalFlawless, p3EarlyClear: false })).not.toContain('p3-early-clear')
+  })
+
   it('unlocks both-duty feats from canonical cross-run history', () => {
     const crystalHard = { ...normalFlawless, difficulty: 'Hard', crystalPlayer: true, totalScore: 1200 }
     const firstAwards = collectibleAchievements(crystalHard, emptyCollection(), 7)
@@ -122,9 +127,9 @@ describe('persistent achievement collection', () => {
     expect(parseAchievementCollection(serializeAchievementCollection(loaded))).toEqual(loaded)
   })
 
-  it('publishes 20 available canonical achievements and one P1 teaser', () => {
+  it('publishes 21 available canonical achievements and one P1 teaser', () => {
     const catalog = achievementCatalog()
-    expect(catalog.filter(achievement => achievement.available)).toHaveLength(20)
+    expect(catalog.filter(achievement => achievement.available)).toHaveLength(21)
     expect(catalog.find(achievement => achievement.id === 'flawless-p1')).toMatchObject({ available: false })
     expect(new Set(catalog.map(achievement => achievement.id)).size).toBe(catalog.length)
   })

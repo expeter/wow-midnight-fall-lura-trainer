@@ -35,7 +35,7 @@ describe('achievement collection UI', () => {
 
   it('links the compact one-of-twenty summary to the ledger', () => {
     render(<AchievementBadgeSummary collection={collection} />)
-    expect(screen.getByRole('link', { name: 'Achievements 1 of 20 earned' })).toHaveAttribute('href', '#achievements')
+    expect(screen.getByRole('link', { name: 'Achievements 1 of 21 earned' })).toHaveAttribute('href', '#achievements')
   })
 
   it('shows newly earned achievements as compact live cards with title and flavor text', () => {

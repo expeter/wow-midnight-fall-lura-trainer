@@ -919,15 +919,29 @@ export function p2OrbReturnState(age: number, orbitRadius = 82): { phase: 'inact
   }
   return { phase: 'done', radius: 0 }
 }
-export function p2ReturningOrbPositions(age: number, _cycle: number, _time: number, center: Point, orbitRadius = 82): Point[] {
+function p2SeededUnit(seed: number): number {
+  const value = Math.sin(seed * 12.9898 + 78.233) * 43758.5453
+  return value - Math.floor(value)
+}
+export function p2ReturningOrbPositions(age: number, returnSeed: number, center: Point, orbitRadius = 82): Point[] {
   const state = p2OrbReturnState(age, orbitRadius)
   if (state.phase !== 'orbiting' && state.phase !== 'charging' && state.phase !== 'returning') return []
   return Array.from({ length: 4 }, (_, index) => {
-    // A resolved set leaves its beam-aligned cardinal position and keeps moving
-    // in the same positive rotational direction while it spirals inward.
-    const angle = index * Math.PI / 2 + age * P2_ORBIT_SPEED
+    const angleOffset = p2SeededUnit(returnSeed + index * 17) * Math.PI * 2
+    const direction = p2SeededUnit(returnSeed + index * 31 + 7) < .5 ? -1 : 1
+    const speed = P2_ORBIT_SPEED * (.82 + p2SeededUnit(returnSeed + index * 47 + 13) * .36)
+    const angle = angleOffset + age * speed * direction
     return { x: center.x + Math.cos(angle) * state.radius, y: center.y + Math.sin(angle) * state.radius }
   })
+}
+export function shouldTriggerP3EarlyClear(event: string, playerDamage: number): boolean {
+  return event.startsWith('p3-')
+    && event !== 'p3-countdown'
+    && event !== 'p3-sector-move'
+    && playerDamage >= 100
+}
+export function p4StartingBossState(): { health: number; playerDamage: number } {
+  return { health: 100, playerDamage: 0 }
 }
 export function p2NpcShouldReturnToSoak(orbReturnAge: number): boolean {
   return orbReturnAge >= P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS - P2_NPC_PREPOSITION_SECONDS

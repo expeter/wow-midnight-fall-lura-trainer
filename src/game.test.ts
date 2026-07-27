@@ -5,7 +5,7 @@ import { p3ProtectionBubbleCenter } from './game'
 import type { Point } from './game'
 import { P3_LIGHT_RADIUS, p3SpreadPosition, p4TankKillsBox, P4_TANK_KILL_RADIUS } from './game'
 import { isP3RaidMemberVisible, p3ActiveCrystalAssignments } from './game'
-import { bossDamageScoreBonus, isInsideP3Pool, p4BossHealthWithPlayerDamage, P1_STAR_LENGTH, starsplinterHitsCrystalCarrier } from './game'
+import { bossDamageScoreBonus, isInsideP3Pool, p4BossHealthWithPlayerDamage, p4StartingBossState, P1_STAR_LENGTH, shouldTriggerP3EarlyClear, starsplinterHitsCrystalCarrier } from './game'
 
 describe('Intermission game rules', () => {
   it('creates six deterministic stars for a seed', () => { expect(seededStars(42)).toEqual(seededStars(42)); expect(seededStars(42)).toHaveLength(6) })
@@ -27,13 +27,22 @@ describe('Intermission game rules', () => {
     expect(isInsideP3Pool({ x: 115.5, y: 100 }, pool)).toBe(false)
     expect(p3PoolSoakRate(3)).toBe(3)
   })
-  it('keeps pre-P4 damage and awards each newly crossed ten-percent tier', () => {
+  it('starts Phase 4 with a fresh health pool and awards each newly crossed ten-percent tier', () => {
+    expect(p4StartingBossState()).toEqual({ health: 100, playerDamage: 0 })
     expect(p4BossHealthWithPlayerDamage(1, 0, 60)).toBe(40)
     expect(p4BossHealthWithPlayerDamage(2, 0, 60)).toBeCloseTo(16.14, 2)
     expect(p4BossHealthWithPlayerDamage(3, 0, 60)).toBe(0)
     expect(bossDamageScoreBonus(9.5, 10)).toBe(50)
     expect(bossDamageScoreBonus(19.5, 30)).toBe(100)
     expect(bossDamageScoreBonus(30, 30.5)).toBe(0)
+  })
+  it('ends active Phase 3 mechanics at 0% without skipping its north regroup', () => {
+    expect(shouldTriggerP3EarlyClear('p3-light-pools', 100)).toBe(true)
+    expect(shouldTriggerP3EarlyClear('p3-archangel', 100)).toBe(true)
+    expect(shouldTriggerP3EarlyClear('p3-light-pools', 99.5)).toBe(false)
+    expect(shouldTriggerP3EarlyClear('p3-countdown', 100)).toBe(false)
+    expect(shouldTriggerP3EarlyClear('p3-sector-move', 100)).toBe(false)
+    expect(shouldTriggerP3EarlyClear('p4-cycle', 100)).toBe(false)
   })
   it('only treats the band between the two arena circles as safe', () => { const center = { x: 100, y: 100 }; expect(isInSafeAnnulus({ x: 160, y: 100 }, center, 50, 80)).toBe(true); expect(isInSafeAnnulus({ x: 120, y: 100 }, center, 50, 80)).toBe(false); expect(isInSafeAnnulus({ x: 190, y: 100 }, center, 50, 80)).toBe(false) })
   it('wipes P1 positioning only when the player misses the playable ring', () => { const center = { x: 100, y: 100 }; expect(p1PositioningWipeReason({ x: 160, y: 100 }, center, 50, 80)).toBeNull(); expect(p1PositioningWipeReason({ x: 190, y: 100 }, center, 50, 80)).toMatch(/did not reach/i); expect(p1PositioningWipeReason({ x: 120, y: 100 }, center, 50, 80)).toMatch(/did not reach/i) })
@@ -316,16 +325,17 @@ describe('Intermission game rules', () => {
     expect(p2OrbReturnState(14.5).radius).toBeCloseTo(61.5)
     expect(p2OrbReturnState(15)).toEqual({ phase: 'done', radius: 0 })
   })
-  it('provides four deterministic P2 return-orb collision positions', () => { const center = { x: 480, y: 270 }; const positions = p2ReturningOrbPositions(14.5, 2, 30, center); expect(positions).toHaveLength(4); positions.forEach(position => expect(distance(position, center)).toBeCloseTo(61.5)); expect(p2ReturningOrbPositions(15, 2, 30, center)).toEqual([]) })
-  it('keeps resolved P2 orbs rotating in the same direction while they return', () => {
+  it('provides four deterministic P2 return-orb collision positions for every resolved set', () => { const center = { x: 480, y: 270 }; const positions = p2ReturningOrbPositions(14.5, 2026, center); expect(positions).toHaveLength(4); positions.forEach(position => expect(distance(position, center)).toBeCloseTo(61.5)); expect(p2ReturningOrbPositions(15, 2026, center)).toEqual([]) })
+  it('randomizes P2 return lanes and rotational directions without changing during a set', () => {
     const center = { x: 480, y: 270 }
-    const before = p2ReturningOrbPositions(13.99, 2, 30, center)[0]
-    const after = p2ReturningOrbPositions(14.01, 2, 30.02, center)[0]
-    const beforeAngle = Math.atan2(before.y - center.y, before.x - center.x)
-    const afterAngle = Math.atan2(after.y - center.y, after.x - center.x)
-    const forwardDelta = (afterAngle - beforeAngle + Math.PI * 2) % (Math.PI * 2)
-    expect(forwardDelta).toBeGreaterThan(0)
-    expect(forwardDelta).toBeLessThan(.01)
+    const firstSet = p2ReturningOrbPositions(13, 2026, center)
+    const repeated = p2ReturningOrbPositions(13, 2026, center)
+    const nextSet = p2ReturningOrbPositions(13, 2027, center)
+    expect(repeated).toEqual(firstSet)
+    expect(nextSet).not.toEqual(firstSet)
+    const offsets = firstSet.map(point => Math.atan2(point.y - center.y, point.x - center.x))
+    const gaps = offsets.slice(1).map((angle, index) => (angle - offsets[index] + Math.PI * 2) % (Math.PI * 2))
+    expect(new Set(gaps.map(gap => gap.toFixed(3))).size).toBeGreaterThan(1)
   })
   it('enforces the displayed Phase 3 rune order with a short overlap at turn boundaries', () => { const order = ['X', 'T', 'O'] as const; expect(isP3RuneTurn([...order], 'X', 25)).toBe(true); expect(isP3RuneTurn([...order], 'T', 25)).toBe(false); expect(isP3RuneTurn([...order], 'X', 29.8)).toBe(true); expect(isP3RuneTurn([...order], 'T', 29.8)).toBe(true); expect(isP3RuneTurn([...order], 'T', 30.1)).toBe(true); expect(isP3RuneTurn([...order], 'T', 35.2)).toBe(true); expect(isP3RuneTurn([...order], 'O', 35.1)).toBe(true); expect(p3RuneDeadline([...order], 'T')).toBe(35) })
   it('requires every ordered rune pair to resolve before Big Boom', () => { const order = ['X', 'T', 'O'] as const; expect(p3MemoryResolved([...order], ['X', 'T'])).toBe(false); expect(p3MemoryResolved([...order], ['X', 'T', 'O'])).toBe(true) })

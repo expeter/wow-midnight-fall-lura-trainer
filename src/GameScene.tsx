@@ -5,8 +5,17 @@ import { p3SpreadPosition, p4PlayerSplinterHitsNpc, p4RenderedNpcSplinterHitsRai
 import { isP3RaidMemberVisible } from './game'
 import { isInsideP3Pool } from './game'
 import { combatProjectileHeight, combatProjectileImpactPoint, combatProjectilePosition, combatProjectileShape, combatProjectileTargetHeight, combatProjectileTravelSeconds, combatProjectilesActive, COMBAT_PROJECTILE_IMPACT_SECONDS, MAX_VISIBLE_NPC_PROJECTILES, npcProjectileShots, type CombatProjectileShape } from './projectiles'
+import { p1BeamAngles, p1CrystalSpawnPosition, p1MemorySlotAngle, p1MemorySweepAngle, p1RotatingBeams, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
 
 interface SceneProps {
+  p1Sequence: number
+  p1Seed: number
+  p1MemoryOrder: P1Rune[]
+  p1GlaiveSets: P1GlaiveSet[]
+  p1Soaks: P1ReactiveSoak[]
+  p1SoakResolved: number[]
+  p1CrystalAssignments: number[]
+  p1CrystalCollected: boolean
   combatProjectilesEnabled: boolean
   mainProjectileFiredAt: number | null
   positions: Point[]
@@ -46,7 +55,7 @@ interface SceneProps {
   playerSplinterRotation: number
   personalJumpProgress: number
   crystalAge: number
-  event: 'countdown' | 'positioning' | 'beam' | 'splinter' | 'p1-recover' | 'p2-countdown' | 'p2-jump' | 'p2-positioning' | 'p2-orbs' | 'p2-recover' | 'p2-pull' | 'p2-spread' | 'p2-fetch' | 'p2-wait' | 'p3-countdown' | 'p3-flight' | 'p3-landing' | 'p3-approach' | 'p3-light-pools' | 'p3-rune-preview' | 'p3-lattice-memory' | 'p3-lattice-second' | 'p3-pools-overlap' | 'p3-big-boom' | 'p3-archangel-position' | 'p3-archangel' | 'p3-sector-move' | 'p4-countdown' | 'p4-transition' | 'p4-cycle'
+  event: 'p1-countdown' | 'p1-interrupts' | 'p1-crystals' | 'p1-glaives' | 'p1-memory-position' | 'p1-memory-sweep' | 'p1-beam-telegraph' | 'p1-beams' | 'p1-soaks' | 'p1-transition' | 'countdown' | 'positioning' | 'beam' | 'splinter' | 'p1-recover' | 'p2-countdown' | 'p2-jump' | 'p2-positioning' | 'p2-orbs' | 'p2-recover' | 'p2-pull' | 'p2-spread' | 'p2-fetch' | 'p2-wait' | 'p3-countdown' | 'p3-flight' | 'p3-landing' | 'p3-approach' | 'p3-light-pools' | 'p3-rune-preview' | 'p3-lattice-memory' | 'p3-lattice-second' | 'p3-pools-overlap' | 'p3-big-boom' | 'p3-archangel-position' | 'p3-archangel' | 'p3-sector-move' | 'p4-countdown' | 'p4-transition' | 'p4-cycle'
   eventTime: number
   beamAngles: number[]
   npcSplinters: number[]
@@ -625,6 +634,13 @@ export default function GameScene(props: SceneProps) {
       X: makeTextTexture('X', '#70d9ff', true),
       O: makeTextTexture('O', '#70d9ff', true),
     }
+    const p1RuneTextures: Record<P1Rune, THREE.Texture> = {
+      T: makeTextTexture('T', '#95e8ff', true),
+      X: makeTextTexture('X', '#95e8ff', true),
+      O: makeTextTexture('O', '#95e8ff', true),
+      V: makeTextTexture('V', '#95e8ff', true),
+      '+': makeTextTexture('+', '#95e8ff', true),
+    }
     const markerData = [
       [480, 217, 0xef5350], [533, 270, 0xe8e8e8], [427, 270, 0xf4d35e], [480, 323, 0xff8a30],
     ] as const
@@ -822,10 +838,11 @@ export default function GameScene(props: SceneProps) {
       if (state.event.startsWith('p2-')) state.onP2OrbitAngle(orbitAngle)
       const jumpProgress = state.event === 'p2-jump' ? Math.min(1, state.eventTime / 1.4) : 0
       const heights = jumpHeights(jumpProgress, state.personalJumpProgress)
+      const phaseOne = state.event.startsWith('p1-') && state.event !== 'p1-recover'
       const phaseTwo = state.event.startsWith('p2-')
       const phaseThree = state.event.startsWith('p3-')
       const phaseFour = state.event.startsWith('p4-')
-      const turnLocked = state.personalJumpProgress > 0 || state.event === 'countdown' || state.event === 'p2-countdown' || state.event === 'p2-jump' || state.event === 'p3-countdown' || state.event === 'p3-flight' || state.event === 'p4-countdown' || state.event === 'p4-transition'
+      const turnLocked = state.personalJumpProgress > 0 || state.event === 'p1-countdown' || state.event === 'countdown' || state.event === 'p2-countdown' || state.event === 'p2-jump' || state.event === 'p3-countdown' || state.event === 'p3-flight' || state.event === 'p4-countdown' || state.event === 'p4-transition'
       if (!turnLocked) {
         const turnDirection = (turnKeys.has(turnRightKey) ? 1 : 0) - (turnKeys.has(turnLeftKey) ? 1 : 0)
         if (turnDirection) applyFacing((facingAngle ?? currentCameraForwardAngle) + turnDirection * rotationSpeed * renderDelta)
@@ -870,7 +887,14 @@ export default function GameScene(props: SceneProps) {
       const playerBody = player.getObjectByName('role-body') as THREE.Mesh<THREE.BoxGeometry, THREE.MeshBasicMaterial>
       playerBody.material.color.setHex(playerBody.userData.baseColor)
       const playerCarriedCrystal = player.getObjectByName('carried-crystal')
-      if (playerCarriedCrystal) playerCarriedCrystal.visible = !phaseFour && state.playerIsCrystal && !state.playerCrystalSpent && !state.crystal
+      const playerP1CrystalCollected = state.p1CrystalAssignments.slice(
+        0,
+        state.event === 'p1-countdown' || state.event === 'p1-interrupts' || state.event === 'p1-crystals'
+          ? (state.p1Sequence - 1) * 3
+          : state.p1Sequence * 3,
+      ).includes(state.assignment)
+      if (playerCarriedCrystal) playerCarriedCrystal.visible = !phaseFour
+        && (phaseOne ? playerP1CrystalCollected : state.playerIsCrystal && !state.playerCrystalSpent && !state.crystal)
       const partnerNpcOrdinal = npcProfileIndices.findIndex(profileIndex => p3SideOf(profileIndex) === playerP3Side)
       const markedNpcOrdinals = npcProfileIndices.map((profileIndex, ordinal) => ({ profileIndex, ordinal }))
         .filter(candidate => p3SideOf(candidate.profileIndex) === playerP3Side && candidate.ordinal !== partnerNpcOrdinal)
@@ -890,6 +914,13 @@ export default function GameScene(props: SceneProps) {
         ? activeP3Crystals.includes(state.assignment)
         : hasActiveP3CrystalLight(state.playerIsCrystal, state.playerCrystalSpent)
       const plannedP3Targets: Array<{ point: Point; crystal: boolean }> = [{ point: state.player, crystal: playerLightActive }]
+      const playerP1Rune = (['T', 'X', 'O', 'V', '+'] as P1Rune[])[state.assignment % 5]
+      const p1MarkedProfiles = new Map<P1Rune, number>([[playerP1Rune, state.assignment]])
+      ;(['T', 'X', 'O', 'V', '+'] as P1Rune[]).forEach(rune => {
+        if (p1MarkedProfiles.has(rune)) return
+        const profileIndex = state.profiles.findIndex((_, index) => index !== state.assignment && index % 5 === (['T', 'X', 'O', 'V', '+'] as P1Rune[]).indexOf(rune))
+        if (profileIndex >= 0) p1MarkedProfiles.set(rune, profileIndex)
+      })
       const p3CrystalPoolSupport = new Map<number, { pool: Point; target: Point }>()
       if (state.event === 'p3-light-pools') {
         for (const side of [-1, 1] as const) {
@@ -922,6 +953,22 @@ export default function GameScene(props: SceneProps) {
         const p2WaitTarget = p2NpcShouldReturnToSoak(state.p2OrbReturnAge)
           ? soakTarget
           : p2NpcRoamingPosition(soakTarget, index, state.time, p2ReturningOrbPositions(state.p2OrbReturnAge, state.p2Cycle, orbitAngle, WORLD.center), WORLD.center, P2_RADIUS - 2)
+        let p1Target = state.positions[baseIndex]
+        const currentP1CrystalAssignments = state.p1CrystalAssignments.slice((state.p1Sequence - 1) * 3, state.p1Sequence * 3)
+        if (state.event === 'p1-crystals' && currentP1CrystalAssignments.includes(baseIndex)) {
+          p1Target = p1CrystalSpawnPosition(state.positions[baseIndex], WORLD.center)
+        } else if (state.event === 'p1-memory-position' || state.event === 'p1-memory-sweep') {
+          const markedRune = [...p1MarkedProfiles.entries()].find(([, profileIndex]) => profileIndex === baseIndex)?.[0]
+          if (markedRune) {
+            const angle = p1MemorySlotAngle(state.p1MemoryOrder, markedRune)
+            p1Target = {
+              x: WORLD.center.x + Math.cos(angle) * (WORLD.innerRadius + 35),
+              y: WORLD.center.y + Math.sin(angle) * (WORLD.innerRadius + 35),
+            }
+          }
+        } else if (state.event === 'p1-transition') {
+          p1Target = state.intermissionPositions[baseIndex]
+        }
         let p3Target = p3NpcTarget(baseIndex, npcP3CrystalActive, state.p3Round, state.event, state.eventTime, state.p4PatternSeed, crystalSlot, npcP3Side, p3LandingIndexOf(baseIndex))
         if (phaseThree && ['p3-approach', 'p3-light-pools', 'p3-pools-overlap', 'p3-rune-preview', 'p3-lattice-memory', 'p3-lattice-second', 'p3-big-boom'].includes(state.event)) {
           p3Target = state.positions[baseIndex]
@@ -1058,7 +1105,9 @@ export default function GameScene(props: SceneProps) {
         if (phaseThree && state.event !== 'p3-flight' && state.event !== 'p3-landing') {
           p3Target = constrainP3NpcTargetToSide(p3Target, npcP3Side, WORLD.center, npcP3CrystalActive ? P3_LIGHT_RADIUS + 2 : 3, state.event, state.p3Round)
         }
-        const normal = phaseThree || phaseFour
+        const normal = phaseOne
+          ? p1Target
+          : phaseThree || phaseFour
           ? p3Target
           : state.event === 'p2-countdown'
           ? WORLD.center
@@ -1089,7 +1138,9 @@ export default function GameScene(props: SceneProps) {
         const previousPosition = renderedNpcPositions[index]
         const forcedMovement = state.event === 'p2-jump' || state.event === 'p2-pull' || state.event === 'p3-flight' || state.event === 'p4-transition'
         const p4Relocation = state.event === 'p4-cycle' ? p4RelocationProgress(p4VisualCycle, state.eventTime) : null
-        const openingMultiplier = state.event === 'p3-sector-move'
+        const openingMultiplier = state.event === 'p1-transition'
+          ? state.eventTime <= OPENING_BOOST_SECONDS ? 1.4 : 1
+          : state.event === 'p3-sector-move'
           ? 2
           : state.event === 'p3-approach' ? P3_APPROACH_NPC_SPEED_MULTIPLIER
           : state.event === 'p4-transition' ? 4
@@ -1104,10 +1155,18 @@ export default function GameScene(props: SceneProps) {
         }
         renderedNpcPositions[index] = position
         sprite.position.set(position.x, heights.npc + p3FlightHeight + p4JumpHeight, position.y)
-        const pathTarget = phaseThree ? p3Target : state.event === 'p2-wait' ? p2WaitTarget : state.event === 'p2-orbs' ? soakTarget : state.event === 'p2-spread' ? spreadTarget : state.event === 'p2-pull' || state.event === 'p2-jump' ? WORLD.center : null
+        const pathTarget = phaseOne ? p1Target : phaseThree ? p3Target : state.event === 'p2-wait' ? p2WaitTarget : state.event === 'p2-orbs' ? soakTarget : state.event === 'p2-spread' ? spreadTarget : state.event === 'p2-pull' || state.event === 'p2-jump' ? WORLD.center : null
         if (pathTarget && distance(position, pathTarget) > .1) sprite.rotation.y = -Math.atan2(pathTarget.y - position.y, pathTarget.x - position.x)
         const glow = sprite.getObjectByName('crystal-glow')
-        const npcCrystalVisible = phaseThree ? npcP3CrystalActive : state.crystalCarriers.includes(index)
+        const p1CollectedAssignments = state.p1CrystalAssignments.slice(
+          0,
+          state.event === 'p1-countdown' || state.event === 'p1-interrupts' || state.event === 'p1-crystals'
+            ? (state.p1Sequence - 1) * 3
+            : state.p1Sequence * 3,
+        )
+        const npcCrystalVisible = phaseOne
+          ? p1CollectedAssignments.includes(baseIndex)
+          : phaseThree ? npcP3CrystalActive : state.crystalCarriers.includes(index)
         if (glow) glow.visible = !phaseFour && npcCrystalVisible
         const body = sprite.getObjectByName('role-body') as THREE.Mesh<THREE.BoxGeometry, THREE.MeshBasicMaterial>
         body.material.color.setHex(body.userData.baseColor)
@@ -1186,10 +1245,18 @@ export default function GameScene(props: SceneProps) {
       const p4Stack = state.event === 'p4-cycle'
         ? p4GroupPosition(p4VisualCycle, state.eventTime, WORLD.center)
         : p4StackPosition(1, WORLD.center)
-      const assigned = phaseFour ? p4Stack : p2SpreadGuide ? state.p2SpreadPositions[state.assignment] : recurringP2Guide ? state.p2SoakPositions[state.assignment] : state.positions[state.assignment]
+      const p1MemoryAssignment = {
+        x: WORLD.center.x + Math.cos(p1MemorySlotAngle(state.p1MemoryOrder, playerP1Rune)) * (WORLD.innerRadius + 35),
+        y: WORLD.center.y + Math.sin(p1MemorySlotAngle(state.p1MemoryOrder, playerP1Rune)) * (WORLD.innerRadius + 35),
+      }
+      const assigned = phaseOne
+        ? state.event === 'p1-transition'
+          ? state.intermissionPositions[state.assignment]
+          : state.event === 'p1-memory-position' ? p1MemoryAssignment : state.positions[state.assignment]
+        : phaseFour ? p4Stack : p2SpreadGuide ? state.p2SpreadPositions[state.assignment] : recurringP2Guide ? state.p2SoakPositions[state.assignment] : state.positions[state.assignment]
       if (state.event === 'p3-approach' && distance(state.player, assigned) <= 14) p3OpeningReached = true
       const p3Opening = phaseThree && state.event === 'p3-approach' && !p3OpeningReached
-      const opening = state.event === 'countdown' || state.event === 'positioning' || state.event === 'p2-countdown' || state.event === 'p2-positioning' || state.event === 'p4-transition' || p2SpreadGuide || recurringP2Guide || p3Opening
+      const opening = state.event === 'p1-countdown' || state.event === 'p1-memory-position' || state.event === 'p1-transition' || state.event === 'countdown' || state.event === 'positioning' || state.event === 'p2-countdown' || state.event === 'p2-positioning' || state.event === 'p4-transition' || p2SpreadGuide || recurringP2Guide || p3Opening
       const revealDistance = phaseTwo ? state.difficulty === 'normal' ? 14 : state.difficulty === 'hard' ? 7 : Infinity : assignmentRevealDistance(state.difficulty)
       helper.visible = opening && (state.easy || distance(state.player, assigned) <= revealDistance)
       helper.scale.setScalar(phaseTwo ? .55 : phaseThree ? .45 : 1)
@@ -1202,6 +1269,58 @@ export default function GameScene(props: SceneProps) {
         const guideDy = assigned.y - state.player.y
         const guideLength = Math.hypot(guideDx, guideDy)
         if (guideLength > 4) addFlatBeam(hazards, state.player, Math.atan2(guideDy, guideDx), guideLength, 1.7, 0x73e0c1, .72)
+      }
+      if (phaseOne) {
+        if (state.event === 'p1-crystals') {
+          const activeAssignments = state.p1CrystalAssignments.slice((state.p1Sequence - 1) * 3, state.p1Sequence * 3)
+          activeAssignments.forEach(profileIndex => {
+            if (profileIndex === state.assignment && state.p1CrystalCollected) return
+            const point = p1CrystalSpawnPosition(state.positions[profileIndex], WORLD.center)
+            addOrb(hazards, point, 0xffe46f, 5.8, .96)
+            addGroundRing(hazards, point, 6.5, 9, 0xffef9b, .88, 2.7)
+          })
+        }
+        state.p1GlaiveSets.forEach(set => {
+          if (state.time < set.telegraphStartsAt || state.time > set.expiresAt) return
+          if (state.time < set.launchesAt) {
+            const pulse = .4 + .35 * Math.sin(state.time * 9)
+            set.glaives.forEach(glaive => {
+              const angle = Math.atan2(glaive.direction.y, glaive.direction.x)
+              addLaserBeam(hazards, WORLD.center, angle, WORLD.outerRadius - 8, 1.6, 0xa8e7ff, pulse)
+            })
+          } else {
+            set.glaives.forEach((glaive, index) => {
+              addOrb(hazards, glaive.position, 0x89cfff, 5.2, .96)
+              addGroundRing(hazards, glaive.position, 5.6, 7.2, 0xc8f1ff, .55 + Math.sin(state.time * 8 + index) * .18, 3)
+            })
+          }
+        })
+        if (state.event === 'p1-memory-position' || state.event === 'p1-memory-sweep') {
+          addRuneMarker(hazards, state.player, p1RuneTextures[playerP1Rune], true)
+          p1MarkedProfiles.forEach((profileIndex, rune) => {
+            if (profileIndex === state.assignment) return
+            const npcOrdinal = npcProfileIndices.indexOf(profileIndex)
+            if (npcOrdinal >= 0) addRuneMarker(hazards, npcPositions[npcOrdinal], p1RuneTextures[rune], true)
+          })
+          if (state.event === 'p1-memory-sweep') {
+            addLaserBeam(hazards, WORLD.center, p1MemorySweepAngle(0, state.eventTime), WORLD.outerRadius, 3.2, 0x9adfff, .92)
+          }
+        }
+        if (state.event === 'p1-beam-telegraph' || state.event === 'p1-beams') {
+          const beams = p1RotatingBeams(state.p1Seed, state.p1Sequence, 0, Math.PI / 16)
+          const angles = p1BeamAngles(beams, state.eventTime)
+          const active = state.event === 'p1-beams'
+          angles.forEach(angle => {
+            addLaserBeam(hazards, WORLD.center, angle, WORLD.outerRadius, active ? 3.3 : 1.6, active ? 0x45aaff : 0xa8d7ff, active ? .9 : .38)
+          })
+        }
+        if (state.event === 'p1-soaks') {
+          state.p1Soaks.forEach(soak => {
+            const resolved = state.p1SoakResolved.includes(soak.id)
+            addGroundDisc(hazards, soak.position, 9, resolved ? 0x1558a8 : 0x082a63, resolved ? .7 : .5, 2.5)
+            addGroundRing(hazards, soak.position, 7.7, 9, resolved ? 0x61deff : 0x9bcfff, resolved ? .98 : .72, 2.8)
+          })
+        }
       }
       if (state.event === 'beam') {
         state.beamAngles.forEach(angle => {

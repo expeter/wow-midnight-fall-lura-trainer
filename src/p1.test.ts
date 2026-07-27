@@ -8,6 +8,7 @@ import {
   p1AdvanceGlaiveSet,
   p1BeamAngles,
   p1CrystalExpired,
+  p1CrystalSpawnPosition,
   p1CrystalSpawns,
   p1GlaiveSet,
   p1InterruptAssignment,
@@ -15,6 +16,9 @@ import {
   p1InterruptState,
   p1InterruptSucceeded,
   p1MemoryOrder,
+  p1MemorySlotAngle,
+  p1MemorySlotValid,
+  p1MemorySweepAngle,
   p1PlayerSoakFailed,
   p1Progress,
   p1ReactiveSoaks,
@@ -54,6 +58,11 @@ describe('P1 headless mechanics', () => {
     expect(p1CrystalExpired(crystals[0], 25, null)).toBe(false)
     expect(p1CrystalExpired(crystals[0], 25.01, null)).toBe(true)
     expect(p1CrystalExpired(crystals[0], 30, 24)).toBe(false)
+  })
+
+  it('places pickup crystals inward from their raid-plan assignments', () => {
+    expect(p1CrystalSpawnPosition({ x: 100, y: 0 }, { x: 0, y: 0 })).toEqual({ x: 86, y: 0 })
+    expect(p1CrystalSpawnPosition({ x: 0, y: 0 }, { x: 0, y: 0 })).toEqual({ x: 0, y: 0 })
   })
 
   it('seeds five star-like glaives, reflects them from the ring, and expires them after a configurable lifetime', () => {
@@ -98,6 +107,17 @@ describe('P1 headless mechanics', () => {
     const wrong = [...order]
     ;[wrong[0], wrong[1]] = [wrong[1], wrong[0]]
     expect(p1ValidateMemoryContacts(order, wrong)).toMatchObject({ valid: false, complete: false, wrongIndex: 0 })
+  })
+
+  it('maps every rune to a distinct clockwise slot and sweeps one full turn', () => {
+    const order = ['T', 'X', 'O', 'V', '+'] as const
+    const center = { x: 480, y: 270 }
+    const angle = p1MemorySlotAngle(order, 'O')
+    const correct = { x: center.x + Math.cos(angle) * 120, y: center.y + Math.sin(angle) * 120 }
+    expect(p1MemorySlotValid(correct, center, order, 'O')).toBe(true)
+    expect(p1MemorySlotValid(correct, center, order, 'X')).toBe(false)
+    expect(p1MemorySweepAngle(0, 0)).toBeCloseTo(-Math.PI / 2)
+    expect(p1MemorySweepAngle(0, 5)).toBeCloseTo(-Math.PI / 2 + Math.PI * 2)
   })
 
   it('rotates eight evenly spaced beams from a seeded ten-degree side offset', () => {

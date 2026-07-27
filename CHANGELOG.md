@@ -2,7 +2,10 @@
 
 ## Unreleased
 
-Phase 1 is the next planned encounter addition.
+- FR-030: Added the complete Phase 1 encounter as a localhost-only playable
+  preview: five assigned interrupts, two three-crystal pickup sets,
+  ricocheting Heaven Glaives, the ordered TXOV+ memory sweep, rotating beams
+  with reactive Soaks, a dedicated raid plan, and the Intermission handoff.
 
 ## 0.2.0 — 2026-07-27
 

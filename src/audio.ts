@@ -13,6 +13,7 @@ import {
   p4SplinterStartSeconds,
   type Role,
 } from './game'
+import { P1_CRYSTAL_PICKUP_SECONDS, P1_INTERMISSION_POSITION_SECONDS } from './p1'
 
 export interface TtsCue {
   id: string
@@ -60,6 +61,7 @@ export interface TtsCueState {
   event: string
   eventTime: number
   cycle: number
+  p1Sequence: number
   p2Cycle: number
   p2OrbReturnAge: number
   p3Round: number
@@ -76,7 +78,7 @@ export interface TtsCueState {
 export function ttsCuesForState(state: TtsCueState): TtsCue[] {
   const cues: TtsCue[] = []
 
-  const directCountdownEvents = new Set(['countdown', 'p2-countdown', 'p3-countdown', 'p4-countdown'])
+  const directCountdownEvents = new Set(['p1-countdown', 'countdown', 'p2-countdown', 'p3-countdown', 'p4-countdown'])
   if (directCountdownEvents.has(state.event)) {
     const count = Math.max(1, Math.ceil(3 - state.eventTime))
     cues.push({ id: `${state.event}-${count}`, text: String(count) })
@@ -84,6 +86,18 @@ export function ttsCuesForState(state: TtsCueState): TtsCue[] {
 
   if (state.difficulty === 'easy' && state.event === 'beam') cues.push({ id: `p1-${state.cycle}-dodge`, text: 'Dodge' })
   if (state.difficulty === 'easy' && state.event === 'splinter' && state.role === 'carrier') cues.push({ id: `p1-${state.cycle}-drop`, text: 'Drop crystal' })
+  if (state.event === 'p1-crystals' && state.eventTime >= P1_CRYSTAL_PICKUP_SECONDS - 1) {
+    cues.push({ id: `phase-one-${state.p1Sequence}-glaives`, text: 'Glaives' })
+  }
+  if (state.event === 'p1-memory-position') {
+    cues.push({ id: `phase-one-${state.p1Sequence}-memory`, text: 'Memory game' })
+  }
+  if (state.event === 'p1-beam-telegraph') {
+    cues.push({ id: `phase-one-${state.p1Sequence}-move-beam`, text: 'Move beam' })
+  }
+  if (state.event === 'p1-transition' && state.eventTime >= P1_INTERMISSION_POSITION_SECONDS - 1) {
+    cues.push({ id: 'transition-intermission', text: 'Intermission' })
+  }
   if (state.event === 'p1-recover' && state.eventTime >= P1_FINAL_RECOVERY_SECONDS - 1) {
     cues.push({ id: 'transition-p2', text: 'Phase 2' })
   }

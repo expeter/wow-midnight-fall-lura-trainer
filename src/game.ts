@@ -1156,7 +1156,7 @@ export function bossBeamHitsPlayer(point: Point, origin: Point, angles: number[]
     return along > 20 && across < width
   })
 }
-export function roamingNpcPosition(base: Point, index: number, time: number, event: 'countdown' | 'positioning' | 'beam' | 'splinter' | 'p1-recover' | 'p2-countdown' | 'p2-jump' | 'p2-positioning' | 'p2-orbs' | 'p2-recover' | 'p2-pull' | 'p2-spread' | 'p2-fetch' | 'p2-wait' | `p3-${string}` | `p4-${string}`, eventTime: number, beamAngles: number[], center: Point): Point {
+export function roamingNpcPosition(base: Point, index: number, time: number, event: 'countdown' | 'positioning' | 'beam' | 'splinter' | 'p1-recover' | 'p2-countdown' | 'p2-jump' | 'p2-positioning' | 'p2-orbs' | 'p2-recover' | 'p2-pull' | 'p2-spread' | 'p2-fetch' | 'p2-wait' | `p1-${string}` | `p3-${string}` | `p4-${string}`, eventTime: number, beamAngles: number[], center: Point): Point {
   if (event === 'countdown' || event === 'positioning') return base
   const phase = index * 1.73
   const roaming = {

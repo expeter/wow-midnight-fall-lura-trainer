@@ -1,4 +1,4 @@
-export type PhaseKey = 'intermission' | 'p2' | 'p3' | 'p4'
+export type PhaseKey = 'p1' | 'intermission' | 'p2' | 'p3' | 'p4'
 
 export interface PhaseResult {
   key: PhaseKey
@@ -10,6 +10,7 @@ export interface PhaseResult {
 }
 
 export const PHASE_LABELS: Record<PhaseKey, string> = {
+  p1: 'Phase 1',
   intermission: 'Intermission',
   p2: 'Phase 2',
   p3: 'Phase 3',
@@ -28,8 +29,10 @@ export function buildPhaseResult(key: PhaseKey, startScore: number, endScore: nu
 }
 
 export function isFullSequenceCompletion(results: PhaseResult[]): boolean {
-  const required: PhaseKey[] = ['intermission', 'p2', 'p3', 'p4']
-  return results.length === required.length && results.every((result, index) => result.key === required[index])
+  const legacy: PhaseKey[] = ['intermission', 'p2', 'p3', 'p4']
+  const complete: PhaseKey[] = ['p1', ...legacy]
+  return [legacy, complete].some(required =>
+    results.length === required.length && results.every((result, index) => result.key === required[index]))
 }
 
 export interface Achievement {

@@ -7,6 +7,24 @@ const MECHANIC_TIMEOUT = 20_000
 
 test.setTimeout(60_000)
 
+test('exposes the complete Phase 1 preview only on localhost and begins its assigned interrupts', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('lura-game-speed', '2.5')
+    localStorage.setItem('lura-difficulty', 'test')
+  })
+  await page.goto('/')
+
+  await page.getByRole('button', { name: 'P1', exact: true }).click()
+  await expect(page.getByLabel('Phase 1 position map')).toBeVisible()
+  await expect(page.getByLabel('Phase 1 crystal assignments')).toBeVisible()
+  await page.getByRole('button', { name: /Enter P1/ }).click()
+
+  await expect(page.getByRole('heading', { name: /Prepare to interrupt cast/ })).toBeVisible()
+  await expect(page.getByText(/PHASE 1 · SEQUENCE 1 \/ 2/)).toBeVisible()
+  await expect(page.getByText(/CAST 1 \/ 5/)).toBeVisible({ timeout: MECHANIC_TIMEOUT })
+  await expect(page.getByText(/RED|YELLOW|GREEN/)).toBeVisible()
+})
+
 test('unlocks and schedules the complete prerecorded P4 raidlead in the browser', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('lura-tts-enabled', 'true')

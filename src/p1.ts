@@ -14,9 +14,11 @@ export const P1_GLAIVE_LIFETIME_SECONDS = 30
 export const P1_MAX_GLAIVE_SETS = 2
 export const P1_MEMORY_DELAY_SECONDS = 2
 export const P1_MEMORY_POSITION_SECONDS = 7
+export const P1_MEMORY_SWEEP_SECONDS = 5
 export const P1_ROTATING_BEAM_COUNT = 8
 export const P1_ROTATING_BEAM_OFFSET_DEGREES = 10
 export const P1_ROTATING_BEAM_TELEGRAPH_SECONDS = 2
+export const P1_ROTATING_BEAM_ACTIVE_SECONDS = 8
 export const P1_REACTIVE_SOAK_SECONDS = 2
 export const P1_SEQUENCE_COUNT = 2
 export const P1_INTERMISSION_POSITION_SECONDS = 15
@@ -298,6 +300,39 @@ export function p1BeamAngles(beams: P1RotatingBeams, now: number): number[] {
     beams.initialAngle
       + index * Math.PI * 2 / P1_ROTATING_BEAM_COUNT
       + elapsed * beams.angularSpeed * beams.direction)
+}
+
+export function p1MemorySweepAngle(startsAt: number, now: number, openingAngle = -Math.PI / 2): number {
+  const progress = Math.max(0, Math.min(1, (now - startsAt) / P1_MEMORY_SWEEP_SECONDS))
+  return openingAngle + progress * Math.PI * 2
+}
+
+export function p1MemorySlotAngle(order: readonly P1Rune[], rune: P1Rune, openingAngle = -Math.PI / 2): number {
+  const index = order.indexOf(rune)
+  if (index < 0) return openingAngle
+  return openingAngle + (index + .5) * Math.PI * 2 / order.length
+}
+
+export function p1MemorySlotValid(
+  point: P1Point,
+  center: P1Point,
+  order: readonly P1Rune[],
+  rune: P1Rune,
+  toleranceRadians = Math.PI / 7,
+): boolean {
+  const actual = Math.atan2(point.y - center.y, point.x - center.x)
+  const expected = p1MemorySlotAngle(order, rune)
+  return Math.abs(Math.atan2(Math.sin(actual - expected), Math.cos(actual - expected))) <= toleranceRadians
+}
+
+export function p1CrystalSpawnPosition(assignment: P1Point, center: P1Point, inwardDistance = 14): P1Point {
+  const dx = center.x - assignment.x
+  const dy = center.y - assignment.y
+  const length = Math.hypot(dx, dy) || 1
+  return {
+    x: assignment.x + dx / length * Math.min(inwardDistance, length),
+    y: assignment.y + dy / length * Math.min(inwardDistance, length),
+  }
 }
 
 export type P1SoakAssignee = 'npc' | 'player'

@@ -1,14 +1,14 @@
-# P1 encounter backlog
+# P1 encounter local preview
 
 Ticket: `FR-030`
 
-P1 is a future encounter before the existing Intermission. For now it is only
-represented by a disabled phase teaser.
+P1 is implemented before the existing Intermission as a localhost-only
+playable preview. The production build continues to show the disabled teaser
+until the encounter has been playtested and deliberately released.
 
-The pure rules foundation is prepared under `FR-032` in
-[`src/p1.ts`](../src/p1.ts), with deterministic regression coverage. It is not
-connected to the application, renderer, controls, or raid-plan persistence
-until the complete `FR-030` integration is deliberately implemented.
+The deterministic rules live in [`src/p1.ts`](../src/p1.ts). `FR-030` connects
+them to the application, renderer, controls, phase results, TTS, and
+phase-specific raid-plan persistence.
 
 ## Planning and assignments
 

@@ -6,6 +6,7 @@ const base: TtsCueState = {
   event: 'countdown',
   eventTime: 0,
   cycle: 1,
+  p1Sequence: 1,
   p2Cycle: 1,
   p2OrbReturnAge: -1,
   p3Round: 1,
@@ -29,7 +30,7 @@ describe('raid-lead TTS cues', () => {
   })
 
   it('counts down direct phase entries but stays silent during transitions', () => {
-    for (const event of ['countdown', 'p2-countdown', 'p3-countdown', 'p4-countdown']) {
+    for (const event of ['p1-countdown', 'countdown', 'p2-countdown', 'p3-countdown', 'p4-countdown']) {
       expect(ttsCuesForState({ ...base, event, eventTime: 0 })).toContainEqual({ id: `${event}-3`, text: '3' })
       expect(ttsCuesForState({ ...base, event, eventTime: 1 })).toContainEqual({ id: `${event}-2`, text: '2' })
       expect(ttsCuesForState({ ...base, event, eventTime: 2 })).toContainEqual({ id: `${event}-1`, text: '1' })
@@ -37,6 +38,14 @@ describe('raid-lead TTS cues', () => {
     expect(ttsCuesForState({ ...base, event: 'p2-jump' })).toEqual([])
     expect(ttsCuesForState({ ...base, event: 'p3-flight' })).toEqual([])
     expect(ttsCuesForState({ ...base, event: 'p4-transition' })).toEqual([])
+  })
+
+  it('calls the Phase 1 glaives, memory, move beam, and Intermission handoff', () => {
+    expect(ttsCuesForState({ ...base, event: 'p1-crystals', eventTime: 3.99 }).map(cue => cue.text)).not.toContain('Glaives')
+    expect(ttsCuesForState({ ...base, event: 'p1-crystals', eventTime: 4 }).map(cue => cue.text)).toContain('Glaives')
+    expect(ttsCuesForState({ ...base, event: 'p1-memory-position', p1Sequence: 2 })).toContainEqual({ id: 'phase-one-2-memory', text: 'Memory game' })
+    expect(ttsCuesForState({ ...base, event: 'p1-beam-telegraph' }).map(cue => cue.text)).toContain('Move beam')
+    expect(ttsCuesForState({ ...base, event: 'p1-transition', eventTime: 14 }).map(cue => cue.text)).toContain('Intermission')
   })
 
   it('announces each seamless phase transition exactly one second beforehand', () => {

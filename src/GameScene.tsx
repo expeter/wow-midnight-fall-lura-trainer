@@ -5,7 +5,7 @@ import { p3SpreadPosition, p4PlayerSplinterHitsNpc, p4RenderedNpcSplinterHitsRai
 import { isP3RaidMemberVisible } from './game'
 import { isInsideP3Pool } from './game'
 import { combatProjectileBossCenter, combatProjectileHeight, combatProjectileImpactPoint, combatProjectilePosition, combatProjectileShape, combatProjectileTargetHeight, combatProjectileTravelSeconds, combatProjectilesActive, COMBAT_PROJECTILE_IMPACT_SECONDS, MAX_VISIBLE_NPC_PROJECTILES, npcProjectileShots, type CombatProjectileShape } from './projectiles'
-import { P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_MEMORY_BEAM_LENGTH, P1_MEMORY_RADIUS, P1_OUTER_RADIUS, P1_REACTIVE_SOAK_RADIUS, p1BeamAngles, p1BossEncounterPosition, p1ClampNpcToArena, p1ContinuousBeamTime, p1CrystalSpawnPosition, p1MemoryRuneVisible, p1MemorySlotAngle, p1MemorySweepAngle, p1NpcBeamPosition, p1NpcCrystalPickupReleased, p1NpcGlaiveDodgePosition, p1NpcMemoryPosition, p1NpcRoamingPosition, p1RotatingBeams, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
+import { P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_MEMORY_BEAM_LENGTH, P1_MEMORY_BEAM_WIDTH_SCALE, P1_MEMORY_RADIUS, P1_OUTER_RADIUS, P1_REACTIVE_SOAK_RADIUS, p1BeamAngles, p1BossEncounterPosition, p1ClampNpcToArena, p1ContinuousBeamTime, p1CrystalSpawnPosition, p1MemoryRuneVisible, p1MemorySlotAngle, p1MemorySweepAngle, p1NpcBeamPosition, p1NpcCrystalPickupReleased, p1NpcGlaiveDodgePosition, p1NpcMemoryPosition, p1NpcRoamingPosition, p1RotatingBeams, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
 
 interface SceneProps {
   p1Sequence: number
@@ -387,15 +387,17 @@ function addBeamMarker(group: THREE.Group, origin: Point, angle: number, texture
   marker.position.set(origin.x + Math.cos(angle) * 145, 4.2, origin.y + Math.sin(angle) * 145)
   group.add(marker)
 }
-function addSplinterWedge(group: THREE.Group, origin: Point, angle: number, length: number, color: number, opacity: number) {
+function addSplinterWedge(group: THREE.Group, origin: Point, angle: number, length: number, color: number, opacity: number, widthScale = 1) {
   const addLayer = (startWidth: number, endWidth: number, layerColor: number, layerOpacity: number, height: number) => {
+    const scaledStartWidth = startWidth * widthScale
+    const scaledEndWidth = endWidth * widthScale
     const shape = new THREE.Shape()
-    shape.moveTo(0, -startWidth / 2)
-    shape.lineTo(length, -endWidth / 2)
-    shape.lineTo(length, endWidth / 2)
-    shape.lineTo(0, startWidth / 2)
+    shape.moveTo(0, -scaledStartWidth / 2)
+    shape.lineTo(length, -scaledEndWidth / 2)
+    shape.lineTo(length, scaledEndWidth / 2)
+    shape.lineTo(0, scaledStartWidth / 2)
     shape.closePath()
-    const geometry = cachedTransientGeometry(`splinter:${length}:${startWidth}:${endWidth}`, () => new THREE.ShapeGeometry(shape))
+    const geometry = cachedTransientGeometry(`splinter:${length}:${scaledStartWidth}:${scaledEndWidth}`, () => new THREE.ShapeGeometry(shape))
     const wedge = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: layerColor, transparent: true, opacity: layerOpacity, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }))
     wedge.rotation.x = -Math.PI / 2
     wedge.rotation.z = -angle
@@ -1421,8 +1423,8 @@ export default function GameScene(props: SceneProps) {
           })
           if (state.event === 'p1-memory-sweep') {
             const angle = p1MemorySweepAngle(0, state.eventTime, p1OutwardAngle)
-            addSplinterWedge(hazards, p1MemoryBoss, angle, P1_MEMORY_BEAM_LENGTH, 0x2864c7, 1)
-            addLaserBeam(hazards, p1MemoryBoss, angle, P1_MEMORY_BEAM_LENGTH, .34, 0x2864c7, .62)
+            addSplinterWedge(hazards, p1MemoryBoss, angle, P1_MEMORY_BEAM_LENGTH, 0x2864c7, 1, P1_MEMORY_BEAM_WIDTH_SCALE)
+            addLaserBeam(hazards, p1MemoryBoss, angle, P1_MEMORY_BEAM_LENGTH, .9, 0x2864c7, .72)
           }
         }
         if (state.event === 'p1-beam-telegraph' || state.event === 'p1-beams') {

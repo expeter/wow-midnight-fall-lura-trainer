@@ -76,6 +76,12 @@
 - CR-127 / CR-128: Move L’ura smoothly to the Intermission center during the
   P1 handoff, and ship the reviewed P1 positions/boss marker as the maintained
   I Asgard I fallback for plans without P1 data.
+- CR-130: Made the P1 memory sweep visually decisive after screenshot review:
+  a 55-yard, 2.35-times wider dark Starsplinter blade with a stronger raised
+  core now visibly sweeps through the rune formation.
+- BUG-083: Reversed the P1 NPC center-beam crossing lane so the raid crosses
+  counterclockwise during the safe telegraph and follows just ahead of the
+  beam rather than running directly behind it.
 
 ## 0.2.0 — 2026-07-27
 

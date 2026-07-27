@@ -18,7 +18,8 @@ export const P1_MAX_GLAIVE_SETS = 2
 export const P1_INNER_RADIUS = 102
 export const P1_OUTER_RADIUS = 260
 export const P1_MEMORY_RADIUS = 20
-export const P1_MEMORY_BEAM_LENGTH = 40
+export const P1_MEMORY_BEAM_LENGTH = 55
+export const P1_MEMORY_BEAM_WIDTH_SCALE = 2.35
 export const P1_MEMORY_DELAY_SECONDS = 2
 export const P1_MEMORY_POSITION_SECONDS = 7
 export const P1_MEMORY_NPC_SETTLE_SECONDS = 1.5
@@ -390,8 +391,8 @@ export function p1NpcBeamPosition(
   const alongOffset = (npcIndex % 7 - 3) * 3
   const laneOffset = (Math.floor(npcIndex / 7) - 1) * 1.8
   const crossingOffset = elapsed < P1_ROTATING_BEAM_TELEGRAPH_SECONDS
-    ? 9 - elapsed / P1_ROTATING_BEAM_TELEGRAPH_SECONDS * 16
-    : -7
+    ? -9 + elapsed / P1_ROTATING_BEAM_TELEGRAPH_SECONDS * 16
+    : 7
   return {
     x: rayPoint.x + Math.cos(beamAngle) * alongOffset - Math.sin(beamAngle) * (crossingOffset + laneOffset),
     y: rayPoint.y + Math.sin(beamAngle) * alongOffset + Math.cos(beamAngle) * (crossingOffset + laneOffset),

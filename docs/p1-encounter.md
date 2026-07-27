@@ -85,12 +85,13 @@ phase-specific raid-plan persistence.
   from `T`, `X`, `O`, `V`, and `+`.
 - Players have seven seconds to arrange around the boss in that order; radial
   distance is not scored.
-- A single 40-yard dark-blue Starsplinter-style beam begins on the boss-to-outside ray
+- A single 55-yard dark-blue Starsplinter-style beam begins on the boss-to-outside ray
   and rotates clockwise 360 degrees around the boss. The first rune stands on
   that outward ray and the remaining symbols stand clockwise in displayed
   order. Each marked player touched by the beam must match the next symbol.
 - Each resolved rune disappears as the sweep passes it. A slim raised laser
-  core keeps the beam readable without making the complete wedge taller.
+  core and a 2.35-times wider layered blade keep the moving verification
+  unmistakable without changing its collision order.
 - An incorrect order wipes the attempt.
 - The configured P1 boss marker is the single origin for rendering, NPC rune
   placement, the visible sweep, and gameplay validation. The verdict is
@@ -111,8 +112,9 @@ phase-specific raid-plan persistence.
   is to cross that beam, then follow it without being caught by another beam,
   while continuing to dodge the glaives.
 - All eight beams rotate clockwise in both sequences. NPCs play them perfectly:
-  they cross a nearby ray during the low telegraph, reform compactly around the
-  tank, and follow L’ura for the remainder of the same continuous sweep.
+  they begin just behind a nearby ray, cross counterclockwise during the low
+  telegraph, reform compactly just ahead of it, and follow L’ura for the
+  remainder of the same continuous sweep.
 - Raid-plan positions 1 and 2 choose the tank-led direction for sequence one
   and sequence two. Each L’ura relocation covers one visible 45-degree arena
   arc, including when a tank marker happens to share L’ura’s opening angle.

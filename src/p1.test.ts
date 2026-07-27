@@ -8,6 +8,7 @@ import {
   P1_INTERMISSION_POSITION_SECONDS,
   P1_MAX_GLAIVE_SETS,
   P1_MEMORY_BEAM_LENGTH,
+  P1_MEMORY_BEAM_WIDTH_SCALE,
   P1_MEMORY_NPC_SETTLE_SECONDS,
   P1_OUTER_RADIUS,
   P1_REACTIVE_SOAK_RADIUS,
@@ -193,9 +194,22 @@ describe('P1 headless mechanics', () => {
     expect(P1_MEMORY_NPC_SETTLE_SECONDS).toBe(1.5)
     const boss = { x: 400, y: 420 }
     const center = { x: 0, y: 0 }
-    const crossing = p1NpcBeamPosition(3, .5, boss, Math.PI / 3, center)
-    const following = p1NpcBeamPosition(3, 2.5, boss, Math.PI / 3, center)
+    const beamAngle = Math.PI / 3
+    const beforeCrossing = p1NpcBeamPosition(3, 0, boss, beamAngle, center)
+    const crossing = p1NpcBeamPosition(3, 1.5, boss, beamAngle, center)
+    const following = p1NpcBeamPosition(3, 2.5, boss, beamAngle, center)
     expect(crossing).not.toEqual(following)
+    const sideOfBeam = (point: { x: number; y: number }) => {
+      const bossRadius = Math.hypot(boss.x - center.x, boss.y - center.y)
+      const rayPoint = {
+        x: center.x + Math.cos(beamAngle) * bossRadius,
+        y: center.y + Math.sin(beamAngle) * bossRadius,
+      }
+      return (point.x - rayPoint.x) * -Math.sin(beamAngle) + (point.y - rayPoint.y) * Math.cos(beamAngle)
+    }
+    expect(sideOfBeam(beforeCrossing)).toBeLessThan(0)
+    expect(sideOfBeam(crossing)).toBeGreaterThan(0)
+    expect(sideOfBeam(following)).toBeGreaterThan(0)
     const movedBoss = { x: 430, y: 390 }
     const movedWithBoss = p1NpcBeamPosition(3, 3, movedBoss, Math.PI / 3, center)
     expect(Math.hypot(movedWithBoss.x - center.x, movedWithBoss.y - center.y))
@@ -273,7 +287,8 @@ describe('P1 headless mechanics', () => {
     const correct = { x: center.x + Math.cos(angle) * 120, y: center.y + Math.sin(angle) * 120 }
     expect(p1MemorySlotValid(correct, center, order, 'O', outward)).toBe(true)
     expect(p1MemorySlotValid(correct, center, order, 'X', outward)).toBe(false)
-    expect(P1_MEMORY_BEAM_LENGTH).toBe(40)
+    expect(P1_MEMORY_BEAM_LENGTH).toBe(55)
+    expect(P1_MEMORY_BEAM_WIDTH_SCALE).toBeGreaterThan(2)
     expect(p1MemorySweepAngle(0, 0, outward)).toBeCloseTo(outward)
     expect(p1MemorySweepAngle(0, 5, outward)).toBeCloseTo(outward + Math.PI * 2)
     expect(p1MemoryRuneVisible(order, 'T', 0)).toBe(false)

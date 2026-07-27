@@ -111,7 +111,11 @@ phase-specific raid-plan persistence.
 - Raid-plan positions 1 and 2 choose the tank-led direction for sequence one
   and sequence two. Each L’ura relocation covers one visible 45-degree arena
   arc, including when a tank marker happens to share L’ura’s opening angle.
-- If the controlled player is hit, two fast landing Soaks appear:
+- If a controlled player without a collected crystal is hit, the trainer
+  deducts points and the rotating-beam sequence continues without spawning
+  additional ground mechanics.
+- If a controlled crystal carrier is hit, two fast yellow landing Soaks reuse
+  the Phase 3 opening-circle treatment:
   - NPCs immediately resolve one;
   - NPCs speed out of the other, clearly assigning it to the player;
   - failing the remaining Soak wipes the attempt.

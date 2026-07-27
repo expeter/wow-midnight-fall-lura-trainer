@@ -10,10 +10,12 @@ import {
   P1_MEMORY_BEAM_LENGTH,
   P1_MEMORY_NPC_SETTLE_SECONDS,
   P1_OUTER_RADIUS,
+  P1_REACTIVE_SOAK_RADIUS,
   P1_ROTATING_BEAM_ACTIVE_SECONDS,
   p1AddGlaiveSet,
   p1AdvanceGlaiveSet,
   p1BeamAngles,
+  p1BeamHitResolution,
   p1BossEncounterPosition,
   p1BossPosition,
   p1ContinuousBeamTime,
@@ -23,6 +25,7 @@ import {
   p1CrystalSpawns,
   p1GlaiveContactStarted,
   p1GlaiveSet,
+  p1HasCollectedCrystal,
   p1InterruptAssignment,
   p1InterruptCasts,
   p1InterruptState,
@@ -279,6 +282,19 @@ describe('P1 headless mechanics', () => {
     expect(p1PlayerSoakFailed(soaks, [0], 10)).toBe(false)
     expect(p1PlayerSoakFailed(soaks, [0], 10.01)).toBe(true)
     expect(p1PlayerSoakFailed(soaks, [0, 1], 10.01)).toBe(false)
+    expect(P1_REACTIVE_SOAK_RADIUS).toBe(12)
+  })
+
+  it('only gives collected crystal carriers reactive Soaks after a beam hit', () => {
+    const assignments = [2, 4, 6, 8, 10, 12]
+    expect(p1HasCollectedCrystal(assignments, 2, 1, false)).toBe(false)
+    expect(p1HasCollectedCrystal(assignments, 2, 1, true)).toBe(true)
+    expect(p1HasCollectedCrystal(assignments, 2, 2, false)).toBe(true)
+    expect(p1HasCollectedCrystal(assignments, 8, 2, false)).toBe(false)
+    expect(p1HasCollectedCrystal(assignments, 8, 2, true)).toBe(true)
+    expect(p1HasCollectedCrystal(assignments, 1, 2, true)).toBe(false)
+    expect(p1BeamHitResolution(false)).toBe('points')
+    expect(p1BeamHitResolution(true)).toBe('reactive-soaks')
   })
 
   it('runs exactly two sequences then allows fifteen seconds to reach Intermission assignments', () => {

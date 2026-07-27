@@ -57,6 +57,10 @@
 - CR-121 / CR-122: Kept memory NPCs chaotic until the final 1.5-second
   settling window, retained the new single 35-yard memory sweep, and moved the
   nearest rotating-beam opener from ten degrees to five degrees beside L’ura.
+- BUG-079 / CR-123: Limited reactive P1 beam-hit Soaks to players who have
+  collected a crystal. Non-carriers now lose points and continue, while
+  carriers receive two P3-opening-style yellow circles; tracked from the
+  linked inbox screenshot.
 
 ## 0.2.0 — 2026-07-27
 

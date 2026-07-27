@@ -29,6 +29,7 @@ export const P1_ROTATING_BEAM_TELEGRAPH_SECONDS = 2
 export const P1_ROTATING_BEAM_ACTIVE_SECONDS = 4
 export const P1_ROTATING_BEAM_MAX_BOSS_ARC = Math.PI / 4
 export const P1_REACTIVE_SOAK_SECONDS = 2
+export const P1_REACTIVE_SOAK_RADIUS = 12
 export const P1_SEQUENCE_COUNT = 2
 export const P1_INTERMISSION_POSITION_SECONDS = 15
 export const P1_WIPE_PENALTY = 500
@@ -524,6 +525,7 @@ export function p1CrystalSpawnPosition(assignment: P1Point, center: P1Point, inw
 }
 
 export type P1SoakAssignee = 'npc' | 'player'
+export type P1BeamHitResolution = 'points' | 'reactive-soaks'
 
 export interface P1ReactiveSoak {
   id: number
@@ -531,6 +533,22 @@ export interface P1ReactiveSoak {
   assignee: P1SoakAssignee
   spawnedAt: number
   expiresAt: number
+}
+
+export function p1HasCollectedCrystal(
+  assignments: readonly number[],
+  playerAssignment: number,
+  sequence: number,
+  collectedCurrentCrystal: boolean,
+): boolean {
+  const previousEnd = Math.max(0, sequence - 1) * P1_CRYSTAL_COUNT
+  if (assignments.slice(0, previousEnd).includes(playerAssignment)) return true
+  return collectedCurrentCrystal
+    && assignments.slice(previousEnd, sequence * P1_CRYSTAL_COUNT).includes(playerAssignment)
+}
+
+export function p1BeamHitResolution(hasCollectedCrystal: boolean): P1BeamHitResolution {
+  return hasCollectedCrystal ? 'reactive-soaks' : 'points'
 }
 
 export function p1ReactiveSoaks(seed: number, hitPosition: P1Point, spawnedAt: number, distance = 24): P1ReactiveSoak[] {

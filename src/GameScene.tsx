@@ -5,7 +5,7 @@ import { p3SpreadPosition, p4PlayerSplinterHitsNpc, p4RenderedNpcSplinterHitsRai
 import { isP3RaidMemberVisible } from './game'
 import { isInsideP3Pool } from './game'
 import { combatProjectileBossCenter, combatProjectileHeight, combatProjectileImpactPoint, combatProjectilePosition, combatProjectileShape, combatProjectileTargetHeight, combatProjectileTravelSeconds, combatProjectilesActive, COMBAT_PROJECTILE_IMPACT_SECONDS, MAX_VISIBLE_NPC_PROJECTILES, npcProjectileShots, type CombatProjectileShape } from './projectiles'
-import { P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_MEMORY_BEAM_LENGTH, P1_MEMORY_RADIUS, P1_OUTER_RADIUS, p1BeamAngles, p1BossEncounterPosition, p1ContinuousBeamTime, p1CrystalSpawnPosition, p1MemorySlotAngle, p1MemorySweepAngle, p1NpcBeamPosition, p1NpcCrystalPickupReleased, p1NpcMemoryPosition, p1NpcRoamingPosition, p1RotatingBeams, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
+import { P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_MEMORY_BEAM_LENGTH, P1_MEMORY_RADIUS, P1_OUTER_RADIUS, P1_REACTIVE_SOAK_RADIUS, p1BeamAngles, p1BossEncounterPosition, p1ContinuousBeamTime, p1CrystalSpawnPosition, p1MemorySlotAngle, p1MemorySweepAngle, p1NpcBeamPosition, p1NpcCrystalPickupReleased, p1NpcMemoryPosition, p1NpcRoamingPosition, p1RotatingBeams, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
 
 interface SceneProps {
   p1Sequence: number
@@ -1423,8 +1423,9 @@ export default function GameScene(props: SceneProps) {
         if (state.event === 'p1-soaks') {
           state.p1Soaks.forEach(soak => {
             const resolved = state.p1SoakResolved.includes(soak.id)
-            addGroundDisc(hazards, soak.position, 9, resolved ? 0x1558a8 : 0x082a63, resolved ? .7 : .5, 2.5)
-            addGroundRing(hazards, soak.position, 7.7, 9, resolved ? 0x61deff : 0x9bcfff, resolved ? .98 : .72, 2.8)
+            const pulse = .55 + Math.sin(state.time * 5 + soak.id) * .25
+            addGroundDisc(hazards, soak.position, P1_REACTIVE_SOAK_RADIUS, resolved ? 0xf3bd16 : 0xffee8a, resolved ? .3 : .16 + pulse * .12, 2.5)
+            addGroundRing(hazards, soak.position, P1_REACTIVE_SOAK_RADIUS - (resolved ? 1.6 : 2.4), P1_REACTIVE_SOAK_RADIUS, resolved ? 0xffc928 : 0xffffc2, resolved ? .86 : pulse, 2.8)
           })
         }
       }

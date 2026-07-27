@@ -5,7 +5,7 @@ import { p3ProtectionBubbleCenter } from './game'
 import type { Point } from './game'
 import { P3_LIGHT_RADIUS, p3SpreadPosition, p4RenderedNpcSplinterHitsPlayer, p4RenderedNpcSplinterHitsRaid, p4RenderedNpcSplinterOrigin, p4TankKillsBox, P4_TANK_KILL_RADIUS } from './game'
 import { isP3RaidMemberVisible, p3ActiveCrystalAssignments } from './game'
-import { bossDamageScoreBonus, isInsideP3Pool, p4BossHealthWithPlayerDamage, p4PlayerSplinterHitsNpc, p4StartingBossState, P1_STAR_LENGTH, preP4BossHealth, shouldHoldP3RunePartner, shouldTriggerP3EarlyClear, starsplinterHitsCrystalCarrier, starsplinterHitsPoint } from './game'
+import { bossDamageScoreBonus, isInsideP3Pool, p4BossHealthWithPlayerDamage, p4PlayerSplinterHitsNpc, p4StartingBossState, P1_STAR_LENGTH, preP4BossHealth, shouldHoldP3RunePartner, shouldSuppressRepeatedWipe, shouldTriggerP3EarlyClear, starsplinterHitsCrystalCarrier, starsplinterHitsPoint } from './game'
 
 describe('Intermission game rules', () => {
   it('creates six deterministic stars for a seed', () => { expect(seededStars(42)).toEqual(seededStars(42)); expect(seededStars(42)).toHaveLength(6) })
@@ -462,6 +462,11 @@ describe('Intermission game rules', () => {
     expect(p4SplinterResolutionActive(P4_SPLINTER_DETONATION_SECONDS + .3)).toBe(true)
     expect(p4SplinterResolutionActive(P4_SPLINTER_DETONATION_SECONDS + 3)).toBe(true)
     expect(P4_GROUP_HIT_RADIUS).toBe(10)
+  })
+  it('deduplicates only the same P4 collision frame, not the next 1.1-second Splinter', () => {
+    expect(shouldSuppressRepeatedWipe(10, 10.05)).toBe(true)
+    expect(shouldSuppressRepeatedWipe(10, 10.11)).toBe(false)
+    expect(shouldSuppressRepeatedWipe(10, 11.1)).toBe(false)
   })
   it('uses the rendered NPC as the Phase 4 Starsplinter collision origin', () => {
     const rendered = Array.from({ length: 8 }, (_, index) => ({ x: index * 10, y: index }))

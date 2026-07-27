@@ -561,6 +561,10 @@ export function p4SplinterResolutionActive(age: number): boolean {
   return age >= P4_SPLINTER_DETONATION_SECONDS
 }
 
+export function shouldSuppressRepeatedWipe(previousTime: number, currentTime: number, windowSeconds = .1): boolean {
+  return currentTime - previousTime < windowSeconds
+}
+
 export function p4SplinterHitsGroup(origin: Point, rotation: number, groupCenter: Point, groupRadius = P4_GROUP_HIT_RADIUS, length = 42): boolean {
   if (distance(origin, groupCenter) <= groupRadius) return true
   return Array.from({ length: 6 }, (_, index) => {

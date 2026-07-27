@@ -678,6 +678,7 @@ export default function GameScene(props: SceneProps) {
     let previousEvent: SceneProps['event'] = initial.event
     const destroyedP4BoxIds = new Set<number>()
     const resolvedP4VisualSplinters = new Set<number>()
+    const p4VisualSplinterSnapshots = new Map<number, { origin: Point; npcPositions: Point[]; player: Point }>()
     const resize = () => {
       const width = element.clientWidth || 760
       const height = element.clientHeight || 540
@@ -797,6 +798,7 @@ export default function GameScene(props: SceneProps) {
         if (state.event === 'p4-countdown' || state.event === 'p4-transition') {
           destroyedP4BoxIds.clear()
           resolvedP4VisualSplinters.clear()
+          p4VisualSplinterSnapshots.clear()
         }
         if (state.event === 'p2-orbs') {
           orbitSoakStart = orbitAngle
@@ -1406,19 +1408,32 @@ export default function GameScene(props: SceneProps) {
           for (let ordinal = 0; ordinal < 3; ordinal += 1) {
             const age = p4SplinterAge(p4VisualCycle, state.eventTime, ordinal)
             const splinterId = p4VisualCycle * 10 + ordinal
-            if (!p4SplinterResolutionActive(age) || resolvedP4VisualSplinters.has(splinterId)) continue
-            resolvedP4VisualSplinters.add(splinterId)
             const rotation = p4SplinterRotation(p4VisualCycle, ordinal, state.p4PatternSeed)
             const fallbackOrigin = p4NpcSplinterPosition(stack, WORLD.center, ordinal, age, rotation)
-            const origin = ordinal === playerDuty
+            const currentOrigin = ordinal === playerDuty
               ? state.player
               : p4RenderedNpcSplinterOrigin(npcPositions, ordinal, fallbackOrigin)
+            if (age >= 0 && age <= P4_SPLINTER_DETONATION_SECONDS) {
+              p4VisualSplinterSnapshots.set(splinterId, {
+                origin: { ...currentOrigin },
+                npcPositions: npcPositions.map(position => ({ ...position })),
+                player: { ...state.player },
+              })
+            }
+            if (!p4SplinterResolutionActive(age) || resolvedP4VisualSplinters.has(splinterId)) continue
+            resolvedP4VisualSplinters.add(splinterId)
+            const snapshot = p4VisualSplinterSnapshots.get(splinterId) ?? {
+              origin: currentOrigin,
+              npcPositions,
+              player: state.player,
+            }
+            const origin = snapshot.origin
             if (ordinal === playerDuty) {
-              if (p4PlayerSplinterHitsNpc(npcPositions, origin, rotation)) {
+              if (p4PlayerSplinterHitsNpc(snapshot.npcPositions, origin, rotation)) {
                 state.onP4SplinterHit('Your Phase 4 Starsplinter hit another player')
               }
             } else {
-              const hit = p4RenderedNpcSplinterHitsRaid(npcPositions, ordinal, fallbackOrigin, rotation, state.player)
+              const hit = p4RenderedNpcSplinterHitsRaid(snapshot.npcPositions, ordinal, origin, rotation, snapshot.player)
               if (hit === 'player') state.onP4SplinterHit('Another player’s Phase 4 Starsplinter hit you')
               if (hit === 'npc') state.onP4SplinterHit('Another player’s Phase 4 Starsplinter hit another player')
             }

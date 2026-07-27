@@ -4,7 +4,7 @@ import { angleToward, assignmentRevealDistance, constrainP3NpcTargetToSide, crys
 import { p3SpreadPosition, p4PlayerSplinterHitsNpc, p4RenderedNpcSplinterHitsRaid, p4RenderedNpcSplinterOrigin, p4TankKillsBox } from './game'
 import { isP3RaidMemberVisible } from './game'
 import { isInsideP3Pool } from './game'
-import { combatProjectileHeight, combatProjectileImpactPoint, combatProjectilePosition, combatProjectileShape, combatProjectileTargetHeight, combatProjectileTravelSeconds, combatProjectilesActive, COMBAT_PROJECTILE_IMPACT_SECONDS, MAX_VISIBLE_NPC_PROJECTILES, npcProjectileShots, type CombatProjectileShape } from './projectiles'
+import { combatProjectileBossCenter, combatProjectileHeight, combatProjectileImpactPoint, combatProjectilePosition, combatProjectileShape, combatProjectileTargetHeight, combatProjectileTravelSeconds, combatProjectilesActive, COMBAT_PROJECTILE_IMPACT_SECONDS, MAX_VISIBLE_NPC_PROJECTILES, npcProjectileShots, type CombatProjectileShape } from './projectiles'
 import { P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_MEMORY_RADIUS, P1_OUTER_RADIUS, p1BeamAngles, p1BossPosition, p1CrystalSpawnPosition, p1MemorySlotAngle, p1MemorySweepAngle, p1NpcCrystalPickupReleased, p1RotatingBeams, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
 
 interface SceneProps {
@@ -871,6 +871,7 @@ export default function GameScene(props: SceneProps) {
       const enlargedCentralBoss = phaseFour || !phaseOne && !phaseTwo && !phaseThree
       p2Boss.scale.setScalar(enlargedCentralBoss ? 1.52 : 1)
       const p1Boss = p1BossPosition(state.raidStart, WORLD.center, state.p1Sequence)
+      const p1OutwardAngle = Math.atan2(p1Boss.y - WORLD.center.y, p1Boss.x - WORLD.center.x)
       p2Boss.position.set(phaseOne ? p1Boss.x : WORLD.center.x, enlargedCentralBoss ? 16 : 10.5, phaseOne ? p1Boss.y : WORLD.center.y)
       ;(p2Boss.material as THREE.MeshBasicMaterial).opacity = 1
       p3Bosses.forEach((object, index) => {
@@ -983,7 +984,7 @@ export default function GameScene(props: SceneProps) {
         } else if (state.event === 'p1-memory-position' || state.event === 'p1-memory-sweep') {
           const markedRune = [...p1MarkedProfiles.entries()].find(([, profileIndex]) => profileIndex === baseIndex)?.[0]
           if (markedRune) {
-            const angle = p1MemorySlotAngle(state.p1MemoryOrder, markedRune)
+            const angle = p1MemorySlotAngle(state.p1MemoryOrder, markedRune, p1OutwardAngle)
             p1Target = {
               x: p1Boss.x + Math.cos(angle) * P1_MEMORY_RADIUS,
               y: p1Boss.y + Math.sin(angle) * P1_MEMORY_RADIUS,
@@ -1207,7 +1208,7 @@ export default function GameScene(props: SceneProps) {
       state.onNpcPositions(npcPositions)
       const playerProjectileVisible = state.combatProjectilesEnabled
       const projectilesVisible = state.combatProjectilesEnabled && combatProjectilesActive(state.event)
-      const projectileBossCenter = phaseThree ? p3BossPosition(playerP3Side, WORLD.center, state.p3Round) : WORLD.center
+      const projectileBossCenter = combatProjectileBossCenter(state.event, p1Boss, p3BossPosition(playerP3Side, WORLD.center, state.p3Round), WORLD.center)
       const projectileBossRadius = phaseThree || phaseTwo ? 10.5 : 16
       const projectileBossHeight = phaseThree || phaseTwo ? 10.5 : 16
       const playerProjectileAge = state.mainProjectileFiredAt === null ? Infinity : state.time - state.mainProjectileFiredAt
@@ -1270,8 +1271,8 @@ export default function GameScene(props: SceneProps) {
         : p4StackPosition(1, WORLD.center)
       const p1MemoryBoss = p1BossPosition(state.raidStart, WORLD.center, state.p1Sequence)
       const p1MemoryAssignment = {
-        x: p1MemoryBoss.x + Math.cos(p1MemorySlotAngle(state.p1MemoryOrder, playerP1Rune)) * P1_MEMORY_RADIUS,
-        y: p1MemoryBoss.y + Math.sin(p1MemorySlotAngle(state.p1MemoryOrder, playerP1Rune)) * P1_MEMORY_RADIUS,
+        x: p1MemoryBoss.x + Math.cos(p1MemorySlotAngle(state.p1MemoryOrder, playerP1Rune, p1OutwardAngle)) * P1_MEMORY_RADIUS,
+        y: p1MemoryBoss.y + Math.sin(p1MemorySlotAngle(state.p1MemoryOrder, playerP1Rune, p1OutwardAngle)) * P1_MEMORY_RADIUS,
       }
       const assigned = phaseOne
         ? state.event === 'p1-transition'
@@ -1329,7 +1330,7 @@ export default function GameScene(props: SceneProps) {
             if (npcOrdinal >= 0) addRuneMarker(hazards, npcPositions[npcOrdinal], p1RuneTextures[rune], true)
           })
           if (state.event === 'p1-memory-sweep') {
-            addLaserBeam(hazards, p1MemoryBoss, p1MemorySweepAngle(0, state.eventTime), P1_MEMORY_RADIUS + 18, 3.2, 0x9adfff, .92)
+            addLaserBeam(hazards, p1MemoryBoss, p1MemorySweepAngle(0, state.eventTime, p1OutwardAngle), P1_MEMORY_RADIUS + 18, 3.2, 0x9adfff, .92)
           }
         }
         if (state.event === 'p1-beam-telegraph' || state.event === 'p1-beams') {

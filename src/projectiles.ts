@@ -14,6 +14,12 @@ export const NPC_PROJECTILE_MIN_INTERVAL_SECONDS = 1
 export const NPC_PROJECTILE_MAX_INTERVAL_SECONDS = 3
 export const MAX_VISIBLE_NPC_PROJECTILES = 20
 
+export function combatProjectileBossCenter(event: string, p1Boss: Point, p3Boss: Point, arenaCenter: Point): Point {
+  if (event.startsWith('p1-') && event !== 'p1-transition') return p1Boss
+  if (event.startsWith('p3-')) return p3Boss
+  return arenaCenter
+}
+
 function deterministicUnit(seed: number) {
   let value = Math.imul(seed ^ 0x9e3779b9, 0x85ebca6b)
   value = Math.imul(value ^ value >>> 13, 0xc2b2ae35)

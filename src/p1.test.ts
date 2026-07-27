@@ -92,29 +92,37 @@ describe('P1 headless mechanics', () => {
       glaives: [{ id: 0, position: { x: 0, y: 0 }, direction: { x: 1, y: 0 } }],
     }
     const reflected = p1AdvanceGlaiveSet(radial, 7, 8.5, { x: 0, y: 0 }, 10)
-    expect(reflected.glaives[0].position.x).toBeCloseTo(5.25)
+    expect(reflected.glaives[0].position.x).toBeCloseTo(8.1667, 3)
     expect(reflected.glaives[0].direction.x).toBeCloseTo(-1)
+    expect(reflected.glaives[0].reflected).toBe(true)
   })
 
-  it('launches toward the arena, slows from triple speed, and reflects from the middle bubble', () => {
+  it('launches a regular five-ray star at full speed, then uses 110% player speed after impact', () => {
     const set = p1GlaiveSet(42, 1, { x: 220, y: 0 }, 0, {
       speed: 30,
+      reflectedSpeed: 11,
       telegraphSeconds: 0,
-      target: { x: 0, y: 0 },
     })
-    expect(set.glaives.every(glaive => glaive.direction.x < 0)).toBe(true)
+    const angles = set.glaives.map(glaive => Math.atan2(glaive.direction.y, glaive.direction.x))
+    const wrappedDifferences = angles.slice(1).map((angle, index) => Math.atan2(Math.sin(angle - angles[index]), Math.cos(angle - angles[index])))
+    expect(wrappedDifferences.every(difference => Math.abs(difference - Math.PI * 2 / 5) < 1e-8)).toBe(true)
     const firstSecond = p1AdvanceGlaiveSet({
       ...set,
       glaives: [{ id: 0, position: { x: 20, y: 0 }, direction: { x: -1, y: 0 } }],
     }, 0, 1, { x: 0, y: 0 }, 100, 10)
     expect(firstSecond.glaives[0].direction.x).toBeCloseTo(1)
-    expect(firstSecond.glaives[0].position.x).toBeGreaterThan(29)
+    expect(firstSecond.glaives[0].position.x).toBeCloseTo(17.3333, 3)
 
-    const early = p1AdvanceGlaiveSet(set, 0, 1, { x: 0, y: 0 }, 1000)
-    const late = p1AdvanceGlaiveSet({ ...set, glaives: early.glaives }, 30, 31, { x: 0, y: 0 }, 1000)
-    const earlyTravel = Math.hypot(early.glaives[0].position.x - set.glaives[0].position.x, early.glaives[0].position.y - set.glaives[0].position.y)
-    const lateTravel = Math.hypot(late.glaives[0].position.x - early.glaives[0].position.x, late.glaives[0].position.y - early.glaives[0].position.y)
-    expect(earlyTravel).toBeGreaterThan(lateTravel * 2)
+    const fullSpeed = p1AdvanceGlaiveSet({
+      ...set,
+      glaives: [{ id: 0, position: { x: 0, y: 0 }, direction: { x: 1, y: 0 }, reflected: false }],
+    }, 0, 1, { x: 0, y: 0 }, 1000)
+    const reflectedSpeed = p1AdvanceGlaiveSet({
+      ...set,
+      glaives: [{ id: 0, position: { x: 0, y: 0 }, direction: { x: 1, y: 0 }, reflected: true }],
+    }, 0, 1, { x: 0, y: 0 }, 1000)
+    expect(fullSpeed.glaives[0].position.x).toBeCloseTo(30)
+    expect(reflectedSpeed.glaives[0].position.x).toBeCloseTo(11)
     expect(P1_INNER_RADIUS).toBe(102)
     expect(P1_OUTER_RADIUS).toBe(260)
     expect(P1_GLAIVE_LIFETIME_SECONDS).toBe(60)
@@ -158,12 +166,14 @@ describe('P1 headless mechanics', () => {
   it('maps every rune to a distinct clockwise slot and sweeps one full turn', () => {
     const order = ['T', 'X', 'O', 'V', '+'] as const
     const center = { x: 480, y: 270 }
-    const angle = p1MemorySlotAngle(order, 'O')
+    const outward = Math.PI / 3
+    expect(p1MemorySlotAngle(order, 'T', outward)).toBeCloseTo(outward)
+    const angle = p1MemorySlotAngle(order, 'O', outward)
     const correct = { x: center.x + Math.cos(angle) * 120, y: center.y + Math.sin(angle) * 120 }
-    expect(p1MemorySlotValid(correct, center, order, 'O')).toBe(true)
-    expect(p1MemorySlotValid(correct, center, order, 'X')).toBe(false)
-    expect(p1MemorySweepAngle(0, 0)).toBeCloseTo(-Math.PI / 2)
-    expect(p1MemorySweepAngle(0, 5)).toBeCloseTo(-Math.PI / 2 + Math.PI * 2)
+    expect(p1MemorySlotValid(correct, center, order, 'O', outward)).toBe(true)
+    expect(p1MemorySlotValid(correct, center, order, 'X', outward)).toBe(false)
+    expect(p1MemorySweepAngle(0, 0, outward)).toBeCloseTo(outward)
+    expect(p1MemorySweepAngle(0, 5, outward)).toBeCloseTo(outward + Math.PI * 2)
   })
 
   it('rotates eight evenly spaced beams from a seeded ten-degree side offset', () => {

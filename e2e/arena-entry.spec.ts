@@ -21,8 +21,12 @@ test('exposes the complete Phase 1 preview only on localhost and begins its assi
 
   await expect(page.getByRole('heading', { name: /Kick [1-5] · (?:Crystal pickup [12]|No crystal pickup)/ })).toBeVisible()
   await expect(page.getByText(/PHASE 1 · SEQUENCE 1 \/ 2/)).toBeVisible()
-  await expect(page.getByText(/CAST 1 \/ 5/)).toBeVisible({ timeout: MECHANIC_TIMEOUT })
-  await expect(page.getByText(/RED|YELLOW|GREEN/)).toBeVisible()
+  await expect(page.locator('.splinter-counter')).toContainText(/INTERRUPTS1 \/ 5/, { timeout: MECHANIC_TIMEOUT })
+  const interrupt = page.locator('.p1-interrupt-display')
+  await expect(interrupt).toBeVisible()
+  await expect(interrupt).toHaveCSS('width', '100px')
+  await expect(interrupt).toHaveCSS('height', '100px')
+  await expect(interrupt).toContainText(/WAIT|NEXT|KICK/)
 })
 
 test('unlocks and schedules the complete prerecorded P4 raidlead in the browser', async ({ page }) => {

@@ -9,12 +9,19 @@
 - BUG-072 / CR-103 / CR-104: Removed invisible P1/Intermission planner
   barriers, expanded P1 into a visibly collapsing outer annulus with L’ura
   moving between outside quarters, and changed Heaven Glaives to 60-second
-  hazards that launch at triple speed, decelerate, and bounce from both arena
-  boundaries.
+  hazards that launch at triple speed and bounce from both arena boundaries.
 - CR-105 / CR-106: Added a draggable lower-left P1 L’ura opening with a nearby
   safe-telegraph beam, split crystal pickups into two assigned trios, held NPC
   pickups until an assigned player acts, and exposed Kick plus pickup duty on
   the pull countdown.
+- CR-107 / CR-108 / CR-109: Added a large red/orange/green interrupt tile,
+  redirected P1 cosmetic attacks to the visible outside boss, and restored an
+  evenly spaced five-direction glaive star that changes from triple speed to
+  110% player speed only after its first ricochet.
+- BUG-073 / FR-047: Anchored the P1 memory order and sweep to L’ura’s outward
+  ray, then extended lasso-select-and-place editing to every raid plan.
+- FR-048 / FR-049: Recorded the P3-entry crystal recovery/paired Soak and
+  position-driven P2-to-P3 knockback refinements in the backlog.
 
 ## 0.2.0 — 2026-07-27
 

@@ -1238,7 +1238,10 @@ export default function App() {
       const assignedPickup = activeCrystalAssignments.slice((p1Sequence - 1) * 3, p1Sequence * 3).includes(assignment)
       if (assignedPickup && !p1CrystalCollected && triggerWipe('Assigned Phase 1 crystal was not collected within five seconds')) return
       const p1Boss = p1BossPosition(p1BossOpening, WORLD.center, p1Sequence)
-      const set = p1GlaiveSet(p1Seed, p1Sequence, p1Boss, timeRef.current, { speed: movementSpeed * 3, target: WORLD.center })
+      const set = p1GlaiveSet(p1Seed, p1Sequence, p1Boss, timeRef.current, {
+        speed: movementSpeed * 3,
+        reflectedSpeed: movementSpeed * 1.1,
+      })
       p1GlaiveSetsRef.current = p1AddGlaiveSet(p1GlaiveSetsRef.current, set, timeRef.current)
       setP1GlaiveSets(p1GlaiveSetsRef.current)
       hitRef.current = false
@@ -1247,7 +1250,9 @@ export default function App() {
       setEvent('p1-memory-position')
     } else if (event === 'p1-memory-position') {
       const rune = (['T', 'X', 'O', 'V', '+'] as P1Rune[])[assignment % 5]
-      if (!p1MemorySlotValid(playerRef.current, p1BossPosition(p1BossOpening, WORLD.center, p1Sequence), p1MemoryOrderState, rune) && triggerWipe(`Rune ${rune} was out of order around L’ura`)) return
+      const memoryBoss = p1BossPosition(p1BossOpening, WORLD.center, p1Sequence)
+      const outwardAngle = Math.atan2(memoryBoss.y - WORLD.center.y, memoryBoss.x - WORLD.center.x)
+      if (!p1MemorySlotValid(playerRef.current, memoryBoss, p1MemoryOrderState, rune, outwardAngle) && triggerWipe(`Rune ${rune} was out of order around L’ura`)) return
       setEvent('p1-memory-sweep')
     } else if (event === 'p1-memory-sweep') {
       setEvent('p1-beam-telegraph')
@@ -2219,34 +2224,120 @@ function CrystalAssignmentEditor({ phaseLabel, assignments, profiles, onChange }
 
 function PositionMap({ assignment, positions, startSlots, profiles, onPositionChange, onStartSlotChange }: { assignment: number; positions: Assignment[]; startSlots: Assignment[]; profiles: PlayerProfile[]; onPositionChange: (index: number, point: Assignment) => void; onStartSlotChange: (index: number, point: Assignment) => void }) {
   const [dragging, setDragging] = useState<{ kind: 'player' | 'start'; index: number } | null>(null)
-  function move(event: ReactPointerEvent<HTMLDivElement>) {
-    if (dragging === null) return
+  const [selectionStart, setSelectionStart] = useState<Point | null>(null)
+  const [selectionEnd, setSelectionEnd] = useState<Point | null>(null)
+  const [selected, setSelected] = useState<number[]>([])
+  function mapPercent(event: ReactPointerEvent<HTMLDivElement>): Point {
     const bounds = event.currentTarget.getBoundingClientRect()
-    const left = Math.max(0, Math.min(100, (event.clientX - bounds.left) / bounds.width * 100))
-    const top = Math.max(0, Math.min(100, (event.clientY - bounds.top) / bounds.height * 100))
-    const point = { x: WORLD.center.x + (left - 50) * 9.22, y: WORLD.center.y + (top - 50) * 5.19 }
+    return {
+      x: Math.max(0, Math.min(100, (event.clientX - bounds.left) / bounds.width * 100)),
+      y: Math.max(0, Math.min(100, (event.clientY - bounds.top) / bounds.height * 100)),
+    }
+  }
+  function worldPoint(percent: Point): Point {
+    return { x: WORLD.center.x + (percent.x - 50) * 9.22, y: WORLD.center.y + (percent.y - 50) * 5.19 }
+  }
+  function beginSelection(event: ReactPointerEvent<HTMLDivElement>) {
+    if (event.target !== event.currentTarget || dragging !== null) return
+    const point = mapPercent(event)
+    setSelectionStart(point)
+    setSelectionEnd(point)
+    event.currentTarget.setPointerCapture(event.pointerId)
+  }
+  function placeSelection(event: ReactPointerEvent<HTMLDivElement>) {
+    if (!selected.length) return
+    event.preventDefault()
+    event.stopPropagation()
+    const moved = translateSelectedPoints(positions, selected, worldPoint(mapPercent(event)))
+    selected.forEach(index => onPositionChange(index, moved[index]))
+    setSelected([])
+  }
+  function move(event: ReactPointerEvent<HTMLDivElement>) {
+    if (selectionStart) {
+      setSelectionEnd(mapPercent(event))
+      return
+    }
+    if (dragging === null) return
+    const point = worldPoint(mapPercent(event))
     if (dragging.kind === 'player') onPositionChange(dragging.index, point)
     else onStartSlotChange(dragging.index, point)
   }
-  return <div className="position-map" aria-label="Intermission position map" onPointerMove={move} onPointerUp={() => setDragging(null)} onPointerLeave={() => setDragging(null)} style={{ backgroundImage: `linear-gradient(rgba(7,9,22,.3), rgba(7,9,22,.3)), url(${ARENA_BACKGROUND})` }}><span className="map-boss">L’URA</span><span className="map-marker skull">☠</span><span className="map-marker cross">✕</span><span className="map-marker star">★</span><span className="map-marker orange">●</span>{startSlots.map((p, i) => <button type="button" aria-label={`Move S${i + 1} start slot`} title={`S${i + 1} orientation anchor`} key={`start-${i}`} onPointerDown={event => { event.preventDefault(); setDragging({ kind: 'start', index: i }); event.currentTarget.setPointerCapture(event.pointerId) }} className="map-start-slot" style={{ left: `${50 + (p.x - WORLD.center.x) / 9.22}%`, top: `${50 + (p.y - WORLD.center.y) / 5.19}%` }}>S{i + 1}</button>)}{positions.map((p, i) => <button type="button" aria-label={`Move player ${i + 1}`} title={`${profiles[i].name} · ${CLASS_OPTIONS.find(option => option.value === profiles[i].playerClass)?.label}${profiles[i].crystal ? ' · Crystal' : ''}`} key={i} onPointerDown={event => { event.preventDefault(); setDragging({ kind: 'player', index: i }); event.currentTarget.setPointerCapture(event.pointerId) }} className={`${i === assignment ? 'map-player selected-map' : 'map-player'}${profiles[i].crystal ? ' crystal-map-player' : ''}`} style={{ left: `${50 + (p.x - WORLD.center.x) / 9.22}%`, top: `${50 + (p.y - WORLD.center.y) / 5.19}%`, backgroundColor: CLASS_OPTIONS.find(option => option.value === profiles[i].playerClass)?.color }}>{i + 1}</button>)}</div>
+  function finishSelection() {
+    setDragging(null)
+    if (!selectionStart || !selectionEnd) return
+    const minX = Math.min(selectionStart.x, selectionEnd.x)
+    const maxX = Math.max(selectionStart.x, selectionEnd.x)
+    const minY = Math.min(selectionStart.y, selectionEnd.y)
+    const maxY = Math.max(selectionStart.y, selectionEnd.y)
+    setSelected(positions.map((point, index) => ({ index, x: 50 + (point.x - WORLD.center.x) / 9.22, y: 50 + (point.y - WORLD.center.y) / 5.19 }))
+      .filter(point => point.x >= minX && point.x <= maxX && point.y >= minY && point.y <= maxY)
+      .map(point => point.index))
+    setSelectionStart(null)
+    setSelectionEnd(null)
+  }
+  const selectionBox = selectionStart && selectionEnd ? { left: `${Math.min(selectionStart.x, selectionEnd.x)}%`, top: `${Math.min(selectionStart.y, selectionEnd.y)}%`, width: `${Math.abs(selectionEnd.x - selectionStart.x)}%`, height: `${Math.abs(selectionEnd.y - selectionStart.y)}%` } : undefined
+  return <div className={`position-map${selected.length ? ' placing-group' : ''}`} aria-label="Intermission position map" onPointerDownCapture={placeSelection} onPointerDown={beginSelection} onPointerMove={move} onPointerUp={finishSelection} onPointerLeave={() => { if (!selectionStart) setDragging(null) }} style={{ backgroundImage: `linear-gradient(rgba(7,9,22,.3), rgba(7,9,22,.3)), url(${ARENA_BACKGROUND})` }}><span className="map-boss">L’URA</span><span className="map-marker skull">☠</span><span className="map-marker cross">✕</span><span className="map-marker star">★</span><span className="map-marker orange">●</span><span className="p3-group-help">{selected.length ? `${selected.length} selected · click their destination` : 'Drag empty space to select a group'}</span>{selectionBox && <span className="p3-selection-box" style={selectionBox} />}{startSlots.map((p, i) => <button type="button" aria-label={`Move S${i + 1} start slot`} title={`S${i + 1} orientation anchor`} key={`start-${i}`} onPointerDown={event => { event.preventDefault(); setSelected([]); setDragging({ kind: 'start', index: i }); event.currentTarget.setPointerCapture(event.pointerId) }} className="map-start-slot" style={{ left: `${50 + (p.x - WORLD.center.x) / 9.22}%`, top: `${50 + (p.y - WORLD.center.y) / 5.19}%` }}>S{i + 1}</button>)}{positions.map((p, i) => <button type="button" aria-label={`Move player ${i + 1}`} title={`${profiles[i].name} · ${CLASS_OPTIONS.find(option => option.value === profiles[i].playerClass)?.label}${profiles[i].crystal ? ' · Crystal' : ''}`} key={i} onPointerDown={event => { event.preventDefault(); setSelected([]); setDragging({ kind: 'player', index: i }); event.currentTarget.setPointerCapture(event.pointerId) }} className={`${i === assignment ? 'map-player selected-map' : 'map-player'}${profiles[i].crystal ? ' crystal-map-player' : ''}${selected.includes(i) ? ' group-selected' : ''}`} style={{ left: `${50 + (p.x - WORLD.center.x) / 9.22}%`, top: `${50 + (p.y - WORLD.center.y) / 5.19}%`, backgroundColor: CLASS_OPTIONS.find(option => option.value === profiles[i].playerClass)?.color }}>{i + 1}</button>)}</div>
 }
 
 function P2PositionMap({ mapLabel, buttonLabel, assignment, positions, profiles, showPersonalCircles = false, phaseOne = false, bossPosition, onBossChange, onChange }: { mapLabel: string; buttonLabel: string; assignment: number; positions: Assignment[]; profiles: PlayerProfile[]; showPersonalCircles?: boolean; phaseOne?: boolean; bossPosition?: Assignment; onBossChange?: (point: Assignment) => void; onChange: (index: number, point: Assignment) => void }) {
   const [dragging, setDragging] = useState<number | 'boss' | null>(null)
+  const [selectionStart, setSelectionStart] = useState<Point | null>(null)
+  const [selectionEnd, setSelectionEnd] = useState<Point | null>(null)
+  const [selected, setSelected] = useState<number[]>([])
   const mapScale = phaseOne ? { x: 9.22, y: 5.19 } : P2_MAP_SCALE
-  function move(event: ReactPointerEvent<HTMLDivElement>) {
-    if (dragging === null) return
+  function mapPercent(event: ReactPointerEvent<HTMLDivElement>): Point {
     const bounds = event.currentTarget.getBoundingClientRect()
-    const left = Math.max(0, Math.min(100, (event.clientX - bounds.left) / bounds.width * 100))
-    const top = Math.max(0, Math.min(100, (event.clientY - bounds.top) / bounds.height * 100))
-    const point = { x: WORLD.center.x + (left - 50) * mapScale.x, y: WORLD.center.y + (top - 50) * mapScale.y }
+    return {
+      x: Math.max(0, Math.min(100, (event.clientX - bounds.left) / bounds.width * 100)),
+      y: Math.max(0, Math.min(100, (event.clientY - bounds.top) / bounds.height * 100)),
+    }
+  }
+  function worldPoint(percent: Point): Point {
+    return { x: WORLD.center.x + (percent.x - 50) * mapScale.x, y: WORLD.center.y + (percent.y - 50) * mapScale.y }
+  }
+  function beginSelection(event: ReactPointerEvent<HTMLDivElement>) {
+    if (event.target !== event.currentTarget || dragging !== null) return
+    const point = mapPercent(event)
+    setSelectionStart(point)
+    setSelectionEnd(point)
+    event.currentTarget.setPointerCapture(event.pointerId)
+  }
+  function placeSelection(event: ReactPointerEvent<HTMLDivElement>) {
+    if (!selected.length) return
+    event.preventDefault()
+    event.stopPropagation()
+    const moved = translateSelectedPoints(positions, selected, worldPoint(mapPercent(event)))
+    selected.forEach(index => onChange(index, moved[index]))
+    setSelected([])
+  }
+  function move(event: ReactPointerEvent<HTMLDivElement>) {
+    if (selectionStart) {
+      setSelectionEnd(mapPercent(event))
+      return
+    }
+    if (dragging === null) return
+    const point = worldPoint(mapPercent(event))
     if (dragging === 'boss') onBossChange?.(point)
     else onChange(dragging, point)
   }
-  return <div className={`position-map p2-position-map${phaseOne ? ' p1-position-map' : ''}${showPersonalCircles ? ' personal-circle-map' : ''}`} aria-label={mapLabel} onPointerMove={move} onPointerUp={() => setDragging(null)} onPointerLeave={() => setDragging(null)} style={{ backgroundImage: `linear-gradient(rgba(7,9,22,.46), rgba(7,9,22,.46)), url(${ARENA_BACKGROUND})` }}>{!phaseOne && <><span className="p2-cross horizontal" /><span className="p2-cross vertical" /></>}<span className="map-boss">{phaseOne ? 'INNER BUBBLE' : 'L’URA'}</span>{phaseOne && bossPosition && <button type="button" className="p1-planner-boss" aria-label="Move Phase 1 L’ura" onPointerDown={event => { event.preventDefault(); setDragging('boss'); event.currentTarget.setPointerCapture(event.pointerId) }} style={{ left: `${50 + (bossPosition.x - WORLD.center.x) / mapScale.x}%`, top: `${50 + (bossPosition.y - WORLD.center.y) / mapScale.y}%` }}>L’URA</button>}<span className="map-marker skull">☠</span><span className="map-marker cross">✕</span><span className="map-marker star">★</span><span className="map-marker orange">●</span>{positions.map((point, index) => {
+  function finishSelection() {
+    setDragging(null)
+    if (!selectionStart || !selectionEnd) return
+    const minX = Math.min(selectionStart.x, selectionEnd.x)
+    const maxX = Math.max(selectionStart.x, selectionEnd.x)
+    const minY = Math.min(selectionStart.y, selectionEnd.y)
+    const maxY = Math.max(selectionStart.y, selectionEnd.y)
+    setSelected(positions.map((point, index) => ({ index, x: 50 + (point.x - WORLD.center.x) / mapScale.x, y: 50 + (point.y - WORLD.center.y) / mapScale.y }))
+      .filter(point => point.x >= minX && point.x <= maxX && point.y >= minY && point.y <= maxY)
+      .map(point => point.index))
+    setSelectionStart(null)
+    setSelectionEnd(null)
+  }
+  const selectionBox = selectionStart && selectionEnd ? { left: `${Math.min(selectionStart.x, selectionEnd.x)}%`, top: `${Math.min(selectionStart.y, selectionEnd.y)}%`, width: `${Math.abs(selectionEnd.x - selectionStart.x)}%`, height: `${Math.abs(selectionEnd.y - selectionStart.y)}%` } : undefined
+  return <div className={`position-map p2-position-map${phaseOne ? ' p1-position-map' : ''}${showPersonalCircles ? ' personal-circle-map' : ''}${selected.length ? ' placing-group' : ''}`} aria-label={mapLabel} onPointerDownCapture={placeSelection} onPointerDown={beginSelection} onPointerMove={move} onPointerUp={finishSelection} onPointerLeave={() => { if (!selectionStart) setDragging(null) }} style={{ backgroundImage: `linear-gradient(rgba(7,9,22,.46), rgba(7,9,22,.46)), url(${ARENA_BACKGROUND})` }}>{!phaseOne && <><span className="p2-cross horizontal" /><span className="p2-cross vertical" /></>}<span className="map-boss">{phaseOne ? 'INNER BUBBLE' : 'L’URA'}</span>{phaseOne && bossPosition && <button type="button" className="p1-planner-boss" aria-label="Move Phase 1 L’ura" onPointerDown={event => { event.preventDefault(); setSelected([]); setDragging('boss'); event.currentTarget.setPointerCapture(event.pointerId) }} style={{ left: `${50 + (bossPosition.x - WORLD.center.x) / mapScale.x}%`, top: `${50 + (bossPosition.y - WORLD.center.y) / mapScale.y}%` }}>L’URA</button>}<span className="map-marker skull">☠</span><span className="map-marker cross">✕</span><span className="map-marker star">★</span><span className="map-marker orange">●</span><span className="p3-group-help">{selected.length ? `${selected.length} selected · click their destination` : 'Drag empty space to select a group'}</span>{selectionBox && <span className="p3-selection-box" style={selectionBox} />}{positions.map((point, index) => {
     const left = 50 + (point.x - WORLD.center.x) / mapScale.x
     const top = 50 + (point.y - WORLD.center.y) / mapScale.y
-    return <span className="p2-player-assignment" key={index}>{showPersonalCircles && <i className={index === assignment ? 'planner-personal-circle selected-circle' : 'planner-personal-circle'} aria-hidden="true" style={{ left: `${left}%`, top: `${top}%`, width: `${P2_PLANNER_CIRCLE_DIAMETER}%` }} />}<button type="button" aria-label={`Move ${buttonLabel} player ${index + 1}`} title={`${profiles[index].name} · ${buttonLabel} · ${P2_PERSONAL_CIRCLE_OUTER_RADIUS.toFixed(2)} yd circle radius`} onPointerDown={event => { event.preventDefault(); setDragging(index); event.currentTarget.setPointerCapture(event.pointerId) }} className={`${index === assignment ? 'map-player selected-map' : 'map-player'}${profiles[index].crystal ? ' crystal-map-player' : ''}`} style={{ left: `${left}%`, top: `${top}%`, backgroundColor: CLASS_OPTIONS.find(option => option.value === profiles[index].playerClass)?.color }}>{index + 1}</button></span>
+    return <span className="p2-player-assignment" key={index}>{showPersonalCircles && <i className={index === assignment ? 'planner-personal-circle selected-circle' : 'planner-personal-circle'} aria-hidden="true" style={{ left: `${left}%`, top: `${top}%`, width: `${P2_PLANNER_CIRCLE_DIAMETER}%` }} />}<button type="button" aria-label={`Move ${buttonLabel} player ${index + 1}`} title={`${profiles[index].name} · ${buttonLabel} · ${P2_PERSONAL_CIRCLE_OUTER_RADIUS.toFixed(2)} yd circle radius`} onPointerDown={event => { event.preventDefault(); setSelected([]); setDragging(index); event.currentTarget.setPointerCapture(event.pointerId) }} className={`${index === assignment ? 'map-player selected-map' : 'map-player'}${profiles[index].crystal ? ' crystal-map-player' : ''}${selected.includes(index) ? ' group-selected' : ''}`} style={{ left: `${left}%`, top: `${top}%`, backgroundColor: CLASS_OPTIONS.find(option => option.value === profiles[index].playerClass)?.color }}>{index + 1}</button></span>
   })}</div>
 }
 
@@ -2585,10 +2676,16 @@ function GameArena(props: { p1Sequence: number; p1Seed: number; p1InterruptAssig
           ? <div className="wipe-minimized" role="alert"><span>WIPED</span><strong>{props.wipeReason}</strong><button type="button" onClick={() => setWipeMinimized(false)}>Restore wipe details</button></div>
           : <div className="wipe-overlay" role="alert"><section className="wipe-dialog"><button className="wipe-minimize" type="button" aria-label="Minimize wipe details" onClick={() => setWipeMinimized(true)}>−</button><p>Raid wiped</p><h2>Wiped due to:</h2><strong>{props.wipeReason}</strong><div><button onClick={props.onRetry}>Try again</button><button className="secondary" onClick={props.onExit}>Change setup</button></div></section></div>)}
         {(props.event === 'p1-countdown' || countdown || props.event === 'p2-countdown' || props.event === 'p3-countdown' || props.event === 'p4-countdown') && <div className="start-countdown">{Math.max(1, Math.ceil(3 - props.eventTime))}</div>}
+        {phaseOne && props.event === 'p1-interrupts' && <div
+          className={`p1-interrupt-display ${p1InterruptState(props.p1InterruptAssignment, props.p1InterruptCast)}`}
+          role="status"
+          aria-label={`Interrupt state ${p1InterruptState(props.p1InterruptAssignment, props.p1InterruptCast)}`}
+          style={{ left: `${Math.max(8, props.hudLayout.crystal.x - 12)}%`, top: `${props.hudLayout.crystal.y}%` }}
+        ><span>CAST {props.p1InterruptCast + 1}</span><strong>{props.p1InterruptPressed ? '✓' : p1InterruptState(props.p1InterruptAssignment, props.p1InterruptCast) === 'yellow' ? 'NEXT' : p1InterruptState(props.p1InterruptAssignment, props.p1InterruptCast) === 'green' ? 'KICK' : 'WAIT'}</strong></div>}
         <div className={`splinter-counter${phaseFour ? ' p4-timers' : phaseThree && props.role === 'carrier' ? ' p3-duty-counter' : ''}`} style={{ left: `${props.hudLayout.mechanic.x}%`, top: `${props.hudLayout.mechanic.y}%` }}>
           {phaseOne && p1
             ? props.event === 'p1-interrupts'
-              ? <><span>CAST {props.p1InterruptCast + 1} / 5</span><strong className={`p1-interrupt-state ${p1InterruptState(props.p1InterruptAssignment, props.p1InterruptCast)}`}>{props.p1InterruptPressed ? 'INTERRUPTED' : p1InterruptState(props.p1InterruptAssignment, props.p1InterruptCast).toUpperCase()}</strong></>
+              ? <><span>INTERRUPTS</span><strong>{props.p1InterruptCast + 1} / 5</strong></>
               : <>{p1.counter} <strong>{Math.max(0, p1.duration - props.eventTime).toFixed(1)}s</strong></>
             : phaseFour
             ? props.event === 'p4-countdown'

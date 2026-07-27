@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { combatProjectileHeight, combatProjectileImpactPoint, combatProjectilePosition, combatProjectileShape, combatProjectileTargetHeight, combatProjectileTravelSeconds, combatProjectilesActive, COMBAT_PROJECTILE_TRAVEL_SECONDS, MAX_VISIBLE_NPC_PROJECTILES, NPC_PROJECTILE_MAX_INTERVAL_SECONDS, NPC_PROJECTILE_MIN_INTERVAL_SECONDS, npcProjectileIntervalSeconds, npcProjectileShots } from './projectiles'
+import { combatProjectileBossCenter, combatProjectileHeight, combatProjectileImpactPoint, combatProjectilePosition, combatProjectileShape, combatProjectileTargetHeight, combatProjectileTravelSeconds, combatProjectilesActive, COMBAT_PROJECTILE_TRAVEL_SECONDS, MAX_VISIBLE_NPC_PROJECTILES, NPC_PROJECTILE_MAX_INTERVAL_SECONDS, NPC_PROJECTILE_MIN_INTERVAL_SECONDS, npcProjectileIntervalSeconds, npcProjectileShots } from './projectiles'
 
 describe('cosmetic combat projectiles', () => {
+  it('targets the visible outside boss in P1 instead of the arena middle', () => {
+    const p1Boss = { x: 300, y: 420 }
+    const p3Boss = { x: 610, y: 390 }
+    const center = { x: 480, y: 270 }
+    expect(combatProjectileBossCenter('p1-glaives', p1Boss, p3Boss, center)).toBe(p1Boss)
+    expect(combatProjectileBossCenter('p1-transition', p1Boss, p3Boss, center)).toBe(center)
+    expect(combatProjectileBossCenter('p3-light-pools', p1Boss, p3Boss, center)).toBe(p3Boss)
+  })
   it('uses recognizable class-specific attacks', () => {
     expect(combatProjectileShape('mage', 0)).toBe('firebolt')
     expect(combatProjectileShape('mage', 1)).toBe('frostbolt')

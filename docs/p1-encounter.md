@@ -51,10 +51,11 @@ phase-specific raid-plan persistence.
 
 ## Heaven Glaives
 
-- The boss telegraphs five flying discs for two seconds in randomized
-  star-like angles.
+- The boss telegraphs five flying discs for two seconds as an evenly spaced
+  five-direction star with a randomized rotation.
 - Each disc launches from the outside boss at three times player/NPC speed,
-  then decelerates toward normal speed.
+  keeps that full speed until its first impact, then continues at 110% of
+  configured player speed.
 - Glaives reflect from both the 260-yard outer wall and the 102-yard middle
   bubble, so they never pass through the protected center.
 - The glaives continue roaming while later mechanics occur.
@@ -69,8 +70,10 @@ phase-specific raid-plan persistence.
   from `T`, `X`, `O`, `V`, and `+`.
 - Players have seven seconds to arrange around the boss in that order; radial
   distance is not scored.
-- A single outward beam then rotates 360 degrees around the boss. Each marked
-  player it touches must match the next symbol in the displayed order.
+- A single beam begins on the boss-to-outside ray and rotates clockwise 360
+  degrees around the boss. The first rune stands on that outward ray and the
+  remaining symbols stand clockwise in displayed order. Each marked player
+  touched by the beam must match the next symbol.
 - An incorrect order wipes the attempt.
 - NPCs solve it with deliberately late movement and may change position during
   the final second, leaving the controlled player responsible for finding the

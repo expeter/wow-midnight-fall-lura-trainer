@@ -40,7 +40,7 @@ test('game settings use one compact three-card row on desktop', async ({ page })
   const cards = [
     page.getByRole('group', { name: 'Difficulty & movement' }),
     page.getByRole('group', { name: 'Selected assignment' }),
-    page.getByRole('group', { name: 'Optional combat actions' }),
+    page.getByRole('group', { name: 'Combat actions' }),
   ]
   const bounds = await Promise.all(cards.map(card => card.boundingBox()))
   expect(bounds.every(Boolean)).toBe(true)

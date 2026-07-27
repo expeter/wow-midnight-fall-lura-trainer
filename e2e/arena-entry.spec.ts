@@ -200,7 +200,7 @@ test('Main ability visibly animates and completes only once when its bound key i
   await expect(page.locator('.score-overlay strong')).toHaveText('1001')
 })
 
-test('enters Phase 3 directly in non-blocking Test mode', async ({ page }) => {
+test('enters Phase 3 directly in non-blocking Test mode', { tag: '@late-arena' }, async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('lura-game-speed', '2.5'))
   await page.goto('/')
   await page.getByRole('button', { name: 'test' }).click()
@@ -225,7 +225,7 @@ test('enters Phase 3 directly in non-blocking Test mode', async ({ page }) => {
   await expect(page.getByRole('alert')).toHaveCount(0)
 })
 
-test('enters Phase 4 directly and plays Splinters again before the second Heaven and Hell', async ({ page }) => {
+test('enters Phase 4 directly and plays Splinters again before the second Heaven and Hell', { tag: '@late-arena' }, async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('lura-game-speed', '2.5'))
   await page.goto('/')
   await page.getByRole('button', { name: 'test', exact: true }).click()
@@ -264,7 +264,7 @@ test('enters Phase 4 directly and plays Splinters again before the second Heaven
   await expect(page.getByText('L’URA MOVEMENT MASTER')).toHaveCount(0)
 })
 
-test('resolves a Phase 4 stack hit reliably at 2.5x speed', async ({ page }) => {
+test('resolves a Phase 4 stack hit reliably at 2.5x speed', { tag: '@late-arena' }, async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('lura-game-speed', '2.5'))
   await page.goto('/')
   await page.getByRole('button', { name: 'test', exact: true }).click()
@@ -277,7 +277,7 @@ test('resolves a Phase 4 stack hit reliably at 2.5x speed', async ({ page }) => 
   )
 })
 
-test('keeps a terminal wipe over the frozen arena and allows minimizing its details', async ({ page }) => {
+test('keeps a terminal wipe over the frozen arena and allows minimizing its details', { tag: '@late-arena' }, async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('lura-game-speed', '2.5'))
   await page.goto('/')
   await page.getByRole('button', { name: 'hard', exact: true }).click()

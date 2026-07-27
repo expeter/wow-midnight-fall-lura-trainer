@@ -34,10 +34,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - shard: 1/2
-            artifact: 1-of-2
-          - shard: 2/2
-            artifact: 2-of-2
+          - suite: opening-and-p2
+            filter: --grep-invert=@late-arena
+          - suite: p3-and-p4
+            filter: --grep=@late-arena
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -50,13 +50,13 @@ jobs:
         run: npm ci
       - name: Install browser for UI tests
         run: npx playwright install --with-deps chromium
-      - name: Run UI tests (shard ${{ matrix.shard }})
-        run: npm run test:e2e -- --shard=${{ matrix.shard }}
+      - name: Run UI tests (${{ matrix.suite }})
+        run: npm run test:e2e -- ${{ matrix.filter }}
       - name: Upload failed UI test report
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report-${{ matrix.artifact }}
+          name: playwright-report-${{ matrix.suite }}
           path: |
             playwright-report
             test-results

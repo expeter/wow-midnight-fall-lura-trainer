@@ -225,7 +225,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-056` | Implemented | Preserve the active resolved-orb set through both Phase 2 sequences and render all four glowing orbs throughout their inward return window, matching the second-sequence `Dodge` warning. |
 | `BUG-057` | Superseded in part by BUG-059 | Give every resolved Phase 2 orb set a new stable random seed, with independent angular offsets, speeds, and rotational travel; only the beam resolution starts their shared return clock. BUG-059 standardizes the travel direction. |
 | `BUG-058` | Implemented | Clamp pre-Phase-4 boss health to the full 0–100% range and explicitly hold it at 0% when the Phase 3 damage clear begins, restoring 100% only at the Phase 4 boundary. |
-| `BUG-059` | Implemented | Keep all Phase 2 orbs rotating continuously counterclockwise with no direction or position discontinuity when they enter the glowing return telegraph; retain randomized lanes and slight speed variance. |
+| `BUG-059` | Implemented | Keep all Phase 2 orbs rotating continuously counterclockwise with no direction reversal when struck orbs become yellow and enter the glowing return telegraph. Yellow and purple orbs now use the same positive renderer rotation clock while retaining randomized lanes and slight speed variance. |
 
 ## Implemented feature inventory
 

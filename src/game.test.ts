@@ -345,7 +345,7 @@ describe('Intermission game rules', () => {
     beforeGlow.forEach((point, index) => {
       const next = afterGlow[index]
       const cross = (point.x - center.x) * (next.y - center.y) - (point.y - center.y) * (next.x - center.x)
-      expect(cross).toBeLessThan(0)
+      expect(cross).toBeGreaterThan(0)
       expect(distance(point, next)).toBeLessThan(1)
     })
   })

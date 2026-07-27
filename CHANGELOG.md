@@ -14,7 +14,8 @@
   atmospheric encounter line.
 - Kept returning orbs visible in both Phase 2 sequences and randomized each
   resolved set’s return lanes and speeds while making every orb continue
-  counterclockwise through its normal and glowing states.
+  counterclockwise through its normal and glowing states using the same
+  renderer rotation clock as the unstruck purple orbs.
 - Standardized the setup page around explicit Game settings, Keyboard
   settings, Interface, Raid planning, and phase-plan headings, with keyboard
   and mouse controls grouped beneath the Keyboard settings topic.

@@ -929,7 +929,7 @@ export function p2ReturningOrbPositions(age: number, returnSeed: number, center:
   return Array.from({ length: 4 }, (_, index) => {
     const angleOffset = p2SeededUnit(returnSeed + index * 17) * Math.PI * 2
     const speed = P2_ORBIT_SPEED * (.82 + p2SeededUnit(returnSeed + index * 47 + 13) * .36)
-    const angle = angleOffset - age * speed
+    const angle = angleOffset + age * speed
     return { x: center.x + Math.cos(angle) * state.radius, y: center.y + Math.sin(angle) * state.radius }
   })
 }

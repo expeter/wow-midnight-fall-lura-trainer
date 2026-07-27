@@ -57,8 +57,11 @@ phase-specific raid-plan persistence.
 
 - The boss telegraphs five flying discs for two seconds as an evenly spaced
   five-direction star with a randomized rotation.
-- Each disc launches from the outside boss at three times player/NPC speed,
-  keeps that full speed until its first impact, then continues at 110% of
+- The discs are already visible along their five directions during the
+  telegraph, spin rapidly on launch, and leave from just outside L’ura instead
+  of appearing from one overlapping point.
+- Each disc launches from the outside boss at 4.5 times player/NPC speed,
+  keeps that full speed until its first impact, then continues at 165% of
   configured player speed.
 - Render each disc as a broad, flat luminous flying saucer rather than an orb.
   The reviewed version is 1.5 times larger and uses rotating surface markers
@@ -69,7 +72,9 @@ phase-specific raid-plan persistence.
 - Each glaive remains active for 60 seconds and then disappears. Keep
   the lifetime configurable for tuning and cap the live hazard field at two
   generated sets.
-- Contact is a 500-point wipe.
+- Contact is a 500-point wipe. Leaving a disc and touching that same disc again
+  starts another contact and therefore another wipe; remaining continuously
+  inside it does not spam duplicate failures every frame.
 
 ## Five-rune memory game
 
@@ -77,11 +82,14 @@ phase-specific raid-plan persistence.
   from `T`, `X`, `O`, `V`, and `+`.
 - Players have seven seconds to arrange around the boss in that order; radial
   distance is not scored.
-- A single beam begins on the boss-to-outside ray and rotates clockwise 360
-  degrees around the boss. The first rune stands on that outward ray and the
-  remaining symbols stand clockwise in displayed order. Each marked player
-  touched by the beam must match the next symbol.
+- A single 35-yard Starsplinter-style beam begins on the boss-to-outside ray
+  and rotates clockwise 360 degrees around the boss. The first rune stands on
+  that outward ray and the remaining symbols stand clockwise in displayed
+  order. Each marked player touched by the beam must match the next symbol.
 - An incorrect order wipes the attempt.
+- The configured P1 boss marker is the single origin for rendering, NPC rune
+  placement, the visible sweep, and gameplay validation. The verdict is
+  resolved after the sweep so the player can see which order was checked.
 - NPCs roam unpredictably during the positioning window, then settle into the
   correct clockwise order shortly before resolution. The controlled player
   remains responsible for finding their own slot.
@@ -101,7 +109,8 @@ phase-specific raid-plan persistence.
   reform compactly around the tank, and follow L’ura for the remainder of the
   sweep.
 - Raid-plan positions 1 and 2 choose the tank-led direction for sequence one
-  and sequence two. Each L’ura relocation is capped to a 45-degree arena arc.
+  and sequence two. Each L’ura relocation covers one visible 45-degree arena
+  arc, including when a tank marker happens to share L’ura’s opening angle.
 - If the controlled player is hit, two fast landing Soaks appear:
   - NPCs immediately resolve one;
   - NPCs speed out of the other, clearly assigning it to the player;

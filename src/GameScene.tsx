@@ -5,7 +5,7 @@ import { p3SpreadPosition, p4PlayerSplinterHitsNpc, p4RenderedNpcSplinterHitsRai
 import { isP3RaidMemberVisible } from './game'
 import { isInsideP3Pool } from './game'
 import { combatProjectileBossCenter, combatProjectileHeight, combatProjectileImpactPoint, combatProjectilePosition, combatProjectileShape, combatProjectileTargetHeight, combatProjectileTravelSeconds, combatProjectilesActive, COMBAT_PROJECTILE_IMPACT_SECONDS, MAX_VISIBLE_NPC_PROJECTILES, npcProjectileShots, type CombatProjectileShape } from './projectiles'
-import { P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_MEMORY_RADIUS, P1_OUTER_RADIUS, p1BeamAngles, p1BossEncounterPosition, p1ContinuousBeamTime, p1CrystalSpawnPosition, p1MemorySlotAngle, p1MemorySweepAngle, p1NpcBeamPosition, p1NpcCrystalPickupReleased, p1NpcMemoryPosition, p1NpcRoamingPosition, p1RotatingBeams, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
+import { P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_MEMORY_BEAM_LENGTH, P1_MEMORY_RADIUS, P1_OUTER_RADIUS, p1BeamAngles, p1BossEncounterPosition, p1ContinuousBeamTime, p1CrystalSpawnPosition, p1MemorySlotAngle, p1MemorySweepAngle, p1NpcBeamPosition, p1NpcCrystalPickupReleased, p1NpcMemoryPosition, p1NpcRoamingPosition, p1RotatingBeams, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
 
 interface SceneProps {
   p1Sequence: number
@@ -24,6 +24,7 @@ interface SceneProps {
   p2SpreadPositions: Point[]
   profiles: PlayerProfile[]
   raidStart: Point
+  p1BossOpening: Point
   movementSpeed: number
   movementBonus: boolean
   difficulty: Difficulty
@@ -305,6 +306,24 @@ function addOrb(group: THREE.Group, point: Point, color = 0xb170ff, size = 5.4, 
   orb.renderOrder = 11
   group.add(orb)
   addGroundRing(group, point, size + .6, size + 2.4, color, opacity * .42)
+}
+function addGroundCrystal(group: THREE.Group, point: Point) {
+  const box = new THREE.Mesh(
+    cachedTransientGeometry('ground-crystal-box', () => new THREE.BoxGeometry(4.2, 5.2, 4.2)),
+    new THREE.MeshBasicMaterial({ color: 0xffe13d }),
+  )
+  box.rotation.set(.12, Math.PI / 4, .12)
+  box.position.set(point.x, 5.2, point.y)
+  box.renderOrder = 12
+  group.add(box)
+  const glow = new THREE.Mesh(
+    cachedTransientGeometry('ground-crystal-glow', () => new THREE.SphereGeometry(5.5, 20, 12)),
+    new THREE.MeshBasicMaterial({ color: 0xffdc48, transparent: true, opacity: .18, depthWrite: false }),
+  )
+  glow.position.set(point.x, 5.2, point.y)
+  glow.renderOrder = 11
+  group.add(glow)
+  addGroundRing(group, point, 3.8, 7.5, 0xffe55c, .78, 2.95)
 }
 function addFlyingSaucer(group: THREE.Group, point: Point, rotation: number, color = 0x89cfff) {
   const body = new THREE.Mesh(
@@ -758,7 +777,7 @@ export default function GameScene(props: SceneProps) {
     let pitch = savedCamera.pitch
     let zoomYards = savedCamera.zoom
     const invertCameraX = localStorage.getItem('lura-invert-camera-x') === 'true'
-    const invertCameraY = localStorage.getItem('lura-invert-camera-y') === 'true'
+    const invertCameraY = localStorage.getItem('lura-invert-camera-y') !== 'false'
     let turnLeftKey = 'KeyQ'
     let turnRightKey = 'KeyE'
     try {
@@ -905,7 +924,7 @@ export default function GameScene(props: SceneProps) {
       p2Boss.visible = centralBossVisible
       const enlargedCentralBoss = phaseFour || !phaseOne && !phaseTwo && !phaseThree
       p2Boss.scale.setScalar(enlargedCentralBoss ? 1.52 : 1)
-      const p1Boss = p1BossEncounterPosition(state.raidStart, state.positions.slice(0, 2), state.p1Sequence, state.event, state.eventTime, WORLD.center)
+      const p1Boss = p1BossEncounterPosition(state.p1BossOpening, state.positions.slice(0, 2), state.p1Sequence, state.event, state.eventTime, WORLD.center)
       const p1OutwardAngle = Math.atan2(p1Boss.y - WORLD.center.y, p1Boss.x - WORLD.center.x)
       p2Boss.position.set(phaseOne ? p1Boss.x : WORLD.center.x, enlargedCentralBoss ? 16 : 10.5, phaseOne ? p1Boss.y : WORLD.center.y)
       ;(p2Boss.material as THREE.MeshBasicMaterial).opacity = 1
@@ -949,6 +968,9 @@ export default function GameScene(props: SceneProps) {
           ? (state.p1Sequence - 1) * 3
           : state.p1Sequence * 3,
       ).includes(state.assignment)
+        || state.event === 'p1-crystals'
+          && state.p1CrystalCollected
+          && state.p1CrystalAssignments.slice((state.p1Sequence - 1) * 3, state.p1Sequence * 3).includes(state.assignment)
       if (playerCarriedCrystal) playerCarriedCrystal.visible = !phaseFour
         && (phaseOne ? playerP1CrystalCollected : state.playerIsCrystal && !state.playerCrystalSpent && !state.crystal)
       const partnerNpcOrdinal = npcProfileIndices.findIndex(profileIndex => p3SideOf(profileIndex) === playerP3Side)
@@ -1037,7 +1059,7 @@ export default function GameScene(props: SceneProps) {
           }
           p1Target = p1NpcMemoryPosition(p1Target, index, state.eventTime, state.event === 'p1-memory-position')
         } else if (state.event === 'p1-beam-telegraph' || state.event === 'p1-beams') {
-          const openingBoss = p1BossEncounterPosition(state.raidStart, state.positions.slice(0, 2), state.p1Sequence, 'p1-beam-telegraph', 0, WORLD.center)
+          const openingBoss = p1BossEncounterPosition(state.p1BossOpening, state.positions.slice(0, 2), state.p1Sequence, 'p1-beam-telegraph', 0, WORLD.center)
           const beams = p1RotatingBeams(state.p1Seed, state.p1Sequence, 0, Math.PI / 16, Math.atan2(openingBoss.y - WORLD.center.y, openingBoss.x - WORLD.center.x))
           const elapsed = p1ContinuousBeamTime(state.event, state.eventTime)
           p1Target = p1NpcBeamPosition(index, elapsed, p1Boss, p1BeamAngles(beams, elapsed)[0])
@@ -1241,10 +1263,13 @@ export default function GameScene(props: SceneProps) {
             ? (state.p1Sequence - 1) * 3
             : state.p1Sequence * 3,
         )
+        const npcCollectedCurrentP1Crystal = state.event === 'p1-crystals'
+          && currentP1CrystalAssignments.includes(baseIndex)
+          && distance(position, p1CrystalSpawnPosition(state.positions[baseIndex], WORLD.center)) <= 4
         const npcCrystalVisible = phaseOne
-          ? p1CollectedAssignments.includes(baseIndex)
+          ? p1CollectedAssignments.includes(baseIndex) || npcCollectedCurrentP1Crystal
           : phaseThree ? npcP3CrystalActive : state.crystalCarriers.includes(index)
-        if (glow) glow.visible = !phaseFour && npcCrystalVisible
+        if (glow) glow.visible = !phaseOne && !phaseFour && npcCrystalVisible
         const body = sprite.getObjectByName('role-body') as THREE.Mesh<THREE.BoxGeometry, THREE.MeshBasicMaterial>
         body.material.color.setHex(body.userData.baseColor)
         const carriedCrystal = sprite.getObjectByName('carried-crystal')
@@ -1322,7 +1347,7 @@ export default function GameScene(props: SceneProps) {
       const p4Stack = state.event === 'p4-cycle'
         ? p4GroupPosition(p4VisualCycle, state.eventTime, WORLD.center)
         : p4StackPosition(1, WORLD.center)
-      const p1MemoryBoss = p1BossEncounterPosition(state.raidStart, state.positions.slice(0, 2), state.p1Sequence, state.event, state.eventTime, WORLD.center)
+      const p1MemoryBoss = p1BossEncounterPosition(state.p1BossOpening, state.positions.slice(0, 2), state.p1Sequence, state.event, state.eventTime, WORLD.center)
       const p1MemoryAssignment = {
         x: p1MemoryBoss.x + Math.cos(p1MemorySlotAngle(state.p1MemoryOrder, playerP1Rune, p1OutwardAngle)) * P1_MEMORY_RADIUS,
         y: p1MemoryBoss.y + Math.sin(p1MemorySlotAngle(state.p1MemoryOrder, playerP1Rune, p1OutwardAngle)) * P1_MEMORY_RADIUS,
@@ -1356,8 +1381,7 @@ export default function GameScene(props: SceneProps) {
             const point = p1CrystalSpawnPosition(state.positions[profileIndex], WORLD.center)
             const npcOrdinal = npcProfileIndices.indexOf(profileIndex)
             if (npcOrdinal >= 0 && distance(npcPositions[npcOrdinal], point) <= 4) return
-            addOrb(hazards, point, 0xffe46f, 5.8, .96)
-            addGroundRing(hazards, point, 6.5, 9, 0xffef9b, .88, 2.7)
+            addGroundCrystal(hazards, point)
           })
         }
         state.p1GlaiveSets.forEach(set => {
@@ -1367,10 +1391,11 @@ export default function GameScene(props: SceneProps) {
             set.glaives.forEach(glaive => {
               const angle = Math.atan2(glaive.direction.y, glaive.direction.x)
               addLaserBeam(hazards, set.origin, angle, P1_OUTER_RADIUS * 1.8, 1.6, 0xa8e7ff, pulse)
+              addFlyingSaucer(hazards, glaive.position, state.time * 18 + glaive.id * .8)
             })
           } else {
             set.glaives.forEach(glaive => {
-              addFlyingSaucer(hazards, glaive.position, state.time * 5.5 + glaive.id * .8)
+              addFlyingSaucer(hazards, glaive.position, state.time * 18 + glaive.id * .8)
             })
           }
         })
@@ -1382,11 +1407,11 @@ export default function GameScene(props: SceneProps) {
             if (npcOrdinal >= 0) addRuneMarker(hazards, npcPositions[npcOrdinal], p1RuneTextures[rune], true)
           })
           if (state.event === 'p1-memory-sweep') {
-            addLaserBeam(hazards, p1MemoryBoss, p1MemorySweepAngle(0, state.eventTime, p1OutwardAngle), P1_MEMORY_RADIUS + 18, 3.2, 0x9adfff, .92)
+            addLaserBeam(hazards, p1MemoryBoss, p1MemorySweepAngle(0, state.eventTime, p1OutwardAngle), P1_MEMORY_BEAM_LENGTH, 3.2, 0x9adfff, .92)
           }
         }
         if (state.event === 'p1-beam-telegraph' || state.event === 'p1-beams') {
-          const openingBoss = p1BossEncounterPosition(state.raidStart, state.positions.slice(0, 2), state.p1Sequence, 'p1-beam-telegraph', 0, WORLD.center)
+          const openingBoss = p1BossEncounterPosition(state.p1BossOpening, state.positions.slice(0, 2), state.p1Sequence, 'p1-beam-telegraph', 0, WORLD.center)
           const beams = p1RotatingBeams(state.p1Seed, state.p1Sequence, 0, Math.PI / 16, Math.atan2(openingBoss.y - WORLD.center.y, openingBoss.x - WORLD.center.x))
           const angles = p1BeamAngles(beams, p1ContinuousBeamTime(state.event, state.eventTime))
           const active = state.event === 'p1-beams'
@@ -1728,5 +1753,5 @@ export default function GameScene(props: SceneProps) {
     }
   }, [])
 
-  return <div ref={host} className="scene-3d" aria-label="3D L'ura Intermission arena" data-combat-projectiles={props.combatProjectilesEnabled ? 'on' : 'off'} />
+  return <div ref={host} className="scene-3d" aria-label="3D L'ura Intermission arena" data-combat-projectiles={props.combatProjectilesEnabled ? 'on' : 'off'} data-p1-boss-opening={`${props.p1BossOpening.x},${props.p1BossOpening.y}`} />
 }

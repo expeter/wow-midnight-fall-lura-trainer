@@ -277,6 +277,7 @@
 .splinter-counter.p3-duty-counter { display: flex; gap: 10px; align-items: center; }
 .splinter-counter.p3-duty-counter > span + span { padding-left: 10px; border-left: 1px solid rgba(255,225,61,.4); color: #ffe13d; }
 .splinter-counter.p3-duty-counter > span.spent { color: #9a9ca8; }
+.splinter-counter.p1-interrupt-counter { display: flex; gap: 10px; align-items: center; }
 .p1-interrupt-display { position: absolute; z-index: 6; width: 100px; height: 100px; transform: translate(-50%,-50%); display: grid; place-content: center; gap: 5px; border: 3px solid currentColor; border-radius: 14px; text-align: center; color: #fff; background: rgba(40,8,12,.94); box-shadow: 0 0 28px currentColor; pointer-events: none; font-family: 'DM Mono', monospace; }
 .p1-interrupt-display span { font-size: 12px; letter-spacing: .09em; }
 .p1-interrupt-display strong { font-size: 25px; line-height: 1; }

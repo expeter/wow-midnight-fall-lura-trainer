@@ -12,10 +12,13 @@ export const P1_GLAIVE_COUNT = 5
 export const P1_GLAIVE_TELEGRAPH_SECONDS = 2
 export const P1_GLAIVE_LIFETIME_SECONDS = 60
 export const P1_GLAIVE_REFLECTED_SPEED_MULTIPLIER = 1.1
+export const P1_GLAIVE_INITIAL_SPEED_MULTIPLIER = 4.5
+export const P1_GLAIVE_RETURN_SPEED_MULTIPLIER = 1.65
 export const P1_MAX_GLAIVE_SETS = 2
 export const P1_INNER_RADIUS = 102
 export const P1_OUTER_RADIUS = 260
 export const P1_MEMORY_RADIUS = 20
+export const P1_MEMORY_BEAM_LENGTH = 35
 export const P1_MEMORY_DELAY_SECONDS = 2
 export const P1_MEMORY_POSITION_SECONDS = 7
 export const P1_MEMORY_SWEEP_SECONDS = 5
@@ -162,7 +165,10 @@ export function p1GlaiveSet(
       : rotation + glaiveId * Math.PI * 2 / P1_GLAIVE_COUNT
     return {
       id: glaiveId,
-      position: { ...origin },
+      position: {
+        x: origin.x + Math.cos(angle) * 13,
+        y: origin.y + Math.sin(angle) * 13,
+      },
       direction: { x: Math.cos(angle), y: Math.sin(angle) },
       reflected: false,
     }
@@ -182,6 +188,10 @@ export function p1GlaiveSet(
 
 export function p1GlaiveSetVisible(set: P1GlaiveSet, now: number): boolean {
   return now >= set.telegraphStartsAt && now <= set.expiresAt
+}
+
+export function p1GlaiveContactStarted(contacting: boolean, wasContacting: boolean): boolean {
+  return contacting && !wasContacting
 }
 
 function distanceToRingAlongRay(position: P1Point, direction: P1Point, center: P1Point, radius: number): number {
@@ -300,7 +310,7 @@ export function p1BossEncounterPosition(
     const startAngle = Math.atan2(start.y - arenaCenter.y, start.x - arenaCenter.x)
     const candidateAngle = Math.atan2(candidate.y - arenaCenter.y, candidate.x - arenaCenter.x)
     const delta = Math.atan2(Math.sin(candidateAngle - startAngle), Math.cos(candidateAngle - startAngle))
-    const arc = Math.max(-P1_ROTATING_BEAM_MAX_BOSS_ARC, Math.min(P1_ROTATING_BEAM_MAX_BOSS_ARC, delta))
+    const arc = (Math.abs(delta) < .01 ? 1 : Math.sign(delta)) * P1_ROTATING_BEAM_MAX_BOSS_ARC
     const radius = Math.max(P1_INNER_RADIUS + 24, Math.hypot(candidate.x - arenaCenter.x, candidate.y - arenaCenter.y))
     stops.push({
       x: arenaCenter.x + Math.cos(startAngle + arc) * radius,

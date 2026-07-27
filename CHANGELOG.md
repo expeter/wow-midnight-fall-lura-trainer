@@ -36,6 +36,21 @@
   their collision radius, shortened lethal beams to one 45-degree sweep, and
   made the compact NPC raid follow L’ura along a tank-led arc; tracked from
   the linked inbox capture.
+- BUG-075 / BUG-076: Unified P1’s configured L’ura origin across rendering,
+  rune placement, memory validation, NPC movement, and rotating-beam movement.
+  Wrong rune order now resolves after the visible sweep instead of silently
+  passing or disagreeing with what the player saw.
+- BUG-077 / CR-115: Rearmed Heaven Glaive contact after the player exits,
+  exposed each disc during its direction telegraph, increased launch and
+  return speeds by 1.5×, and accelerated their visible spin.
+- CR-116 / CR-118: Reused the established ground-crystal and carried-crystal
+  visuals in P1 while explicitly suppressing P3-style protection rings.
+- CR-117: Separated the Interrupts label/count and anchored the 100×100
+  red/orange/green kick tile directly beneath it.
+- CR-119: Enabled vertical mouse-camera inversion by default for new users
+  while preserving any existing saved preference.
+- CR-120: Rendered P1’s memory verification as one 35-yard
+  Starsplinter-style sweep beam.
 
 ## 0.2.0 — 2026-07-27
 

@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
   P1_DEFAULT_INTERRUPT_KEY,
+  P1_GLAIVE_INITIAL_SPEED_MULTIPLIER,
   P1_GLAIVE_LIFETIME_SECONDS,
+  P1_GLAIVE_RETURN_SPEED_MULTIPLIER,
   P1_INNER_RADIUS,
   P1_INTERMISSION_POSITION_SECONDS,
   P1_MAX_GLAIVE_SETS,
+  P1_MEMORY_BEAM_LENGTH,
   P1_OUTER_RADIUS,
   P1_ROTATING_BEAM_ACTIVE_SECONDS,
   p1AddGlaiveSet,
@@ -17,6 +20,7 @@ import {
   p1CrystalPickupSequence,
   p1CrystalSpawnPosition,
   p1CrystalSpawns,
+  p1GlaiveContactStarted,
   p1GlaiveSet,
   p1InterruptAssignment,
   p1InterruptCasts,
@@ -132,6 +136,9 @@ describe('P1 headless mechanics', () => {
     expect(P1_INNER_RADIUS).toBe(102)
     expect(P1_OUTER_RADIUS).toBe(260)
     expect(P1_GLAIVE_LIFETIME_SECONDS).toBe(60)
+    expect(P1_GLAIVE_INITIAL_SPEED_MULTIPLIER).toBe(4.5)
+    expect(P1_GLAIVE_RETURN_SPEED_MULTIPLIER).toBe(1.65)
+    expect(Math.hypot(set.glaives[0].position.x - set.origin.x, set.glaives[0].position.y - set.origin.y)).toBeCloseTo(13)
   })
 
   it('moves the outside boss through one quarter per demonstrated sequence', () => {
@@ -155,7 +162,7 @@ describe('P1 headless mechanics', () => {
     const firstStop = p1BossEncounterPosition(opening, tanks, 1, 'p1-beams', P1_ROTATING_BEAM_ACTIVE_SECONDS, center)
     const openingAngle = Math.atan2(opening.y - center.y, opening.x - center.x)
     const firstStopAngle = Math.atan2(firstStop.y - center.y, firstStop.x - center.x)
-    expect(Math.abs(Math.atan2(Math.sin(firstStopAngle - openingAngle), Math.cos(firstStopAngle - openingAngle)))).toBeLessThanOrEqual(Math.PI / 4)
+    expect(Math.abs(Math.atan2(Math.sin(firstStopAngle - openingAngle), Math.cos(firstStopAngle - openingAngle)))).toBeCloseTo(Math.PI / 4)
     expect(p1BossEncounterPosition(opening, tanks, 2, 'p1-interrupts', 0, center)).toEqual(firstStop)
   })
 
@@ -197,6 +204,13 @@ describe('P1 headless mechanics', () => {
     expect(sets.map(set => set.id)).toEqual([3])
   })
 
+  it('rearms a Heaven Glaive contact only after the player exits it', () => {
+    expect(p1GlaiveContactStarted(true, false)).toBe(true)
+    expect(p1GlaiveContactStarted(true, true)).toBe(false)
+    expect(p1GlaiveContactStarted(false, true)).toBe(false)
+    expect(p1GlaiveContactStarted(true, false)).toBe(true)
+  })
+
   it('builds a seeded permutation of TXOV+ and validates beam contacts in order', () => {
     const order = p1MemoryOrder(2026, 1)
     expect(order).toEqual(p1MemoryOrder(2026, 1))
@@ -222,6 +236,7 @@ describe('P1 headless mechanics', () => {
     const correct = { x: center.x + Math.cos(angle) * 120, y: center.y + Math.sin(angle) * 120 }
     expect(p1MemorySlotValid(correct, center, order, 'O', outward)).toBe(true)
     expect(p1MemorySlotValid(correct, center, order, 'X', outward)).toBe(false)
+    expect(P1_MEMORY_BEAM_LENGTH).toBe(35)
     expect(p1MemorySweepAngle(0, 0, outward)).toBeCloseTo(outward)
     expect(p1MemorySweepAngle(0, 5, outward)).toBeCloseTo(outward + Math.PI * 2)
   })

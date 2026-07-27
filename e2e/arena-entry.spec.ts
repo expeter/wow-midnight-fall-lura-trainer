@@ -288,7 +288,7 @@ test('resolves a Phase 4 stack hit reliably at 2.5x speed', { tag: '@late-arena'
   await page.getByRole('button', { name: /Enter Arena 4/ }).click()
 
   await expect(page.getByLabel('Test mode recent failures')).toContainText(
-    'Your Phase 4 Starsplinter hit another player',
+    'Phase 4 Starsplinter hit another player',
     { timeout: MECHANIC_TIMEOUT },
   )
 })

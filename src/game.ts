@@ -605,6 +605,23 @@ export function p4RenderedNpcSplinterHitsPlayer(renderedNpcPositions: Point[], o
   )
 }
 
+export function p4RenderedNpcSplinterHitsRaid(
+  renderedNpcPositions: Point[],
+  ordinal: number,
+  fallback: Point,
+  rotation: number,
+  player: Point,
+  playerRadius = 3,
+  npcRadius = 4,
+): 'player' | 'npc' | null {
+  const originIndex = ordinal * 3 + 1
+  const origin = p4RenderedNpcSplinterOrigin(renderedNpcPositions, ordinal, fallback)
+  if (p4SplinterHitsGroup(origin, rotation, player, playerRadius)) return 'player'
+  return renderedNpcPositions.some((target, index) =>
+    index !== originIndex && p4SplinterHitsGroup(origin, rotation, target, npcRadius),
+  ) ? 'npc' : null
+}
+
 export function p4PlayerSplinterHitsNpc(renderedNpcPositions: Point[], origin: Point, rotation: number, npcRadius = 4): boolean {
   return renderedNpcPositions.some(target => p4SplinterHitsGroup(origin, rotation, target, npcRadius))
 }

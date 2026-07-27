@@ -226,8 +226,9 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-056` | Implemented | Preserve the active resolved-orb set through both Phase 2 sequences and render all four glowing orbs throughout their inward return window, matching the second-sequence `Dodge` warning. |
 | `BUG-057` | Superseded in part by BUG-059 | Give every resolved Phase 2 orb set a new stable random seed, with independent angular offsets, speeds, and rotational travel; only the beam resolution starts their shared return clock. BUG-059 standardizes the travel direction. |
 | `BUG-058` | Implemented | Clamp pre-Phase-4 boss health to the full 0–100% range and explicitly hold it at 0% when the Phase 3 damage clear begins, restoring 100% only at the Phase 4 boundary. |
-| `BUG-059` | Implemented | Keep all Phase 2 orbs rotating continuously counterclockwise with no direction reversal when struck orbs become yellow and enter the glowing return telegraph. Yellow and purple orbs now use the same positive renderer rotation clock while retaining randomized lanes and slight speed variance. |
+| `BUG-059` | Implemented | Keep all Phase 2 orbs rotating continuously counterclockwise with no direction reversal when struck orbs become yellow and enter the glowing return telegraph. |
 | `BUG-060` | Implemented | Make the renderer-heavy late-arena CI shard reliable on GitHub’s free software-rendered runners: test the second P4 Splinter cycle directly instead of coupling it to the remaining full phase playback, retain pure-rule coverage for the complete 88-second lifecycle, and retry only this heavy shard once for transient runner stalls. |
+| `BUG-061` | Implemented | Model Phase 2 as one continuous twelve-orb roster: each beam converts exactly its four existing purple targets to yellow, those same indexed orbs keep orbiting counterclockwise during the return timer, then all four travel inward. The next beam handles the next four, with no duplicate sets, randomized replacement lanes, or purple/yellow overlap. |
 
 ## Implemented feature inventory
 

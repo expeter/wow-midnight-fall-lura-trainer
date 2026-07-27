@@ -919,19 +919,16 @@ export function p2OrbReturnState(age: number, orbitRadius = 82): { phase: 'inact
   }
   return { phase: 'done', radius: 0 }
 }
-function p2SeededUnit(seed: number): number {
-  const value = Math.sin(seed * 12.9898 + 78.233) * 43758.5453
-  return value - Math.floor(value)
+export function p2OrbPosition(index: number, orbitAngle: number, center: Point, radius = 82): Point {
+  const group = Math.floor(index / 4)
+  const angle = index % 4 * Math.PI / 2 + group * Math.PI / 6 + orbitAngle
+  return { x: center.x + Math.cos(angle) * radius, y: center.y + Math.sin(angle) * radius }
 }
-export function p2ReturningOrbPositions(age: number, returnSeed: number, center: Point, orbitRadius = 82): Point[] {
+export function p2ReturningOrbPositions(age: number, resolvedCycle: number, orbitAngle: number, center: Point, orbitRadius = 82): Point[] {
   const state = p2OrbReturnState(age, orbitRadius)
   if (state.phase !== 'orbiting' && state.phase !== 'charging' && state.phase !== 'returning') return []
-  return Array.from({ length: 4 }, (_, index) => {
-    const angleOffset = p2SeededUnit(returnSeed + index * 17) * Math.PI * 2
-    const speed = P2_ORBIT_SPEED * (.82 + p2SeededUnit(returnSeed + index * 47 + 13) * .36)
-    const angle = angleOffset + age * speed
-    return { x: center.x + Math.cos(angle) * state.radius, y: center.y + Math.sin(angle) * state.radius }
-  })
+  const firstIndex = (Math.max(1, Math.min(3, resolvedCycle)) - 1) * 4
+  return Array.from({ length: 4 }, (_, localIndex) => p2OrbPosition(firstIndex + localIndex, orbitAngle, center, state.radius))
 }
 export function shouldTriggerP3EarlyClear(event: string, playerDamage: number): boolean {
   return event.startsWith('p3-')

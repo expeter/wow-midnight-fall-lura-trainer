@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Rebuilt Phase 2 around one continuous twelve-orb roster: each beam now
+  converts four existing purple orbs to yellow before those same orbs return,
+  eliminating duplicate, colliding, or direction-changing orb sets.
 - Stabilized the renderer-heavy P3/P4 CI shard on slower GitHub runners by
   testing the second P4 Splinter cycle directly, retaining pure-rule coverage
   for the full phase, and allowing one retry only for that heavy shard.
@@ -18,10 +21,8 @@
   raid-lead TTS without leaving the encounter.
 - Replaced the pre-Phase-4 damage instruction beneath L’ura’s health with an
   atmospheric encounter line.
-- Kept returning orbs visible in both Phase 2 sequences and randomized each
-  resolved set’s return lanes and speeds while making every orb continue
-  counterclockwise through its normal and glowing states using the same
-  renderer rotation clock as the unstruck purple orbs.
+- Kept returning orbs visible in both Phase 2 sequences while making every orb
+  continue counterclockwise through its normal and glowing states.
 - Standardized the setup page around explicit Game settings, Keyboard
   settings, Interface, Raid planning, and phase-plan headings, with keyboard
   and mouse controls grouped beneath the Keyboard settings topic.

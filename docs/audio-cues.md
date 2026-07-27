@@ -49,20 +49,20 @@ with a separate `SOAK CRYSTAL` instruction.
 
 | ID | Mechanic | Desired sound | Length | Reuse |
 | --- | --- | --- | --- | --- |
-| `laser-charge` | Boss beam resolves | Stretched Magical Whoosh ending exactly when the beam fires | 1.86s | Intermission and P2 |
+| `laser-charge` | 2.051s before the boss beam resolves | Midnight Laser Charge Veil at 1.88× | Calibrated | Intermission and P2 |
 | `laser-fire` | Reserved / currently silent | A separate discharge duplicated the charge cue and is disabled while the revised mix is reviewed | — | Intermission and P2 |
-| `stars-connect` | P3 Stars lattice connects | Very short Rift laser buzz synchronized to beam appearance | ~0.28s | P3 only |
+| `stars-connect` | 0.1s before the P3 Stars lattice connects | Neon Buzz at 1.30× | Calibrated | P3 only |
 | `splinter-mark` | Starsplinter assigned | Short crystalline warning/chime | 0.4–0.8s | Intermission and P4 |
 | `splinter-detonate` | 0.02s before Starsplinter rays disappear | Sharp six-way energy burst; waveform analysis places its main attack about 0.02s after playback begins at the in-game 2× rate | 0.5–1s | Intermission and P4 |
 | `orb-charge` | P2 returning orbs start glowing | Pulsing magical charge | 0.8–1.2s | P2 |
-| `orb-return` | P2 orbs approach L’ura | Arcane motion cue delayed one second after inward flight begins so it lands closer to the boss impact | 1.18s | P2 |
+| `orb-return` | 0.271s before P2 orbs reach L’ura | Arcane Laser at 1.00× | Calibrated | P2 |
 | `pull` | P2 raid pull begins | Sustained suction/wind rise | 2–4s loop | P2 |
-| `personal-circle` | P2 spread circles resolve | Soft area pulse, not an explosion | 0.4–0.8s | P2 |
+| `personal-circle` | 0.07s before P2 spread circles resolve | Midnight Splinter Detonate Rift at 1.00× | Calibrated | P2 |
 | `soak-progress` | A P3 Soak reaches valid occupancy | Quiet confirming hum | Short loop | P3 |
 | `soak-complete` | Reserved / currently silent | The reviewed cue had too much silence before its transient and did not fit the completion moment | — | P3 |
 | `rune-reveal` | Each memory rune is shown | Three related tonal notes | 0.25–0.5s each | P3 |
-| `rune-match` | Correct rune partner resolves | Positive paired chime | 0.4–0.8s | P3 |
-| `archangel-charge` | Dark Archangel is one second into its cast | Five-second escalating danger bed ending on the six-second cast impact | 5s | P3 |
+| `rune-match` | Correct rune partner resolves | Rune Clear at 1.08×, calibrated 0.02s early | Calibrated | P3 |
+| `archangel-charge` | 5.5s before Dark Archangel impacts | Midnight Archangel Charge Veil at 0.95× | Calibrated | P3 |
 | `protection-active` | Crystal bubble protects raid | Warm shield activation | 0.5–1s | P3 |
 | `heaven-hell` | P4 quarter becomes unsafe | Deep sector-wide impact | 0.8–1.5s | P4 |
 | `mistake` | Non-wipe point loss | Restrained error tick | 0.2–0.4s | All phases |

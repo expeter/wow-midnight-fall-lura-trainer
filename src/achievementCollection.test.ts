@@ -31,6 +31,7 @@ const normalFlawless: AchievementSummary = {
   crystalFailures: 0,
   runeFailures: 0,
   allPhaseRecovery: true,
+  recoveryUses: 4,
 }
 
 function ids(summary: AchievementSummary) {
@@ -50,6 +51,7 @@ describe('canonical achievement rules', () => {
       'flawless-p3',
       'flawless-p4',
       'prepared-for-every-phase',
+      'never-caught-unprepared',
       'always-be-casting',
     ]))
   })
@@ -64,6 +66,18 @@ describe('canonical achievement rules', () => {
     expect(direct).toContain('one-phase-wonder')
     expect(direct).toContain('flawless-p3')
     expect(direct).not.toContain('flawless-p2')
+  })
+
+  it('separates first recovery use from every-phase recovery mastery', () => {
+    const firstUse = ids({
+      ...normalFlawless,
+      fullSequence: false,
+      phaseResults: [flawlessPhases[0]],
+      allPhaseRecovery: false,
+      recoveryUses: 1,
+    })
+    expect(firstUse).toContain('prepared-for-every-phase')
+    expect(firstUse).not.toContain('never-caught-unprepared')
   })
 
   it('requires clean rune telemetry and the strict hard score threshold', () => {
@@ -130,9 +144,9 @@ describe('persistent achievement collection', () => {
     expect(parseAchievementCollection(serializeAchievementCollection(loaded))).toEqual(loaded)
   })
 
-  it('publishes 21 available canonical achievements and one P1 teaser', () => {
+  it('publishes 22 available canonical achievements and one P1 teaser', () => {
     const catalog = achievementCatalog()
-    expect(catalog.filter(achievement => achievement.available)).toHaveLength(21)
+    expect(catalog.filter(achievement => achievement.available)).toHaveLength(22)
     expect(catalog.find(achievement => achievement.id === 'flawless-p1')).toMatchObject({ available: false })
     expect(new Set(catalog.map(achievement => achievement.id)).size).toBe(catalog.length)
   })

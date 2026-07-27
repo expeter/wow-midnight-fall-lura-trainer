@@ -55,6 +55,7 @@ export interface AchievementSummary {
   crystalFailures?: number
   runeFailures?: number
   allPhaseRecovery?: boolean
+  recoveryUses?: number
   mainAbilityCasts?: number
 }
 
@@ -62,12 +63,12 @@ export function completionAchievements(summary: AchievementSummary): Achievement
   const achievements: Achievement[] = []
   const duty = summary.crystalPlayer ? 'Crystal player' : 'Non-crystal player'
   const flawless = summary.mistakes === 0
-  const allOptions = summary.healthPotEnabled && summary.shieldEnabled && summary.mainAbilityEnabled
+  const allOptions = Boolean(summary.allPhaseRecovery) && summary.mainAbilityEnabled
   achievements.push(summary.fullSequence
     ? { id: 'movement-master', label: 'L’URA MOVEMENT MASTER', detail: `${summary.difficulty} · ${duty}` }
     : { id: 'practice-clear', label: 'L’URA PRACTICE CLEAR', detail: `${summary.difficulty} · ${duty}` })
   if (flawless) achievements.push({ id: 'flawless', label: `FLAWLESS · ${summary.difficulty.toUpperCase()}`, detail: duty })
-  if (allOptions) achievements.push({ id: 'all-options', label: 'ALL OPTIONAL CHALLENGES', detail: 'Health potion · Shield · Main ability' })
+  if (allOptions) achievements.push({ id: 'all-options', label: 'ALL COMBAT CHALLENGES', detail: 'Every-phase recovery · Main ability' })
   if (summary.fullSequence && flawless && allOptions && summary.totalScore > 1100 && summary.crystalPlayer) {
     achievements.push({ id: 'superhuman-flawless', label: 'SUPERHUMAN FLAWLESS', detail: `${summary.difficulty} · Crystal player · 1100+ points` })
   }

@@ -35,7 +35,8 @@ change before implementation.
 - Results identify the played difficulty and whether the selected position had
   crystal duty.
 - Flawless means zero recorded mistakes.
-- Enabled potion, shield, and main ability are listed as optional challenges.
+- Potion, shield, and main ability use are listed in the completion details;
+  potion and shield are permanent phase-refilling actions rather than options.
 - `SUPERHUMAN FLAWLESS` requires a full sequential clear, zero mistakes, all
   three optional challenges, crystal duty, and more than 1100 points.
 

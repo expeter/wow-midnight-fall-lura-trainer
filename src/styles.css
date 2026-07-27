@@ -2,7 +2,11 @@
 .build-indicator { position: fixed; z-index: 80; top: 7px; left: 10px; padding: 3px 6px; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; border-radius: 4px; color: rgba(164,176,202,.58); background: rgba(5,8,17,.46); font: 9px 'DM Mono', monospace; letter-spacing: .025em; }
 .build-indicator a { color: inherit; text-decoration: none; }
 .build-indicator a:hover { color: rgba(201,255,241,.9); }
+.build-indicator .build-copy { min-height: 0; padding: 0; border: 0; color: inherit; background: none; font: inherit; letter-spacing: inherit; text-align: left; }
+.build-indicator .build-copy:hover { color: rgba(201,255,241,.9); }
+.build-indicator nav { display: flex; flex-wrap: wrap; gap: 3px 9px; }
 .build-indicator .changelog-link { color: rgba(115,224,193,.68); }
+.build-indicator .issue-link { color: rgba(242,177,105,.74); }
 .update-banner { position: fixed; z-index: 120; top: 8px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; max-width: calc(100vw - 32px); padding: 7px 9px 7px 13px; border: 1px solid rgba(115,224,193,.64); border-radius: 8px; color: #dffdf4; background: rgba(12,31,38,.96); box-shadow: 0 10px 32px rgba(0,0,0,.42); font: 11px 'DM Mono', monospace; white-space: nowrap; }
 .update-banner button { width: auto; margin: 0; padding: 5px 8px; font-size: 10px; white-space: nowrap; }
 .update-banner button:first-of-type { color: #07121a; border-color: #73e0c1; background: #73e0c1; font-weight: 700; }
@@ -253,11 +257,14 @@
 @keyframes countdown-pulse { from { transform: translate(-50%, -50%) scale(1.12); opacity: 1; } to { transform: translate(-50%, -50%) scale(.86); opacity: .55; } }
 .player-health { position: absolute; z-index: 5; left: 50%; top: 86%; transform: translate(-50%, -50%); width: 270px; padding: 7px 9px; border: 1px solid rgba(115,224,193,.45); border-radius: 7px; background: rgba(5,8,16,.86); text-align: center; pointer-events: none; }
 .health-track { height: 9px; overflow: hidden; border-radius: 5px; background: #28131b; }
-.health-track i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #36ad69, #73e0a2); transition: width .15s linear; }
+.health-track i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #36ad69, #73e0a2); transition: width .15s linear, background .2s ease; }
+.health-wounded .health-track i { background: linear-gradient(90deg, #c46d22, #f2a144); }
+.health-critical .health-track i { background: linear-gradient(90deg, #b51f38, #ff405d); }
 .player-health > span { display: block; margin-top: 4px; color: #d4f7e7; font: 10px 'DM Mono', monospace; }
-.health-abilities { display: flex; justify-content: center; gap: 6px; margin-top: 4px; }
-.health-abilities b { padding: 2px 5px; border: 1px solid #51607a; border-radius: 3px; color: #dce5f8; font: 8px 'DM Mono', monospace; }
-.health-abilities b.used { color: #68738a; text-decoration: line-through; opacity: .6; }
+.health-abilities { display: flex; justify-content: center; gap: 7px; margin: 0 0 5px; }
+.health-abilities b { min-width: 56px; padding: 3px 6px; border: 1px solid #7384a4; border-radius: 4px; color: #f1f5ff; background: rgba(50,65,92,.58); font: 10px 'DM Mono', monospace; }
+.health-abilities b span { margin-left: 3px; }
+.health-abilities b.used { color: #68738a; border-color: #3b4559; background: rgba(25,30,42,.62); filter: grayscale(1); opacity: .55; }
 .critical-health { border-color: #ff405d; box-shadow: 0 0 18px rgba(255,40,72,.6); animation: critical-pulse .45s ease-in-out infinite alternate; }
 .critical-health .health-track i { background: #ff405d; }
 @keyframes critical-pulse { to { transform: translate(-50%, -50%) scale(1.035); } }

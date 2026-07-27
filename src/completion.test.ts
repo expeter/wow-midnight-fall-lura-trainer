@@ -51,6 +51,7 @@ describe('completion card results', () => {
       healthPotEnabled: true,
       shieldEnabled: true,
       mainAbilityEnabled: true,
+      allPhaseRecovery: true,
     })
     expect(achievements.map(achievement => achievement.id)).toEqual([
       'movement-master',

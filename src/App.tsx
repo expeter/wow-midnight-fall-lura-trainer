@@ -9,12 +9,12 @@ import { FEATURE_FLAGS } from './features'
 import GameScene from './GameScene'
 import { advanceMainAbilityCast, idleMainAbilityCast, mainAbilityElapsedSeconds, MAIN_ABILITY_CAST_SECONDS, requestMainAbilityCast, type MainAbilityCastState } from './mainAbility'
 import { encounterSoundCuesForState, playEncounterSound } from './encounterSounds'
+import { approachHealthTarget, healthBand, randomHealthTarget, unusedRecoveryPenalty } from './healthRecovery'
 import './styles.css'
 
 type Screen = 'menu' | 'game' | 'results'
 type EventKind = 'countdown' | 'positioning' | 'beam' | 'splinter' | 'p1-recover' | 'p2-countdown' | 'p2-jump' | 'p2-positioning' | 'p2-orbs' | 'p2-recover' | 'p2-pull' | 'p2-spread' | 'p2-fetch' | 'p2-wait' | 'p3-countdown' | 'p3-flight' | 'p3-landing' | 'p3-approach' | 'p3-light-pools' | 'p3-rune-preview' | 'p3-lattice-memory' | 'p3-lattice-second' | 'p3-pools-overlap' | 'p3-big-boom' | 'p3-archangel-position' | 'p3-archangel' | 'p3-sector-move' | 'p4-countdown' | 'p4-transition' | 'p4-cycle'
 type EntryMode = 'arena1' | 'arena2' | 'arena3' | 'arena4'
-const HEALTH_REACTION_EVENTS = new Set<EventKind>(['beam', 'splinter', 'p2-orbs', 'p2-recover', 'p2-pull', 'p2-spread', 'p2-fetch', 'p3-landing', 'p3-light-pools', 'p3-lattice-memory', 'p3-lattice-second', 'p3-pools-overlap', 'p3-archangel'])
 interface GameStats { score: number; hits: number; crystalDropped: boolean; time: number }
 interface Assignment { x: number; y: number }
 interface Mistake { id: number; time: number; label: string; penalty: number }
@@ -44,6 +44,7 @@ const CREATOR_AVATAR = new URL('../images/pestivator-avatar.jpg', import.meta.ur
 const SOLANA_ADDRESS = 'E684K1q1gzodtZK3xgdBXfTeRQbWWhSu8kVbzZNiw9Cz'
 const PROJECT_URL = 'https://github.com/expeter/wow-midnight-fall-lura-trainer'
 const CHANGELOG_URL = `${PROJECT_URL}/blob/main/CHANGELOG.md`
+const ISSUE_URL = `${PROJECT_URL}/issues/new/choose`
 const RAIDER_IO_PROFILE = 'https://raider.io/characters/eu/antonidas/Pestivator'
 const ASGARD_RAID_PLAN_ASSET = `${import.meta.env.BASE_URL}raidplans/asgard.txt`
 const AUDIO_CUES_URL = `${PROJECT_URL}/blob/main/docs/audio-cues.md`
@@ -406,8 +407,6 @@ export default function App() {
     return Number.isFinite(saved) && saved >= 45 && saved <= 270 ? saved : 150
   })
   const [hudLayout, setHudLayout] = useState(loadHudLayout)
-  const [healthPotEnabled, setHealthPotEnabled] = useState(() => loadBoolean('lura-health-pot-enabled', false))
-  const [shieldEnabled, setShieldEnabled] = useState(() => loadBoolean('lura-shield-enabled', false))
   const [combatProjectilesEnabled, setCombatProjectilesEnabled] = useState(() => loadBoolean('lura-combat-projectiles-enabled', true))
   const [musicTrack, setMusicTrack] = useState<MusicTrackId>(loadMusicTrack)
   const [musicVolume, setMusicVolume] = useState(loadMusicVolume)
@@ -472,7 +471,6 @@ export default function App() {
   const [p3RuneStep, setP3RuneStep] = useState(0)
   const [p3ResolvedRunes, setP3ResolvedRunes] = useState<RuneSymbol[]>([])
   const [health, setHealth] = useState(100)
-  const [criticalRemaining, setCriticalRemaining] = useState(0)
   const [healthPotUsed, setHealthPotUsed] = useState(false)
   const [shieldUsed, setShieldUsed] = useState(false)
   const [bossHealth, setBossHealth] = useState(100)
@@ -504,10 +502,11 @@ export default function App() {
   const phaseRecoveryRef = useRef<{ key: PhaseKey; status: RecoveryStatus }>({ key: 'intermission', status: 'disabled' })
   const droppedForPackRef = useRef(false)
   const healthRef = useRef(100)
-  const criticalDeadlineRef = useRef(0)
-  const nextCriticalRef = useRef(Infinity)
+  const healthTargetRef = useRef(100)
+  const nextHealthTargetRef = useRef(Infinity)
   const healthPotUsedRef = useRef(false)
   const shieldUsedRef = useRef(false)
+  const recoveryUseCountRef = useRef(0)
   const mainAbilityCastRef = useRef<MainAbilityCastState>(idleMainAbilityCast())
   const mainAbilityCastCountRef = useRef(0)
   const playerCrystalFailuresRef = useRef(0)
@@ -571,8 +570,10 @@ export default function App() {
   useEffect(() => { localStorage.setItem('lura-player-rotation-speed', String(rotationSpeed)) }, [rotationSpeed])
   useEffect(() => { localStorage.setItem('lura-game-speed', String(gameSpeed)) }, [gameSpeed])
   useEffect(() => { localStorage.setItem('lura-hud-layout', JSON.stringify(hudLayout)) }, [hudLayout])
-  useEffect(() => { localStorage.setItem('lura-health-pot-enabled', String(healthPotEnabled)) }, [healthPotEnabled])
-  useEffect(() => { localStorage.setItem('lura-shield-enabled', String(shieldEnabled)) }, [shieldEnabled])
+  useEffect(() => {
+    localStorage.removeItem('lura-health-pot-enabled')
+    localStorage.removeItem('lura-shield-enabled')
+  }, [])
   useEffect(() => {
     localStorage.setItem('lura-combat-projectiles-enabled', String(combatProjectilesEnabled))
     localStorage.removeItem('lura-main-ability-enabled')
@@ -825,25 +826,28 @@ export default function App() {
     setMusicPreviewing(true)
   }
   function resetPhaseRecovery(key: PhaseKey) {
-    const enabled = difficulty !== 'easy' && difficulty !== 'test' && (healthPotEnabled || shieldEnabled)
-    phaseRecoveryRef.current = { key, status: enabled ? 'pending' : 'disabled' }
+    phaseRecoveryRef.current = { key, status: 'pending' }
     healthPotUsedRef.current = false
     shieldUsedRef.current = false
     setHealthPotUsed(false)
     setShieldUsed(false)
-    criticalDeadlineRef.current = 0
-    setCriticalRemaining(0)
     healthRef.current = 100
     setHealth(100)
-    nextCriticalRef.current = enabled ? timeRef.current + 8 + Math.random() * 7 : Infinity
+    healthTargetRef.current = 100
+    nextHealthTargetRef.current = timeRef.current + 2 + Math.random() * 2
   }
   function settleUnplayedRecovery(key: PhaseKey) {
     if (phaseRecoveryRef.current.key !== key || phaseRecoveryRef.current.status !== 'pending') return
+    const penalty = unusedRecoveryPenalty(difficulty)
+    if (!penalty) {
+      phaseRecoveryRef.current.status = 'disabled'
+      return
+    }
     phaseRecoveryRef.current.status = 'missed'
-    const nextScore = Math.max(0, statsRef.current.score - 50)
+    const nextScore = Math.max(0, statsRef.current.score - penalty)
     statsRef.current = { ...statsRef.current, score: nextScore, hits: statsRef.current.hits + 1 }
     setStats(statsRef.current)
-    const mistake: Mistake = { id: Date.now() + Math.random(), time: timeRef.current, label: `Missed the ${key === 'intermission' ? 'Intermission' : key.toUpperCase()} recovery challenge`, penalty: 50 }
+    const mistake: Mistake = { id: Date.now() + Math.random(), time: timeRef.current, label: `Missed the mandatory ${key === 'intermission' ? 'Intermission' : key.toUpperCase()} recovery`, penalty }
     setMistakes(current => [mistake, ...current])
   }
   function finishTrackedPhase(key: PhaseKey): PhaseResult[] {
@@ -931,7 +935,7 @@ export default function App() {
       setLuraKilledEarly(false)
     }
     jumpUntilRef.current = 0; jumpKeysRef.current.clear(); p4LastBoxHitRef.current = -Infinity; setPersonalJumpProgress(0); setMusicPreviewing(false); restartMusic()
-    setPhasePositions(oriented); setStartSlot(slot); playerRef.current = startPosition; jumpOriginRef.current = startPosition; pullOriginRef.current = startPosition; p3FlightOriginRef.current = startPosition; crystalAgeRef.current = 0; eventTimeRef.current = 0; p3UnsafeSecondsRef.current = 0; if (!preserveScore) timeRef.current = 0; droppedForPackRef.current = false; healthRef.current = 100; criticalDeadlineRef.current = 0; nextCriticalRef.current = Infinity; healthPotUsedRef.current = false; shieldUsedRef.current = false; mainAbilityCastRef.current = idleMainAbilityCast(); setMainCastState(mainAbilityCastRef.current); setHealth(100); setCriticalRemaining(0); setHealthPotUsed(false); setShieldUsed(false); setBossHealth(100); if (!preserveScore) setMainAbilityUsed(false); setMainProjectileFiredAt(null); setPlayer(startPosition); setCrystal(null); setCrystalSpent(false); setCrystalAge(0); setNpcSplinters([]); setNpcCrystals([]); setNpcCarrier(null); setNpcCrystalAge(0); setPlayerSplinterRotation(0); setP3ArchangelDuty(randomCrystalDropDuty()); if (preserveScore) setStats(current => ({ ...current, crystalDropped: false })); else { statsRef.current = { score: 1000, hits: 0, crystalDropped: false, time: 0 }; setStats(statsRef.current); setMistakes([]); wipeCountRef.current = 0; mainAbilityCastCountRef.current = 0; playerCrystalFailuresRef.current = 0; playerRuneFailuresRef.current = 0; playerPauseStartedRef.current = false; playerPauseCycleRef.current = false; phaseResultsRef.current = []; setPhaseResults([]); phaseStartRef.current = { key: phaseForEntry(entryMode), score: 1000, time: 0, hits: 0 }; resetPhaseRecovery(phaseForEntry(entryMode)); const nextAttempt = Math.max(0, Number(localStorage.getItem('lura-attempt-count')) || 0) + 1; localStorage.setItem('lura-attempt-count', String(nextAttempt)); setAttemptNumber(nextAttempt); setCompletionCopyStatus('') } lastMistakeRef.current = { label: '', time: -Infinity }; setWipeReason(''); setSoftWipeNotice(''); announceCrystalDuty([], entryCrystalAssignments, entryMode === 'arena1' ? 'Intermission' : entryMode === 'arena2' ? 'P2' : entryMode === 'arena3' ? 'P3' : 'P4', true); setEvent(entryMode === 'arena2' ? 'p2-countdown' : entryMode === 'arena3' ? 'p3-countdown' : entryMode === 'arena4' ? 'p4-countdown' : 'countdown'); setEventTime(0); setCycle(1); setP2Cycle(1); setP2Soaked(false); setP2OrbReturnAge(-1); p2OrbPlayerHitRef.current = false; p2OrbReturnAgeRef.current = -1; p2OrbReturnHitRef.current = false; p2ReturnSoakCheckedRef.current = false; setP3Round(1); setP3PoolHealth(Array(6).fill(P3_POOL_HEALTH)); setP3RuneOrder(shuffledRunes()); setP3RuneStep(0); p3ResolvedRunesRef.current = []; setP3ResolvedRunes([]); p3RuneCheckedRef.current = false; setP3ResolvedRunes([]); p3RuneCheckedRef.current = false; p3RuneContactRef.current = false; p3WrongRuneSinceRef.current = { rune: null, since: 0 }; p3WrongRuneContactRef.current = false; p3RuneFailedRef.current = false; p3StarsCycleRef.current = -1; p3LandingRequiredRef.current = difficulty === 'hard' || difficulty === 'normal' && Math.random() < .5; hitRef.current = false; unsafeRef.current = false; wipeRef.current = false; softWipeGuardRef.current = false; chooseBossPattern(oriented[assignment]); setPaused(false); setScreen('game')
+    setPhasePositions(oriented); setStartSlot(slot); playerRef.current = startPosition; jumpOriginRef.current = startPosition; pullOriginRef.current = startPosition; p3FlightOriginRef.current = startPosition; crystalAgeRef.current = 0; eventTimeRef.current = 0; p3UnsafeSecondsRef.current = 0; if (!preserveScore) timeRef.current = 0; droppedForPackRef.current = false; healthRef.current = 100; healthTargetRef.current = 100; nextHealthTargetRef.current = Infinity; healthPotUsedRef.current = false; shieldUsedRef.current = false; mainAbilityCastRef.current = idleMainAbilityCast(); setMainCastState(mainAbilityCastRef.current); setHealth(100); setHealthPotUsed(false); setShieldUsed(false); setBossHealth(100); if (!preserveScore) setMainAbilityUsed(false); setMainProjectileFiredAt(null); setPlayer(startPosition); setCrystal(null); setCrystalSpent(false); setCrystalAge(0); setNpcSplinters([]); setNpcCrystals([]); setNpcCarrier(null); setNpcCrystalAge(0); setPlayerSplinterRotation(0); setP3ArchangelDuty(randomCrystalDropDuty()); if (preserveScore) setStats(current => ({ ...current, crystalDropped: false })); else { statsRef.current = { score: 1000, hits: 0, crystalDropped: false, time: 0 }; setStats(statsRef.current); setMistakes([]); wipeCountRef.current = 0; mainAbilityCastCountRef.current = 0; recoveryUseCountRef.current = 0; playerCrystalFailuresRef.current = 0; playerRuneFailuresRef.current = 0; playerPauseStartedRef.current = false; playerPauseCycleRef.current = false; phaseResultsRef.current = []; setPhaseResults([]); phaseStartRef.current = { key: phaseForEntry(entryMode), score: 1000, time: 0, hits: 0 }; resetPhaseRecovery(phaseForEntry(entryMode)); const nextAttempt = Math.max(0, Number(localStorage.getItem('lura-attempt-count')) || 0) + 1; localStorage.setItem('lura-attempt-count', String(nextAttempt)); setAttemptNumber(nextAttempt); setCompletionCopyStatus('') } lastMistakeRef.current = { label: '', time: -Infinity }; setWipeReason(''); setSoftWipeNotice(''); announceCrystalDuty([], entryCrystalAssignments, entryMode === 'arena1' ? 'Intermission' : entryMode === 'arena2' ? 'P2' : entryMode === 'arena3' ? 'P3' : 'P4', true); setEvent(entryMode === 'arena2' ? 'p2-countdown' : entryMode === 'arena3' ? 'p3-countdown' : entryMode === 'arena4' ? 'p4-countdown' : 'countdown'); setEventTime(0); setCycle(1); setP2Cycle(1); setP2Soaked(false); setP2OrbReturnAge(-1); p2OrbPlayerHitRef.current = false; p2OrbReturnAgeRef.current = -1; p2OrbReturnHitRef.current = false; p2ReturnSoakCheckedRef.current = false; setP3Round(1); setP3PoolHealth(Array(6).fill(P3_POOL_HEALTH)); setP3RuneOrder(shuffledRunes()); setP3RuneStep(0); p3ResolvedRunesRef.current = []; setP3ResolvedRunes([]); p3RuneCheckedRef.current = false; setP3ResolvedRunes([]); p3RuneCheckedRef.current = false; p3RuneContactRef.current = false; p3WrongRuneSinceRef.current = { rune: null, since: 0 }; p3WrongRuneContactRef.current = false; p3RuneFailedRef.current = false; p3StarsCycleRef.current = -1; p3LandingRequiredRef.current = difficulty === 'hard' || difficulty === 'normal' && Math.random() < .5; hitRef.current = false; unsafeRef.current = false; wipeRef.current = false; softWipeGuardRef.current = false; chooseBossPattern(oriented[assignment]); setPaused(false); setScreen('game')
     if (preserveScore) {
       bossHealthRef.current = preservedBossHealth
       setBossHealth(preservedBossHealth)
@@ -1116,7 +1120,7 @@ export default function App() {
     }
     frame = requestAnimationFrame(tick)
     return () => { cancelAnimationFrame(frame); window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); window.removeEventListener('blur', clearMovement) }
-  }, [screen, paused, movementSpeed, movementBonus, gameSpeed, event, beamAngles, npcSplinters, crystal, npcCrystals, keyBindings, difficulty, healthPotEnabled, shieldEnabled, assignment, p3Round, p3RuneOrder, p3ResolvedRunes, p3Positions, p4PatternSeed])
+  }, [screen, paused, movementSpeed, movementBonus, gameSpeed, event, beamAngles, npcSplinters, crystal, npcCrystals, keyBindings, difficulty, assignment, p3Round, p3RuneOrder, p3ResolvedRunes, p3Positions, p4PatternSeed])
 
   useEffect(() => {
     if (screen !== 'game' || paused) return
@@ -1368,14 +1372,14 @@ export default function App() {
   useEffect(() => { if (!npcCrystals.length || npcCrystalAge < 6) return; setNpcCrystals([]); setNpcCarrier(null); setNpcCrystalAge(0) }, [npcCrystals, npcCrystalAge])
 
   function useRecovery(action: 'healthPot' | 'shield') {
-    if (difficulty === 'easy' || difficulty === 'test' || jumpUntilRef.current > timeRef.current) return
-    const enabled = action === 'healthPot' ? healthPotEnabled : shieldEnabled
+    if (jumpUntilRef.current > timeRef.current) return
     const usedRef = action === 'healthPot' ? healthPotUsedRef : shieldUsedRef
-    if (!enabled || usedRef.current) return
+    if (usedRef.current) return
     usedRef.current = true
+    recoveryUseCountRef.current += 1
     if (action === 'healthPot') setHealthPotUsed(true)
     else setShieldUsed(true)
-    const reactedInTime = criticalDeadlineRef.current > timeRef.current && phaseRecoveryRef.current.status === 'pending'
+    const reactedInTime = healthRef.current < 30 && phaseRecoveryRef.current.status === 'pending'
     if (reactedInTime) {
       phaseRecoveryRef.current.status = 'passed'
       statsRef.current = { ...statsRef.current, score: statsRef.current.score + 50 }
@@ -1383,43 +1387,25 @@ export default function App() {
     }
     healthRef.current = 100
     setHealth(100)
-    criticalDeadlineRef.current = 0
-    setCriticalRemaining(0)
-    nextCriticalRef.current = Infinity
+    healthTargetRef.current = 100
+    nextHealthTargetRef.current = timeRef.current + 2 + Math.random() * 2
   }
   function updateHealth(dt: number) {
-    if (difficulty === 'easy' || difficulty === 'test' || !healthPotEnabled && !shieldEnabled || wipeRef.current) return
-    if (!HEALTH_REACTION_EVENTS.has(event)) {
-      if (criticalDeadlineRef.current > 0) criticalDeadlineRef.current += dt
-      if (Number.isFinite(nextCriticalRef.current)) nextCriticalRef.current += dt
+    if (wipeRef.current) return
+    if (event === 'countdown' || event === 'p2-countdown' || event === 'p3-countdown' || event === 'p3-flight' || event === 'p4-countdown' || event === 'p4-transition') {
+      if (Number.isFinite(nextHealthTargetRef.current)) nextHealthTargetRef.current += dt
       return
     }
-    if (criticalDeadlineRef.current > 0) {
-      const remaining = Math.max(0, criticalDeadlineRef.current - timeRef.current)
-      setCriticalRemaining(remaining)
-      if (remaining <= 0) {
-        criticalDeadlineRef.current = 0
-        if (phaseRecoveryRef.current.status === 'pending') {
-          phaseRecoveryRef.current.status = 'missed'
-          recordMistake('Missed the optional health response', 50)
-        }
-        healthRef.current = 100
-        setHealth(100)
-      }
+    if (event.startsWith('p3-') && event !== 'p3-landing' && event !== 'p3-approach') {
       return
     }
-    if (!event.startsWith('p3-')) {
-      const drift = Math.sin(timeRef.current * .63) > .48 ? .9 : -.42
-      healthRef.current = Math.max(30, Math.min(100, healthRef.current + drift * dt))
-      setHealth(healthRef.current)
+    if (timeRef.current >= nextHealthTargetRef.current) {
+      const target = randomHealthTarget()
+      healthTargetRef.current = target.value
+      nextHealthTargetRef.current = timeRef.current + Math.abs(target.value - healthRef.current) / 24 + target.holdSeconds
     }
-    if (phaseRecoveryRef.current.status === 'pending' && timeRef.current >= nextCriticalRef.current) {
-      healthRef.current = 12 + Math.random() * 7
-      setHealth(healthRef.current)
-      criticalDeadlineRef.current = timeRef.current + 3
-      setCriticalRemaining(3)
-      nextCriticalRef.current = Infinity
-    }
+    healthRef.current = approachHealthTarget(healthRef.current, healthTargetRef.current, dt)
+    setHealth(healthRef.current)
   }
   function beginP2Pull() {
     pullOriginRef.current = playerRef.current
@@ -1740,8 +1726,7 @@ export default function App() {
   const recoveryPasses = phaseResults.filter(result => result.recovery === 'passed').length
   const recoveryChallenges = phaseResults.filter(result => result.recovery).length
   const enabledExtras = [
-    healthPotEnabled ? 'Health potion' : '',
-    shieldEnabled ? 'Shield' : '',
+    recoveryUseCountRef.current ? `${recoveryUseCountRef.current} recovery item${recoveryUseCountRef.current === 1 ? '' : 's'} used` : '',
     mainAbilityUsed ? 'Main ability used' : '',
     bossPlayerDamageRef.current >= 10 ? `${Math.floor(bossPlayerDamageRef.current / 10) * 10}% boss damage · +${Math.floor(bossPlayerDamageRef.current / 10) * 50} points` : '',
   ].filter(Boolean)
@@ -1757,8 +1742,8 @@ export default function App() {
     fullSequence: fullSequenceComplete,
     mistakes: stats.hits,
     totalScore: stats.score,
-    healthPotEnabled,
-    shieldEnabled,
+    healthPotEnabled: true,
+    shieldEnabled: true,
     mainAbilityEnabled: mainAbilityUsed,
     mainAbilityCasts: mainAbilityCastCountRef.current,
     phaseResults,
@@ -1767,6 +1752,7 @@ export default function App() {
     crystalFailures: playerCrystalFailuresRef.current,
     runeFailures: playerRuneFailuresRef.current,
     allPhaseRecovery: fullSequenceComplete && phaseResults.every(result => result.recovery === 'passed'),
+    recoveryUses: recoveryUseCountRef.current,
     earlyKill: luraKilledEarly,
     p3EarlyClear: p3DamageClear,
   }
@@ -1906,7 +1892,7 @@ export default function App() {
     <section className="menu-grid setup-grid">
       <fieldset><legend>Difficulty & movement</legend><div className="difficulty-row">{(['test', 'easy', 'normal', 'hard'] as Difficulty[]).map(value => <button key={value} className={difficulty === value ? 'selected compact' : 'compact'} onClick={() => setDifficulty(value)}>{value}</button>)}</div><label className="profile-control">Your player name<input aria-label="Your player name" maxLength={18} value={playerName} onChange={event => setPlayerName(event.target.value)} placeholder={profiles[assignment].name} /></label><label className="speed-control">Movement speed <strong>{movementSpeed}</strong><input aria-label="Movement speed" type="range" min="8" max="35" step="1" value={movementSpeed} onChange={e => setMovementSpeed(Number(e.target.value))} /></label><label className="speed-control">Global timing <strong>{gameSpeed.toFixed(2)}×</strong><input aria-label="Global game speed" type="range" min="1" max="2.5" step=".25" value={gameSpeed} onChange={e => setGameSpeed(Number(e.target.value))} /></label><p className="hint">The 40% opening movement boost is always active for the first 5s of the positioning timer. {difficultySettings(difficulty).helper ? 'Full assignment guides enabled.' : difficulty === 'normal' ? 'Target ring appears within 45 yards; no guide arrow.' : 'Target ring appears within 22 yards; no guide arrow.'} {difficulty === 'test' ? 'Mechanics and penalties are recorded, but wipes never stop the run.' : difficulty === 'hard' ? 'A wipe ends the attempt immediately.' : 'The first wipe costs 500 points and the current sequence continues; the second ends it.'}</p></fieldset>
       <fieldset><legend>Selected assignment</legend><p className="assignment">Spot {assignment + 1}<span>Drag a player below or use the position slider.</span></p><input aria-label="Assignment position" type="range" min="0" max="19" value={assignment} onChange={e => setAssignment(Number(e.target.value))} /><label className="profile-control">Raid position name<input aria-label="Raid position name" maxLength={18} value={profiles[assignment].name} onChange={event => updateProfile({ name: event.target.value })} /></label><label className="profile-control">WoW class / color<select aria-label="Player class and color" value={profiles[assignment].playerClass} onChange={event => updateProfile({ playerClass: event.target.value as PlayerClass })}>{CLASS_OPTIONS.map(option => <option value={option.value} key={option.value}>{option.label}</option>)}</select></label></fieldset>
-      <fieldset><legend>Optional combat actions</legend><p className="hint">Health emergencies only occur during active mechanics: once on Normal and twice on Hard across the complete run. Each recovery ability has one use.</p><label className="checkbox-control disabled-on-easy"><input aria-label="Enable health potion" type="checkbox" disabled={difficulty === 'easy'} checked={healthPotEnabled} onChange={event => setHealthPotEnabled(event.target.checked)} /><span>Health potion<span>{keyLabel(keyBindings.healthPot)} · restores full health · one use</span></span></label><label className="checkbox-control disabled-on-easy"><input aria-label="Enable shield" type="checkbox" disabled={difficulty === 'easy'} checked={shieldEnabled} onChange={event => setShieldEnabled(event.target.checked)} /><span>Shield<span>{keyLabel(keyBindings.shield)} · restores full health · one use</span></span></label><p className="always-available-action"><strong>Main ability · {keyLabel(keyBindings.mainAbility)}</strong><span>Always available · one-second cast · +1 point when the cast completes.</span></p><label className="checkbox-control"><input aria-label="Show combat projectiles" type="checkbox" checked={combatProjectilesEnabled} onChange={event => setCombatProjectilesEnabled(event.target.checked)} /><span>Combat projectiles<span>Cosmetic, class-colored player and NPC attacks. No encounter mechanics are changed.</span></span></label></fieldset>
+      <fieldset><legend>Combat actions</legend><p className="hint">Health rises and falls throughout the encounter. Potion and shield each restore full health once per phase and refill at every transition. A successful low-health recovery earns +50 points; Hard requires one in every phase.</p><p className="always-available-action"><strong>Health potion · {keyLabel(keyBindings.healthPot)}</strong><span>Always available · one charge per phase · instant full heal.</span></p><p className="always-available-action"><strong>Shield · {keyLabel(keyBindings.shield)}</strong><span>Always available · one charge per phase · instant full heal.</span></p><p className="always-available-action"><strong>Main ability · {keyLabel(keyBindings.mainAbility)}</strong><span>Always available · one-second cast · +1 point when the cast completes.</span></p><label className="checkbox-control"><input aria-label="Show combat projectiles" type="checkbox" checked={combatProjectilesEnabled} onChange={event => setCombatProjectilesEnabled(event.target.checked)} /><span>Combat projectiles<span>Cosmetic, class-colored player and NPC attacks. No encounter mechanics are changed.</span></span></label></fieldset>
     </section>
     <div className="plan-heading audio-settings-heading"><p className="eyebrow">AUDIO</p><h2>Music &amp; encounter assistance</h2><p className="hint">Music is opt-in. Encounter effects and raid-lead speech remain separate so each channel can be enabled independently later.</p></div>
     <section className="audio-settings-grid">
@@ -2006,7 +1992,7 @@ export default function App() {
   const mainCastRemaining = mainCastState.phase === 'casting'
     ? mainCastState.remaining
     : 0
-  return <GameArena combatProjectilesEnabled={combatProjectilesEnabled} mainProjectileFiredAt={mainProjectileFiredAt} bossHealth={bossHealth} mainCastRemaining={mainCastRemaining} personalJumpProgress={personalJumpProgress} musicMuted={musicMuted} encounterSoundsEnabled={encounterSoundsEnabled} ttsAvailable={ttsAvailable} ttsEnabled={ttsEnabled} softWipeNotice={softWipeNotice} crystalDutyNotice={crystalDutyNotice} hudLayout={hudLayout} positions={activePositions} intermissionPositions={phasePositions} p2SoakPositions={p2Positions} p2SpreadPositions={p2SpreadPositions} p3Positions={p3Positions} profiles={gameProfiles} raidStart={startSlots[startSlot]} movementSpeed={movementSpeed} movementBonus={movementBonus} gameSpeed={gameSpeed} p2Cycle={p2Cycle} p2Soaked={p2Soaked} p2OrbReturnAge={p2OrbReturnAge} onP2OrbitAngle={angle => { p2OrbitAngleRef.current = angle }} p3Round={p3Round} p3ArchangelDuty={activeCrystalAssignments.includes(assignment) ? p3ArchangelDuty : null} crystalSpent={crystalSpent} p4Cycle={p4Cycle} p4PatternSeed={p4PatternSeed} p3PoolHealth={p3PoolHealth} onP3PoolOccupancy={occupancy => { p3PoolOccupancyRef.current = occupancy }} onP3LightCenters={centers => { p3NpcLightCentersRef.current = centers }} onP3RuneContacts={runes => { p3RuneContactsRef.current = runes }} p3RuneOrder={p3RuneOrder} p3RuneStep={p3RuneStep} p3ResolvedRunes={p3ResolvedRunes} health={health} criticalRemaining={criticalRemaining} healthPotEnabled={difficulty !== 'easy' && difficulty !== 'test' && healthPotEnabled} shieldEnabled={difficulty !== 'easy' && difficulty !== 'test' && shieldEnabled} healthPotUsed={healthPotUsed} shieldUsed={shieldUsed} keyBindings={keyBindings} crystalCarriers={activeCrystalCarriers} beamPattern={beamPattern} failureFlash={failureFlash} wipeReason={wipeReason} player={player} crystal={crystal} npcCrystals={npcCrystals} npcCarrier={npcCarrier} npcCrystalAge={npcCrystalAge} playerSplinterRotation={playerSplinterRotation} crystalAge={crystalAge} role={activeCrystalAssignments.includes(assignment) ? 'carrier' : 'non-carrier'} difficulty={difficulty} assignment={assignment} stats={stats} mistakes={mistakes} startSlotName={`S${startSlot + 1}`} paused={paused} event={event} eventTime={eventTime} beamAngles={beamAngles} npcSplinters={npcSplinters} cycle={cycle} setPaused={setPaused} setMusicMuted={setMusicMuted} setEncounterSoundsEnabled={setEncounterSoundsEnabled} setTtsEnabled={setTtsEnabled} onRetry={start} onExit={() => setScreen('menu')} onDrop={toggleCrystal} onCameraDirection={direction => { cameraForward.current = direction }} />
+  return <GameArena combatProjectilesEnabled={combatProjectilesEnabled} mainProjectileFiredAt={mainProjectileFiredAt} bossHealth={bossHealth} mainCastRemaining={mainCastRemaining} personalJumpProgress={personalJumpProgress} musicMuted={musicMuted} encounterSoundsEnabled={encounterSoundsEnabled} ttsAvailable={ttsAvailable} ttsEnabled={ttsEnabled} softWipeNotice={softWipeNotice} crystalDutyNotice={crystalDutyNotice} hudLayout={hudLayout} positions={activePositions} intermissionPositions={phasePositions} p2SoakPositions={p2Positions} p2SpreadPositions={p2SpreadPositions} p3Positions={p3Positions} profiles={gameProfiles} raidStart={startSlots[startSlot]} movementSpeed={movementSpeed} movementBonus={movementBonus} gameSpeed={gameSpeed} p2Cycle={p2Cycle} p2Soaked={p2Soaked} p2OrbReturnAge={p2OrbReturnAge} onP2OrbitAngle={angle => { p2OrbitAngleRef.current = angle }} p3Round={p3Round} p3ArchangelDuty={activeCrystalAssignments.includes(assignment) ? p3ArchangelDuty : null} crystalSpent={crystalSpent} p4Cycle={p4Cycle} p4PatternSeed={p4PatternSeed} p3PoolHealth={p3PoolHealth} onP3PoolOccupancy={occupancy => { p3PoolOccupancyRef.current = occupancy }} onP3LightCenters={centers => { p3NpcLightCentersRef.current = centers }} onP3RuneContacts={runes => { p3RuneContactsRef.current = runes }} p3RuneOrder={p3RuneOrder} p3RuneStep={p3RuneStep} p3ResolvedRunes={p3ResolvedRunes} health={health} healthPotUsed={healthPotUsed} shieldUsed={shieldUsed} keyBindings={keyBindings} crystalCarriers={activeCrystalCarriers} beamPattern={beamPattern} failureFlash={failureFlash} wipeReason={wipeReason} player={player} crystal={crystal} npcCrystals={npcCrystals} npcCarrier={npcCarrier} npcCrystalAge={npcCrystalAge} playerSplinterRotation={playerSplinterRotation} crystalAge={crystalAge} role={activeCrystalAssignments.includes(assignment) ? 'carrier' : 'non-carrier'} difficulty={difficulty} assignment={assignment} stats={stats} mistakes={mistakes} startSlotName={`S${startSlot + 1}`} paused={paused} event={event} eventTime={eventTime} beamAngles={beamAngles} npcSplinters={npcSplinters} cycle={cycle} setPaused={setPaused} setMusicMuted={setMusicMuted} setEncounterSoundsEnabled={setEncounterSoundsEnabled} setTtsEnabled={setTtsEnabled} onRetry={start} onExit={() => setScreen('menu')} onDrop={toggleCrystal} onCameraDirection={direction => { cameraForward.current = direction }} />
 }
 
 function rayHitsAny(point: Point, origin: Point, rotation = 0, minimumLength = 10, maximumLength = STAR_LENGTH): boolean { const dx = point.x - origin.x; const dy = point.y - origin.y; const length = Math.hypot(dx, dy); if (length < minimumLength || length > maximumLength) return false; const angle = Math.atan2(dy, dx); return Array.from({ length: 6 }, (_, i) => Math.abs(Math.atan2(Math.sin(angle - rotation - i * Math.PI / 3), Math.cos(angle - rotation - i * Math.PI / 3))) < .12).some(Boolean) }
@@ -2142,6 +2128,7 @@ function CreatorCard() {
 function BuildIndicator({ inGame = false }: { inGame?: boolean }) {
   const [availableVersion, setAvailableVersion] = useState<VersionManifest | null>(null)
   const [dismissedRevision, setDismissedRevision] = useState('')
+  const [copyStatus, setCopyStatus] = useState('')
   const built = new Date(APP_BUILD_TIME)
   const timestamp = Number.isNaN(built.getTime())
     ? APP_BUILD_TIME
@@ -2161,11 +2148,21 @@ function BuildIndicator({ inGame = false }: { inGame?: boolean }) {
     return () => { active = false; window.clearInterval(timer) }
   }, [])
   const showUpdate = availableVersion && availableVersion.revision !== dismissedRevision
+  const buildLabel = `v${APP_VERSION} · ${APP_GIT_REVISION} · ${timestamp}`
+  async function copyBuildVersion() {
+    try {
+      await navigator.clipboard.writeText(buildLabel)
+      setCopyStatus('Copied')
+    } catch {
+      setCopyStatus('Copy failed')
+    }
+    window.setTimeout(() => setCopyStatus(''), 1600)
+  }
   return <>
     {showUpdate && <aside className="update-banner" role="alert"><span><strong>New trainer version available</strong> · {availableVersion.revision}</span><button onClick={() => window.location.reload()}>Load new version</button><button className="secondary" onClick={() => setDismissedRevision(availableVersion.revision)}>Later</button></aside>}
     <aside className={`build-indicator${inGame ? ' game-build-indicator' : ''}`} aria-label="Build information" title={`Built ${Number.isNaN(built.getTime()) ? APP_BUILD_TIME : built.toISOString()}`}>
-      <a href={PROJECT_URL} target="_blank" rel="noreferrer">v{APP_VERSION} · {APP_GIT_REVISION} · {timestamp} · GitHub ↗</a>
-      <a className="changelog-link" href={CHANGELOG_URL} target="_blank" rel="noreferrer">Changelog ↗</a>
+      <button className="build-copy" type="button" onClick={copyBuildVersion} title="Copy build version">{copyStatus || `${buildLabel} · Copy`}</button>
+      <nav aria-label="Project links"><a href={PROJECT_URL} target="_blank" rel="noreferrer">GitHub ↗</a><a className="changelog-link" href={CHANGELOG_URL} target="_blank" rel="noreferrer">Changelog ↗</a><a className="issue-link" href={ISSUE_URL} target="_blank" rel="noreferrer">File an issue ↗</a></nav>
     </aside>
   </>
 }
@@ -2197,7 +2194,7 @@ function HudLayoutEditor({ layout, onChange, onReset }: { layout: HudLayout; onC
   </section>
 }
 
-function GameArena(props: { combatProjectilesEnabled: boolean; mainProjectileFiredAt: number | null; bossHealth: number; mainCastRemaining: number; personalJumpProgress: number; musicMuted: boolean; encounterSoundsEnabled: boolean; ttsAvailable: boolean; ttsEnabled: boolean; softWipeNotice: string; crystalDutyNotice: string; hudLayout: HudLayout; positions: Assignment[]; intermissionPositions: Assignment[]; p2SoakPositions: Assignment[]; p2SpreadPositions: Assignment[]; p3Positions: Assignment[]; profiles: PlayerProfile[]; raidStart: Point; movementSpeed: number; movementBonus: boolean; gameSpeed: number; p2Cycle: number; p2Soaked: boolean; p2OrbReturnAge: number; onP2OrbitAngle: (angle: number) => void; p3Round: number; p3ArchangelDuty: 1 | 2 | null; crystalSpent: boolean; p4Cycle: number; p4PatternSeed: number; p3PoolHealth: number[]; onP3PoolOccupancy: (occupancy: number[]) => void; onP3LightCenters: (centers: Point[]) => void; onP3RuneContacts: (runes: RuneSymbol[]) => void; p3RuneOrder: RuneSymbol[]; p3RuneStep: number; p3ResolvedRunes: RuneSymbol[]; health: number; criticalRemaining: number; healthPotEnabled: boolean; shieldEnabled: boolean; healthPotUsed: boolean; shieldUsed: boolean; keyBindings: KeyBindings; crystalCarriers: number[]; beamPattern: 'line' | 'gap'; failureFlash: boolean; wipeReason: string; player: Point; crystal: Point | null; npcCrystals: Point[]; npcCarrier: number | null; npcCrystalAge: number; playerSplinterRotation: number; crystalAge: number; role: Role; difficulty: Difficulty; assignment: number; stats: GameStats; mistakes: Mistake[]; startSlotName: string; paused: boolean; event: EventKind; eventTime: number; beamAngles: number[]; npcSplinters: number[]; cycle: number; setPaused: (p: boolean) => void; setMusicMuted: (muted: boolean) => void; setEncounterSoundsEnabled: (enabled: boolean) => void; setTtsEnabled: (enabled: boolean) => void; onRetry: () => void; onExit: () => void; onDrop: () => void; onCameraDirection: (direction: Point) => void }) {
+function GameArena(props: { combatProjectilesEnabled: boolean; mainProjectileFiredAt: number | null; bossHealth: number; mainCastRemaining: number; personalJumpProgress: number; musicMuted: boolean; encounterSoundsEnabled: boolean; ttsAvailable: boolean; ttsEnabled: boolean; softWipeNotice: string; crystalDutyNotice: string; hudLayout: HudLayout; positions: Assignment[]; intermissionPositions: Assignment[]; p2SoakPositions: Assignment[]; p2SpreadPositions: Assignment[]; p3Positions: Assignment[]; profiles: PlayerProfile[]; raidStart: Point; movementSpeed: number; movementBonus: boolean; gameSpeed: number; p2Cycle: number; p2Soaked: boolean; p2OrbReturnAge: number; onP2OrbitAngle: (angle: number) => void; p3Round: number; p3ArchangelDuty: 1 | 2 | null; crystalSpent: boolean; p4Cycle: number; p4PatternSeed: number; p3PoolHealth: number[]; onP3PoolOccupancy: (occupancy: number[]) => void; onP3LightCenters: (centers: Point[]) => void; onP3RuneContacts: (runes: RuneSymbol[]) => void; p3RuneOrder: RuneSymbol[]; p3RuneStep: number; p3ResolvedRunes: RuneSymbol[]; health: number; healthPotUsed: boolean; shieldUsed: boolean; keyBindings: KeyBindings; crystalCarriers: number[]; beamPattern: 'line' | 'gap'; failureFlash: boolean; wipeReason: string; player: Point; crystal: Point | null; npcCrystals: Point[]; npcCarrier: number | null; npcCrystalAge: number; playerSplinterRotation: number; crystalAge: number; role: Role; difficulty: Difficulty; assignment: number; stats: GameStats; mistakes: Mistake[]; startSlotName: string; paused: boolean; event: EventKind; eventTime: number; beamAngles: number[]; npcSplinters: number[]; cycle: number; setPaused: (p: boolean) => void; setMusicMuted: (muted: boolean) => void; setEncounterSoundsEnabled: (enabled: boolean) => void; setTtsEnabled: (enabled: boolean) => void; onRetry: () => void; onExit: () => void; onDrop: () => void; onCameraDirection: (direction: Point) => void }) {
   const [zoomDisplay, setZoomDisplay] = useState(16)
   const [wipeMinimized, setWipeMinimized] = useState(false)
   const [failureLogCopied, setFailureLogCopied] = useState(false)
@@ -2372,7 +2369,7 @@ function GameArena(props: { combatProjectilesEnabled: boolean; mainProjectileFir
                       : <>SPLINTER SET <strong>{props.cycle}/6</strong></>}
         </div>
         {props.crystal && <div className="crystal-countdown" style={{ left: `${props.hudLayout.crystal.x}%`, top: `${props.hudLayout.crystal.y}%` }}>{props.event === 'p3-archangel' ? <>PROTECTION<br /><strong>{Math.max(1, Math.ceil(6 - props.eventTime))}</strong></> : <>PICK UP IN<br /><strong>{finalRecovery ? Math.max(1, Math.ceil(2 - props.eventTime)) : Math.max(1, Math.ceil(6 - props.crystalAge))}</strong></>}</div>}
-        {(phaseThree || phaseFour || props.healthPotEnabled || props.shieldEnabled) && <div className={`player-health${props.criticalRemaining > 0 ? ' critical-health' : ''}`} style={{ left: `${props.hudLayout.playerHealth.x}%`, top: `${props.hudLayout.playerHealth.y}%` }}><div className="health-track"><i style={{ width: `${props.health}%` }} /></div><span>{Math.round(props.health)}%{props.criticalRemaining > 0 ? ` · REACT ${props.criticalRemaining.toFixed(1)}s` : ''}</span><div className="health-abilities">{props.healthPotEnabled && <b className={props.healthPotUsed ? 'used' : ''}>{keyLabel(props.keyBindings.healthPot)} POT</b>}{props.shieldEnabled && <b className={props.shieldUsed ? 'used' : ''}>{keyLabel(props.keyBindings.shield)} SHIELD</b>}</div></div>}
+        <div className={`player-health health-${healthBand(props.health)}`} style={{ left: `${props.hudLayout.playerHealth.x}%`, top: `${props.hudLayout.playerHealth.y}%` }}><div className="health-abilities" aria-label="Recovery charges"><b className={props.healthPotUsed ? 'used' : ''} title={props.healthPotUsed ? 'Health potion used until next phase' : 'Health potion ready'}>🧪 <span>{keyLabel(props.keyBindings.healthPot)}</span></b><b className={props.shieldUsed ? 'used' : ''} title={props.shieldUsed ? 'Shield used until next phase' : 'Shield ready'}>🛡 <span>{keyLabel(props.keyBindings.shield)}</span></b></div><div className="health-track"><i style={{ width: `${props.health}%` }} /></div><span>{Math.round(props.health)}%</span></div>
         <><div className="boss-health" style={{ left: `${props.hudLayout.bossHealth.x}%`, top: `${props.hudLayout.bossHealth.y}%` }}><span>L’URA · {props.bossHealth.toFixed(1)}%</span><div className="boss-health-track"><i style={{ width: `${props.bossHealth}%` }} /></div><small>{phaseFour ? 'L’URA falls steadily over the 88-second phase' : 'The veil shudders with every step.'}</small></div>{props.mainCastRemaining > 0 && <div className="player-castbar main-cast" style={{ left: `${props.hudLayout.castbar.x}%`, top: `${props.hudLayout.castbar.y}%` }}><i className="main-cast-fill" style={{ animationDuration: `${MAIN_ABILITY_CAST_SECONDS / Math.max(.01, props.gameSpeed)}s`, animationPlayState: props.paused ? 'paused' : 'running' }} /><b>MAIN ABILITY · {props.mainCastRemaining.toFixed(1)}s</b></div>}</>
         <div className="controls"><span className="controls-copy">{keyLabel(props.keyBindings.forward)}/{keyLabel(props.keyBindings.left)}/{keyLabel(props.keyBindings.backward)}/{keyLabel(props.keyBindings.right)} move · {keyLabel(props.keyBindings.jump)} jump · {keyLabel(props.keyBindings.pause)} pause · left-drag look · right-drag view + face · wheel zoom · Zoom {zoomDisplay.toFixed(1)} yd · {phaseFour ? props.event === 'p4-countdown' ? 'Movement unlocks after the countdown and raid knockup.' : props.event === 'p4-transition' ? 'The 21-second Heaven & Hell clock is running; adds begin when the raid lands.' : p4SplinterActive ? 'Three players alternate left, right, left with Starsplinter; Heaven & Hell remains on its global timer.' : p4RelocationProgress(props.p4Cycle, props.eventTime) !== null ? 'Move with the yellow protection zone and leave the consumed quarter behind.' : props.p4Cycle >= 5 ? 'No safe quarter remains. Hold until Lura falls.' : 'Stack safely; Heaven & Hell resolves every 21 seconds.' : p3 ? p3.detail : p2 ? p2.detail : countdown ? `Wait for the timer at ${props.startSlotName}` : positioning ? props.difficulty === 'easy' || props.difficulty === 'test' ? `Follow the teal guide to Spot ${props.assignment + 1}` : `Find Spot ${props.assignment + 1}; its ring appears only when close` : finalRecovery ? 'Two seconds to recover the final crystal before the Phase 2 center jump' : props.role === 'carrier' ? `${keyLabel(props.keyBindings.crystal)} drops the crystal anywhere · move away · pick up in time` : props.cycle === 6 ? 'Final set: all 20 players marked' : 'Dodge the ten marked Starsplinters'}</span><BuildIndicator inGame /></div>
       </div>

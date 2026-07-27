@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Made health potion and shield permanent one-charge-per-phase actions, added
+  continuously changing health with held low-health moments and three HUD
+  color bands, and limited missed-recovery penalties to Hard mode.
+- Split recovery achievements into using a recovery item at least once and
+  completing a successful low-health response in every phase.
+- Made the build identifier copyable and separated direct links to GitHub, the
+  changelog, and the repository issue form.
 - Added a localhost-only feedback inbox at `/inbox` that saves pasted,
   dropped, or selected screenshots together with short Markdown notes and
   stable reference IDs under `inbox/`.

@@ -116,6 +116,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `FR-041` | Implemented | Add a localhost sound timing lab to the existing soundboard with looping mechanic visuals, an exact event-boundary flash, adjustable and persisted sound-start offset and playback rate, measured reset values, and one-click Markdown export for the complete calibration table. |
 | `FR-042` | Implemented | Profile and optimize renderer and simulation hot paths without changing encounter mechanics, timings, collision rules, or visual meaning. Stable transient P3/P4 geometry is reused across frames while genuinely animated geometry remains dynamic. |
 | `FR-043` | Implemented | Add a localhost-only feedback inbox at `/inbox`: paste a clipboard screenshot or drag/drop/select an image, add a short note, and save both under `inbox/` with one stable reference ID while the normal Vite demo is running. |
+| `FR-044` | Implemented | Make health potion and shield permanently available with one charge each per phase; continuously vary player health with occasional held low-health windows, color the health bar green/orange/red at the specified thresholds, refill both charges at phase transitions, award recovery achievements for first use and every-phase success, and penalize a missed phase recovery only on Hard. |
 | `CR-037` | Superseded | A direct Discord profile needs a numeric user ID. The generic Discord application link was removed again; Twitch remains the direct creator contact. |
 | `CR-038` | Implemented | Link the displayed BattleTag to Pestivator’s Raider.IO profile because Battle.net has no stable public friend-add URL for a BattleTag. |
 | `CR-039` | Implemented | Record every tagged request before implementation and require focused automated regression coverage before marking it implemented. |
@@ -166,6 +167,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-084` | Implemented | Replace the pre-Phase-4 boss-health instruction with the atmospheric line “The veil shudders with every step.” |
 | `CR-085` | Implemented | Keep “The Stars Can Wait” focused on reducing L’ura to 0% during Phase 3; remove north-regroup and Phase 4 tactical directions from the achievement and legacy certificate text. |
 | `CR-086` | Implemented | Add an accessible in-arena Raidlead mute button that immediately toggles the separately persisted TTS preference without affecting music or encounter sounds. |
+| `CR-087` | Implemented | Make the displayed version/build identifier copyable while keeping GitHub as a direct repository link and adding separate Changelog and File an issue links to the project’s tracked pages. |
 | `SPEC-001` | Implemented | Define the stable ticket lifecycle: assign an ID, record intent, add focused regression coverage, validate, and commit. |
 | `SPEC-002` | Implemented | Define the creator business card’s stable content, readability, compact layout, and external-link behavior. |
 | `SPEC-003` | Implemented | Define the P3-to-P4 north gather, shared knockup origin, and phase-local HUD boundary. |
@@ -175,7 +177,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `SPEC-007` | Implemented | Define the setup-page hierarchy and responsive grouping for game, input, HUD, sharing, and phase planning. Every top-level topic uses the same eyebrow, title, and helper-text pattern: Game settings / Practice configuration, Keyboard settings / Keyboard & mouse controls, Interface / HUD positions, Raid planning / Layouts and sharing, followed by an individually titled section for every phase map. The top setup menu links only to the four top-level topics and scrolls without replacing a shared raid-plan hash. |
 | `SPEC-008` | Implemented | Define Phase 3 ground-Soak light coverage: crystal NPCs support from outside the puddle, coverage takes priority over ideal separation, and non-crystal players perform the Soak. |
 | `SPEC-009` | Implemented | Define the independent Music, encounter Sounds, and TTS controls plus the phase-by-phase raid-lead and mechanic cue catalog before sound effects are sourced. See [`audio-cues.md`](audio-cues.md). |
-| `SPEC-010` | Implemented | Replace repeatable difficulty/duty achievement variants with 21 meaningful canonical badges grouped into Foundations, Precision, Tools of the Trade, and Feats of Movement; allow related badges to unlock together, retain one future P1 teaser, and render at most two badge cards per row. |
+| `SPEC-010` | Implemented | Replace repeatable difficulty/duty achievement variants with meaningful canonical badges grouped into Foundations, Precision, Tools of the Trade, and Feats of Movement; allow related badges to unlock together, retain one future P1 teaser, and render at most two badge cards per row. |
 | `BUG-008` | Implemented | Remove the premature 20-second P3 Soak failure; unfinished pools are now checked only when Big Boom resolves at 40 seconds. |
 | `BUG-009` | Implemented | Enforce P3 Stars orb spacing and isolate the southwest/southeast fields with clearance from the room divider. |
 | `BUG-010` | Implemented | Use the NPC protection bubble when the player's crystal duty belongs to the other Dark Archangel set; only consume the player's crystal on its assigned set. |
@@ -350,7 +352,8 @@ multiplier scales the complete simulation uniformly.
   cast bars, health bars, and wipe explanations.
 - Non-terminal failure recording in Test, a recoverable first wipe in
   Easy/Normal, and immediate terminal behavior in Hard.
-- Optional health potion, shield, and one-second main-ability gameplay.
+- Always-available per-phase health potion and shield charges plus one-second
+  main-ability gameplay.
 - Per-phase score and time tracking.
 - Git-revision build identification, a tracked GitHub changelog, and a
   five-minute deployed-version check with an explicit reload prompt.
@@ -404,8 +407,8 @@ assets:
 - `FR-023`: Random player/NPC ownership of the Phase 4 protection zone.
 - `FR-026`: Laser, Starsplinter, and orb sound effects.
 - `FR-027`: Optional API-backed highscores, achievements, and Battle.net login.
-- Per-phase refills and certificate scoring for optional potion/shield
-  challenges.
+- Per-phase potion/shield refills, Hard-mode recovery requirements, and
+  certificate scoring for successful low-health responses.
 - Verifiable completion links. A trustworthy proof cannot be created with a
   secret embedded in a static GitHub Pages client; it would require a backend
   or external signing service.

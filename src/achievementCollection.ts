@@ -20,6 +20,7 @@ export type AchievementId =
   | 'flawless-p3'
   | 'flawless-p4'
   | 'prepared-for-every-phase'
+  | 'never-caught-unprepared'
   | 'always-be-casting'
   | 'hard-score-flawless'
   | 'both-sides-of-crystal'
@@ -77,7 +78,8 @@ const DEFINITIONS: AchievementDefinition[] = [
   badge('flawless-p2', 'Precision', 'Perfectly Orb-ital', 'Every beam, circle, and returning orb exactly where it belongs.', 'Complete Phase 2 with zero recorded mistakes.', '◉'),
   badge('flawless-p3', 'Precision', 'Rune Without Error', 'Read the stars, finish the Soaks, and never lose the light.', 'Complete Phase 3 with zero recorded mistakes.', '✣'),
   badge('flawless-p4', 'Precision', 'Heaven, Hell, No Hits', 'Four quarters, three splinters, zero excuses.', 'Complete Phase 4 with zero recorded mistakes.', '✦'),
-  badge('prepared-for-every-phase', 'Tools of the Trade', 'Prepared for Anything', 'Keep an answer ready for every phase of the encounter.', 'Successfully use a health potion or shield in every phase of a full run.', '✚'),
+  badge('prepared-for-every-phase', 'Tools of the Trade', 'Prepared for Anything', 'A timely answer turns a dangerous health bar into another solved mechanic.', 'Use a health potion or shield at least once.', '✚'),
+  badge('never-caught-unprepared', 'Tools of the Trade', 'Never Caught Unprepared', 'Every phase asks a new question. Every time, you have an answer ready.', 'Successfully use a health potion or shield in every phase of a full run.', '✙'),
   badge('always-be-casting', 'Tools of the Trade', 'Always Be Casting', 'Even perfect footwork leaves room for one more spell.', 'Complete at least one Main Ability cast in a finished attempt.', '➶'),
   badge('hard-score-flawless', 'Feats of Movement', 'Eleven Hundred and Flawless', 'Cross the midnight line without leaving a mark behind.', 'Clear the full sequence on Hard with zero mistakes and more than 1,100 points.', '★'),
   badge('both-sides-of-crystal', 'Feats of Movement', 'Both Sides of the Crystal', 'Master the burden—and the space around the one who carries it.', 'Complete the full journey once with crystal duty and once without it.', '◈'),
@@ -126,7 +128,8 @@ export function currentRunAchievements(summary: AchievementSummary): Achievement
   if (phaseFlawless(results, 'p2')) ids.push('flawless-p2')
   if (phaseFlawless(results, 'p3')) ids.push('flawless-p3')
   if (phaseFlawless(results, 'p4')) ids.push('flawless-p4')
-  if (summary.fullSequence && summary.allPhaseRecovery) ids.push('prepared-for-every-phase')
+  if ((summary.recoveryUses ?? 0) > 0) ids.push('prepared-for-every-phase')
+  if (summary.fullSequence && summary.allPhaseRecovery) ids.push('never-caught-unprepared')
   if ((summary.mainAbilityCasts ?? (summary.mainAbilityEnabled ? 1 : 0)) > 0) ids.push('always-be-casting')
   if (summary.fullSequence && difficulty === 'hard' && summary.mistakes === 0 && summary.totalScore > 1100) ids.push('hard-score-flawless')
   if (summary.earlyKill) ids.push('early-kill')

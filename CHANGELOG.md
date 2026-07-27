@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added a localhost-only feedback inbox at `/inbox` that saves pasted,
+  dropped, or selected screenshots together with short Markdown notes and
+  stable reference IDs under `inbox/`.
 - Rebuilt Phase 2 around one continuous twelve-orb roster: each beam now
   converts four existing purple orbs to yellow before those same orbs return,
   eliminating duplicate, colliding, or direction-changing orb sets.

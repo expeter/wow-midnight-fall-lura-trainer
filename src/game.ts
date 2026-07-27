@@ -592,6 +592,19 @@ export function p4NpcSplinterPosition(stack: Point, center: Point, ordinal: numb
   return { x: stack.x + (final.x - stack.x) * progress, y: stack.y + (final.y - stack.y) * progress }
 }
 
+export function p4RenderedNpcSplinterOrigin(renderedNpcPositions: Point[], ordinal: number, fallback: Point): Point {
+  return renderedNpcPositions[ordinal * 3 + 1] ?? fallback
+}
+
+export function p4RenderedNpcSplinterHitsPlayer(renderedNpcPositions: Point[], ordinal: number, fallback: Point, rotation: number, player: Point, playerRadius = 3): boolean {
+  return p4SplinterHitsGroup(
+    p4RenderedNpcSplinterOrigin(renderedNpcPositions, ordinal, fallback),
+    rotation,
+    player,
+    playerRadius,
+  )
+}
+
 export function keepP4NpcInProtection(position: Point, groupCenter: Point, margin = .5): Point {
   const dx = position.x - groupCenter.x
   const dy = position.y - groupCenter.y

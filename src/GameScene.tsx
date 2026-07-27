@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { angleToward, assignmentRevealDistance, constrainP3NpcTargetToSide, crystalCarrierPosition, distance, distanceToSegment, hasActiveP3CrystalLight, jumpHeights, keepP3CrystalPoolCovered, keepP3NpcInSoak, keepP4NpcInProtection, npcEntryPosition, OPENING_BOOST_SECONDS, P1_STAR_LENGTH, P2_BEAM_SECONDS, P2_ORBIT_SPEED, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_INNER_RADIUS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p2NpcRoamingPosition, p2NpcShouldReturnToSoak, p2OrbPosition, p2OrbReturnState, p2ReturningOrbPositions, p3ActiveCrystalAssignments, P3_APPROACH_NPC_SPEED_MULTIPLIER, p3ArchangelStackPosition, p3BossPosition, p3CrystalPoolCoverageTargets, p3FlightPosition, P3_FLIGHT_SECONDS, p3LandingGroupIndex, p3LandingPlanIndex, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3NpcPoolAssignment, p3NpcRuneReactionDelay, p3NpcSoaksActive, p3PoolCenters, p3PoolLayoutId, p3ProtectionBubbleCenter, p3RuneEdges, p3RuneOrbs, p3RunePartnerPosition, p3SideForPosition, p3StarsTiming, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, p4EncounterBoxStates, p4FrontSoakerPosition, p4GroupPosition, p4NpcRelocationPace, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4StackPosition, p4TankConeActive, p4TransitionStartPosition, P4_FRONT_CONE_RANGE, P4_HEAVEN_MOVE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, roamingNpcPosition, separateP3NpcTarget, shouldHoldP3RunePartner, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type RuneSymbol } from './game'
-import { p3SpreadPosition, p4TankKillsBox } from './game'
+import { p3SpreadPosition, p4RenderedNpcSplinterOrigin, p4TankKillsBox } from './game'
 import { isP3RaidMemberVisible } from './game'
 import { isInsideP3Pool } from './game'
 import { combatProjectileHeight, combatProjectileImpactPoint, combatProjectilePosition, combatProjectileShape, combatProjectileTargetHeight, combatProjectileTravelSeconds, combatProjectilesActive, COMBAT_PROJECTILE_IMPACT_SECONDS, MAX_VISIBLE_NPC_PROJECTILES, npcProjectileShots, type CombatProjectileShape } from './projectiles'
@@ -30,6 +30,7 @@ interface SceneProps {
   onP3PoolOccupancy: (occupancy: number[]) => void
   onP3LightCenters: (centers: Point[]) => void
   onP3RuneContacts: (runes: RuneSymbol[]) => void
+  onP4NpcPositions: (positions: Point[]) => void
   p3RuneOrder: RuneSymbol[]
   p3RuneStep: number
   p3ResolvedRunes: RuneSymbol[]
@@ -1123,6 +1124,7 @@ export default function GameScene(props: SceneProps) {
         ? npcPositions.filter((_, npcIndex) => isP3RaidMemberVisible(state.positions[state.assignment], state.positions[npcProfileIndices[npcIndex]], WORLD.center, true) && activeP3Crystals.includes(npcProfileIndices[npcIndex]))
         : []
       state.onP3LightCenters(npcP3LightCenters)
+      if (phaseFour) state.onP4NpcPositions(npcPositions)
       const playerProjectileVisible = state.combatProjectilesEnabled
       const projectilesVisible = state.combatProjectilesEnabled && combatProjectilesActive(state.event)
       const projectileBossCenter = phaseThree ? p3BossPosition(playerP3Side, WORLD.center, state.p3Round) : WORLD.center
@@ -1435,8 +1437,9 @@ export default function GameScene(props: SceneProps) {
             const age = p4SplinterAge(p4VisualCycle, state.eventTime, ordinal)
             if (age < 0 || age > P4_SPLINTER_DETONATION_SECONDS) continue
             const playerDuty = p4PlayerSplinterDuty(state.assignment, p4VisualCycle, state.p4PatternSeed) === ordinal
-            const origin = playerDuty ? state.player : npcPositions[Math.min(npcPositions.length - 1, ordinal * 3 + 1)]
             const rotation = p4SplinterRotation(p4VisualCycle, ordinal, state.p4PatternSeed)
+            const fallbackOrigin = p4NpcSplinterPosition(stack, WORLD.center, ordinal, age, rotation)
+            const origin = playerDuty ? state.player : p4RenderedNpcSplinterOrigin(npcPositions, ordinal, fallbackOrigin)
             const explosionOpacity = age < P4_SPLINTER_DETONATION_SECONDS - .45 ? .11 : .95 - (age - (P4_SPLINTER_DETONATION_SECONDS - .45)) / .45 * .5
             for (let ray = 0; ray < 6; ray++) addSplinterWedge(hazards, origin, rotation + ray * Math.PI / 3, 42, 0x67cfff, explosionOpacity)
           }

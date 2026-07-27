@@ -3,7 +3,7 @@ import { angleToward, ARENA, assignmentRevealDistance, bossBeamHitsPlayer, canPi
 import { keepP3CrystalPoolCovered, keepP3NpcInSoak, keepP4NpcInProtection, p3CrystalPoolCoverageTargets, P3_APPROACH_NPC_SPEED_MULTIPLIER, P3_APPROACH_SECONDS, P3_MEMORY_START_SECONDS, P3_POOL_CRYSTAL_CLEARANCE, P3_RUNE_HALF_CLEARANCE, P3_SAFE_ZONE_GRACE_SECONDS, P3_SAFE_ZONE_PENALTY_PER_SECOND, P3_SECTOR_SECONDS, p3UnsafePenaltyTicks, P4_SPLINTER_RETURN_SECONDS } from './game'
 import { p3ProtectionBubbleCenter } from './game'
 import type { Point } from './game'
-import { P3_LIGHT_RADIUS, p3SpreadPosition, p4TankKillsBox, P4_TANK_KILL_RADIUS } from './game'
+import { P3_LIGHT_RADIUS, p3SpreadPosition, p4RenderedNpcSplinterHitsPlayer, p4RenderedNpcSplinterOrigin, p4TankKillsBox, P4_TANK_KILL_RADIUS } from './game'
 import { isP3RaidMemberVisible, p3ActiveCrystalAssignments } from './game'
 import { bossDamageScoreBonus, isInsideP3Pool, p4BossHealthWithPlayerDamage, p4StartingBossState, P1_STAR_LENGTH, preP4BossHealth, shouldHoldP3RunePartner, shouldTriggerP3EarlyClear, starsplinterHitsCrystalCarrier } from './game'
 
@@ -445,6 +445,16 @@ describe('Intermission game rules', () => {
     expect(p4SplinterResolutionActive(P4_SPLINTER_DETONATION_SECONDS + .3)).toBe(true)
     expect(p4SplinterResolutionActive(P4_SPLINTER_DETONATION_SECONDS + 3)).toBe(true)
     expect(P4_GROUP_HIT_RADIUS).toBe(10)
+  })
+  it('uses the rendered NPC as the Phase 4 Starsplinter collision origin', () => {
+    const rendered = Array.from({ length: 8 }, (_, index) => ({ x: index * 10, y: index }))
+    const fallback = { x: 999, y: 999 }
+    expect(p4RenderedNpcSplinterOrigin(rendered, 0, fallback)).toEqual(rendered[1])
+    expect(p4RenderedNpcSplinterOrigin(rendered, 1, fallback)).toEqual(rendered[4])
+    expect(p4RenderedNpcSplinterOrigin(rendered, 2, fallback)).toEqual(rendered[7])
+    expect(p4RenderedNpcSplinterOrigin([], 2, fallback)).toEqual(fallback)
+    expect(p4RenderedNpcSplinterHitsPlayer(rendered, 0, fallback, 0, { x: 32, y: 1 })).toBe(true)
+    expect(p4RenderedNpcSplinterHitsPlayer(rendered, 0, fallback, 0, { x: 32, y: 8 })).toBe(false)
   })
   it('places NPC Splinters where their beams clear the stack', () => {
     const center = { x: 480, y: 270 }

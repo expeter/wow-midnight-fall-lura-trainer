@@ -5,12 +5,27 @@ import { describe, expect, it } from 'vitest'
 const soundboard = readFileSync(join(process.cwd(), 'tools/voice-soundboard/index.html'), 'utf8')
 
 describe('audio review soundboard', () => {
-  it('covers the complete catalog with four candidates for active cues and explicit silence elsewhere', () => {
+  it('covers the complete catalog with candidates for active cues and explicit silence elsewhere', () => {
     const cueRows = [...soundboard.matchAll(/^\s+\["([^"]+)", "[^"]+", "[^"]+", (auditions\("[^"]+", "[^"]+"\)|\[\])\],?$/gm)]
     expect(cueRows).toHaveLength(20)
     expect(cueRows.filter(([, , candidates]) => candidates.startsWith('auditions'))).toHaveLength(14)
     expect(cueRows.filter(([, , candidates]) => candidates === '[]')).toHaveLength(6)
     expect(soundboard).toContain('No effect by design')
+  })
+
+  it('ships fifteen original fine-tuning variants for the weakest mechanic cues', () => {
+    const variants = [
+      'laser-ion-snap', 'laser-neon-buzz', 'laser-void-sizzle',
+      'splinter-glass-break', 'splinter-arc-pop', 'splinter-prism-collapse',
+      'soak-deep-hum', 'soak-ward-resonance', 'soak-heartbeat-bed',
+      'archangel-doom-rise', 'archangel-veil-tear', 'archangel-impact-tail',
+      'ward-aegis-bloom', 'ward-crystal-shell', 'ward-holy-pulse',
+    ]
+    expect(variants).toHaveLength(15)
+    variants.forEach(variant => {
+      expect(existsSync(join(process.cwd(), 'tools/voice-soundboard/sfx', `tune-${variant}.wav`))).toBe(true)
+      expect(soundboard).toContain(`tune-${variant}`)
+    })
   })
 
   it('ships three generated mechanic-length Midnight variants for every active cue', () => {
@@ -72,5 +87,15 @@ describe('audio review soundboard', () => {
     expect(soundboard).toContain('timingOffsetNumber.value = timingOffset.value')
     expect(soundboard).toContain('timingOffset.value = timingOffsetNumber.value')
     expect(soundboard).toContain('offset: Number(timingOffsetNumber.value) / 1000')
+  })
+
+  it('fine-tunes candidate, offset, and rate against visible event and sound boundaries', () => {
+    expect(soundboard).toContain('id="timing-sound"')
+    expect(soundboard).toContain('id="timing-rate-number"')
+    expect(soundboard).toContain('data-offset-nudge="-1"')
+    expect(soundboard).toContain('data-offset-nudge="1"')
+    expect(soundboard).toContain('class="timing-sound-marker"')
+    expect(soundboard).toContain('timingSaved[preset.id] = { offset, rate, sound }')
+    expect(soundboard).toContain('| Cue | Sound | Start offset | Playback rate |')
   })
 })

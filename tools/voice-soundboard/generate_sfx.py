@@ -53,6 +53,22 @@ SOUNDS: dict[str, tuple[float, list[Tone], float]] = {
     "error-void-warning": (.42, [Tone(0, .42, 260, 150, .54, 12), Tone(.05, .32, 620, 240, .26)], .08),
     "error-rune-fail": (.34, [Tone(0, .15, 940, 410, .45), Tone(.17, .17, 760, 260, .45)], .055),
     "error-crystal-danger": (.54, [Tone(0, .54, 180, 180, .42, 46), Tone(.03, .48, 370, 190, .29, 31)], .085),
+    # FR-042: compact original alternatives designed for frame-level timing.
+    "tune-laser-ion-snap": (.16, [Tone(0, .16, 4200, 780, .52, 73), Tone(.01, .12, 1700, 3600, .28, 41)], .035),
+    "tune-laser-neon-buzz": (.24, [Tone(0, .24, 980, 1320, .46, 118), Tone(.02, .2, 2260, 1840, .24, 67)], .018),
+    "tune-laser-void-sizzle": (.32, [Tone(0, .32, 2600, 420, .42, 31), Tone(.06, .24, 540, 3100, .3, 89)], .075),
+    "tune-splinter-glass-break": (.22, [Tone(0, .1, 4800, 1700, .5, 91), Tone(.055, .165, 2600, 380, .36, 47)], .095),
+    "tune-splinter-arc-pop": (.14, [Tone(0, .14, 1850, 260, .58, 39), Tone(.015, .08, 4100, 980, .3)], .12),
+    "tune-splinter-prism-collapse": (.3, [Tone(0, .3, 3300, 410, .43, 61), Tone(.035, .22, 1250, 2800, .3, 23)], .055),
+    "tune-soak-deep-hum": (3.0, [Tone(0, 3.0, 54, 68, .34, 1.7), Tone(.1, 2.8, 108, 92, .2, 3.2)], .004),
+    "tune-soak-ward-resonance": (3.0, [Tone(0, 3.0, 72, 96, .29, 2.4), Tone(.2, 2.6, 216, 176, .16, 5.5)], .006),
+    "tune-soak-heartbeat-bed": (3.0, [Tone(0, 3.0, 48, 52, .31, 1.25), Tone(.05, 2.9, 144, 126, .14, 2.5)], .009),
+    "tune-archangel-doom-rise": (5.0, [Tone(0, 5.0, 38, 740, .38, 4), Tone(.45, 4.45, 92, 1840, .23, 13)], .035),
+    "tune-archangel-veil-tear": (5.0, [Tone(0, 5.0, 64, 420, .34, 7), Tone(2.9, 2.0, 380, 2760, .3, 37)], .055),
+    "tune-archangel-impact-tail": (5.0, [Tone(0, 4.7, 46, 220, .31, 3), Tone(3.8, 1.2, 2400, 120, .45, 52)], .07),
+    "tune-ward-aegis-bloom": (.72, [Tone(0, .72, 180, 1380, .36, 9), Tone(.12, .54, 740, 2220, .28, 18)], .012),
+    "tune-ward-crystal-shell": (.48, [Tone(0, .48, 920, 3100, .4, 44), Tone(.03, .36, 1560, 780, .27, 22)], .02),
+    "tune-ward-holy-pulse": (.62, [Tone(0, .62, 260, 820, .4, 6), Tone(.16, .42, 1040, 1680, .25, 14)], .009),
 }
 
 SUPPLIED = {

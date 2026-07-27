@@ -123,6 +123,23 @@
       font: 700 13px ui-monospace, monospace;
       font-variant-numeric: tabular-nums;
     }
+    .timing-nudges { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; }
+    .timing-nudges button { padding: 6px 3px; font: 700 11px ui-monospace, monospace; }
+    .timing-sound-marker {
+      position: absolute;
+      z-index: 9;
+      top: 12px;
+      left: 50%;
+      translate: -50% 0;
+      padding: 5px 9px;
+      border: 1px solid #5ef0d0;
+      border-radius: 999px;
+      color: #bfffee;
+      background: rgba(5,37,38,.88);
+      box-shadow: 0 0 18px rgba(63,255,215,.62);
+      font: 900 11px ui-monospace, monospace;
+      opacity: 0;
+    }
     .timing-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .timing-actions button { padding: 10px; }
     .timing-actions .primary { color: #11101b; background: var(--mint); }
@@ -182,18 +199,34 @@
         <div class="timing-bubble"></div>
         <div class="timing-rune">X</div>
         <div class="timing-impact"></div>
+        <div class="timing-sound-marker">SOUND START</div>
         <div class="timing-clock">0.000s</div>
       </div>
       <div class="timing-controls">
         <label>Mechanic<select id="timing-cue" aria-label="Timing mechanic"></select></label>
+        <label>Sound candidate<select id="timing-sound" aria-label="Timing sound candidate"></select></label>
         <label>
           Sound start relative to visual moment <strong id="timing-offset-value">0 ms</strong>
           <span class="timing-offset-controls">
             <input id="timing-offset" type="range" min="-6000" max="1000" step="1" value="0">
             <input id="timing-offset-number" type="number" min="-6000" max="1000" step="1" value="0" aria-label="Exact sound start offset in milliseconds">
           </span>
+          <span class="timing-nudges" aria-label="Nudge sound offset">
+            <button type="button" data-offset-nudge="-100">−100</button>
+            <button type="button" data-offset-nudge="-10">−10</button>
+            <button type="button" data-offset-nudge="-1">−1</button>
+            <button type="button" data-offset-nudge="1">+1</button>
+            <button type="button" data-offset-nudge="10">+10</button>
+            <button type="button" data-offset-nudge="100">+100</button>
+          </span>
         </label>
-        <label>Playback rate <strong id="timing-rate-value">1.00×</strong><input id="timing-rate" type="range" min=".4" max="3" step=".01" value="1"></label>
+        <label>
+          Playback rate <strong id="timing-rate-value">1.00×</strong>
+          <span class="timing-offset-controls">
+            <input id="timing-rate" type="range" min=".4" max="3" step=".01" value="1">
+            <input id="timing-rate-number" type="number" min=".4" max="3" step=".01" value="1" aria-label="Exact sound playback rate">
+          </span>
+        </label>
         <div class="timing-actions">
           <button class="primary" type="button" id="timing-play">▶ Loop</button>
           <button type="button" id="timing-stop">Stop</button>
@@ -260,7 +293,22 @@
       { id: "error-pulse-fast", name: "Error Pulse · faster attack", seconds: .69 },
       { id: "error-void-warning", name: "Void Warning" },
       { id: "error-rune-fail", name: "Rune Fail" },
-      { id: "error-crystal-danger", name: "Crystal Danger" }
+      { id: "error-crystal-danger", name: "Crystal Danger" },
+      { id: "tune-laser-ion-snap", name: "Ion Snap", seconds: .16 },
+      { id: "tune-laser-neon-buzz", name: "Neon Buzz", seconds: .24 },
+      { id: "tune-laser-void-sizzle", name: "Void Sizzle", seconds: .32 },
+      { id: "tune-splinter-glass-break", name: "Glass Break", seconds: .22 },
+      { id: "tune-splinter-arc-pop", name: "Arc Pop", seconds: .14 },
+      { id: "tune-splinter-prism-collapse", name: "Prism Collapse", seconds: .3 },
+      { id: "tune-soak-deep-hum", name: "Deep Hum", seconds: 3 },
+      { id: "tune-soak-ward-resonance", name: "Ward Resonance", seconds: 3 },
+      { id: "tune-soak-heartbeat-bed", name: "Heartbeat Bed", seconds: 3 },
+      { id: "tune-archangel-doom-rise", name: "Doom Rise", seconds: 5 },
+      { id: "tune-archangel-veil-tear", name: "Veil Tear", seconds: 5 },
+      { id: "tune-archangel-impact-tail", name: "Impact Tail", seconds: 5 },
+      { id: "tune-ward-aegis-bloom", name: "Aegis Bloom", seconds: .72 },
+      { id: "tune-ward-crystal-shell", name: "Crystal Shell", seconds: .48 },
+      { id: "tune-ward-holy-pulse", name: "Holy Pulse", seconds: .62 }
     ];
     const midnightCueLengths = {
       "laser-charge": 2.8, "laser-fire": .62, "stars-connect": 1.8,
@@ -278,7 +326,18 @@
         seconds
       }));
     });
-    const auditions = (cue, earlier) => [earlier, ...midnightVariants.map(variant => `midnight-${cue}-${variant}`)];
+    const fineTuneVariants = {
+      "stars-connect": ["tune-laser-ion-snap", "tune-laser-neon-buzz", "tune-laser-void-sizzle"],
+      "splinter-detonate": ["tune-splinter-glass-break", "tune-splinter-arc-pop", "tune-splinter-prism-collapse"],
+      "soak-progress": ["tune-soak-deep-hum", "tune-soak-ward-resonance", "tune-soak-heartbeat-bed"],
+      "archangel-charge": ["tune-archangel-doom-rise", "tune-archangel-veil-tear", "tune-archangel-impact-tail"],
+      "protection-active": ["tune-ward-aegis-bloom", "tune-ward-crystal-shell", "tune-ward-holy-pulse"]
+    };
+    const auditions = (cue, earlier) => [
+      earlier,
+      ...midnightVariants.map(variant => `midnight-${cue}-${variant}`),
+      ...(fineTuneVariants[cue] || [])
+    ];
     const soundCues = [
       ["laser-charge", "Boss beam telegraph", "2.8-second rise aligned to the actionable telegraph.", auditions("laser-charge", "laser-magical-whoosh")],
       ["laser-fire", "Boss beam becomes lethal", "Compact discharge shared by boss beams and Stars.", auditions("laser-fire", "laser-magical-whoosh")],
@@ -337,9 +396,11 @@
     ];
     const timingStage = document.querySelector("#timing-stage");
     const timingCue = document.querySelector("#timing-cue");
+    const timingSound = document.querySelector("#timing-sound");
     const timingOffset = document.querySelector("#timing-offset");
     const timingOffsetNumber = document.querySelector("#timing-offset-number");
     const timingRate = document.querySelector("#timing-rate");
+    const timingRateNumber = document.querySelector("#timing-rate-number");
     const timingOffsetValue = document.querySelector("#timing-offset-value");
     const timingRateValue = document.querySelector("#timing-rate-value");
     const timingStatus = document.querySelector("#timing-status");
@@ -350,6 +411,7 @@
     const timingBubble = timingStage.querySelector(".timing-bubble");
     const timingRune = timingStage.querySelector(".timing-rune");
     const timingImpact = timingStage.querySelector(".timing-impact");
+    const timingSoundMarker = timingStage.querySelector(".timing-sound-marker");
     const timingRays = Array.from({ length: 6 }, (_, index) => {
       const ray = index ? timingStage.appendChild(timingStage.querySelector(".timing-ray")?.cloneNode() || document.createElement("i")) : timingStage.querySelector(".timing-ray");
       if (!ray) {
@@ -392,6 +454,7 @@
       return {
         offset: Number(timingOffsetNumber.value) / 1000,
         rate: Number(timingRate.value),
+        sound: timingSound.value || preset.sound,
         preset
       };
     }
@@ -399,10 +462,15 @@
     function loadTimingPreset() {
       const preset = timingPreset();
       const savedTiming = timingSaved[preset.id] || {};
+      const candidates = soundCues.find(cue => cue.id === preset.id)?.candidates || [preset.sound];
+      const selectedSound = candidates.includes(savedTiming.sound) ? savedTiming.sound : preset.sound;
+      timingSound.innerHTML = candidates.map(candidate => `<option value="${candidate}">${effectLabel(candidate)}</option>`).join("");
+      timingSound.value = selectedSound;
       const offsetMilliseconds = Math.round((savedTiming.offset ?? preset.offset) * 1000);
       timingOffset.value = offsetMilliseconds;
       timingOffsetNumber.value = offsetMilliseconds;
       timingRate.value = savedTiming.rate ?? preset.rate;
+      timingRateNumber.value = savedTiming.rate ?? preset.rate;
       updateTimingLabels();
       if (timingPlaying) restartTimingLoop();
       else renderTimingVisual(0);
@@ -415,8 +483,8 @@
     }
 
     function persistTiming() {
-      const { preset, offset, rate } = timingValues();
-      timingSaved[preset.id] = { offset, rate };
+      const { preset, offset, rate, sound } = timingValues();
+      timingSaved[preset.id] = { offset, rate, sound };
       localStorage.setItem("lura-sfx-timing-review", JSON.stringify(timingSaved));
       updateTimingLabels();
       if (timingPlaying) restartTimingLoop();
@@ -436,11 +504,15 @@
     }
 
     function renderTimingVisual(age) {
-      const { preset } = timingValues();
+      const { preset, offset } = timingValues();
       const moment = preset.moment;
       const before = age < moment;
       const impactAge = age - moment;
-      timingClock.textContent = `${age.toFixed(3)}s · event ${impactAge >= 0 ? "+" : ""}${impactAge.toFixed(3)}s`;
+      const soundAge = age - (moment + offset);
+      timingClock.textContent = `${age.toFixed(3)}s · event ${impactAge >= 0 ? "+" : ""}${impactAge.toFixed(3)}s · sound ${soundAge >= 0 ? "+" : ""}${soundAge.toFixed(3)}s`;
+      timingSoundMarker.style.opacity = soundAge >= 0 && soundAge < .16
+        ? String(Math.max(0, 1 - soundAge / .16))
+        : "0";
       timingBeam.style.opacity = preset.visual === "laser" && before && age > .35 ? String(Math.min(.95, (age - .35) * 1.2)) : preset.visual === "archangel" && before ? String(.35 + age / moment * .55) : "0";
       timingBeam.style.transform = preset.visual === "archangel" ? "rotate(25deg)" : "rotate(-18deg)";
       timingRays.forEach(ray => {
@@ -477,8 +549,8 @@
       if (!timingPlaying) return;
       const ctx = audioContext();
       await ctx.resume();
-      const { preset, offset, rate } = timingValues();
-      const buffer = await getEffectBuffer(preset.sound);
+      const { preset, offset, rate, sound } = timingValues();
+      const buffer = await getEffectBuffer(sound);
       if (!timingPlaying) return;
       const delay = .08;
       timingStartedAt = performance.now() + delay * 1000;
@@ -591,6 +663,7 @@
     }
 
     timingCue.addEventListener("change", loadTimingPreset);
+    timingSound.addEventListener("change", persistTiming);
     timingOffset.addEventListener("input", () => {
       timingOffsetNumber.value = timingOffset.value;
       persistTiming();
@@ -600,22 +673,40 @@
       timingOffset.value = timingOffsetNumber.value;
       persistTiming();
     });
-    timingRate.addEventListener("input", persistTiming);
+    document.querySelector(".timing-nudges").addEventListener("click", event => {
+      const button = event.target.closest("[data-offset-nudge]");
+      if (!button) return;
+      const minimum = Number(timingOffsetNumber.min);
+      const maximum = Number(timingOffsetNumber.max);
+      const next = Math.max(minimum, Math.min(maximum, Number(timingOffsetNumber.value) + Number(button.dataset.offsetNudge)));
+      timingOffsetNumber.value = String(next);
+      timingOffset.value = String(next);
+      persistTiming();
+    });
+    timingRate.addEventListener("input", () => {
+      timingRateNumber.value = timingRate.value;
+      persistTiming();
+    });
+    timingRateNumber.addEventListener("input", () => {
+      if (timingRateNumber.value === "" || !timingRateNumber.validity.valid) return;
+      timingRate.value = timingRateNumber.value;
+      persistTiming();
+    });
     document.querySelector("#timing-play").addEventListener("click", restartTimingLoop);
     document.querySelector("#timing-stop").addEventListener("click", stopTiming);
     document.querySelector("#timing-reset").addEventListener("click", () => {
       const preset = timingPreset();
-      timingSaved[preset.id] = { offset: preset.offset, rate: preset.rate };
+      timingSaved[preset.id] = { offset: preset.offset, rate: preset.rate, sound: preset.sound };
       localStorage.setItem("lura-sfx-timing-review", JSON.stringify(timingSaved));
       loadTimingPreset();
       timingStatus.textContent = "Restored the waveform-measured starting point.";
     });
     document.querySelector("#timing-copy").addEventListener("click", async () => {
       const rows = timingPresets.map(preset => {
-        const value = timingSaved[preset.id] || { offset: preset.offset, rate: preset.rate };
-        return `| ${preset.id} | ${Math.round(value.offset * 1000)} ms | ${Number(value.rate).toFixed(2)}× |`;
+        const value = timingSaved[preset.id] || { offset: preset.offset, rate: preset.rate, sound: preset.sound };
+        return `| ${preset.id} | ${value.sound || preset.sound} | ${Math.round(value.offset * 1000)} ms | ${Number(value.rate).toFixed(2)}× |`;
       }).join("\n");
-      const review = `Lura sound timing review\n\n| Cue | Start offset | Playback rate |\n| --- | ---: | ---: |\n${rows}`;
+      const review = `Lura sound timing review\n\n| Cue | Sound | Start offset | Playback rate |\n| --- | --- | ---: | ---: |\n${rows}`;
       try {
         await navigator.clipboard.writeText(review);
         timingStatus.textContent = "Timing table copied to clipboard.";

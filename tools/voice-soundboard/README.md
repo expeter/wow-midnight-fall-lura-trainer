@@ -10,18 +10,23 @@ Open `index.html` in a browser to compare individual **Left**, **Right**, and
 the Web Audio clock at `0.000s`, `1.000s`, and `2.000s`; this avoids the timing
 drift of chained media-element playback. Notes, the preferred voice, and the
 20-row encounter table are saved only in that browser's local storage.
-Fourteen active rows compare the strongest prior candidate with three new
-dark-arcane variants; the other six rows preserve the review decision to use no
-effect. Candidate buttons show their exact duration. **Copy review** exports
-the complete decision table as Markdown in one pass.
+Fourteen active rows compare the strongest prior candidate with three dark-arcane
+variants. Five cues that needed more exploration also include three compact
+fine-tuning variants, for fifteen additional original sounds in total. The other
+six rows preserve the review decision to use no effect. Candidate buttons show
+their exact duration. **Copy review** exports the complete decision table as
+Markdown in one pass.
 
 The **Visual timing lab** loops simplified versions of the ten currently
 enabled mechanic effects. Its gold flash marks the exact appearance,
 disappearance, impact, or confirmation boundary used for tuning. Sound start
-offset and playback rate are independently adjustable, restart on a clean loop,
-and persist in `lura-sfx-timing-review`. **Copy tuning** exports every calibrated
-offset and rate as one Markdown table. These values remain review data until
-they are deliberately transferred into `src/encounterSounds.ts`.
+candidate, offset, and playback rate are independently adjustable, restart on a
+clean loop, and persist in `lura-sfx-timing-review`. Offset and rate both have
+exact number fields; ±1/10/100 ms buttons make A/B nudging quick. A mint marker
+shows the scheduled sound start while the gold flash shows the mechanic boundary.
+**Copy tuning** exports the chosen sound, calibrated offset, and rate as one
+Markdown table. These values remain review data until they are deliberately
+transferred into `src/encounterSounds.ts`.
 
 Some browsers restrict `file://` audio loading. If the clips do not play, serve
 this directory locally:
@@ -41,6 +46,11 @@ second for returning-orb travel, three seconds for the optional Soak hum, five
 seconds for Dark Archangel, and compact sub-second resolution cues. The
 deterministic `Veil`, `Rift`, and `Abyss` treatments share a dark arcane palette
 without being identical.
+
+The additional `tune-*` set focuses on short reactive laser and splinter
+transients, three-second low Soak beds, five-second Archangel rises, and compact
+protection activations. They are synthesized from deterministic oscillators and
+noise in `generate_sfx.py`, so they require no third-party sound license.
 
 | Group | Supplied starting point | Original alternatives |
 | --- | --- | --- |

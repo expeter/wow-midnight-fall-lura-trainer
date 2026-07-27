@@ -102,7 +102,7 @@ phase-specific raid-plan persistence.
   after two seconds without resetting or discontinuing its rotation.
 - The lethal laser then sweeps exactly 45 degrees before all eight beams
   disappear.
-- One beam begins ten degrees to either side of the boss. The intended movement
+- One beam begins five degrees to either side of the boss. The intended movement
   is to cross that beam, then follow it without being caught by another beam,
   while continuing to dodge the glaives.
 - NPCs play the rotating beams perfectly. They cross during the low telegraph,

@@ -10,7 +10,7 @@ import GameScene from './GameScene'
 import { advanceMainAbilityCast, idleMainAbilityCast, mainAbilityElapsedSeconds, MAIN_ABILITY_CAST_SECONDS, requestMainAbilityCast, type MainAbilityCastState } from './mainAbility'
 import { encounterSoundCuesForState, playEncounterSound } from './encounterSounds'
 import { approachHealthTarget, healthBand, randomHealthTarget, unusedRecoveryPenalty } from './healthRecovery'
-import { P1_CRYSTAL_PICKUP_SECONDS, P1_DEFAULT_INTERRUPT_KEY, P1_GLAIVE_INITIAL_SPEED_MULTIPLIER, P1_GLAIVE_RETURN_SPEED_MULTIPLIER, P1_GLAIVE_TELEGRAPH_SECONDS, P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_INTERRUPT_CAST_COUNT, P1_INTERRUPT_CAST_SECONDS, P1_MEMORY_DELAY_SECONDS, P1_MEMORY_POSITION_SECONDS, P1_MEMORY_SWEEP_SECONDS, P1_OUTER_RADIUS, P1_REACTIVE_SOAK_SECONDS, P1_ROTATING_BEAM_ACTIVE_SECONDS, P1_ROTATING_BEAM_TELEGRAPH_SECONDS, P1_SEQUENCE_COUNT, p1AddGlaiveSet, p1AdvanceGlaiveSet, p1BeamAngles, p1BossEncounterPosition, p1ContinuousBeamTime, p1CrystalPickupSequence, p1CrystalSpawnPosition, p1GlaiveContactStarted, p1GlaiveSet, p1InterruptAssignment, p1InterruptState, p1MemoryOrder, p1MemorySlotValid, p1ReactiveSoaks, p1RotatingBeams, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
+import { P1_CRYSTAL_PICKUP_SECONDS, P1_DEFAULT_INTERRUPT_KEY, P1_GLAIVE_INITIAL_SPEED_MULTIPLIER, P1_GLAIVE_RETURN_SPEED_MULTIPLIER, P1_GLAIVE_TELEGRAPH_SECONDS, P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_INTERRUPT_CAST_COUNT, P1_INTERRUPT_CAST_SECONDS, P1_MEMORY_DELAY_SECONDS, P1_MEMORY_POSITION_SECONDS, P1_MEMORY_SWEEP_SECONDS, P1_OUTER_RADIUS, P1_REACTIVE_SOAK_SECONDS, P1_ROTATING_BEAM_ACTIVE_SECONDS, P1_ROTATING_BEAM_TELEGRAPH_SECONDS, P1_SEQUENCE_COUNT, p1AddGlaiveSet, p1AdvanceGlaiveSet, p1BossEncounterPosition, p1ContinuousBeamTime, p1CrystalPickupSequence, p1CrystalSpawnPosition, p1GlaiveContactStarted, p1GlaiveSet, p1InterruptAssignment, p1InterruptState, p1MemoryOrder, p1MemorySlotValid, p1ReactiveSoaks, p1RotatingBeamHitsPoint, p1RotatingBeams, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
 import './styles.css'
 
 type Screen = 'menu' | 'game' | 'results'
@@ -1081,11 +1081,16 @@ export default function App() {
       if (event === 'p1-beams' && !p1SoakHitRef.current) {
         const p1Boss = p1BossEncounterPosition(p1BossOpening, p1Positions.slice(0, 2), p1Sequence, 'p1-beam-telegraph', 0, WORLD.center)
         const beams = p1RotatingBeams(p1Seed, p1Sequence, 0, Math.PI / 16, Math.atan2(p1Boss.y - WORLD.center.y, p1Boss.x - WORLD.center.x))
-        const angles = p1BeamAngles(beams, p1ContinuousBeamTime(event, eventTimeRef.current))
-        const beamHit = angles.some(angle => distanceToSegment(playerRef.current, WORLD.center, {
-          x: WORLD.center.x + Math.cos(angle) * WORLD.outerRadius,
-          y: WORLD.center.y + Math.sin(angle) * WORLD.outerRadius,
-        }) <= 4)
+        const currentBeamTime = p1ContinuousBeamTime(event, eventTimeRef.current)
+        const previousBeamTime = p1ContinuousBeamTime(event, Math.max(0, eventTimeRef.current - dt))
+        const beamHit = p1RotatingBeamHitsPoint(
+          playerRef.current,
+          WORLD.center,
+          beams,
+          previousBeamTime,
+          currentBeamTime,
+          P1_OUTER_RADIUS,
+        )
         if (beamHit) {
           p1SoakHitRef.current = true
           const soaks = p1ReactiveSoaks(p1Seed + p1Sequence, playerRef.current, 0, 18)

@@ -8,6 +8,7 @@ import {
   P1_INTERMISSION_POSITION_SECONDS,
   P1_MAX_GLAIVE_SETS,
   P1_MEMORY_BEAM_LENGTH,
+  P1_MEMORY_NPC_SETTLE_SECONDS,
   P1_OUTER_RADIUS,
   P1_ROTATING_BEAM_ACTIVE_SECONDS,
   p1AddGlaiveSet,
@@ -37,6 +38,7 @@ import {
   p1PlayerSoakFailed,
   p1Progress,
   p1ReactiveSoaks,
+  p1RotatingBeamHitsPoint,
   p1RotatingBeams,
   p1ValidateMemoryContacts,
 } from './p1'
@@ -169,7 +171,10 @@ describe('P1 headless mechanics', () => {
   it('lets memory NPCs roam before settling and makes beam NPCs cross then follow a rotating ray', () => {
     const target = { x: 400, y: 400 }
     expect(p1NpcMemoryPosition(target, 3, 1, true)).not.toEqual(target)
+    expect(p1NpcMemoryPosition(target, 3, 5.4, true)).not.toEqual(target)
+    expect(p1NpcMemoryPosition(target, 3, 6.5, true)).not.toEqual(target)
     expect(p1NpcMemoryPosition(target, 3, 7, true)).toEqual(target)
+    expect(P1_MEMORY_NPC_SETTLE_SECONDS).toBe(1.5)
     const boss = { x: 400, y: 420 }
     const crossing = p1NpcBeamPosition(3, .5, boss, Math.PI / 3)
     const following = p1NpcBeamPosition(3, 2.5, boss, Math.PI / 3)
@@ -241,15 +246,30 @@ describe('P1 headless mechanics', () => {
     expect(p1MemorySweepAngle(0, 5, outward)).toBeCloseTo(outward + Math.PI * 2)
   })
 
-  it('rotates eight evenly spaced beams from a seeded ten-degree side offset', () => {
+  it('rotates eight evenly spaced beams from a seeded five-degree side offset', () => {
     const openingAngle = Math.PI * 2 / 3
     const beams = p1RotatingBeams(99, 0, 10, Math.PI / 4, openingAngle)
     const initial = p1BeamAngles(beams, 10)
     const later = p1BeamAngles(beams, 11)
     expect(initial).toHaveLength(8)
-    expect(Math.abs(initial[0] - openingAngle)).toBeCloseTo(Math.PI / 18)
+    expect(Math.abs(initial[0] - openingAngle)).toBeCloseTo(Math.PI / 36)
     expect(initial[1] - initial[0]).toBeCloseTo(Math.PI / 4)
     expect(Math.abs(later[0] - initial[0])).toBeCloseTo(Math.PI / 4)
+  })
+
+  it('detects a rotating beam sweeping across a player between rendered frames', () => {
+    const center = { x: 0, y: 0 }
+    const beams = {
+      startsAt: 0,
+      telegraphEndsAt: 2,
+      initialAngle: 0,
+      angularSpeed: 1,
+      direction: 1 as const,
+    }
+    const caughtBetweenFrames = { x: Math.cos(.1) * 100, y: Math.sin(.1) * 100 }
+    const safelyBehind = { x: Math.cos(-.2) * 100, y: Math.sin(-.2) * 100 }
+    expect(p1RotatingBeamHitsPoint(caughtBetweenFrames, center, beams, 0, .2, 260)).toBe(true)
+    expect(p1RotatingBeamHitsPoint(safelyBehind, center, beams, 0, .1, 260)).toBe(false)
   })
 
   it('assigns one reactive soak to an NPC and the other to the player for two seconds', () => {

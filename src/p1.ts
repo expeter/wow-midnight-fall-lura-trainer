@@ -21,9 +21,10 @@ export const P1_MEMORY_RADIUS = 20
 export const P1_MEMORY_BEAM_LENGTH = 35
 export const P1_MEMORY_DELAY_SECONDS = 2
 export const P1_MEMORY_POSITION_SECONDS = 7
+export const P1_MEMORY_NPC_SETTLE_SECONDS = 1.5
 export const P1_MEMORY_SWEEP_SECONDS = 5
 export const P1_ROTATING_BEAM_COUNT = 8
-export const P1_ROTATING_BEAM_OFFSET_DEGREES = 10
+export const P1_ROTATING_BEAM_OFFSET_DEGREES = 5
 export const P1_ROTATING_BEAM_TELEGRAPH_SECONDS = 2
 export const P1_ROTATING_BEAM_ACTIVE_SECONDS = 4
 export const P1_ROTATING_BEAM_MAX_BOSS_ARC = Math.PI / 4
@@ -331,7 +332,9 @@ export function p1BossEncounterPosition(
 
 export function p1NpcMemoryPosition(target: P1Point, npcIndex: number, eventTime: number, positioning: boolean): P1Point {
   if (!positioning) return { ...target }
-  const remainingChaos = Math.max(0, Math.min(1, (P1_MEMORY_POSITION_SECONDS - 1.25 - eventTime) / (P1_MEMORY_POSITION_SECONDS - 1.25)))
+  const settleStartsAt = P1_MEMORY_POSITION_SECONDS - P1_MEMORY_NPC_SETTLE_SECONDS
+  const settleProgress = Math.max(0, Math.min(1, (eventTime - settleStartsAt) / P1_MEMORY_NPC_SETTLE_SECONDS))
+  const remainingChaos = 1 - settleProgress
   const radius = remainingChaos * (9 + npcIndex % 4 * 2.5)
   const angle = npcIndex * 2.399963 + eventTime * (1.35 + npcIndex % 3 * .18)
   return {
@@ -460,6 +463,30 @@ export function p1BeamAngles(beams: P1RotatingBeams, now: number): number[] {
     beams.initialAngle
       + index * Math.PI * 2 / P1_ROTATING_BEAM_COUNT
       + elapsed * beams.angularSpeed * beams.direction)
+}
+
+export function p1RotatingBeamHitsPoint(
+  point: P1Point,
+  center: P1Point,
+  beams: P1RotatingBeams,
+  previousTime: number,
+  currentTime: number,
+  maximumRadius: number,
+  halfWidth = 4,
+): boolean {
+  const dx = point.x - center.x
+  const dy = point.y - center.y
+  const radius = Math.hypot(dx, dy)
+  if (radius > maximumRadius || radius < 1e-6) return false
+  const pointAngle = Math.atan2(dy, dx)
+  const angularTolerance = Math.asin(Math.min(1, halfWidth / Math.max(radius, halfWidth)))
+  const elapsed = Math.max(0, currentTime - previousTime)
+  const sweptAngle = elapsed * Math.abs(beams.angularSpeed)
+  return p1BeamAngles(beams, previousTime).some(startAngle => {
+    const directionalDelta = ((beams.direction * (pointAngle - startAngle)) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2)
+    return directionalDelta <= sweptAngle + angularTolerance
+      || directionalDelta >= Math.PI * 2 - angularTolerance
+  })
 }
 
 export function p1MemorySweepAngle(startsAt: number, now: number, openingAngle = -Math.PI / 2): number {

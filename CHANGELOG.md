@@ -51,6 +51,12 @@
   while preserving any existing saved preference.
 - CR-120: Rendered P1’s memory verification as one 35-yard
   Starsplinter-style sweep beam.
+- BUG-078: Changed lethal P1 rotating-beam collision from a single-frame ray
+  sample to a swept-angle check, so a beam catching a player between frames
+  reliably starts the reactive Soaks.
+- CR-121 / CR-122: Kept memory NPCs chaotic until the final 1.5-second
+  settling window, retained the new single 35-yard memory sweep, and moved the
+  nearest rotating-beam opener from ten degrees to five degrees beside L’ura.
 
 ## 0.2.0 — 2026-07-27
 

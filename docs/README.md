@@ -121,6 +121,8 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-118` | Implemented behind localhost preview | Show the established carried-crystal marker on every collected P1 carrier without adding a protection/safe-zone ring. |
 | `CR-119` | Implemented | Default vertical mouse-camera inversion to enabled on empty browser storage while retaining an existing user’s saved selection. |
 | `CR-120` | Implemented behind localhost preview | Use one 35-yard Starsplinter-style beam for the P1 memory-game verification sweep. |
+| `CR-121` | Implemented behind localhost preview | Keep marked P1 NPCs roaming through most of the memory positioning window and only converge them during the final 1.5 seconds, preventing the correct order from being revealed too early. |
+| `CR-122` | Implemented behind localhost preview | Start the nearest P1 rotating beam five degrees to either side of L’ura instead of ten, leaving a reachable step-through into the follow movement without changing its randomized side. |
 | `FR-031` | Implemented | Add an isolated local voice soundboard with five CMU Flite voices, individual Left/Right/Move auditions, exact clocked rhythm previews, a preferred-voice choice, local notes, reproducible generation, and license guidance. |
 | `FR-032` | Implemented | Prepare a standalone tested P1 rules module for later integration without changing the live game: interrupts, crystals, reflective expiring glaives, ordered runes, rotating beams, reactive Soaks, and the Intermission transition. |
 | `FR-033` | Implemented | Add a persistent browser-local achievement collection beneath raid planning with immutable first-earned timestamps, run history for cross-duty feats, and a compact top-page badge summary linking to the full catalogue. |
@@ -287,6 +289,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-075` | Implemented behind localhost preview | Use the configured P1 boss marker as the shared origin for rendered rune slots, the visible sweep, and gameplay validation; resolve correct and incorrect rune order after the sweep so neither false wipes nor missed wrong-order wipes can result from two different boss locations. Tracked from [`INBOX-20260727-205141-490baf`](../inbox/INBOX-20260727-205141-490baf.md). |
 | `BUG-076` | Implemented behind localhost preview | Drive the visible P1 boss and NPC beam-follow movement from the configured opening and guarantee one 45-degree relocation even when the tank target shares the opening angle. Tracked from [`INBOX-20260727-205459-ee34c7`](../inbox/INBOX-20260727-205459-ee34c7.md). |
 | `BUG-077` | Implemented behind localhost preview | Treat a Heaven Glaive collision as contact entry rather than a once-per-run flag: continuous overlap stays deduplicated, but exiting and re-entering the same roaming disc triggers another wipe. |
+| `BUG-078` | Implemented behind localhost preview | Check the full angle swept by every lethal P1 rotating beam between simulation frames. A beam that catches a player following behind it now reliably triggers the two reactive Soaks even when its narrow visual ray moved across the player between frame samples. |
 
 ## Implemented feature inventory
 

@@ -303,6 +303,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-081` | Implemented behind localhost preview | Preserve the first 60-second Heaven Glaive set when sequence two launches its second set, capped at the intended two simultaneous sets. Browser coverage verifies the live set count and continuing simulation. Tracked from [`INBOX-20260727-213447-7788b3`](../inbox/INBOX-20260727-213447-7788b3.md). |
 | `BUG-082` | Implemented behind localhost preview | A non-carrier hit by a P1 rotating beam now records only its point penalty and continues the animation tick; only a crystal carrier branches into reactive Soaks. Tracked from [`INBOX-20260727-213851-b74802`](../inbox/INBOX-20260727-213851-b74802.md). |
 | `BUG-083` | Implemented behind localhost preview | Reverse the P1 NPC center-beam crossing side: start behind the ray, cross it counterclockwise during the safe telegraph, then remain just ahead of and follow the continuously rotating beam instead of trailing directly behind it. Tracked from [`INBOX-20260727-221948-3b6da6`](../inbox/INBOX-20260727-221948-3b6da6.md). |
+| `BUG-084` | Open | Investigate a P1 memory sweep that can wipe a correctly positioned rune player while leaving an earlier `+` rune visible after the laser has already passed it. Preserve sweep-contact and rune-removal ordering as the suspected area. Tracked from [`INBOX-20260727-222452-2e7d45`](../inbox/INBOX-20260727-222452-2e7d45.md). |
 
 ## Implemented feature inventory
 

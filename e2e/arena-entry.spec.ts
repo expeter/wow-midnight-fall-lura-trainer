@@ -19,7 +19,7 @@ test('exposes the complete Phase 1 preview only on localhost and begins its assi
   await expect(page.getByLabel('Phase 1 crystal assignments')).toBeVisible()
   await page.getByRole('button', { name: /Enter P1/ }).click()
 
-  await expect(page.getByRole('heading', { name: /Prepare to interrupt cast/ })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /Kick [1-5] · (?:Crystal pickup [12]|No crystal pickup)/ })).toBeVisible()
   await expect(page.getByText(/PHASE 1 · SEQUENCE 1 \/ 2/)).toBeVisible()
   await expect(page.getByText(/CAST 1 \/ 5/)).toBeVisible({ timeout: MECHANIC_TIMEOUT })
   await expect(page.getByText(/RED|YELLOW|GREEN/)).toBeVisible()

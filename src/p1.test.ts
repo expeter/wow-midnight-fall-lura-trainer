@@ -2,12 +2,16 @@ import { describe, expect, it } from 'vitest'
 import {
   P1_DEFAULT_INTERRUPT_KEY,
   P1_GLAIVE_LIFETIME_SECONDS,
+  P1_INNER_RADIUS,
   P1_INTERMISSION_POSITION_SECONDS,
   P1_MAX_GLAIVE_SETS,
+  P1_OUTER_RADIUS,
   p1AddGlaiveSet,
   p1AdvanceGlaiveSet,
   p1BeamAngles,
+  p1BossPosition,
   p1CrystalExpired,
+  p1CrystalPickupSequence,
   p1CrystalSpawnPosition,
   p1CrystalSpawns,
   p1GlaiveSet,
@@ -19,6 +23,7 @@ import {
   p1MemorySlotAngle,
   p1MemorySlotValid,
   p1MemorySweepAngle,
+  p1NpcCrystalPickupReleased,
   p1PlayerSoakFailed,
   p1Progress,
   p1ReactiveSoaks,
@@ -65,6 +70,16 @@ describe('P1 headless mechanics', () => {
     expect(p1CrystalSpawnPosition({ x: 0, y: 0 }, { x: 0, y: 0 })).toEqual({ x: 0, y: 0 })
   })
 
+  it('splits six configured carriers into two trios and holds NPCs for the player pickup', () => {
+    const assignments = [2, 4, 6, 8, 10, 12]
+    expect(p1CrystalPickupSequence(assignments, 4)).toBe(1)
+    expect(p1CrystalPickupSequence(assignments, 10)).toBe(2)
+    expect(p1CrystalPickupSequence(assignments, 3)).toBeNull()
+    expect(p1NpcCrystalPickupReleased(assignments, 4, 1, false)).toBe(false)
+    expect(p1NpcCrystalPickupReleased(assignments, 4, 1, true)).toBe(true)
+    expect(p1NpcCrystalPickupReleased(assignments, 10, 1, false)).toBe(true)
+  })
+
   it('seeds five star-like glaives, reflects them from the ring, and expires them after a configurable lifetime', () => {
     const set = p1GlaiveSet(42, 0, { x: 0, y: 0 }, 5, { speed: 10 })
     expect(set.glaives).toHaveLength(5)
@@ -77,8 +92,39 @@ describe('P1 headless mechanics', () => {
       glaives: [{ id: 0, position: { x: 0, y: 0 }, direction: { x: 1, y: 0 } }],
     }
     const reflected = p1AdvanceGlaiveSet(radial, 7, 8.5, { x: 0, y: 0 }, 10)
-    expect(reflected.glaives[0].position.x).toBeCloseTo(5)
+    expect(reflected.glaives[0].position.x).toBeCloseTo(5.25)
     expect(reflected.glaives[0].direction.x).toBeCloseTo(-1)
+  })
+
+  it('launches toward the arena, slows from triple speed, and reflects from the middle bubble', () => {
+    const set = p1GlaiveSet(42, 1, { x: 220, y: 0 }, 0, {
+      speed: 30,
+      telegraphSeconds: 0,
+      target: { x: 0, y: 0 },
+    })
+    expect(set.glaives.every(glaive => glaive.direction.x < 0)).toBe(true)
+    const firstSecond = p1AdvanceGlaiveSet({
+      ...set,
+      glaives: [{ id: 0, position: { x: 20, y: 0 }, direction: { x: -1, y: 0 } }],
+    }, 0, 1, { x: 0, y: 0 }, 100, 10)
+    expect(firstSecond.glaives[0].direction.x).toBeCloseTo(1)
+    expect(firstSecond.glaives[0].position.x).toBeGreaterThan(29)
+
+    const early = p1AdvanceGlaiveSet(set, 0, 1, { x: 0, y: 0 }, 1000)
+    const late = p1AdvanceGlaiveSet({ ...set, glaives: early.glaives }, 30, 31, { x: 0, y: 0 }, 1000)
+    const earlyTravel = Math.hypot(early.glaives[0].position.x - set.glaives[0].position.x, early.glaives[0].position.y - set.glaives[0].position.y)
+    const lateTravel = Math.hypot(late.glaives[0].position.x - early.glaives[0].position.x, late.glaives[0].position.y - early.glaives[0].position.y)
+    expect(earlyTravel).toBeGreaterThan(lateTravel * 2)
+    expect(P1_INNER_RADIUS).toBe(102)
+    expect(P1_OUTER_RADIUS).toBe(260)
+    expect(P1_GLAIVE_LIFETIME_SECONDS).toBe(60)
+  })
+
+  it('moves the outside boss through one quarter per demonstrated sequence', () => {
+    expect(p1BossPosition({ x: 480, y: 492 }, { x: 480, y: 270 }, 1)).toEqual({ x: 480, y: 492 })
+    const second = p1BossPosition({ x: 480, y: 492 }, { x: 480, y: 270 }, 2)
+    expect(second.x).toBeCloseTo(258)
+    expect(second.y).toBeCloseTo(270)
   })
 
   it('removes expired glaives and caps the live field at the newest two sets', () => {
@@ -121,11 +167,12 @@ describe('P1 headless mechanics', () => {
   })
 
   it('rotates eight evenly spaced beams from a seeded ten-degree side offset', () => {
-    const beams = p1RotatingBeams(99, 0, 10, Math.PI / 4)
+    const openingAngle = Math.PI * 2 / 3
+    const beams = p1RotatingBeams(99, 0, 10, Math.PI / 4, openingAngle)
     const initial = p1BeamAngles(beams, 10)
     const later = p1BeamAngles(beams, 11)
     expect(initial).toHaveLength(8)
-    expect(Math.abs(initial[0])).toBeCloseTo(Math.PI / 18)
+    expect(Math.abs(initial[0] - openingAngle)).toBeCloseTo(Math.PI / 18)
     expect(initial[1] - initial[0]).toBeCloseTo(Math.PI / 4)
     expect(Math.abs(later[0] - initial[0])).toBeCloseTo(Math.PI / 4)
   })

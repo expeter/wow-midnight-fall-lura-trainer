@@ -6,6 +6,15 @@
   preview: five assigned interrupts, two three-crystal pickup sets,
   ricocheting Heaven Glaives, the ordered TXOV+ memory sweep, rotating beams
   with reactive Soaks, a dedicated raid plan, and the Intermission handoff.
+- BUG-072 / CR-103 / CR-104: Removed invisible P1/Intermission planner
+  barriers, expanded P1 into a visibly collapsing outer annulus with L’ura
+  moving between outside quarters, and changed Heaven Glaives to 60-second
+  hazards that launch at triple speed, decelerate, and bounce from both arena
+  boundaries.
+- CR-105 / CR-106: Added a draggable lower-left P1 L’ura opening with a nearby
+  safe-telegraph beam, split crystal pickups into two assigned trios, held NPC
+  pickups until an assigned player acts, and exposed Kick plus pickup duty on
+  the pull countdown.
 
 ## 0.2.0 — 2026-07-27
 

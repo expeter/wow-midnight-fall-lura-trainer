@@ -56,6 +56,30 @@
 .p2-position-map { background-size: 220%; }
 .p2-position-map::before { width: 33%; }
 .p2-position-map::after { display: none; }
+.p1-position-map { background-size: 140%; }
+.p1-position-map::before {
+  width: 56.4%;
+  border-color: rgba(190,185,232,.88);
+}
+.p1-position-map::after {
+  display: block;
+  width: 22.1%;
+  background: rgba(4,5,14,.5);
+}
+.p1-planner-boss {
+  position: absolute;
+  z-index: 5;
+  transform: translate(-50%, -50%);
+  width: 54px;
+  height: 28px;
+  padding: 0;
+  border: 2px solid #ff8bb6;
+  border-radius: 999px;
+  background: #6f285b;
+  color: #fff0f8;
+  font: 700 11px 'DM Mono', monospace;
+  cursor: grab;
+}
 .p2-cross { position: absolute; z-index: 1; left: 50%; top: 50%; transform: translate(-50%, -50%); background: rgba(115,224,193,.22); pointer-events: none; }
 .p2-cross.horizontal { width: 33%; height: 5px; }
 .p2-cross.vertical { width: 5px; height: 58.7%; }

@@ -10,8 +10,12 @@ export const P1_CRYSTAL_COUNT = 3
 export const P1_CRYSTAL_PICKUP_SECONDS = 5
 export const P1_GLAIVE_COUNT = 5
 export const P1_GLAIVE_TELEGRAPH_SECONDS = 2
-export const P1_GLAIVE_LIFETIME_SECONDS = 30
+export const P1_GLAIVE_LIFETIME_SECONDS = 60
+export const P1_GLAIVE_DECELERATION_SECONDS = 30
 export const P1_MAX_GLAIVE_SETS = 2
+export const P1_INNER_RADIUS = 102
+export const P1_OUTER_RADIUS = 260
+export const P1_MEMORY_RADIUS = 20
 export const P1_MEMORY_DELAY_SECONDS = 2
 export const P1_MEMORY_POSITION_SECONDS = 7
 export const P1_MEMORY_SWEEP_SECONDS = 5
@@ -98,10 +102,25 @@ export function p1CrystalExpired(crystal: P1CrystalSpawn, now: number, collected
   return collectedAt === null && now > crystal.expiresAt
 }
 
+export function p1CrystalPickupSequence(assignments: readonly number[], playerIndex: number): 1 | 2 | null {
+  const slot = assignments.indexOf(playerIndex)
+  return slot < 0 ? null : slot < P1_CRYSTAL_COUNT ? 1 : 2
+}
+
+export function p1NpcCrystalPickupReleased(
+  assignments: readonly number[],
+  playerIndex: number,
+  sequence: number,
+  playerCollected: boolean,
+): boolean {
+  return p1CrystalPickupSequence(assignments, playerIndex) !== sequence || playerCollected
+}
+
 export interface P1GlaiveConfig {
   speed: number
   lifetimeSeconds?: number
   telegraphSeconds?: number
+  target?: P1Point
 }
 
 export interface P1Glaive {
@@ -117,6 +136,7 @@ export interface P1GlaiveSet {
   launchesAt: number
   expiresAt: number
   speed: number
+  origin: P1Point
   glaives: P1Glaive[]
 }
 
@@ -129,11 +149,15 @@ export function p1GlaiveSet(
 ): P1GlaiveSet {
   const telegraphSeconds = config.telegraphSeconds ?? P1_GLAIVE_TELEGRAPH_SECONDS
   const launchesAt = telegraphStartsAt + telegraphSeconds
-  const rotation = seededUnit(seed, id * 101) * Math.PI * 2
-  const jitterLimit = Math.PI / 18
+  const rotation = config.target
+    ? Math.atan2(config.target.y - origin.y, config.target.x - origin.x)
+    : seededUnit(seed, id * 101) * Math.PI * 2
+  const jitterLimit = Math.PI / 36
   const glaives = Array.from({ length: P1_GLAIVE_COUNT }, (_, glaiveId) => {
     const jitter = (seededUnit(seed, id * 101 + glaiveId + 1) * 2 - 1) * jitterLimit
-    const angle = rotation + glaiveId * Math.PI * 2 / P1_GLAIVE_COUNT + jitter
+    const angle = config.target
+      ? rotation + (glaiveId - (P1_GLAIVE_COUNT - 1) / 2) * Math.PI / 9 + jitter
+      : rotation + glaiveId * Math.PI * 2 / P1_GLAIVE_COUNT + jitter
     return {
       id: glaiveId,
       position: { ...origin },
@@ -147,6 +171,7 @@ export function p1GlaiveSet(
     launchesAt,
     expiresAt: launchesAt + (config.lifetimeSeconds ?? P1_GLAIVE_LIFETIME_SECONDS),
     speed: config.speed,
+    origin: { ...origin },
     glaives,
   }
 }
@@ -160,17 +185,25 @@ function distanceToRingAlongRay(position: P1Point, direction: P1Point, center: P
   const y = position.y - center.y
   const projection = x * direction.x + y * direction.y
   const offset = x * x + y * y - radius * radius
-  const discriminant = Math.max(0, projection * projection - offset)
-  return -projection + Math.sqrt(discriminant)
+  const discriminant = projection * projection - offset
+  if (discriminant < 0) return Infinity
+  const root = Math.sqrt(discriminant)
+  return [-projection - root, -projection + root]
+    .filter(value => value > 1e-6)
+    .sort((left, right) => left - right)[0] ?? Infinity
 }
 
-function advanceGlaive(glaive: P1Glaive, distance: number, center: P1Point, radius: number): P1Glaive {
+function advanceGlaive(glaive: P1Glaive, distance: number, center: P1Point, outerRadius: number, innerRadius: number): P1Glaive {
   let position = { ...glaive.position }
   let direction = { ...glaive.direction }
   let remaining = Math.max(0, distance)
 
   for (let reflection = 0; reflection < 16 && remaining > 1e-8; reflection += 1) {
-    const toRing = Math.max(0, distanceToRingAlongRay(position, direction, center, radius))
+    const outerDistance = distanceToRingAlongRay(position, direction, center, outerRadius)
+    const innerDistance = innerRadius > 0
+      ? distanceToRingAlongRay(position, direction, center, innerRadius)
+      : Infinity
+    const toRing = Math.min(outerDistance, innerDistance)
     if (toRing >= remaining - 1e-8) {
       position = {
         x: position.x + direction.x * remaining,
@@ -184,6 +217,7 @@ function advanceGlaive(glaive: P1Glaive, distance: number, center: P1Point, radi
       y: position.y + direction.y * toRing,
     }
     remaining -= toRing
+    const radius = innerDistance < outerDistance ? innerRadius : outerRadius
     const normal = {
       x: (position.x - center.x) / radius,
       y: (position.y - center.y) / radius,
@@ -203,20 +237,48 @@ function advanceGlaive(glaive: P1Glaive, distance: number, center: P1Point, radi
   return { ...glaive, position, direction }
 }
 
+function deceleratingDistance(set: P1GlaiveSet, fromTime: number, toTime: number): number {
+  const initialSpeed = set.speed
+  const minimumSpeed = initialSpeed / 3
+  const delta = initialSpeed - minimumSpeed
+  const primitive = (age: number) => {
+    const clamped = Math.max(0, Math.min(P1_GLAIVE_DECELERATION_SECONDS, age))
+    const slowingDistance = minimumSpeed * clamped
+      + delta * (clamped - clamped * clamped / (2 * P1_GLAIVE_DECELERATION_SECONDS))
+    return age <= P1_GLAIVE_DECELERATION_SECONDS
+      ? slowingDistance
+      : slowingDistance + minimumSpeed * (age - P1_GLAIVE_DECELERATION_SECONDS)
+  }
+  return primitive(Math.max(0, toTime - set.launchesAt))
+    - primitive(Math.max(0, fromTime - set.launchesAt))
+}
+
 export function p1AdvanceGlaiveSet(
   set: P1GlaiveSet,
   fromTime: number,
   toTime: number,
   arenaCenter: P1Point,
-  arenaRadius: number,
+  arenaOuterRadius: number,
+  arenaInnerRadius = 0,
 ): P1GlaiveSet {
   const movementStart = Math.max(fromTime, set.launchesAt)
   const movementEnd = Math.min(toTime, set.expiresAt)
-  const elapsed = Math.max(0, movementEnd - movementStart)
-  if (elapsed === 0) return set
+  const travelDistance = deceleratingDistance(set, movementStart, movementEnd)
+  if (travelDistance <= 0) return set
   return {
     ...set,
-    glaives: set.glaives.map(glaive => advanceGlaive(glaive, elapsed * set.speed, arenaCenter, arenaRadius)),
+    glaives: set.glaives.map(glaive => advanceGlaive(glaive, travelDistance, arenaCenter, arenaOuterRadius, arenaInnerRadius)),
+  }
+}
+
+export function p1BossPosition(opening: P1Point, arenaCenter: P1Point, sequence: number): P1Point {
+  const dx = opening.x - arenaCenter.x
+  const dy = opening.y - arenaCenter.y
+  const angle = Math.atan2(dy, dx) + Math.max(0, sequence - 1) * Math.PI / 2
+  const radius = Math.hypot(dx, dy)
+  return {
+    x: arenaCenter.x + Math.cos(angle) * radius,
+    y: arenaCenter.y + Math.sin(angle) * radius,
   }
 }
 
@@ -283,12 +345,13 @@ export function p1RotatingBeams(
   sequence: number,
   startsAt: number,
   angularSpeed: number,
+  openingAngle = 0,
 ): P1RotatingBeams {
   const direction = seededUnit(seed, sequence * 29) < .5 ? -1 : 1
   return {
     startsAt,
     telegraphEndsAt: startsAt + P1_ROTATING_BEAM_TELEGRAPH_SECONDS,
-    initialAngle: direction * P1_ROTATING_BEAM_OFFSET_DEGREES * Math.PI / 180,
+    initialAngle: openingAngle + direction * P1_ROTATING_BEAM_OFFSET_DEGREES * Math.PI / 180,
     angularSpeed,
     direction,
   }

@@ -30,6 +30,10 @@ export interface TimedVoiceCue {
 export const P4_TIMED_VOICE_LEAD_SECONDS = 1
 export const P4_SPLINTER_VOICE_LEAD_SECONDS = 0
 
+export function timedVoiceSupported(featureEnabled: boolean, audioContextAvailable: boolean): boolean {
+  return featureEnabled && audioContextAvailable
+}
+
 export function timedVoiceDelaySeconds(cueAt: number, eventTime: number, gameSpeed: number): number {
   return (cueAt - eventTime) / Math.max(1, gameSpeed)
 }

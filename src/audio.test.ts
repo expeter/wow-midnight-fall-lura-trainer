@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { P4_SPLINTER_VOICE_LEAD_SECONDS, P4_TIMED_VOICE_LEAD_SECONDS, p4TimedVoiceCues, timedVoiceDelaySeconds, ttsCuesForState, type TtsCueState } from './audio'
+import { P4_SPLINTER_VOICE_LEAD_SECONDS, P4_TIMED_VOICE_LEAD_SECONDS, p4TimedVoiceCues, timedVoiceDelaySeconds, timedVoiceSupported, ttsCuesForState, type TtsCueState } from './audio'
 import { P1_FINAL_RECOVERY_SECONDS, P2_BEAM_SECONDS, P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PULL_SECONDS, P3_FINAL_SECTOR_MOVE_SECONDS, P3_MEMORY_START_SECONDS, P4_SPLINTER_DETONATION_SECONDS, P4_SPLINTER_INTERVAL_SECONDS, p4SplinterStartSeconds } from './game'
 
 const base: TtsCueState = {
@@ -103,5 +103,11 @@ describe('raid-lead TTS cues', () => {
     expect(timedVoiceDelaySeconds(cues[1].at, cues[0].at, 2.5)).toBeCloseTo(P4_SPLINTER_INTERVAL_SECONDS / 2.5)
     expect(timedVoiceDelaySeconds(cues[2].at, cues[1].at - .25, 1)).toBeCloseTo(P4_SPLINTER_INTERVAL_SECONDS + .25)
     expect(ttsCuesForState({ ...base, event: 'p4-cycle', eventTime: finalEnd })).toEqual([])
+  })
+
+  it('keeps the prerecorded P4 raidlead independent from browser speech synthesis', () => {
+    expect(timedVoiceSupported(true, true)).toBe(true)
+    expect(timedVoiceSupported(true, false)).toBe(false)
+    expect(timedVoiceSupported(false, true)).toBe(false)
   })
 })

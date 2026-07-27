@@ -22,6 +22,9 @@
   ray, then extended lasso-select-and-place editing to every raid plan.
 - FR-048 / FR-049: Recorded the P3-entry crystal recovery/paired Soak and
   position-driven P2-to-P3 knockback refinements in the backlog.
+- FR-050: Recorded the four-player P2 orb-aiming redesign: continuously
+  orbiting targets near the cross marks, perfect NPC interception, no crystal
+  carrier selection, and a wipe when a selected player misses their orb.
 
 ## 0.2.0 — 2026-07-27
 

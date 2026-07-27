@@ -605,6 +605,10 @@ export function p4RenderedNpcSplinterHitsPlayer(renderedNpcPositions: Point[], o
   )
 }
 
+export function p4PlayerSplinterHitsNpc(renderedNpcPositions: Point[], origin: Point, rotation: number, npcRadius = 4): boolean {
+  return renderedNpcPositions.some(target => p4SplinterHitsGroup(origin, rotation, target, npcRadius))
+}
+
 export function keepP4NpcInProtection(position: Point, groupCenter: Point, margin = .5): Point {
   const dx = position.x - groupCenter.x
   const dy = position.y - groupCenter.y

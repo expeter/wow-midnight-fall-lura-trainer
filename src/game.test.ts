@@ -5,7 +5,7 @@ import { p3ProtectionBubbleCenter } from './game'
 import type { Point } from './game'
 import { P3_LIGHT_RADIUS, p3SpreadPosition, p4RenderedNpcSplinterHitsPlayer, p4RenderedNpcSplinterOrigin, p4TankKillsBox, P4_TANK_KILL_RADIUS } from './game'
 import { isP3RaidMemberVisible, p3ActiveCrystalAssignments } from './game'
-import { bossDamageScoreBonus, isInsideP3Pool, p4BossHealthWithPlayerDamage, p4StartingBossState, P1_STAR_LENGTH, preP4BossHealth, shouldHoldP3RunePartner, shouldTriggerP3EarlyClear, starsplinterHitsCrystalCarrier } from './game'
+import { bossDamageScoreBonus, isInsideP3Pool, p4BossHealthWithPlayerDamage, p4PlayerSplinterHitsNpc, p4StartingBossState, P1_STAR_LENGTH, preP4BossHealth, shouldHoldP3RunePartner, shouldTriggerP3EarlyClear, starsplinterHitsCrystalCarrier } from './game'
 
 describe('Intermission game rules', () => {
   it('creates six deterministic stars for a seed', () => { expect(seededStars(42)).toEqual(seededStars(42)); expect(seededStars(42)).toHaveLength(6) })
@@ -455,6 +455,13 @@ describe('Intermission game rules', () => {
     expect(p4RenderedNpcSplinterOrigin([], 2, fallback)).toEqual(fallback)
     expect(p4RenderedNpcSplinterHitsPlayer(rendered, 0, fallback, 0, { x: 32, y: 1 })).toBe(true)
     expect(p4RenderedNpcSplinterHitsPlayer(rendered, 0, fallback, 0, { x: 32, y: 8 })).toBe(false)
+  })
+  it('hits an NPC visibly behind the player during a later Phase 4 Starsplinter set', () => {
+    const player = { x: 480, y: 120 }
+    const renderedNpcs = [{ x: 452, y: 120 }]
+    expect(p4PlayerSplinterHitsNpc([], player, 0)).toBe(false)
+    expect(p4PlayerSplinterHitsNpc(renderedNpcs, player, 0)).toBe(true)
+    expect(p4PlayerSplinterHitsNpc([{ x: 452, y: 127 }], player, 0)).toBe(false)
   })
   it('places NPC Splinters where their beams clear the stack', () => {
     const center = { x: 480, y: 270 }

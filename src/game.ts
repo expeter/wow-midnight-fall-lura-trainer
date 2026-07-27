@@ -506,6 +506,26 @@ export function p4TankKillsBox(boxPosition: Point, tankPosition: Point): boolean
   return distance(boxPosition, tankPosition) <= P4_TANK_KILL_RADIUS
 }
 
+export function p4TankConeHitsBox(
+  boxPosition: Point,
+  tankPosition: Point,
+  coneAngle: number,
+  boxRadius = 0,
+  coneRange = P4_FRONT_CONE_RANGE,
+): boolean {
+  const dx = boxPosition.x - tankPosition.x
+  const dy = boxPosition.y - tankPosition.y
+  const centerDistance = Math.hypot(dx, dy)
+  if (centerDistance <= boxRadius) return true
+  if (centerDistance > coneRange + boxRadius) return false
+  const angleDelta = Math.abs(Math.atan2(
+    Math.sin(Math.atan2(dy, dx) - coneAngle),
+    Math.cos(Math.atan2(dy, dx) - coneAngle),
+  ))
+  const angularAllowance = Math.asin(Math.min(1, boxRadius / centerDistance))
+  return angleDelta <= Math.PI / 4 + angularAllowance
+}
+
 export interface P4BoxState { id: number; position: Point; size: number; aimedAtGroup: boolean; active: boolean }
 export function p4BoxStates(cycle: number, eventTime: number, center: Point): P4BoxState[] {
   const spawnClock = cycle === 1 ? Math.max(0, eventTime - P4_KNOCKUP_SECONDS) : eventTime

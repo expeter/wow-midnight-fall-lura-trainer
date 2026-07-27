@@ -255,6 +255,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-068` | Implemented | Preserve each P4 Starsplinter’s last rendered raid snapshot through detonation and replace the 1.8-second soft-wipe lock with same-frame deduplication. Splinters resolving 1.1 seconds apart can now each detect and report player/NPC hits instead of silently suppressing the following cast. |
 | `BUG-069` | Implemented | Keep the third marked P4 Starsplinter NPC stacked until the first Starsplinter detonates. Its mark and explosion retain the original global timing, leaving a shorter but sufficient movement window and preventing it from blocking the first player’s escape beam. |
 | `BUG-070` | Implemented | Keep P4’s second marked NPC stacked until the first Starsplinter has visibly detonated, then accelerate its short move into the right-side position without changing its own explosion timer. The same post-detonation guard remains on the third marked NPC from BUG-069; tracked from [`INBOX-20260727-150659-22eff2`](../inbox/INBOX-20260727-150659-22eff2.md). |
+| `BUG-071` | Implemented | Make the visible P4 front-tank cone authoritative: every add intersecting its 30-yard, 90-degree area is permanently destroyed on any active frame. Rendering and gameplay now share the same collision rule instead of separately hiding selected group-targeted adds; tracked from [`INBOX-20260727-151636-f9f0f2`](../inbox/INBOX-20260727-151636-f9f0f2.md). |
 
 ## Implemented feature inventory
 

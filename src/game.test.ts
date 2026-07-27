@@ -3,7 +3,7 @@ import { angleToward, ARENA, assignmentRevealDistance, bossBeamHitsPlayer, canPi
 import { keepP3CrystalPoolCovered, keepP3NpcInSoak, keepP4NpcInProtection, p3CrystalPoolCoverageTargets, P3_APPROACH_NPC_SPEED_MULTIPLIER, P3_APPROACH_SECONDS, P3_MEMORY_START_SECONDS, P3_POOL_CRYSTAL_CLEARANCE, P3_RUNE_HALF_CLEARANCE, P3_SAFE_ZONE_GRACE_SECONDS, P3_SAFE_ZONE_PENALTY_PER_SECOND, P3_SECTOR_SECONDS, p3UnsafePenaltyTicks, P4_SPLINTER_POST_DETONATION_HOLD_SECONDS, P4_SPLINTER_RETURN_SECONDS } from './game'
 import { p3ProtectionBubbleCenter } from './game'
 import type { Point } from './game'
-import { P3_LIGHT_RADIUS, p3SpreadPosition, p4NpcSplinterMovementAge, p4NpcSplinterOutwardSeconds, p4RenderedNpcSplinterHitsPlayer, p4RenderedNpcSplinterHitsRaid, p4RenderedNpcSplinterOrigin, p4TankKillsBox, P4_TANK_KILL_RADIUS } from './game'
+import { P3_LIGHT_RADIUS, p3SpreadPosition, p4NpcSplinterMovementAge, p4NpcSplinterOutwardSeconds, p4RenderedNpcSplinterHitsPlayer, p4RenderedNpcSplinterHitsRaid, p4RenderedNpcSplinterOrigin, p4TankConeHitsBox, p4TankKillsBox, P4_TANK_KILL_RADIUS } from './game'
 import { isP3RaidMemberVisible, p3ActiveCrystalAssignments } from './game'
 import { bossDamageScoreBonus, isInsideP3Pool, p4BossHealthWithPlayerDamage, p4PlayerSplinterHitsNpc, p4StartingBossState, P1_STAR_LENGTH, preP4BossHealth, shouldHoldP3RunePartner, shouldSuppressRepeatedWipe, shouldTriggerP3EarlyClear, starsplinterHitsCrystalCarrier, starsplinterHitsPoint } from './game'
 
@@ -554,6 +554,15 @@ describe('Intermission game rules', () => {
     expect(P4_TANK_KILL_RADIUS).toBe(7)
     expect(p4TankKillsBox({ x: 107, y: 100 }, tank)).toBe(true)
     expect(p4TankKillsBox({ x: 107.01, y: 100 }, tank)).toBe(false)
+  })
+  it('destroys every P4 add intersecting the visible 30-yard 90-degree tank cone', () => {
+    const tank = { x: 100, y: 100 }
+    const facingRight = 0
+    expect(p4TankConeHitsBox({ x: 125, y: 100 }, tank, facingRight, 3)).toBe(true)
+    expect(p4TankConeHitsBox({ x: 120, y: 120 }, tank, facingRight, 3)).toBe(true)
+    expect(p4TankConeHitsBox({ x: 120, y: -20 }, tank, facingRight, 3)).toBe(false)
+    expect(p4TankConeHitsBox({ x: 135, y: 100 }, tank, facingRight, 3)).toBe(false)
+    expect(p4TankConeHitsBox({ x: 90, y: 100 }, tank, facingRight, 3)).toBe(false)
   })
   it('randomizes the player Phase 4 slot and straight/rotated pattern from a shared seed', () => {
     const duties = Array.from({ length: 20 }, (_, seed) => p4PlayerSplinterDuty(7, seed % 4 + 1, seed * 101))

@@ -49,9 +49,9 @@ with a separate `SOAK CRYSTAL` instruction.
 
 | ID | Mechanic | Desired sound | Length | Reuse |
 | --- | --- | --- | --- | --- |
-| `laser-charge` | 2.051s before the boss beam resolves | Midnight Laser Charge Veil at 1.88× | Calibrated | Intermission and P2 |
+| `laser-charge` | Boss beam resolves | Midnight Wipe Abyss at 1.88× | Calibrated | Intermission and P2 |
 | `laser-fire` | Reserved / currently silent | A separate discharge duplicated the charge cue and is disabled while the revised mix is reviewed | — | Intermission and P2 |
-| `stars-connect` | 0.1s before the P3 Stars lattice connects | Neon Buzz at 1.30× | Calibrated | P3 only |
+| `stars-connect` | 0.095s before the P3 Stars lattice connects | Splinter Arc Pop at 2.25× | Calibrated | P3 only |
 | `splinter-mark` | Starsplinter assigned | Short crystalline warning/chime | 0.4–0.8s | Intermission and P4 |
 | `splinter-detonate` | 0.02s before Starsplinter rays disappear | Sharp six-way energy burst; waveform analysis places its main attack about 0.02s after playback begins at the in-game 2× rate | 0.5–1s | Intermission and P4 |
 | `orb-charge` | P2 returning orbs start glowing | Pulsing magical charge | 0.8–1.2s | P2 |
@@ -62,8 +62,8 @@ with a separate `SOAK CRYSTAL` instruction.
 | `soak-complete` | Reserved / currently silent | The reviewed cue had too much silence before its transient and did not fit the completion moment | — | P3 |
 | `rune-reveal` | Each memory rune is shown | Three related tonal notes | 0.25–0.5s each | P3 |
 | `rune-match` | Correct rune partner resolves | Rune Clear at 1.08×, calibrated 0.02s early | Calibrated | P3 |
-| `archangel-charge` | 5.5s before Dark Archangel impacts | Midnight Archangel Charge Veil at 0.95× | Calibrated | P3 |
-| `protection-active` | Crystal bubble protects raid | Warm shield activation | 0.5–1s | P3 |
+| `archangel-charge` | 0.125s after Dark Archangel impacts | Ward Holy Pulse at 1.01× | Calibrated | P3 |
+| `protection-active` | Crystal bubble protects raid | Crystal Spark at 1.20× | Calibrated | P3 |
 | `heaven-hell` | P4 quarter becomes unsafe | Deep sector-wide impact | 0.8–1.5s | P4 |
 | `mistake` | Non-wipe point loss | Restrained error tick | 0.2–0.4s | All phases |
 | `wipe` | Terminal failure | Distinct low failure hit | 0.8–1.5s | All phases |

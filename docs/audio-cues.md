@@ -74,6 +74,6 @@ spoken samples, copyrighted franchise sounds, or effects that are already
 mixed with music. Normalize them conservatively so repeated laser mechanics do
 not become fatiguing.
 
-The current production mix intentionally enables only `splinter-detonate`,
-`orb-return`, `main-ability-release`, `mistake`, and `wipe`. Every other row remains a soundboard
-candidate until another review explicitly approves it.
+The current production mix intentionally enables only `main-ability-release`.
+Every mechanic, mistake, and wipe effect remains a soundboard candidate until
+another review explicitly approves it.

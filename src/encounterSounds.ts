@@ -59,11 +59,7 @@ export const ENCOUNTER_SOUND_SPECS: Record<EncounterSoundName, EncounterSoundSpe
 
 /** Only reviewed cues ship in the live mix; the remaining specs stay available for tuning. */
 export const ACTIVE_ENCOUNTER_SOUNDS = new Set<EncounterSoundName>([
-  'splinter-detonate',
-  'orb-return',
   'main-ability-release',
-  'mistake',
-  'wipe',
 ])
 
 export const INTERMISSION_SPLINTER_VISUAL_END_SECONDS = 3

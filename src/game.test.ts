@@ -5,7 +5,7 @@ import { p3ProtectionBubbleCenter } from './game'
 import type { Point } from './game'
 import { P3_LIGHT_RADIUS, p3SpreadPosition, p4RenderedNpcSplinterHitsPlayer, p4RenderedNpcSplinterOrigin, p4TankKillsBox, P4_TANK_KILL_RADIUS } from './game'
 import { isP3RaidMemberVisible, p3ActiveCrystalAssignments } from './game'
-import { bossDamageScoreBonus, isInsideP3Pool, p4BossHealthWithPlayerDamage, p4PlayerSplinterHitsNpc, p4StartingBossState, P1_STAR_LENGTH, preP4BossHealth, shouldHoldP3RunePartner, shouldTriggerP3EarlyClear, starsplinterHitsCrystalCarrier } from './game'
+import { bossDamageScoreBonus, isInsideP3Pool, p4BossHealthWithPlayerDamage, p4PlayerSplinterHitsNpc, p4StartingBossState, P1_STAR_LENGTH, preP4BossHealth, shouldHoldP3RunePartner, shouldTriggerP3EarlyClear, starsplinterHitsCrystalCarrier, starsplinterHitsPoint } from './game'
 
 describe('Intermission game rules', () => {
   it('creates six deterministic stars for a seed', () => { expect(seededStars(42)).toEqual(seededStars(42)); expect(seededStars(42)).toHaveLength(6) })
@@ -20,6 +20,23 @@ describe('Intermission game rules', () => {
     expect(starsplinterHitsCrystalCarrier(npcPositions, [5], 0, { x: 100, y: 100 }, 0)).toBe(true)
     expect(starsplinterHitsCrystalCarrier(npcPositions, [5], 0, { x: 100, y: 100 }, 0, 10, P1_STAR_LENGTH, [4])).toBe(false)
     expect(starsplinterHitsCrystalCarrier(npcPositions, [6], 0, { x: 100, y: 100 }, 0)).toBe(false)
+  })
+  it('checks rendered targets against all six Starsplinter beams at arbitrary rotations', () => {
+    const origin = { x: 100, y: 100 }
+    for (const rotation of [0, .17, -.61, Math.PI / 2]) {
+      for (let beam = 0; beam < 6; beam += 1) {
+        const angle = rotation + beam * Math.PI / 3
+        expect(starsplinterHitsPoint({
+          x: origin.x + Math.cos(angle) * 24,
+          y: origin.y + Math.sin(angle) * 24,
+        }, origin, rotation)).toBe(true)
+      }
+      const offBeamAngle = rotation + .25
+      expect(starsplinterHitsPoint({
+        x: origin.x + Math.cos(offBeamAngle) * 24,
+        y: origin.y + Math.sin(offBeamAngle) * 24,
+      }, origin, rotation)).toBe(false)
+    }
   })
   it('counts player centers near the visible P3 Soak rim as occupants', () => {
     const pool = { x: 100, y: 100 }

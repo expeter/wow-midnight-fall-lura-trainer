@@ -69,7 +69,7 @@ describe('audio review soundboard', () => {
     expect(soundboard).toContain('lura-sfx-timing-review')
     expect(soundboard).toContain('Copy current')
     expect(soundboard).toContain('Copy all tuning')
-    const timingRows = [...soundboard.matchAll(/\{ id: "([^"]+)", label: "[^"]+", sound: "[^"]+", visual: "[^"]+", moment: [^,]+, loop: [^,]+, offset: [^,]+, rate: [^ }]+ \}/g)]
+    const timingRows = [...soundboard.matchAll(/^\s+\{ id: "([^"]+)", label:/gm)]
     expect(timingRows.map(([, id]) => id)).toEqual([
       'laser-charge',
       'stars-connect',
@@ -98,6 +98,15 @@ describe('audio review soundboard', () => {
     expect(soundboard).toContain('id="timing-rate-number" type="number" min=".4" max="8" step=".01"')
   })
 
+  it('fine-tunes bass and treble without changing cue timing', () => {
+    expect(soundboard).toContain('id="timing-bass"')
+    expect(soundboard).toContain('id="timing-treble"')
+    expect(soundboard).toContain('bassFilter.type = "lowshelf"')
+    expect(soundboard).toContain('trebleFilter.type = "highshelf"')
+    expect(soundboard).toContain('bass: 6, treble: 5')
+    expect(soundboard).toContain('| Bass boost | Treble reduction |')
+  })
+
   it('sorts suggested and complete-library sounds by clip length', () => {
     expect(soundboard).toContain('const sortEffectIdsByLength = ids =>')
     expect(soundboard).toContain('const sortEffectsByLength = entries =>')
@@ -114,10 +123,10 @@ describe('audio review soundboard', () => {
     expect(soundboard).toContain('class="timing-sound-marker"')
     expect(soundboard).toContain('class="timing-castbar"')
     expect(soundboard).toContain('preset.visual === "main-cast"')
-    expect(soundboard).toContain('timingSaved[preset.id] = { offset, rate, sound }')
-    expect(soundboard).toContain('| Cue | Sound | Start offset | Playback rate |')
+    expect(soundboard).toContain('timingSaved[preset.id] = { offset, rate, bass, treble, sound }')
+    expect(soundboard).toContain('| Cue | Sound | Start offset | Playback rate | Bass boost | Treble reduction |')
     expect(soundboard).toContain('document.querySelector("#timing-copy-current")')
-    expect(soundboard).toContain('const { preset, offset, rate, sound } = timingValues()')
+    expect(soundboard).toContain('const { preset, offset, rate, bass, treble, sound } = timingValues()')
   })
 
   it('makes the complete effect library available while explaining each mechanic preview', () => {

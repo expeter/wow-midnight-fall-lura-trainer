@@ -53,7 +53,7 @@ with a separate `SOAK CRYSTAL` instruction.
 | `laser-fire` | Reserved / currently silent | A separate discharge duplicated the charge cue and is disabled while the revised mix is reviewed | — | Intermission and P2 |
 | `stars-connect` | 0.095s before the P3 Stars lattice connects | Splinter Arc Pop at 2.25× | Calibrated | P3 only |
 | `splinter-mark` | Starsplinter assigned | Short crystalline warning/chime | 0.4–0.8s | Intermission and P4 |
-| `splinter-detonate` | Starts 0.26s before Starsplinter rays disappear | Prismatic Cut at 2×, shifted another 0.02s earlier after live review | 0.24s effective | Intermission and P4 |
+| `splinter-detonate` | Starts 0.26s before Starsplinter rays disappear | Prismatic Cut at 2×, shifted another 0.02s earlier, with +6dB low shelf and −5dB high shelf for a deeper transient | 0.24s effective | Intermission and P4 |
 | `orb-charge` | P2 returning orbs start glowing | Pulsing magical charge | 0.8–1.2s | P2 |
 | `orb-return` | 0.271s before P2 orbs reach L’ura | Arcane Laser at 1.00× | Calibrated | P2 |
 | `pull` | P2 raid pull begins | Sustained suction/wind rise | 2–4s loop | P2 |

@@ -34,9 +34,11 @@ test('fine-tunes an experimental sound at exact millisecond and rate values', as
   await exactRate.fill('1.37')
   await expect(page.locator('#timing-rate-value')).toHaveText('1.37×')
   await expect(page.locator('#timing-rate')).toHaveValue('1.37')
+  await page.getByLabel('Exact bass boost in decibels').fill('3.5')
+  await page.getByLabel('Exact treble reduction in decibels').fill('2')
 
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('lura-sfx-timing-review') || '{}')['stars-connect'])
-  expect(saved).toEqual({ offset: .089, rate: 1.37, sound: 'tune-archangel-doom-rise' })
+  expect(saved).toEqual({ offset: .089, rate: 1.37, bass: 3.5, treble: 2, sound: 'tune-archangel-doom-rise' })
 
   await page.getByRole('button', { name: '▶ Loop' }).click()
   await expect(page.locator('#timing-status')).toContainText('Looping')
@@ -46,6 +48,8 @@ test('fine-tunes an experimental sound at exact millisecond and rate values', as
   await expect(sound).toHaveValue('error-pulse-fast')
   await expect(exactOffset).toHaveValue('-10')
   await expect(exactRate).toHaveValue('7')
+  await expect(page.getByLabel('Exact bass boost in decibels')).toHaveValue('0')
+  await expect(page.getByLabel('Exact treble reduction in decibels')).toHaveValue('0')
   await page.getByRole('button', { name: 'Copy current' }).click()
   await expect(page.locator('#timing-status')).toContainText('Main Ability projectile fires tuning copied')
   const copiedTiming = await page.evaluate(() => (window as typeof window & { __copiedTiming?: string }).__copiedTiming)

@@ -37,6 +37,8 @@ export interface EncounterSoundSpec {
   url: string
   volume: number
   playbackRate?: number
+  bassBoostDb?: number
+  trebleReductionDb?: number
   /** Calibrated start relative to the soundboard's visual event boundary. */
   startOffsetMs: number
 }
@@ -44,7 +46,7 @@ export interface EncounterSoundSpec {
 export const ENCOUNTER_SOUND_SPECS: Record<EncounterSoundName, EncounterSoundSpec> = {
   'laser-charge': { url: laserWhooshUrl, volume: .78, playbackRate: 1.88, startOffsetMs: -479 },
   'stars-connect': { url: starsConnectUrl, volume: .72, playbackRate: 2.25, startOffsetMs: -95 },
-  'splinter-detonate': { url: splinterDetonateUrl, volume: .82, playbackRate: 2, startOffsetMs: -260 },
+  'splinter-detonate': { url: splinterDetonateUrl, volume: .82, playbackRate: 2, bassBoostDb: 6, trebleReductionDb: 5, startOffsetMs: -260 },
   'orb-return': { url: orbReturnUrl, volume: .78, playbackRate: 1, startOffsetMs: -271 },
   'personal-circle': { url: personalCircleUrl, volume: .72, playbackRate: 1, startOffsetMs: -70 },
   'rune-match': { url: runeClearUrl, volume: .66, playbackRate: 1.08, startOffsetMs: -20 },
@@ -162,6 +164,34 @@ export function playEncounterSound(name: EncounterSoundName, channelVolume: numb
   audio.preload = 'auto'
   audio.volume = Math.max(0, Math.min(1, channelVolume * spec.volume))
   audio.playbackRate = (spec.playbackRate ?? 1) * gameSpeed
+  audio.preservesPitch = true
+  if ((spec.bassBoostDb || spec.trebleReductionDb) && typeof AudioContext !== 'undefined') {
+    try {
+      const context = new AudioContext()
+      const source = context.createMediaElementSource(audio)
+      const bass = context.createBiquadFilter()
+      bass.type = 'lowshelf'
+      bass.frequency.value = 240
+      bass.gain.value = spec.bassBoostDb ?? 0
+      const treble = context.createBiquadFilter()
+      treble.type = 'highshelf'
+      treble.frequency.value = 2800
+      treble.gain.value = -(spec.trebleReductionDb ?? 0)
+      source.connect(bass).connect(treble).connect(context.destination)
+      void context.resume()
+      let cleaned = false
+      const cleanup = () => {
+        if (cleaned) return
+        cleaned = true
+        source.disconnect()
+        bass.disconnect()
+        treble.disconnect()
+        void context.close()
+      }
+      audio.addEventListener('ended', cleanup, { once: true })
+      audio.addEventListener('pause', cleanup, { once: true })
+    } catch { /* fall back to the original sample if Web Audio is unavailable */ }
+  }
   void audio.play().catch(() => { /* playback may still require a user gesture */ })
   return audio
 }

@@ -240,6 +240,20 @@
             <input id="timing-rate-number" type="number" min=".4" max="8" step=".01" value="1" aria-label="Exact sound playback rate">
           </span>
         </label>
+        <label>
+          Bass boost <strong id="timing-bass-value">0.0 dB</strong>
+          <span class="timing-offset-controls">
+            <input id="timing-bass" type="range" min="0" max="12" step=".5" value="0">
+            <input id="timing-bass-number" type="number" min="0" max="12" step=".5" value="0" aria-label="Exact bass boost in decibels">
+          </span>
+        </label>
+        <label>
+          Treble reduction <strong id="timing-treble-value">0.0 dB</strong>
+          <span class="timing-offset-controls">
+            <input id="timing-treble" type="range" min="0" max="12" step=".5" value="0">
+            <input id="timing-treble-number" type="number" min="0" max="12" step=".5" value="0" aria-label="Exact treble reduction in decibels">
+          </span>
+        </label>
         <div class="timing-actions">
           <button class="primary" type="button" id="timing-play">▶ Loop</button>
           <button type="button" id="timing-stop">Stop</button>
@@ -409,7 +423,7 @@
     const timingPresets = [
       { id: "laser-charge", label: "Boss beam resolves", sound: "midnight-wipe-abyss", visual: "laser", moment: 2.4, loop: 3.2, offset: -.479, rate: 1.88 },
       { id: "stars-connect", label: "P3 Stars connect", sound: "tune-splinter-arc-pop", visual: "stars", moment: 1.4, loop: 2.7, offset: -.095, rate: 2.25 },
-      { id: "splinter-detonate", label: "Starsplinter disappears", sound: "laser-prismatic-cut", visual: "splinter", moment: 1.8, loop: 3, offset: -.26, rate: 2 },
+      { id: "splinter-detonate", label: "Starsplinter disappears", sound: "laser-prismatic-cut", visual: "splinter", moment: 1.8, loop: 3, offset: -.26, rate: 2, bass: 6, treble: 5 },
       { id: "orb-return", label: "P2 orbs reach L’ura", sound: "orb-arcane-laser", visual: "orb", moment: 2, loop: 3.3, offset: -.271, rate: 1 },
       { id: "personal-circle", label: "P2 circles resolve", sound: "midnight-splinter-detonate-rift", visual: "circle", moment: 1.8, loop: 3, offset: -.07, rate: 1 },
       { id: "rune-match", label: "Memory rune clears", sound: "success-rune-clear", visual: "rune", moment: 1.6, loop: 2.9, offset: -.02, rate: 1.08 },
@@ -440,8 +454,14 @@
     const timingOffsetNumber = document.querySelector("#timing-offset-number");
     const timingRate = document.querySelector("#timing-rate");
     const timingRateNumber = document.querySelector("#timing-rate-number");
+    const timingBass = document.querySelector("#timing-bass");
+    const timingBassNumber = document.querySelector("#timing-bass-number");
+    const timingTreble = document.querySelector("#timing-treble");
+    const timingTrebleNumber = document.querySelector("#timing-treble-number");
     const timingOffsetValue = document.querySelector("#timing-offset-value");
     const timingRateValue = document.querySelector("#timing-rate-value");
+    const timingBassValue = document.querySelector("#timing-bass-value");
+    const timingTrebleValue = document.querySelector("#timing-treble-value");
     const timingStatus = document.querySelector("#timing-status");
     const timingClock = timingStage.querySelector(".timing-clock");
     const timingBeam = timingStage.querySelector(".timing-beam");
@@ -494,6 +514,8 @@
       return {
         offset: Number(timingOffsetNumber.value) / 1000,
         rate: Number(timingRate.value),
+        bass: Number(timingBass.value),
+        treble: Number(timingTreble.value),
         sound: timingSound.value || preset.sound,
         preset
       };
@@ -521,20 +543,26 @@
       timingOffsetNumber.value = offsetMilliseconds;
       timingRate.value = savedTiming.rate ?? preset.rate;
       timingRateNumber.value = savedTiming.rate ?? preset.rate;
+      timingBass.value = savedTiming.bass ?? preset.bass ?? 0;
+      timingBassNumber.value = savedTiming.bass ?? preset.bass ?? 0;
+      timingTreble.value = savedTiming.treble ?? preset.treble ?? 0;
+      timingTrebleNumber.value = savedTiming.treble ?? preset.treble ?? 0;
       updateTimingLabels();
       if (timingPlaying) restartTimingLoop();
       else renderTimingVisual(0);
     }
 
     function updateTimingLabels() {
-      const { offset, rate } = timingValues();
+      const { offset, rate, bass, treble } = timingValues();
       timingOffsetValue.textContent = `${offset > 0 ? "+" : ""}${Math.round(offset * 1000)} ms`;
       timingRateValue.textContent = `${rate.toFixed(2)}×`;
+      timingBassValue.textContent = `${bass.toFixed(1)} dB`;
+      timingTrebleValue.textContent = `${treble.toFixed(1)} dB`;
     }
 
     function persistTiming() {
-      const { preset, offset, rate, sound } = timingValues();
-      timingSaved[preset.id] = { offset, rate, sound };
+      const { preset, offset, rate, bass, treble, sound } = timingValues();
+      timingSaved[preset.id] = { offset, rate, bass, treble, sound };
       localStorage.setItem("lura-sfx-timing-review", JSON.stringify(timingSaved));
       updateTimingLabels();
       if (timingPlaying) restartTimingLoop();
@@ -602,7 +630,7 @@
       if (!timingPlaying) return;
       const ctx = audioContext();
       await ctx.resume();
-      const { preset, offset, rate, sound } = timingValues();
+      const { preset, offset, rate, bass, treble, sound } = timingValues();
       const buffer = await getEffectBuffer(sound);
       if (!timingPlaying) return;
       const delay = .08;
@@ -610,7 +638,15 @@
       const source = ctx.createBufferSource();
       source.buffer = buffer;
       source.playbackRate.value = rate;
-      source.connect(ctx.destination);
+      const bassFilter = ctx.createBiquadFilter();
+      bassFilter.type = "lowshelf";
+      bassFilter.frequency.value = 240;
+      bassFilter.gain.value = bass;
+      const trebleFilter = ctx.createBiquadFilter();
+      trebleFilter.type = "highshelf";
+      trebleFilter.frequency.value = 2800;
+      trebleFilter.gain.value = -treble;
+      source.connect(bassFilter).connect(trebleFilter).connect(ctx.destination);
       source.start(ctx.currentTime + delay + preset.moment + offset);
       timingSource = source;
       timingTimer = window.setTimeout(runTimingIteration, (delay + preset.loop) * 1000);
@@ -745,19 +781,37 @@
       timingRate.value = timingRateNumber.value;
       persistTiming();
     });
+    timingBass.addEventListener("input", () => {
+      timingBassNumber.value = timingBass.value;
+      persistTiming();
+    });
+    timingBassNumber.addEventListener("input", () => {
+      if (timingBassNumber.value === "" || !timingBassNumber.validity.valid) return;
+      timingBass.value = timingBassNumber.value;
+      persistTiming();
+    });
+    timingTreble.addEventListener("input", () => {
+      timingTrebleNumber.value = timingTreble.value;
+      persistTiming();
+    });
+    timingTrebleNumber.addEventListener("input", () => {
+      if (timingTrebleNumber.value === "" || !timingTrebleNumber.validity.valid) return;
+      timingTreble.value = timingTrebleNumber.value;
+      persistTiming();
+    });
     document.querySelector("#timing-play").addEventListener("click", restartTimingLoop);
     document.querySelector("#timing-stop").addEventListener("click", stopTiming);
     document.querySelector("#timing-reset").addEventListener("click", () => {
       const preset = timingPreset();
-      timingSaved[preset.id] = { offset: preset.offset, rate: preset.rate, sound: preset.sound };
+      timingSaved[preset.id] = { offset: preset.offset, rate: preset.rate, bass: preset.bass ?? 0, treble: preset.treble ?? 0, sound: preset.sound };
       localStorage.setItem("lura-sfx-timing-review", JSON.stringify(timingSaved));
       loadTimingPreset();
       timingStatus.textContent = "Restored the waveform-measured starting point.";
     });
     document.querySelector("#timing-copy-current").addEventListener("click", async () => {
-      const { preset, offset, rate, sound } = timingValues();
-      const row = `| ${preset.id} | ${sound || preset.sound} | ${Math.round(offset * 1000)} ms | ${Number(rate).toFixed(2)}× |`;
-      const review = `Lura sound timing review\n\n| Cue | Sound | Start offset | Playback rate |\n| --- | --- | ---: | ---: |\n${row}`;
+      const { preset, offset, rate, bass, treble, sound } = timingValues();
+      const row = `| ${preset.id} | ${sound || preset.sound} | ${Math.round(offset * 1000)} ms | ${Number(rate).toFixed(2)}× | ${Number(bass).toFixed(1)} dB | ${Number(treble).toFixed(1)} dB |`;
+      const review = `Lura sound timing review\n\n| Cue | Sound | Start offset | Playback rate | Bass boost | Treble reduction |\n| --- | --- | ---: | ---: | ---: | ---: |\n${row}`;
       try {
         await navigator.clipboard.writeText(review);
         timingStatus.textContent = `${preset.label} tuning copied to clipboard.`;
@@ -767,10 +821,10 @@
     });
     document.querySelector("#timing-copy").addEventListener("click", async () => {
       const rows = timingPresets.map(preset => {
-        const value = timingSaved[preset.id] || { offset: preset.offset, rate: preset.rate, sound: preset.sound };
-        return `| ${preset.id} | ${value.sound || preset.sound} | ${Math.round(value.offset * 1000)} ms | ${Number(value.rate).toFixed(2)}× |`;
+        const value = timingSaved[preset.id] || { offset: preset.offset, rate: preset.rate, bass: preset.bass ?? 0, treble: preset.treble ?? 0, sound: preset.sound };
+        return `| ${preset.id} | ${value.sound || preset.sound} | ${Math.round(value.offset * 1000)} ms | ${Number(value.rate).toFixed(2)}× | ${Number(value.bass ?? 0).toFixed(1)} dB | ${Number(value.treble ?? 0).toFixed(1)} dB |`;
       }).join("\n");
-      const review = `Lura sound timing review\n\n| Cue | Sound | Start offset | Playback rate |\n| --- | --- | ---: | ---: |\n${rows}`;
+      const review = `Lura sound timing review\n\n| Cue | Sound | Start offset | Playback rate | Bass boost | Treble reduction |\n| --- | --- | ---: | ---: | ---: | ---: |\n${rows}`;
       try {
         await navigator.clipboard.writeText(review);
         timingStatus.textContent = "Timing table copied to clipboard.";

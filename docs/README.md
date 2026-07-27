@@ -178,6 +178,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-095` | Implemented | Sort cue recommendations, review candidates, and the complete soundboard timing library from shortest to longest clip, placing candidates without measured durations last. |
 | `CR-096` | Implemented | Add a soundboard action that copies only the currently active cue’s sound, offset, and playback rate while retaining the separate full-board export. |
 | `CR-097` | Implemented | Move the reviewed Starsplinter sound another 20ms earlier and play the selected 7× Error Pulse once when the player’s completed Main ability cast fires its projectile. |
+| `CR-098` | Implemented | Add independent bass-boost and treble-reduction controls to the visual soundboard without changing cue timing, and apply the initial 6dB/5dB deeper mix only to the live Starsplinter sound. |
 | `FR-045` | Implemented | Add Main ability release to the soundboard review and visual timing lab with a one-second filling cast bar, projectile-release boundary, complete effect library, and initial cast candidates; keep it out of production until reviewed. The current trial is Error Pulse at −10ms and 7×. |
 | `SPEC-001` | Implemented | Define the stable ticket lifecycle: assign an ID, record intent, add focused regression coverage, validate, and commit. |
 | `SPEC-002` | Implemented | Define the creator business card’s stable content, readability, compact layout, and external-link behavior. |

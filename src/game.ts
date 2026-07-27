@@ -60,6 +60,7 @@ export const P4_INITIAL_SPLINTER_START_SECONDS = 14.3
 export const P4_SPLINTER_START_SECONDS = 14.3
 export const P4_SPLINTER_INTERVAL_SECONDS = 1.1
 export const P4_SPLINTER_DETONATION_SECONDS = 3.5
+export const P4_SPLINTER_POST_DETONATION_HOLD_SECONDS = .2
 export const P4_SPLINTER_RETURN_SECONDS = P4_SPLINTER_INTERVAL_SECONDS
 export const P4_HEAVEN_START_SECONDS = 21
 export const P4_HEAVEN_MOVE_SECONDS = 12
@@ -598,7 +599,7 @@ export function p4NpcSplinterPosition(stack: Point, center: Point, ordinal: numb
 
 export function p4NpcSplinterMovementAge(ordinal: number, age: number): number {
   const waitForFirstDetonation = ordinal === 2
-    ? Math.max(0, P4_SPLINTER_DETONATION_SECONDS - ordinal * P4_SPLINTER_INTERVAL_SECONDS)
+    ? Math.max(0, P4_SPLINTER_DETONATION_SECONDS - ordinal * P4_SPLINTER_INTERVAL_SECONDS + P4_SPLINTER_POST_DETONATION_HOLD_SECONDS)
     : 0
   return Math.max(0, age - waitForFirstDetonation)
 }

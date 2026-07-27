@@ -254,6 +254,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-067` | Implemented | Give the prerecorded P4 Left/Right/Left/Move browser regression the shared mechanic timeout, covering the intentionally later Move cue on slower GitHub software-rendering runners. |
 | `BUG-068` | Implemented | Preserve each P4 Starsplinter’s last rendered raid snapshot through detonation and replace the 1.8-second soft-wipe lock with same-frame deduplication. Splinters resolving 1.1 seconds apart can now each detect and report player/NPC hits instead of silently suppressing the following cast. |
 | `BUG-069` | Implemented | Keep the third marked P4 Starsplinter NPC stacked until the first Starsplinter detonates. Its mark and explosion retain the original global timing, leaving a shorter but sufficient movement window and preventing it from blocking the first player’s escape beam. |
+| `BUG-070` | Implemented | Add a short post-detonation frame guard before P4’s third marked NPC leaves the group. This prevents coarse/high-speed simulation frames from moving that NPC into the first player’s still-visible beam; tracked from [`INBOX-20260727-150659-22eff2`](../inbox/INBOX-20260727-150659-22eff2.md). |
 
 ## Implemented feature inventory
 

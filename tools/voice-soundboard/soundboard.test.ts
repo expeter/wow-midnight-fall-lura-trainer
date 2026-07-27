@@ -91,6 +91,19 @@ describe('audio review soundboard', () => {
     expect(soundboard).toContain('offset: Number(timingOffsetNumber.value) / 1000')
   })
 
+  it('allows high-speed impact tuning beyond three times playback', () => {
+    expect(soundboard).toContain('id="timing-rate" type="range" min=".4" max="8" step=".01"')
+    expect(soundboard).toContain('id="timing-rate-number" type="number" min=".4" max="8" step=".01"')
+  })
+
+  it('sorts suggested and complete-library sounds by clip length', () => {
+    expect(soundboard).toContain('const sortEffectIdsByLength = ids =>')
+    expect(soundboard).toContain('const sortEffectsByLength = entries =>')
+    expect(soundboard).toContain('candidates: sortEffectIdsByLength(candidates)')
+    expect(soundboard).toContain('sortEffectsByLength(effects.filter(effect => !suggestedSet.has(effect.id)))')
+    expect(soundboard).toContain('Number.POSITIVE_INFINITY')
+  })
+
   it('fine-tunes candidate, offset, and rate against visible event and sound boundaries', () => {
     expect(soundboard).toContain('id="timing-sound"')
     expect(soundboard).toContain('id="timing-rate-number"')

@@ -8,6 +8,9 @@ test('fine-tunes an experimental sound at exact millisecond and rate values', as
   await expect(sound.locator('option')).toHaveCount(77)
   await expect(sound.locator('optgroup').first()).toHaveAttribute('label', 'Suggested for this mechanic')
   await expect(sound.locator('optgroup').last()).toHaveAttribute('label', 'Complete sound library · 77 clips')
+  const completeDurations = await sound.locator('optgroup').last().locator('option').allTextContents()
+    .then(labels => labels.map(label => label.match(/ · ([\d.]+)s$/)?.[1]).filter(Boolean).map(Number))
+  expect(completeDurations).toEqual([...completeDurations].sort((left, right) => left - right))
   await sound.selectOption('tune-archangel-doom-rise')
 
   const exactOffset = page.getByLabel('Exact sound start offset in milliseconds')

@@ -236,8 +236,8 @@
         <label>
           Playback rate <strong id="timing-rate-value">1.00×</strong>
           <span class="timing-offset-controls">
-            <input id="timing-rate" type="range" min=".4" max="3" step=".01" value="1">
-            <input id="timing-rate-number" type="number" min=".4" max="3" step=".01" value="1" aria-label="Exact sound playback rate">
+            <input id="timing-rate" type="range" min=".4" max="8" step=".01" value="1">
+            <input id="timing-rate-number" type="number" min=".4" max="8" step=".01" value="1" aria-label="Exact sound playback rate">
           </span>
         </label>
         <div class="timing-actions">
@@ -339,6 +339,14 @@
         seconds
       }));
     });
+    const effectSeconds = id => effects.find(effect => effect.id === id)?.seconds ?? Number.POSITIVE_INFINITY;
+    const sortEffectIdsByLength = ids => [...ids].sort((left, right) =>
+      effectSeconds(left) - effectSeconds(right) || left.localeCompare(right)
+    );
+    const sortEffectsByLength = entries => [...entries].sort((left, right) =>
+      (left.seconds ?? Number.POSITIVE_INFINITY) - (right.seconds ?? Number.POSITIVE_INFINITY)
+        || left.name.localeCompare(right.name)
+    );
     const fineTuneVariants = {
       "stars-connect": ["tune-laser-ion-snap", "tune-laser-neon-buzz", "tune-laser-void-sizzle"],
       "splinter-detonate": ["tune-splinter-glass-break", "tune-splinter-arc-pop", "tune-splinter-prism-collapse"],
@@ -373,7 +381,7 @@
       ["main-ability-release", "Main Ability cast completes", "Tune a compact release that lands when the full cast bar fires its projectile.", auditions("main-ability-release", "cast-arcane-release")],
       ["mistake", "Non-wipe point loss", "Immediate restrained error tick.", auditions("mistake", "error-pulse-fast")],
       ["wipe", "Terminal failure", "Heavier terminal version of the error character.", auditions("wipe", "error-pulse-fast")]
-    ].map(([id, mechanic, use, candidates]) => ({ id, mechanic, use, candidates }));
+    ].map(([id, mechanic, use, candidates]) => ({ id, mechanic, use, candidates: sortEffectIdsByLength(candidates) }));
     const explicitDefaults = {
       "laser-charge": { pick: "laser-magical-whoosh", comment: "Earlier pick retained as the comparison baseline." },
       "laser-fire": { pick: "laser-magical-whoosh", comment: "Magical Whoosh fits the lasers." },
@@ -502,7 +510,7 @@
           ${suggested.map(renderOption).join("")}
         </optgroup>
         <optgroup label="Complete sound library · ${effects.length} clips">
-          ${effects.filter(effect => !suggestedSet.has(effect.id)).map(effect => renderOption(effect.id)).join("")}
+          ${sortEffectsByLength(effects.filter(effect => !suggestedSet.has(effect.id))).map(effect => renderOption(effect.id)).join("")}
         </optgroup>
       `;
       timingSound.value = selectedSound;

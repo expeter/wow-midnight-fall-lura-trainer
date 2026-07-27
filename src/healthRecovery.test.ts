@@ -9,11 +9,18 @@ describe('health recovery helpers', () => {
     expect(healthBand(29.9)).toBe('critical')
   })
 
-  it('occasionally creates a held target around twenty percent', () => {
+  it('occasionally creates a held recovery window around twenty percent', () => {
     const values = [.1, .5, .5]
     const target = randomHealthTarget(() => values.shift() ?? .5)
     expect(target.value).toBe(21)
     expect(target.holdSeconds).toBe(4)
+  })
+
+  it('keeps ordinary combat health under pressure without entering recovery range', () => {
+    const woundedValues = [.5, .5, .5]
+    expect(randomHealthTarget(() => woundedValues.shift() ?? .5)).toEqual({ value: 58, holdSeconds: .8 })
+    const healthyValues = [.9, .5, .5]
+    expect(randomHealthTarget(() => healthyValues.shift() ?? .5)).toEqual({ value: 82, holdSeconds: .8 })
   })
 
   it('moves toward changing targets without overshooting', () => {

@@ -169,6 +169,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-086` | Implemented | Add an accessible in-arena Raidlead mute button that immediately toggles the separately persisted TTS preference without affecting music or encounter sounds. |
 | `CR-087` | Implemented | Make the displayed version/build identifier copyable while keeping GitHub as a direct repository link and adding separate Changelog and File an issue links to the project’s tracked pages. |
 | `CR-088` | Implemented | Keep the Phase 3 rune partner from evading contact in every difficulty; assisted modes approach after their reaction delay, while Hard waits in place for the player. |
+| `CR-089` | Implemented | Keep health under steady combat pressure while making critical potion/shield recovery windows occasional instead of repeatedly returning to full health. |
 | `SPEC-001` | Implemented | Define the stable ticket lifecycle: assign an ID, record intent, add focused regression coverage, validate, and commit. |
 | `SPEC-002` | Implemented | Define the creator business card’s stable content, readability, compact layout, and external-link behavior. |
 | `SPEC-003` | Implemented | Define the P3-to-P4 north gather, shared knockup origin, and phase-local HUD boundary. |

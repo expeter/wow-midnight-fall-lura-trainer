@@ -13,9 +13,9 @@ export function healthBand(health: number): HealthBand {
 
 export function randomHealthTarget(random = Math.random): HealthTarget {
   const roll = random()
-  if (roll < .24) return { value: 18 + random() * 6, holdSeconds: 2.5 + random() * 3 }
-  if (roll < .68) return { value: 32 + random() * 42, holdSeconds: .8 + random() * 1.8 }
-  return { value: 77 + random() * 23, holdSeconds: .8 + random() * 1.8 }
+  if (roll < .12) return { value: 18 + random() * 6, holdSeconds: 3 + random() * 2 }
+  if (roll < .82) return { value: 42 + random() * 32, holdSeconds: .4 + random() * .8 }
+  return { value: 76 + random() * 12, holdSeconds: .4 + random() * .8 }
 }
 
 export function approachHealthTarget(current: number, target: number, deltaSeconds: number, rate = 24): number {

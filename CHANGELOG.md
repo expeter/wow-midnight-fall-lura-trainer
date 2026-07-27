@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- CR-089: Keep the health bar under steady combat pressure while making critical potion/shield recovery windows occasional and short-lived.
 - CR-088: Keep the Phase 3 rune partner from evading the player in every difficulty; assisted modes still approach after their reaction delay, while Hard waits in place for the player.
 - Made health potion and shield permanent one-charge-per-phase actions, added
   continuously changing health with held low-health moments and three HUD

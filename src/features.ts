@@ -9,7 +9,7 @@ export function featureFlagsForHost(hostname: string) {
   const localPreview = isLocalPreviewHost(hostname)
   return {
     backgroundMusic: true,
-    encounterSounds: localPreview,
+    encounterSounds: true,
     phaseOne: localPreview,
     textToSpeech: true,
   } as const

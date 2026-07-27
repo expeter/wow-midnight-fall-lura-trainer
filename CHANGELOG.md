@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+Phase 1 is the next planned encounter addition.
+
+## 0.2.0 — 2026-07-27
+
+- Published the reviewed Main ability release sound as an opt-in production
+  sound while leaving unfinished mechanic effects in the local soundboard.
+- Added persistent achievement history, newly-earned completion celebrations,
+  shareable achievement cards, five-run flawless Normal and Hard streaks, and
+  cumulative 10/50/100 phase-clear milestones.
+- Completed and stabilized the Phase 3 and Phase 4 encounter simulations,
+  including plan-driven raid movement, crystal lights, Soaks, Stars, ordered
+  runes, Dark Archangel protection, Starsplinters, Heaven & Hell movement,
+  incoming adds, and the front-tank cone.
+- Added the browser-local feedback inbox and maintained I Asgard I raid-plan
+  loader for faster testing and guild sharing.
+- Improved rendering performance and split the browser test workload for
+  reliable deployment on GitHub Pages runners.
 - CR-089: Keep the health bar under steady combat pressure while making critical potion/shield recovery windows occasional and short-lived.
 - CR-088: Keep the Phase 3 rune partner from evading the player in every difficulty; assisted modes still approach after their reaction delay, while Hard waits in place for the player.
 - Made health potion and shield permanent one-charge-per-phase actions, added

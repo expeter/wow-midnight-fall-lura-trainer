@@ -9,14 +9,14 @@ describe('local preview feature gates', () => {
     expect(isLocalPreviewHost('expeter.github.io')).toBe(false)
   })
 
-  it('gates unfinished P1 and encounter sounds to localhost', () => {
+  it('keeps unfinished P1 local while publishing the reviewed encounter sound', () => {
     expect(featureFlagsForHost('localhost')).toMatchObject({
       phaseOne: true,
       encounterSounds: true,
     })
     expect(featureFlagsForHost('expeter.github.io')).toMatchObject({
       phaseOne: false,
-      encounterSounds: false,
+      encounterSounds: true,
     })
   })
 })

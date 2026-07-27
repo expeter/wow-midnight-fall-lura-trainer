@@ -630,6 +630,11 @@ export default function App() {
     let active = true
     if (!timedVoiceContextRef.current) timedVoiceContextRef.current = new AudioContext()
     const context = timedVoiceContextRef.current
+    const unlockTimedVoice = () => {
+      if (context.state === 'suspended') void context.resume()
+    }
+    window.addEventListener('pointerdown', unlockTimedVoice)
+    window.addEventListener('keydown', unlockTimedVoice)
     if (!timedVoiceLoadRef.current) {
       timedVoiceLoadRef.current = Promise.all(
         (Object.entries(P4_VOICE_CUE_URLS) as [P4VoiceClip, string][]).map(async ([clip, url]) => {
@@ -642,7 +647,11 @@ export default function App() {
     void timedVoiceLoadRef.current
       .then(() => { if (active) setTimedVoiceReady(true) })
       .catch(() => { if (active) setTimedVoiceReady(false) })
-    return () => { active = false }
+    return () => {
+      active = false
+      window.removeEventListener('pointerdown', unlockTimedVoice)
+      window.removeEventListener('keydown', unlockTimedVoice)
+    }
   }, [timedVoiceAvailable])
   useEffect(() => {
     const stopScheduledVoice = () => {

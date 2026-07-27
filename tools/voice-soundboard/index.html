@@ -111,6 +111,16 @@
     .timing-controls { display: grid; align-content: start; gap: 14px; }
     .timing-controls label { display: grid; gap: 5px; color: var(--muted); font-size: 13px; }
     .timing-controls label strong { color: var(--ink); font-variant-numeric: tabular-nums; }
+    .timing-mechanic-explanation {
+      margin: -5px 0 0;
+      padding: 10px 12px;
+      border-left: 3px solid var(--violet);
+      border-radius: 0 9px 9px 0;
+      color: var(--muted);
+      background: rgba(169,146,255,.07);
+      font-size: 13px;
+    }
+    .timing-mechanic-explanation strong { display: block; margin-bottom: 2px; color: var(--ink); }
     .timing-controls input[type="range"] { width: 100%; accent-color: var(--mint); }
     .timing-offset-controls { display: grid; grid-template-columns: minmax(0, 1fr) 108px; align-items: center; gap: 10px; }
     .timing-offset-controls input[type="number"] {
@@ -204,7 +214,8 @@
       </div>
       <div class="timing-controls">
         <label>Mechanic<select id="timing-cue" aria-label="Timing mechanic"></select></label>
-        <label>Sound candidate<select id="timing-sound" aria-label="Timing sound candidate"></select></label>
+        <p class="timing-mechanic-explanation" id="timing-mechanic-explanation" aria-live="polite"></p>
+        <label>Sound candidate · complete library<select id="timing-sound" aria-label="Timing sound candidate"></select></label>
         <label>
           Sound start relative to visual moment <strong id="timing-offset-value">0 ms</strong>
           <span class="timing-offset-controls">
@@ -394,9 +405,22 @@
       { id: "mistake", label: "Point-loss flash", sound: "error-pulse-fast", visual: "mistake", moment: 1.4, loop: 2.7, offset: 0, rate: 1.18 },
       { id: "wipe", label: "Wipe overlay", sound: "error-pulse-fast", visual: "wipe", moment: 1.4, loop: 3, offset: 0, rate: .82 }
     ];
+    const timingVisualDescriptions = {
+      "laser-charge": "A wide purple boss beam grows across the arena, then becomes lethal at the bright impact flash.",
+      "stars-connect": "The blue P3 Stars lattice appears between its orbs at the event boundary, then disappears shortly afterward.",
+      "splinter-detonate": "Six rays remain attached to the marked player until the Starsplinter detonates and all rays vanish.",
+      "orb-return": "Four glowing P2 orbs spiral inward for one second and meet L’ura at the impact flash.",
+      "personal-circle": "The player’s blue personal circle remains visible until its spread check resolves.",
+      "rune-match": "The rune above the player disappears immediately when the correct partner is matched.",
+      "archangel-charge": "Dark Archangel charges as a broad purple beam behind the protection bubble, then strikes at the flash.",
+      "protection-active": "The yellow crystal-protection bubble blooms around the raid at the event boundary.",
+      "mistake": "A brief impact flash represents a non-wipe mechanic error and point loss.",
+      "wipe": "The arena is covered by the red terminal-failure overlay at the event boundary."
+    };
     const timingStage = document.querySelector("#timing-stage");
     const timingCue = document.querySelector("#timing-cue");
     const timingSound = document.querySelector("#timing-sound");
+    const timingMechanicExplanation = document.querySelector("#timing-mechanic-explanation");
     const timingOffset = document.querySelector("#timing-offset");
     const timingOffsetNumber = document.querySelector("#timing-offset-number");
     const timingRate = document.querySelector("#timing-rate");
@@ -462,10 +486,20 @@
     function loadTimingPreset() {
       const preset = timingPreset();
       const savedTiming = timingSaved[preset.id] || {};
-      const candidates = soundCues.find(cue => cue.id === preset.id)?.candidates || [preset.sound];
-      const selectedSound = candidates.includes(savedTiming.sound) ? savedTiming.sound : preset.sound;
-      timingSound.innerHTML = candidates.map(candidate => `<option value="${candidate}">${effectLabel(candidate)}</option>`).join("");
+      const suggested = soundCues.find(cue => cue.id === preset.id)?.candidates || [preset.sound];
+      const suggestedSet = new Set(suggested);
+      const selectedSound = effects.some(effect => effect.id === savedTiming.sound) ? savedTiming.sound : preset.sound;
+      const renderOption = candidate => `<option value="${candidate}">${effectLabel(candidate)}</option>`;
+      timingSound.innerHTML = `
+        <optgroup label="Suggested for this mechanic">
+          ${suggested.map(renderOption).join("")}
+        </optgroup>
+        <optgroup label="Complete sound library · ${effects.length} clips">
+          ${effects.filter(effect => !suggestedSet.has(effect.id)).map(effect => renderOption(effect.id)).join("")}
+        </optgroup>
+      `;
       timingSound.value = selectedSound;
+      timingMechanicExplanation.innerHTML = `<strong>${preset.label}</strong>${timingVisualDescriptions[preset.id]}`;
       const offsetMilliseconds = Math.round((savedTiming.offset ?? preset.offset) * 1000);
       timingOffset.value = offsetMilliseconds;
       timingOffsetNumber.value = offsetMilliseconds;

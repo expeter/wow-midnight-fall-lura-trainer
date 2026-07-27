@@ -159,6 +159,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-079` | Implemented | Delay the five-second Dark Archangel charge sound until one second into its six-second cast so the cue finishes at the impact instead of fading before the missing pop. |
 | `CR-080` | Superseded by CR-081 | Initially moved the shared Intermission and Phase 4 Starsplinter detonation sound 0.1 seconds before ray disappearance; waveform analysis showed that lead was too large. |
 | `CR-081` | Implemented | Measure the Starsplinter waveform and align its main attack with ray disappearance: the source begins immediately and reaches full level about 0.02 seconds into 2× playback, so use a 0.02-second visual lead instead of 0.1 seconds and align Intermission to its actual three-second visual end. |
+| `CR-082` | Implemented | Explain each mechanic’s visual boundary in the sound timing lab and expose the complete generated SFX library in every timing selector, with the cue-specific recommendations grouped first. |
 | `SPEC-001` | Implemented | Define the stable ticket lifecycle: assign an ID, record intent, add focused regression coverage, validate, and commit. |
 | `SPEC-002` | Implemented | Define the creator business card’s stable content, readability, compact layout, and external-link behavior. |
 | `SPEC-003` | Implemented | Define the P3-to-P4 north gather, shared knockup origin, and phase-local HUD boundary. |

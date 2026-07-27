@@ -98,4 +98,16 @@ describe('audio review soundboard', () => {
     expect(soundboard).toContain('timingSaved[preset.id] = { offset, rate, sound }')
     expect(soundboard).toContain('| Cue | Sound | Start offset | Playback rate |')
   })
+
+  it('makes the complete effect library available while explaining each mechanic preview', () => {
+    expect(soundboard).toContain('id="timing-mechanic-explanation"')
+    expect(soundboard).toContain('const timingVisualDescriptions = {')
+    expect(soundboard).toContain('Suggested for this mechanic')
+    expect(soundboard).toContain('Complete sound library · ${effects.length} clips')
+    expect(soundboard).toContain('effects.filter(effect => !suggestedSet.has(effect.id))')
+
+    const explicitEffectIds = [...soundboard.matchAll(/\{ id: "([^"]+)", name: "[^"]+"/g)]
+      .map(([, id]) => id)
+    explicitEffectIds.forEach(id => expect(soundboard).toContain(`id: "${id}"`))
+  })
 })

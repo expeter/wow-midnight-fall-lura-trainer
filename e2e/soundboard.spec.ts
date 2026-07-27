@@ -5,8 +5,10 @@ test('fine-tunes an experimental sound at exact millisecond and rate values', as
 
   await page.getByLabel('Timing mechanic').selectOption('stars-connect')
   const sound = page.getByLabel('Timing sound candidate')
-  await expect(sound.locator('option')).toHaveCount(7)
-  await sound.selectOption('tune-laser-ion-snap')
+  await expect(sound.locator('option')).toHaveCount(77)
+  await expect(sound.locator('optgroup').first()).toHaveAttribute('label', 'Suggested for this mechanic')
+  await expect(sound.locator('optgroup').last()).toHaveAttribute('label', 'Complete sound library · 77 clips')
+  await sound.selectOption('tune-archangel-doom-rise')
 
   const exactOffset = page.getByLabel('Exact sound start offset in milliseconds')
   await exactOffset.fill('90')
@@ -21,7 +23,7 @@ test('fine-tunes an experimental sound at exact millisecond and rate values', as
   await expect(page.locator('#timing-rate')).toHaveValue('1.37')
 
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('lura-sfx-timing-review') || '{}')['stars-connect'])
-  expect(saved).toEqual({ offset: .089, rate: 1.37, sound: 'tune-laser-ion-snap' })
+  expect(saved).toEqual({ offset: .089, rate: 1.37, sound: 'tune-archangel-doom-rise' })
 
   await page.getByRole('button', { name: '▶ Loop' }).click()
   await expect(page.locator('#timing-status')).toContainText('Looping')

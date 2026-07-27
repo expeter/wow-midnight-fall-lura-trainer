@@ -3,7 +3,7 @@ import { angleToward, ARENA, assignmentRevealDistance, bossBeamHitsPlayer, canPi
 import { keepP3CrystalPoolCovered, keepP3NpcInSoak, keepP4NpcInProtection, p3CrystalPoolCoverageTargets, P3_APPROACH_NPC_SPEED_MULTIPLIER, P3_APPROACH_SECONDS, P3_MEMORY_START_SECONDS, P3_POOL_CRYSTAL_CLEARANCE, P3_RUNE_HALF_CLEARANCE, P3_SAFE_ZONE_GRACE_SECONDS, P3_SAFE_ZONE_PENALTY_PER_SECOND, P3_SECTOR_SECONDS, p3UnsafePenaltyTicks, P4_SPLINTER_RETURN_SECONDS } from './game'
 import { p3ProtectionBubbleCenter } from './game'
 import type { Point } from './game'
-import { P3_LIGHT_RADIUS, p3SpreadPosition, p4RenderedNpcSplinterHitsPlayer, p4RenderedNpcSplinterHitsRaid, p4RenderedNpcSplinterOrigin, p4TankKillsBox, P4_TANK_KILL_RADIUS } from './game'
+import { P3_LIGHT_RADIUS, p3SpreadPosition, p4NpcSplinterMovementAge, p4RenderedNpcSplinterHitsPlayer, p4RenderedNpcSplinterHitsRaid, p4RenderedNpcSplinterOrigin, p4TankKillsBox, P4_TANK_KILL_RADIUS } from './game'
 import { isP3RaidMemberVisible, p3ActiveCrystalAssignments } from './game'
 import { bossDamageScoreBonus, isInsideP3Pool, p4BossHealthWithPlayerDamage, p4PlayerSplinterHitsNpc, p4StartingBossState, P1_STAR_LENGTH, preP4BossHealth, shouldHoldP3RunePartner, shouldSuppressRepeatedWipe, shouldTriggerP3EarlyClear, starsplinterHitsCrystalCarrier, starsplinterHitsPoint } from './game'
 
@@ -508,6 +508,17 @@ describe('Intermission game rules', () => {
         }
       }
     }
+  })
+  it('keeps the third P4 Splinter NPC stacked until the first Splinter detonates', () => {
+    const center = { x: 480, y: 270 }
+    const stack = p4StackPosition(1, center)
+    const wait = P4_SPLINTER_DETONATION_SECONDS - 2 * P4_SPLINTER_INTERVAL_SECONDS
+    expect(wait).toBeCloseTo(1.3)
+    expect(p4NpcSplinterMovementAge(2, wait - .01)).toBe(0)
+    expect(p4NpcSplinterPosition(stack, center, 2, wait - .01, 0)).toEqual(stack)
+    expect(p4NpcSplinterMovementAge(2, wait + .5)).toBeCloseTo(.5)
+    expect(distance(p4NpcSplinterPosition(stack, center, 2, wait + .5, 0), stack)).toBeGreaterThan(0)
+    expect(distance(p4NpcSplinterPosition(stack, center, 2, P4_SPLINTER_DETONATION_SECONDS, 0), stack)).toBeGreaterThan(10)
   })
   it('keeps every Phase 4 NPC path inside the moving protection zone', () => {
     const center = { x: 480, y: 270 }

@@ -590,10 +590,17 @@ export function p4NpcSplinterPosition(stack: Point, center: Point, ordinal: numb
       score: sideAlignment * 10 + outwardAlignment,
     }
   }).sort((a, b) => b.score - a.score)[0].point
-  const outwardProgress = Math.min(1, Math.max(0, age) / 1.35)
+  const outwardProgress = Math.min(1, p4NpcSplinterMovementAge(ordinal, age) / 1.35)
   const returnProgress = Math.min(1, Math.max(0, age - P4_SPLINTER_DETONATION_SECONDS) / P4_SPLINTER_RETURN_SECONDS)
   const progress = outwardProgress * (1 - returnProgress)
   return { x: stack.x + (final.x - stack.x) * progress, y: stack.y + (final.y - stack.y) * progress }
+}
+
+export function p4NpcSplinterMovementAge(ordinal: number, age: number): number {
+  const waitForFirstDetonation = ordinal === 2
+    ? Math.max(0, P4_SPLINTER_DETONATION_SECONDS - ordinal * P4_SPLINTER_INTERVAL_SECONDS)
+    : 0
+  return Math.max(0, age - waitForFirstDetonation)
 }
 
 export function p4RenderedNpcSplinterOrigin(renderedNpcPositions: Point[], ordinal: number, fallback: Point): Point {

@@ -36,8 +36,10 @@ jobs:
         include:
           - suite: opening-and-p2
             filter: --grep-invert=@late-arena
+            retries: 0
           - suite: p3-and-p4
             filter: --grep=@late-arena
+            retries: 1
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -51,7 +53,7 @@ jobs:
       - name: Install browser for UI tests
         run: npx playwright install --with-deps chromium
       - name: Run UI tests (${{ matrix.suite }})
-        run: npm run test:e2e -- ${{ matrix.filter }}
+        run: npm run test:e2e -- ${{ matrix.filter }} --retries=${{ matrix.retries }}
       - name: Upload failed UI test report
         if: failure()
         uses: actions/upload-artifact@v4

@@ -114,6 +114,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `FR-039` | Backlog after v0.2.0 | In the live build, playing as `Gnomkaiser` adds a crown to the controlled player, renders the full raid at 50% scale, and unlocks a hidden achievement whose criteria remain concealed in the catalogue. |
 | `FR-040` | Implemented | Add a compact clipboard action to the achievement collection that renders the full earned/locked ledger as a branded shareable PNG, copies it to the system clipboard when supported, and downloads it as a fallback. |
 | `FR-041` | Implemented | Add a localhost sound timing lab to the existing soundboard with looping mechanic visuals, an exact event-boundary flash, adjustable and persisted sound-start offset and playback rate, measured reset values, and one-click Markdown export for the complete calibration table. |
+| `FR-042` | Implemented | Profile and optimize renderer and simulation hot paths without changing encounter mechanics, timings, collision rules, or visual meaning. Stable transient P3/P4 geometry is reused across frames while genuinely animated geometry remains dynamic. |
 | `CR-037` | Superseded | A direct Discord profile needs a numeric user ID. The generic Discord application link was removed again; Twitch remains the direct creator contact. |
 | `CR-038` | Implemented | Link the displayed BattleTag to Pestivator’s Raider.IO profile because Battle.net has no stable public friend-add URL for a BattleTag. |
 | `CR-039` | Implemented | Record every tagged request before implementation and require focused automated regression coverage before marking it implemented. |
@@ -226,6 +227,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-057` | Superseded in part by BUG-059 | Give every resolved Phase 2 orb set a new stable random seed, with independent angular offsets, speeds, and rotational travel; only the beam resolution starts their shared return clock. BUG-059 standardizes the travel direction. |
 | `BUG-058` | Implemented | Clamp pre-Phase-4 boss health to the full 0–100% range and explicitly hold it at 0% when the Phase 3 damage clear begins, restoring 100% only at the Phase 4 boundary. |
 | `BUG-059` | Implemented | Keep all Phase 2 orbs rotating continuously counterclockwise with no direction reversal when struck orbs become yellow and enter the glowing return telegraph. Yellow and purple orbs now use the same positive renderer rotation clock while retaining randomized lanes and slight speed variance. |
+| `BUG-060` | Implemented | Make the renderer-heavy late-arena CI shard reliable on GitHub’s free software-rendered runners: test the second P4 Splinter cycle directly instead of coupling it to the remaining full phase playback, retain pure-rule coverage for the complete 88-second lifecycle, and retry only this heavy shard once for transient runner stalls. |
 
 ## Implemented feature inventory
 

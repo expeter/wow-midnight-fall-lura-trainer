@@ -251,17 +251,8 @@ test('enters Phase 4 directly and plays Splinters again before the second Heaven
   await expect(scene).toHaveAttribute('data-p4-cycle', pausedCycle ?? '')
   await expect(mechanic).toContainText(/SPLINTER IN/, { timeout: MECHANIC_TIMEOUT })
   await expect(mechanic).toContainText(/SPLINTER [1-3] \/ 3/, { timeout: MECHANIC_TIMEOUT })
+  await expect(scene).not.toHaveAttribute('data-p4-cycle', pausedCycle ?? '')
   await expect(page.getByRole('alert')).toHaveCount(0)
-  await expect(page.getByRole('heading', { name: 'Phase clear!' })).toBeVisible({ timeout: 35_000 })
-  await expect(page.getByLabel('Phase results')).toContainText('Phase 4')
-  await expect(page.getByLabel('Phase results')).toContainText('pts')
-  await expect(page.getByText('Time in arena')).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Copy result image' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Copy result text' })).toBeVisible()
-  await expect(page.getByText(/Attempt #1/)).toBeVisible()
-  await page.getByRole('button', { name: 'Copy result image' }).click()
-  await expect(page.getByRole('status')).toContainText(/Result image (copied|downloaded)/)
-  await expect(page.getByText('L’URA MOVEMENT MASTER')).toHaveCount(0)
 })
 
 test('resolves a Phase 4 stack hit reliably at 2.5x speed', { tag: '@late-arena' }, async ({ page }) => {

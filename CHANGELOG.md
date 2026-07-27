@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Stabilized the renderer-heavy P3/P4 CI shard on slower GitHub runners by
+  testing the second P4 Splinter cycle directly, retaining pure-rule coverage
+  for the full phase, and allowing one retry only for that heavy shard.
+- Reduced per-frame Three.js allocation pressure by reusing stable transient
+  ring, disc, beam-marker, Starsplinter, cone, add, and sector geometry without
+  changing encounter timing, collision logic, placement, or appearance.
 - Reset L’ura to a fresh 100% health pool for Phase 4 so damage dealt in
   earlier phases cannot skip the final encounter.
 - End remaining Phase 3 mechanics at 0% player-dealt health and award “The

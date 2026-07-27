@@ -231,21 +231,27 @@ function addLaserBeam(group: THREE.Group, origin: Point, angle: number, length: 
   addLayer(Math.max(.18, width * .12), 0xd9f8ff, Math.min(1, opacity * 1.25), 13)
 }
 function addFrontalCone(group: THREE.Group, origin: Point, angle: number, radius: number, color: number, opacity: number) {
-  const shape = new THREE.Shape()
-  shape.moveTo(0, 0)
-  for (let step = 0; step <= 20; step++) {
-    const rayAngle = angle - Math.PI / 4 + step / 20 * Math.PI / 2
-    shape.lineTo(Math.cos(rayAngle) * radius, -Math.sin(rayAngle) * radius)
-  }
-  shape.closePath()
-  const cone = new THREE.Mesh(new THREE.ShapeGeometry(shape), new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }))
+  const geometry = cachedTransientGeometry(`cone:${radius}:${angle}`, () => {
+    const shape = new THREE.Shape()
+    shape.moveTo(0, 0)
+    for (let step = 0; step <= 20; step++) {
+      const rayAngle = angle - Math.PI / 4 + step / 20 * Math.PI / 2
+      shape.lineTo(Math.cos(rayAngle) * radius, -Math.sin(rayAngle) * radius)
+    }
+    shape.closePath()
+    return new THREE.ShapeGeometry(shape)
+  })
+  const cone = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }))
   cone.rotation.x = -Math.PI / 2
   cone.position.set(origin.x, 3.4, origin.y)
   cone.renderOrder = 10
   group.add(cone)
 }
-function addGroundRing(group: THREE.Group, point: Point, inner: number, outer: number, color: number, opacity: number, height = 2.7) {
-  const ring = new THREE.Mesh(new THREE.RingGeometry(inner, outer, 48), new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, depthTest: false, side: THREE.DoubleSide }))
+function addGroundRing(group: THREE.Group, point: Point, inner: number, outer: number, color: number, opacity: number, height = 2.7, cacheGeometry = true) {
+  const geometry = cacheGeometry
+    ? cachedTransientGeometry(`ring:${inner}:${outer}`, () => new THREE.RingGeometry(inner, outer, 48))
+    : new THREE.RingGeometry(inner, outer, 48)
+  const ring = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, depthTest: false, side: THREE.DoubleSide }))
   ring.rotation.x = -Math.PI / 2
   ring.position.set(point.x, height, point.y)
   ring.renderOrder = 8
@@ -261,7 +267,8 @@ function addGroundProgress(group: THREE.Group, point: Point, radius: number, wid
   group.add(ring)
 }
 function addGroundDisc(group: THREE.Group, point: Point, radius: number, color: number, opacity: number, height = 2.35) {
-  const disc = new THREE.Mesh(new THREE.CircleGeometry(radius, 48), new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, depthTest: false, side: THREE.DoubleSide }))
+  const geometry = cachedTransientGeometry(`disc:${radius}`, () => new THREE.CircleGeometry(radius, 48))
+  const disc = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, depthTest: false, side: THREE.DoubleSide }))
   disc.rotation.x = -Math.PI / 2
   disc.position.set(point.x, height, point.y)
   disc.renderOrder = 7
@@ -310,7 +317,7 @@ function makeMarkerTexture(symbol: string, color: string) {
   return texture
 }
 function addBeamMarker(group: THREE.Group, origin: Point, angle: number, texture: THREE.Texture) {
-  const marker = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false, side: THREE.DoubleSide }))
+  const marker = new THREE.Mesh(cachedTransientGeometry('beam-marker', () => new THREE.PlaneGeometry(20, 20)), new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false, side: THREE.DoubleSide }))
   marker.rotation.x = -Math.PI / 2
   marker.position.set(origin.x + Math.cos(angle) * 145, 4.2, origin.y + Math.sin(angle) * 145)
   group.add(marker)
@@ -323,7 +330,8 @@ function addSplinterWedge(group: THREE.Group, origin: Point, angle: number, leng
     shape.lineTo(length, endWidth / 2)
     shape.lineTo(0, startWidth / 2)
     shape.closePath()
-    const wedge = new THREE.Mesh(new THREE.ShapeGeometry(shape), new THREE.MeshBasicMaterial({ color: layerColor, transparent: true, opacity: layerOpacity, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }))
+    const geometry = cachedTransientGeometry(`splinter:${length}:${startWidth}:${endWidth}`, () => new THREE.ShapeGeometry(shape))
+    const wedge = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: layerColor, transparent: true, opacity: layerOpacity, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }))
     wedge.rotation.x = -Math.PI / 2
     wedge.rotation.z = -angle
     wedge.position.set(origin.x, height, origin.y)
@@ -1232,7 +1240,7 @@ export default function GameScene(props: SceneProps) {
           const returnImpact = P2_ORB_RETURN_SECONDS + P2_ORB_RETURN_GLOW_SECONDS + P2_ORB_RETURN_TRAVEL_SECONDS
           if (state.p2OrbReturnAge >= returnImpact && state.p2OrbReturnAge < returnImpact + .5) {
             const pulseRadius = 8 + (state.p2OrbReturnAge - returnImpact) * 55
-            addGroundRing(hazards, WORLD.center, pulseRadius - 2, pulseRadius + 2, 0xffefa2, 1 - (state.p2OrbReturnAge - returnImpact) * 1.5, 4)
+            addGroundRing(hazards, WORLD.center, pulseRadius - 2, pulseRadius + 2, 0xffefa2, 1 - (state.p2OrbReturnAge - returnImpact) * 1.5, 4, false)
           }
         }
       }
@@ -1353,12 +1361,13 @@ export default function GameScene(props: SceneProps) {
         }
         if (state.event === 'p3-big-boom') {
           const progress = THREE.MathUtils.clamp(state.eventTime, 0, 1)
-          addGroundRing(hazards, WORLD.center, WORLD.innerRadius + progress * (P3_OUTER_RADIUS - WORLD.innerRadius) - 4, WORLD.innerRadius + progress * (P3_OUTER_RADIUS - WORLD.innerRadius) + 4, 0xd999ff, .92 - progress * .45, 4)
+          addGroundRing(hazards, WORLD.center, WORLD.innerRadius + progress * (P3_OUTER_RADIUS - WORLD.innerRadius) - 4, WORLD.innerRadius + progress * (P3_OUTER_RADIUS - WORLD.innerRadius) + 4, 0xd999ff, .92 - progress * .45, 4, false)
         }
         if (state.p3Round > 1 || state.event === 'p3-sector-move') {
           const armProgress = state.p3Round > 1 ? 1 : THREE.MathUtils.clamp(state.eventTime / 4.5, 0, 1)
           const pulse = .04 * Math.sin(state.time * 7)
-          const consumed = new THREE.Mesh(new THREE.RingGeometry(WORLD.innerRadius, P3_OUTER_RADIUS, 64, 1, Math.PI * 7 / 6, Math.PI * 2 / 3), new THREE.MeshBasicMaterial({ color: 0x8f1aac, transparent: true, opacity: .18 + armProgress * .42 + pulse, depthWrite: false, side: THREE.DoubleSide }))
+          const consumedGeometry = cachedTransientGeometry('p3-consumed-sector', () => new THREE.RingGeometry(WORLD.innerRadius, P3_OUTER_RADIUS, 64, 1, Math.PI * 7 / 6, Math.PI * 2 / 3))
+          const consumed = new THREE.Mesh(consumedGeometry, new THREE.MeshBasicMaterial({ color: 0x8f1aac, transparent: true, opacity: .18 + armProgress * .42 + pulse, depthWrite: false, side: THREE.DoubleSide }))
           consumed.rotation.x = -Math.PI / 2
           consumed.position.set(WORLD.center.x, 3.05, WORLD.center.y)
           hazards.add(consumed)
@@ -1407,7 +1416,8 @@ export default function GameScene(props: SceneProps) {
             if (destroyedP4BoxIds.has(boxState.id)) continue
             if (boxState.aimedAtGroup && distance(boxState.position, frontSoaker) <= P4_FRONT_CONE_RANGE) continue
             const height = boxState.size * .5
-            const box = new THREE.Mesh(new THREE.BoxGeometry(boxState.size, height, boxState.size), new THREE.MeshBasicMaterial({ color: 0x9edaff, transparent: true, opacity: .76 }))
+            const boxGeometry = cachedTransientGeometry(`p4-box:${boxState.size}`, () => new THREE.BoxGeometry(boxState.size, height, boxState.size))
+            const box = new THREE.Mesh(boxGeometry, new THREE.MeshBasicMaterial({ color: 0x9edaff, transparent: true, opacity: .76 }))
             box.position.set(boxState.position.x, height / 2 + 2.6, boxState.position.y)
             hazards.add(box)
           }
@@ -1424,7 +1434,8 @@ export default function GameScene(props: SceneProps) {
           for (let consumedCycle = 1; consumedCycle <= consumedCycles; consumedCycle++) {
             const sectorGap = .035
             const sectorStart = Math.PI / 4 + (consumedCycle - 1) * Math.PI / 2 + sectorGap / 2
-            const voidZone = new THREE.Mesh(new THREE.RingGeometry(WORLD.innerRadius, P3_OUTER_RADIUS, 64, 1, sectorStart, Math.PI / 2 - sectorGap), new THREE.MeshBasicMaterial({ color: 0x7d164f, transparent: true, opacity: .48, depthWrite: false, side: THREE.DoubleSide }))
+            const voidGeometry = cachedTransientGeometry(`p4-void:${consumedCycle}`, () => new THREE.RingGeometry(WORLD.innerRadius, P3_OUTER_RADIUS, 64, 1, sectorStart, Math.PI / 2 - sectorGap))
+            const voidZone = new THREE.Mesh(voidGeometry, new THREE.MeshBasicMaterial({ color: 0x7d164f, transparent: true, opacity: .48, depthWrite: false, side: THREE.DoubleSide }))
             voidZone.rotation.x = -Math.PI / 2
             voidZone.position.set(WORLD.center.x, 2.7, WORLD.center.y)
             hazards.add(voidZone)

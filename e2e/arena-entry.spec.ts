@@ -11,46 +11,25 @@ test('unlocks and schedules the complete prerecorded P4 raidlead in the browser'
   await page.addInitScript(() => {
     localStorage.setItem('lura-tts-enabled', 'true')
     localStorage.setItem('lura-game-speed', '2.5')
-    const voiceState = {
-      resumes: [] as boolean[],
-      starts: [] as number[],
-    }
+    const voiceState = { played: [] as string[] }
     Object.defineProperty(window, '__p4VoiceState', { value: voiceState })
-    class TestAudioContext {
-      state = 'suspended'
-      currentTime = 0
-      destination = {}
-      async decodeAudioData() { return {} }
-      async resume() {
-        voiceState.resumes.push(navigator.userActivation.isActive)
-        this.state = 'running'
-      }
-      async close() { this.state = 'closed' }
-      createBufferSource() {
-        return {
-          buffer: null,
-          playbackRate: { value: 1 },
-          connect() {},
-          start(at: number) { voiceState.starts.push(at) },
-          stop() {},
-        }
-      }
+    HTMLMediaElement.prototype.play = function play() {
+      voiceState.played.push(this.src.split('/').at(-1) ?? '')
+      return Promise.resolve()
     }
-    Object.defineProperty(window, 'AudioContext', { configurable: true, value: TestAudioContext })
   })
   await page.goto('/')
   await page.getByRole('button', { name: 'P4', exact: true }).click()
   await page.getByRole('button', { name: /Enter P4/ }).click()
 
   await expect.poll(
-    () => page.evaluate(() => (window as typeof window & { __p4VoiceState: { starts: number[] } }).__p4VoiceState.starts.length),
+    () => page.evaluate(() => (window as typeof window & { __p4VoiceState: { played: string[] } }).__p4VoiceState.played.length),
     { timeout: 10_000 },
   ).toBe(4)
   const voiceState = await page.evaluate(() => (
-    window as typeof window & { __p4VoiceState: { resumes: boolean[]; starts: number[] } }
+    window as typeof window & { __p4VoiceState: { played: string[] } }
   ).__p4VoiceState)
-  expect(voiceState.resumes).toContain(true)
-  expect(voiceState.starts).toEqual([...voiceState.starts].sort((left, right) => left - right))
+  expect(voiceState.played.map(filename => filename.match(/^(left|right|move)/)?.[1])).toEqual(['left', 'right', 'left', 'move'])
 })
 
 test('a shared hash plan drives every live phase and survives a clean reload', async ({ page }) => {

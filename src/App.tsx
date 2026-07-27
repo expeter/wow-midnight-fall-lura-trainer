@@ -522,10 +522,8 @@ export default function App() {
   const ttsSpokenRef = useRef(new Set<string>())
   const encounterSoundPlayedRef = useRef(new Set<string>())
   const activeEncounterSoundsRef = useRef(new Set<HTMLAudioElement>())
-  const timedVoiceContextRef = useRef<AudioContext | null>(null)
-  const timedVoiceBuffersRef = useRef<Partial<Record<P4VoiceClip, AudioBuffer>>>({})
-  const timedVoiceSourcesRef = useRef<AudioBufferSourceNode[]>([])
-  const timedVoiceLoadRef = useRef<Promise<void> | null>(null)
+  const timedVoiceAudiosRef = useRef<Partial<Record<P4VoiceClip, HTMLAudioElement>>>({})
+  const timedVoiceTimersRef = useRef<number[]>([])
   const jumpOriginRef = useRef<Point>(positions[0])
   const pullOriginRef = useRef<Point>(WORLD.center)
   const p3FlightOriginRef = useRef<Point>(WORLD.center)
@@ -622,65 +620,63 @@ export default function App() {
     && typeof SpeechSynthesisUtterance !== 'undefined'
   const timedVoiceAvailable = timedVoiceSupported(
     FEATURE_FLAGS.textToSpeech,
-    typeof window !== 'undefined' && 'AudioContext' in window,
+    typeof Audio !== 'undefined',
   )
   const raidleadAvailable = ttsAvailable || timedVoiceAvailable
   useEffect(() => {
     if (!timedVoiceAvailable) return
-    let active = true
-    if (!timedVoiceContextRef.current) timedVoiceContextRef.current = new AudioContext()
-    const context = timedVoiceContextRef.current
-    const unlockTimedVoice = () => {
-      if (context.state === 'suspended') void context.resume()
-    }
-    window.addEventListener('pointerdown', unlockTimedVoice)
-    window.addEventListener('keydown', unlockTimedVoice)
-    if (!timedVoiceLoadRef.current) {
-      timedVoiceLoadRef.current = Promise.all(
-        (Object.entries(P4_VOICE_CUE_URLS) as [P4VoiceClip, string][]).map(async ([clip, url]) => {
-          const response = await fetch(url)
-          if (!response.ok) throw new Error(`Unable to load ${clip} voice cue`)
-          timedVoiceBuffersRef.current[clip] = await context.decodeAudioData(await response.arrayBuffer())
-        }),
-      ).then(() => undefined)
-    }
-    void timedVoiceLoadRef.current
-      .then(() => { if (active) setTimedVoiceReady(true) })
-      .catch(() => { if (active) setTimedVoiceReady(false) })
+    timedVoiceAudiosRef.current = Object.fromEntries(
+      (Object.entries(P4_VOICE_CUE_URLS) as [P4VoiceClip, string][]).map(([clip, url]) => {
+        const audio = new Audio(url)
+        audio.preload = 'auto'
+        audio.load()
+        return [clip, audio]
+      }),
+    )
+    setTimedVoiceReady(true)
     return () => {
-      active = false
-      window.removeEventListener('pointerdown', unlockTimedVoice)
-      window.removeEventListener('keydown', unlockTimedVoice)
+      Object.values(timedVoiceAudiosRef.current).forEach(audio => {
+        audio.pause()
+        audio.removeAttribute('src')
+      })
+      timedVoiceAudiosRef.current = {}
     }
   }, [timedVoiceAvailable])
   useEffect(() => {
     const stopScheduledVoice = () => {
-      timedVoiceSourcesRef.current.forEach(source => {
-        try { source.stop() } catch { /* source already stopped */ }
+      timedVoiceTimersRef.current.forEach(timer => window.clearTimeout(timer))
+      timedVoiceTimersRef.current = []
+      Object.values(timedVoiceAudiosRef.current).forEach(audio => {
+        audio.pause()
+        audio.currentTime = 0
       })
-      timedVoiceSourcesRef.current = []
     }
     stopScheduledVoice()
-    const context = timedVoiceContextRef.current
-    if (!timedVoiceReady || !ttsEnabled || screen !== 'game' || paused || wipeReason || event !== 'p4-cycle' || !context) {
+    if (!timedVoiceReady || !ttsEnabled || screen !== 'game' || paused || wipeReason || event !== 'p4-cycle') {
       return stopScheduledVoice
     }
-    void context.resume()
-    const anchor = context.currentTime + .02
     for (const cue of p4TimedVoiceCues(p4Cycle)) {
       const remainingRealSeconds = timedVoiceDelaySeconds(cue.at, eventTime, gameSpeed)
       if (remainingRealSeconds < -.05) continue
-      const buffer = timedVoiceBuffersRef.current[cue.clip]
-      if (!buffer) continue
-      const source = context.createBufferSource()
-      source.buffer = buffer
-      source.playbackRate.value = gameSpeed
-      source.connect(context.destination)
-      source.start(anchor + Math.max(0, remainingRealSeconds))
-      timedVoiceSourcesRef.current.push(source)
+      const timer = window.setTimeout(() => {
+        const audio = timedVoiceAudiosRef.current[cue.clip]
+        if (!audio) return
+        audio.currentTime = 0
+        audio.playbackRate = gameSpeed
+        audio.preservesPitch = true
+        void audio.play().catch(() => {
+          if (!ttsAvailable) return
+          const utterance = new SpeechSynthesisUtterance(cue.clip)
+          utterance.lang = 'en-US'
+          utterance.rate = Math.min(1.5, Math.max(1, gameSpeed))
+          utterance.volume = 1
+          window.speechSynthesis.speak(utterance)
+        })
+      }, Math.max(0, remainingRealSeconds) * 1000)
+      timedVoiceTimersRef.current.push(timer)
     }
     return stopScheduledVoice
-  }, [timedVoiceReady, ttsEnabled, screen, paused, wipeReason, event, p4Cycle, gameSpeed])
+  }, [timedVoiceReady, ttsAvailable, ttsEnabled, screen, paused, wipeReason, event, p4Cycle, gameSpeed])
   useEffect(() => {
     if (!ttsAvailable || !ttsEnabled || screen !== 'game' || paused || wipeReason) {
       if (ttsAvailable) window.speechSynthesis.cancel()
@@ -748,10 +744,8 @@ export default function App() {
   }, [encounterSoundsEnabled, encounterSoundVolume, gameSpeed, screen, paused, wipeReason, event, eventTime, cycle, p2Cycle, p2OrbReturnAge, p3Round, p3PoolHealth, p3ResolvedRunes, p4Cycle, crystal, mistakes])
   useEffect(() => () => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel()
-    timedVoiceSourcesRef.current.forEach(source => {
-      try { source.stop() } catch { /* source already stopped */ }
-    })
-    void timedVoiceContextRef.current?.close()
+    timedVoiceTimersRef.current.forEach(timer => window.clearTimeout(timer))
+    Object.values(timedVoiceAudiosRef.current).forEach(audio => audio.pause())
     activeEncounterSoundsRef.current.forEach(audio => audio.pause())
     activeEncounterSoundsRef.current.clear()
   }, [])

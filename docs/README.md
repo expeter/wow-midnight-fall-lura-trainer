@@ -246,7 +246,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-060` | Implemented | Make the renderer-heavy late-arena CI shard reliable on GitHub’s free software-rendered runners: test the second P4 Splinter cycle directly instead of coupling it to the remaining full phase playback, retain pure-rule coverage for the complete 88-second lifecycle, and retry only this heavy shard once for transient runner stalls. |
 | `BUG-061` | Implemented | Model Phase 2 as one continuous twelve-orb roster: each beam converts exactly its four existing purple targets to yellow, those same indexed orbs keep orbiting counterclockwise during the return timer, then all four travel inward. The next beam handles the next four, with no duplicate sets, randomized replacement lanes, or purple/yellow overlap. |
 | `BUG-062` | Implemented | Resolve incoming Phase 4 NPC Starsplinters from the NPCs’ actual rendered/interpolated positions instead of their ideal scripted destinations, keeping lethal collision rays aligned with the visible beams. |
-| `BUG-063` | Implemented | Restore the Phase 4 “Left, Right, Left, Move” raidlead by preloading its clocked clips before Phase 4, making prerecorded calls depend only on Web Audio, and unlocking the suspended audio clock directly from pointer or keyboard input so browser autoplay policy cannot silently suppress the sequence. |
+| `BUG-063` | Implemented | Restore the Phase 4 “Left, Right, Left, Move” raidlead through preloaded browser media elements on exact timers—the same proven playback route as the Main ability—and fall back to browser speech if a clip is rejected. Browser regression coverage verifies all four files play in order. |
 
 ## Implemented feature inventory
 

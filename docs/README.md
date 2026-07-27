@@ -181,6 +181,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-098` | Implemented | Add independent bass-boost and treble-reduction controls to the visual soundboard without changing cue timing, and apply the initial 6dB/5dB deeper mix only to the live Starsplinter sound. |
 | `CR-099` | Implemented | Remove every live encounter, mistake, and wipe sound except the Main ability release; preserve the deferred candidates and timing work in the local soundboard. |
 | `CR-100` | Implemented | Move the Phase 4 “Move” raidlead call one second later so it plays exactly when the final Starsplinter finishes; preserve the existing Left / Right / Left timing. |
+| `CR-101` | Implemented | Present only achievements newly unlocked by the current attempt in the completion summary, copied text, and share image. Previously stored achievements remain visible in the permanent achievement collection but are not celebrated again as new. |
 | `FR-045` | Implemented | Add Main ability release to the soundboard review and visual timing lab with a one-second filling cast bar, projectile-release boundary, complete effect library, and initial cast candidates; keep it out of production until reviewed. The current trial is Error Pulse at −10ms and 7×. |
 | `SPEC-001` | Implemented | Define the stable ticket lifecycle: assign an ID, record intent, add focused regression coverage, validate, and commit. |
 | `SPEC-002` | Implemented | Define the creator business card’s stable content, readability, compact layout, and external-link behavior. |

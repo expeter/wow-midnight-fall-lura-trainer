@@ -5,6 +5,7 @@ import {
   collectibleAchievements,
   emptyCollection,
   mergeEarnedAchievements,
+  newlyEarnedAchievements,
   parseAchievementCollection,
   serializeAchievementCollection,
 } from './achievementCollection'
@@ -110,6 +111,18 @@ describe('canonical achievement rules', () => {
 })
 
 describe('persistent achievement collection', () => {
+  it('returns only achievements not already earned for the current result summary', () => {
+    const awards = collectibleAchievements(normalFlawless)
+    const previouslyEarned = mergeEarnedAchievements(
+      emptyCollection(),
+      [awards[0]],
+      '2026-07-26T10:00:00.000Z',
+      { attempt: 1, playerName: 'Pestivator' },
+    )
+    expect(newlyEarnedAchievements(awards, previouslyEarned).map(achievement => achievement.key))
+      .toEqual(awards.slice(1).map(achievement => achievement.key))
+  })
+
   it('keeps the first-earned metadata and stores one run per attempt', () => {
     const award = collectibleAchievements(normalFlawless)
     const first = mergeEarnedAchievements(emptyCollection(), award, '2026-07-26T10:00:00.000Z', {

@@ -4,7 +4,7 @@ import { buildPhaseResult, completionShareText, isFullSequenceCompletion, type P
 import { bossDamageScoreBonus, isInsideP3Pool, p4BossHealthWithPlayerDamage, p4RenderedNpcSplinterOrigin, p4StartingBossState, p4TankKillsBox, preP4BossHealth, shouldSuppressRepeatedWipe, shouldTriggerP3EarlyClear, starsplinterHitsCrystalCarrier } from './game'
 import { p4TimedVoiceCues, timedVoiceDelaySeconds, timedVoiceSupported, ttsCuesForState, type P4VoiceClip } from './audio'
 import AchievementCollection, { AchievementBadgeSummary, AchievementUnlockPopups } from './AchievementCollection'
-import { ACHIEVEMENT_STORAGE_KEY, collectibleAchievements, mergeEarnedAchievements, parseAchievementCollection, serializeAchievementCollection, type AchievementDefinition } from './achievementCollection'
+import { ACHIEVEMENT_STORAGE_KEY, collectibleAchievements, mergeEarnedAchievements, newlyEarnedAchievements, parseAchievementCollection, serializeAchievementCollection, type AchievementDefinition } from './achievementCollection'
 import { FEATURE_FLAGS } from './features'
 import GameScene from './GameScene'
 import { advanceMainAbilityCast, idleMainAbilityCast, mainAbilityElapsedSeconds, MAIN_ABILITY_CAST_SECONDS, requestMainAbilityCast, type MainAbilityCastState } from './mainAbility'
@@ -1767,12 +1767,12 @@ export default function App() {
     p3EarlyClear: p3DamageClear,
   }
   const collectibleAwards = collectibleAchievements(achievementSummary, achievementCollection, attemptNumber)
-  const achievements = collectibleAwards
-  const newCollectibleAwards = collectibleAwards.filter(achievement => !achievementCollection.records.some(record => record.key === achievement.key))
+  const newCollectibleAwards = newlyEarnedAchievements(collectibleAwards, achievementCollection)
+  const achievements = newCollectibleAwards
   const collectibleAwardSignature = newCollectibleAwards.map(achievement => achievement.key).join('|')
   useEffect(() => {
-    if (screen !== 'results' || completionPreview || !collectibleAwardSignature) return
-    setAchievementPopups(newCollectibleAwards)
+    if (screen !== 'results' || completionPreview) return
+    if (newCollectibleAwards.length) setAchievementPopups(newCollectibleAwards)
     setAchievementCollection(current => {
       const updated = mergeEarnedAchievements(current, collectibleAwards, new Date().toISOString(), {
         attempt: attemptNumber,
@@ -1830,10 +1830,10 @@ export default function App() {
     context.strokeRect(28, 28, 1144, 619)
     context.fillStyle = fullSequenceComplete ? '#ffd978' : '#73e0c1'
     context.font = '600 24px sans-serif'
-    context.fillText(completionPreview ? 'RESULT SCREEN PREVIEW · NOT A COMPLETED RUN' : fullSequenceComplete ? 'FULL RUN COMPLETE · ACHIEVEMENT UNLOCKED' : 'L’URA PRACTICE COMPLETE', 70, 92)
+    context.fillText(completionPreview ? 'RESULT SCREEN PREVIEW · NOT A COMPLETED RUN' : fullSequenceComplete ? `FULL RUN COMPLETE${achievements.length ? ' · ACHIEVEMENT UNLOCKED' : ''}` : 'L’URA PRACTICE COMPLETE', 70, 92)
     context.fillStyle = '#f7f5ee'
     context.font = '800 64px sans-serif'
-    context.fillText(primaryAchievement?.label ?? (fullSequenceComplete ? 'L’URA MOVEMENT MASTER' : 'PHASE CLEAR'), 70, 165)
+    context.fillText(primaryAchievement?.label ?? (fullSequenceComplete ? 'L’URA CONQUERED' : 'PHASE CLEAR'), 70, 165)
     context.fillStyle = '#f7f5ee'
     context.font = '700 34px sans-serif'
     context.fillText(effectivePlayerName, 72, 211)
@@ -1865,7 +1865,7 @@ export default function App() {
     })
     context.fillStyle = '#c7cfdf'
     context.font = '500 21px sans-serif'
-    context.fillText(`ACHIEVEMENTS · ${achievements.map(achievement => achievement.label).join(' · ') || 'Practice clear'}`, 72, 525)
+    context.fillText(`NEW ACHIEVEMENTS · ${achievements.map(achievement => achievement.label).join(' · ') || 'None this run'}`, 72, 525)
     context.fillText(`OPTIONAL CHALLENGES · ${extrasSummary}`, 72, 558)
     context.fillStyle = '#73819e'
     context.font = '500 18px sans-serif'
@@ -1937,7 +1937,7 @@ export default function App() {
     <AchievementUnlockPopups achievements={achievementPopups} />
     <section className={`completion-card ${fullSequenceComplete ? 'achievement-unlocked' : ''} ${completionPreview ? 'result-preview' : ''}`}>
       <div className="completion-glow" aria-hidden="true">✦</div>
-      <p className="eyebrow">{completionPreview ? 'RESULT SCREEN PREVIEW' : fullSequenceComplete ? 'FULL RUN COMPLETE · ACHIEVEMENT UNLOCKED' : 'PRACTICE COMPLETE'}</p>
+      <p className="eyebrow">{completionPreview ? 'RESULT SCREEN PREVIEW' : fullSequenceComplete ? `FULL RUN COMPLETE${achievements.length ? ' · ACHIEVEMENT UNLOCKED' : ''}` : 'PRACTICE COMPLETE'}</p>
       <h1>{fullSequenceComplete ? 'L’ura conquered!' : 'Phase clear!'}</h1>
       <h2 className="completion-player-name">{effectivePlayerName}</h2>
       <p className="completion-played-position">Played position: {playedPositionLabel}</p>
@@ -1945,7 +1945,7 @@ export default function App() {
       {completionPreview && <p className="completion-preview-note">Preview data only — this is not stored or presented as a completed attempt.</p>}
       <div className="achievement-badge">
         <span aria-hidden="true">{fullSequenceComplete ? '🏆' : '✦'}</span>
-        <div><strong>{primaryAchievement?.label ?? (fullSequenceComplete ? 'L’URA MOVEMENT MASTER' : 'L’URA PRACTICE CLEAR')}</strong><small>{primaryAchievement?.detail ?? `${resultClass} · ${difficulty}`}</small></div>
+        <div><strong>{primaryAchievement?.label ?? (fullSequenceComplete ? 'L’URA CONQUERED' : 'L’URA PRACTICE CLEAR')}</strong><small>{primaryAchievement?.detail ?? (completionPreview ? `${resultClass} · ${difficulty}` : 'No new achievements this run')}</small></div>
       </div>
       {achievements.length > 1 && <div className="achievement-list" aria-label="Achievements">{achievements.map(achievement => <span key={achievement.id}><strong>{achievement.label}</strong><small>{achievement.detail}</small></span>)}</div>}
       <div className="completion-summary">

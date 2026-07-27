@@ -162,6 +162,14 @@ export function collectibleAchievements(summary: AchievementSummary, collection:
   return [...new Map(awards.map(entry => [entry.id, entry])).values()]
 }
 
+export function newlyEarnedAchievements(
+  awards: AchievementDefinition[],
+  collection: AchievementCollectionData,
+): AchievementDefinition[] {
+  const earned = new Set(collection.records.map(record => record.key))
+  return awards.filter(achievement => !earned.has(achievement.key))
+}
+
 export function emptyCollection(): AchievementCollectionData {
   return { version: 2, records: [], runs: [] }
 }

@@ -251,6 +251,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-064` | Implemented | Resolve the player’s Phase 4 Starsplinter exclusively against the renderer’s current positions for all 19 NPCs—without reconstructing or falling back to scripted locations—including an NPC visibly behind the player during the first Splinter of the second quarter. |
 | `BUG-065` | Implemented | Make every Intermission/P1 Starsplinter collision consume the renderer’s current 19-NPC position snapshot for player hits, NPC beam origins, and crystal-carrier hits. Share one six-beam geometry rule between rendering and collision instead of recomputing where NPCs should be. |
 | `BUG-066` | Implemented | Resolve every Phase 4 Starsplinter in the exact frame that renders its six beams. NPC casts check the controlled player and every other rendered NPC while excluding only the caster, so a beam cutting through the raid cannot pass silently. |
+| `BUG-067` | Implemented | Give the prerecorded P4 Left/Right/Left/Move browser regression the shared mechanic timeout, covering the intentionally later Move cue on slower GitHub software-rendering runners. |
 
 ## Implemented feature inventory
 

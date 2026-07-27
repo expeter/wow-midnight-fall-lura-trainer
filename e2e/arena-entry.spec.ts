@@ -24,7 +24,7 @@ test('unlocks and schedules the complete prerecorded P4 raidlead in the browser'
 
   await expect.poll(
     () => page.evaluate(() => (window as typeof window & { __p4VoiceState: { played: string[] } }).__p4VoiceState.played.length),
-    { timeout: 10_000 },
+    { timeout: MECHANIC_TIMEOUT },
   ).toBe(4)
   const voiceState = await page.evaluate(() => (
     window as typeof window & { __p4VoiceState: { played: string[] } }

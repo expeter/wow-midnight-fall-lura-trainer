@@ -244,7 +244,8 @@
           <button class="primary" type="button" id="timing-play">▶ Loop</button>
           <button type="button" id="timing-stop">Stop</button>
           <button type="button" id="timing-reset">Reset measured</button>
-          <button type="button" id="timing-copy">Copy tuning</button>
+          <button type="button" id="timing-copy-current">Copy current</button>
+          <button type="button" id="timing-copy">Copy all tuning</button>
         </div>
         <p class="timing-status" id="timing-status">Choose a mechanic and start the loop. The gold flash marks the exact event boundary.</p>
       </div>
@@ -353,7 +354,7 @@
       "soak-progress": ["tune-soak-deep-hum", "tune-soak-ward-resonance", "tune-soak-heartbeat-bed"],
       "archangel-charge": ["tune-archangel-doom-rise", "tune-archangel-veil-tear", "tune-archangel-impact-tail"],
       "protection-active": ["tune-ward-aegis-bloom", "tune-ward-crystal-shell", "tune-ward-holy-pulse"],
-      "main-ability-release": ["cast-spell-impact", "cast-light-loud", "cast-crystal-spark"]
+      "main-ability-release": ["cast-spell-impact", "cast-light-loud", "cast-crystal-spark", "error-pulse-fast"]
     };
     const auditions = (cue, earlier) => [
       earlier,
@@ -394,7 +395,7 @@
       "archangel-charge": { pick: "error-crystal-danger", comment: "Earlier pick, but the mechanic requires a five-second version." },
       "protection-active": { pick: "cast-crystal-spark", comment: "Play directly when the protection bubble begins." },
       "add-destroyed": { pick: "cast-light-loud", comment: "Earlier pick; requested substantially quieter in production." },
-      "main-ability-release": { pick: "cast-arcane-release", comment: "New tuning candidate; land the release when the full cast bar fires its projectile." },
+      "main-ability-release": { pick: "error-pulse-fast", comment: "Trial: Error Pulse at −10ms and 7× when the full cast bar fires its projectile." },
       "mistake": { pick: "error-pulse-fast", comment: "Error Pulse has the right character; use the faster, trimmed attack." },
       "wipe": { pick: "error-pulse-fast", comment: "Use the same motif with a heavier terminal shape." }
     };
@@ -414,7 +415,7 @@
       { id: "rune-match", label: "Memory rune clears", sound: "success-rune-clear", visual: "rune", moment: 1.6, loop: 2.9, offset: -.02, rate: 1.08 },
       { id: "archangel-charge", label: "Dark Archangel impacts", sound: "tune-ward-holy-pulse", visual: "archangel", moment: 6, loop: 7.4, offset: .125, rate: 1.01 },
       { id: "protection-active", label: "Protection bubble appears", sound: "cast-crystal-spark", visual: "protection", moment: 1.4, loop: 2.8, offset: 0, rate: 1.2 },
-      { id: "main-ability-release", label: "Main Ability projectile fires", sound: "cast-arcane-release", visual: "main-cast", moment: 1.4, loop: 2.8, offset: 0, rate: 1 },
+      { id: "main-ability-release", label: "Main Ability projectile fires", sound: "error-pulse-fast", visual: "main-cast", moment: 1.4, loop: 2.8, offset: -.01, rate: 7 },
       { id: "mistake", label: "Point-loss flash", sound: "error-pulse-fast", visual: "mistake", moment: 1.4, loop: 2.7, offset: -.005, rate: 1.18 },
       { id: "wipe", label: "Wipe overlay", sound: "error-pulse-fast", visual: "wipe", moment: 1.4, loop: 3, offset: 0, rate: .82 }
     ];
@@ -752,6 +753,17 @@
       localStorage.setItem("lura-sfx-timing-review", JSON.stringify(timingSaved));
       loadTimingPreset();
       timingStatus.textContent = "Restored the waveform-measured starting point.";
+    });
+    document.querySelector("#timing-copy-current").addEventListener("click", async () => {
+      const { preset, offset, rate, sound } = timingValues();
+      const row = `| ${preset.id} | ${sound || preset.sound} | ${Math.round(offset * 1000)} ms | ${Number(rate).toFixed(2)}× |`;
+      const review = `Lura sound timing review\n\n| Cue | Sound | Start offset | Playback rate |\n| --- | --- | ---: | ---: |\n${row}`;
+      try {
+        await navigator.clipboard.writeText(review);
+        timingStatus.textContent = `${preset.label} tuning copied to clipboard.`;
+      } catch {
+        timingStatus.textContent = "Clipboard access was blocked.";
+      }
     });
     document.querySelector("#timing-copy").addEventListener("click", async () => {
       const rows = timingPresets.map(preset => {

@@ -1,6 +1,16 @@
 import { expect, test } from '@playwright/test'
 
 test('fine-tunes an experimental sound at exact millisecond and rate values', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: async (text: string) => {
+          ;(window as typeof window & { __copiedTiming?: string }).__copiedTiming = text
+        },
+      },
+    })
+  })
   await page.goto('/tools/voice-soundboard/')
 
   await page.getByLabel('Timing mechanic').selectOption('stars-connect')
@@ -31,4 +41,13 @@ test('fine-tunes an experimental sound at exact millisecond and rate values', as
   await page.getByRole('button', { name: '▶ Loop' }).click()
   await expect(page.locator('#timing-status')).toContainText('Looping')
   await expect(page.locator('.timing-clock')).toContainText('sound')
+
+  await page.getByLabel('Timing mechanic').selectOption('main-ability-release')
+  await expect(sound).toHaveValue('error-pulse-fast')
+  await expect(exactOffset).toHaveValue('-10')
+  await expect(exactRate).toHaveValue('7')
+  await page.getByRole('button', { name: 'Copy current' }).click()
+  await expect(page.locator('#timing-status')).toContainText('Main Ability projectile fires tuning copied')
+  const copiedTiming = await page.evaluate(() => (window as typeof window & { __copiedTiming?: string }).__copiedTiming)
+  expect(copiedTiming).toContain('| main-ability-release | error-pulse-fast | -10 ms | 7.00× |')
 })

@@ -56,7 +56,8 @@ describe('audio review soundboard', () => {
     expect(soundboard).toContain('"laser-fire": { pick: "laser-magical-whoosh"')
     expect(soundboard).toContain('"orb-return": { pick: "orb-arcane-laser"')
     expect(soundboard).toContain('["main-ability-release", "Main Ability cast completes", "Tune a compact release')
-    expect(soundboard).toContain('"main-ability-release": { pick: "cast-arcane-release"')
+    expect(soundboard).toContain('"main-ability-release": { pick: "error-pulse-fast"')
+    expect(soundboard).toContain('sound: "error-pulse-fast", visual: "main-cast", moment: 1.4, loop: 2.8, offset: -.01, rate: 7')
     expect(soundboard).toContain('"mistake": { pick: "error-pulse-fast"')
   })
 
@@ -66,7 +67,8 @@ describe('audio review soundboard', () => {
     expect(soundboard).toContain('id="timing-offset-number"')
     expect(soundboard).toContain('id="timing-rate"')
     expect(soundboard).toContain('lura-sfx-timing-review')
-    expect(soundboard).toContain('Copy tuning')
+    expect(soundboard).toContain('Copy current')
+    expect(soundboard).toContain('Copy all tuning')
     const timingRows = [...soundboard.matchAll(/\{ id: "([^"]+)", label: "[^"]+", sound: "[^"]+", visual: "[^"]+", moment: [^,]+, loop: [^,]+, offset: [^,]+, rate: [^ }]+ \}/g)]
     expect(timingRows.map(([, id]) => id)).toEqual([
       'laser-charge',
@@ -114,6 +116,8 @@ describe('audio review soundboard', () => {
     expect(soundboard).toContain('preset.visual === "main-cast"')
     expect(soundboard).toContain('timingSaved[preset.id] = { offset, rate, sound }')
     expect(soundboard).toContain('| Cue | Sound | Start offset | Playback rate |')
+    expect(soundboard).toContain('document.querySelector("#timing-copy-current")')
+    expect(soundboard).toContain('const { preset, offset, rate, sound } = timingValues()')
   })
 
   it('makes the complete effect library available while explaining each mechanic preview', () => {

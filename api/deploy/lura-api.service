@@ -1,0 +1,22 @@
+[Unit]
+Description=L'ura Trainer highscore API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=lura-api
+Group=lura-api
+WorkingDirectory=/opt/lura-api/current
+EnvironmentFile=/etc/lura-api/env
+ExecStart=/usr/bin/node dist/src/main.js
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/lura-api
+
+[Install]
+WantedBy=multi-user.target

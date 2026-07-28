@@ -1,0 +1,77 @@
+name: Test and deploy API
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "api/**"
+      - ".github/workflows/api.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-api
+  cancel-in-progress: false
+
+jobs:
+  test-api:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Test API and migrations
+        run: npm test
+
+  deploy-api:
+    if: github.event_name == 'workflow_dispatch'
+    needs: test-api
+    runs-on: ubuntu-latest
+    environment:
+      name: production-api
+      url: https://api.asgard.website/health
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Build immutable release
+        working-directory: api
+        run: |
+          npm ci
+          npm run build
+          npm prune --omit=dev
+          tar -czf ../lura-api-${GITHUB_SHA}.tar.gz .
+      - name: Configure verified SSH host and key
+        env:
+          DEPLOY_KEY: ${{ secrets.API_DEPLOY_SSH_KEY }}
+          HOST_KEY: ${{ secrets.API_DEPLOY_HOST_KEY }}
+        run: |
+          install -d -m 0700 ~/.ssh
+          printf '%s\n' "${DEPLOY_KEY}" > ~/.ssh/lura-api
+          printf '%s\n' "${HOST_KEY}" > ~/.ssh/known_hosts
+          chmod 0600 ~/.ssh/lura-api ~/.ssh/known_hosts
+      - name: Upload release
+        env:
+          HOST: ${{ secrets.API_DEPLOY_HOST }}
+          USER: ${{ secrets.API_DEPLOY_USER }}
+        run: |
+          scp -i ~/.ssh/lura-api "lura-api-${GITHUB_SHA}.tar.gz" "${USER}@${HOST}:/tmp/"
+      - name: Activate, migrate, restart, and verify
+        env:
+          HOST: ${{ secrets.API_DEPLOY_HOST }}
+          USER: ${{ secrets.API_DEPLOY_USER }}
+        run: |
+          ssh -i ~/.ssh/lura-api "${USER}@${HOST}" \
+            "sudo /opt/lura-api/bin/activate-release '${GITHUB_SHA}' '/tmp/lura-api-${GITHUB_SHA}.tar.gz'"
+          curl --fail --retry 5 --retry-delay 3 https://api.asgard.website/health

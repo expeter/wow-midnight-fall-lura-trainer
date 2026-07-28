@@ -6,6 +6,9 @@
   HUD settings instead of presenting it as a difficulty and movement option.
 - BUG-104: Suppress Phase 2 carrier `Drop crystal` voice coaching on Hard
   while retaining the call in Test, Easy, and Normal.
+- SPEC-011: Define the optional Battle.net-authenticated highscore and
+  achievement API, including server-issued attempts, privacy and deletion,
+  searchable versioned leaderboards, SQLite backups, and VPS deployment.
 
 ## 0.3.0 · 2026-07-28
 

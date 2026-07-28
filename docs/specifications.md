@@ -87,3 +87,25 @@ change before implementation.
   satisfy both.
 - Crystal NPCs do not count as ground-Soak occupants. Rune-pair movement may
   temporarily override their support position during the memory game.
+
+## SPEC-011 · API-backed highscores and achievements
+
+- Anonymous play remains complete and does not require login.
+- Posting online results requires Battle.net authentication, a verified
+  selected WoW character, and a one-use server-issued attempt.
+- The server recomputes accepted scores from validated attempt inputs; OAuth
+  proves identity but never proves gameplay legitimacy by itself.
+- Normal and Hard each have separate crystal and non-crystal leaderboards,
+  sorted by points with duration and acceptance time as tie-breakers.
+- Public identity is optional. Anonymous mode hides character, realm, and
+  guild; published character, alias, realm, and guild fields are searchable.
+- Results and verified achievements retain their exact trainer version/build
+  so retired accomplishments can become future Feats of Strength.
+- Logout and complete deletion are separate actions. Complete deletion removes
+  every account-linked live record, including Blizzard identifiers, sessions,
+  characters, scores, attempts, achievements, and guild cache.
+- Milestone 1 uses backed-up SQLite and deploys independently to the existing
+  Caddy-fronted VPS. Guild-wide tracking remains Milestone 2.
+
+See [`api-highscores.md`](api-highscores.md) for the complete API, storage,
+privacy, deployment, and acceptance contract.

@@ -340,6 +340,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-097` | Implemented behind localhost preview | Stop P1 from falling through to the smaller Intermission annulus check, which incorrectly logs “Entered the void zone” for valid movement beyond the Intermission outer radius. Validate only the real 102–260 P1 annulus during Phase 1. |
 | `BUG-098` | Implemented | During the P1-to-Intermission arena collapse, stop visibly sliding L’ura across the room. Warp her directly to the center with a short disappear/reappear treatment while the raid performs the handoff. |
 | `BUG-099` | Implemented | Keep the Main Ability browser regression from missing its one-second castbar on software-rendered release runs by pausing immediately after cast start for visual assertions, then resuming the unchanged live mechanic. |
+| `BUG-100` | Implemented | Stabilize the GitHub opening/P2 browser shard without changing encounter timing: give only the two long Phase 2 resolution assertions enough time for the free runner’s capped software-rendered simulation, while retaining the shard’s no-retry policy. |
 
 ## Implemented feature inventory
 

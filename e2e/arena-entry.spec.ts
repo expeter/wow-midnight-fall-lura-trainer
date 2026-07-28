@@ -4,6 +4,7 @@ import { expect, test } from '@playwright/test'
 // The game caps animation-frame deltas to keep mechanics stable, so simulated
 // time intentionally advances more slowly when the renderer is under load.
 const MECHANIC_TIMEOUT = 20_000
+const P2_RESOLUTION_TIMEOUT = 40_000
 
 test.setTimeout(60_000)
 
@@ -195,7 +196,7 @@ test('continues the current Phase 2 sequence after the first Normal wipe', async
   await page.getByRole('button', { name: 'P2', exact: true }).click()
   await page.getByRole('button', { name: /Enter P2/ }).click()
 
-  await expect(page.getByText(/Strike 1 \/ 2/)).toBeVisible({ timeout: MECHANIC_TIMEOUT })
+  await expect(page.getByText(/Strike 1 \/ 2/)).toBeVisible({ timeout: P2_RESOLUTION_TIMEOUT })
   await expect(page.getByText('Practice continues')).toBeVisible()
   await expect(page.getByRole('alert')).toHaveCount(0)
   await expect(page.getByText(/Pulled to the center|Spread your circle/)).toBeVisible({ timeout: MECHANIC_TIMEOUT })
@@ -210,7 +211,7 @@ test('wipes when a non-carrier personal circle hits an NPC crystal in Phase 2', 
   await page.getByRole('button', { name: 'P2', exact: true }).click()
   await page.getByRole('button', { name: /Enter P2/ }).click()
 
-  await expect(page.getByRole('alert')).toContainText('Your personal circle hit another player’s crystal', { timeout: MECHANIC_TIMEOUT })
+  await expect(page.getByRole('alert')).toContainText('Your personal circle hit another player’s crystal', { timeout: P2_RESOLUTION_TIMEOUT })
   await expect(page.locator('.score-overlay strong')).toHaveText('400')
 })
 

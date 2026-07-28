@@ -16,6 +16,10 @@ export const defaultAuthDependencies: AuthDependencies = {
   randomToken: () => randomBytes(32).toString('base64url'),
 }
 
+function configured(value: string): boolean {
+  return Boolean(value && !value.startsWith('replace-'))
+}
+
 function hash(value: string): string {
   return createHash('sha256').update(value).digest('hex')
 }
@@ -47,8 +51,8 @@ export function issueOAuthState(
   region: BattleNetRegion,
 ): URL {
   if (
-    !config.battleNetClientId
-    || !config.battleNetClientSecret
+    !configured(config.battleNetClientId)
+    || !configured(config.battleNetClientSecret)
     || config.sessionSecret.length < 32
     || config.csrfSecret.length < 32
   ) {

@@ -279,6 +279,20 @@ describe('Lura API foundation', () => {
     assert.equal(exchanges, 0)
   })
 
+  it('reports Battle.net login unavailable while deployment placeholders remain', async () => {
+    const app = createApp(database, {
+      ...config,
+      battleNetClientId: 'replace-me',
+      battleNetClientSecret: 'replace-me',
+    })
+    const response = await app.handle(new Request(
+      'http://api.test/v1/auth/battlenet/start?region=eu',
+    ))
+    assert.equal(response.status, 503)
+    assert.deepEqual(await response.json(), { error: 'battle_net_not_configured' })
+    assert.equal(database.prepare('SELECT COUNT(*) AS count FROM oauth_states').get()!.count, 0)
+  })
+
   it('prevents selecting another account character', async () => {
     const ownerId = insertResult(database, {
       region: 'eu', account: 'owner', character: 'Owner', realm: 'draenor',

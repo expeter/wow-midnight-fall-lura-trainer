@@ -125,6 +125,29 @@ export function p1CrystalPickupSequence(assignments: readonly number[], playerIn
   return slot < 0 ? null : slot < P1_CRYSTAL_COUNT ? 1 : 2
 }
 
+export type P1CrystalTouchResolution = 'assigned' | 'penalty-only' | 'wrong-held'
+
+export function p1CrystalTouchResolution(
+  assignments: readonly number[],
+  playerIndex: number,
+  sequence: number,
+  pickupSlot: number,
+): P1CrystalTouchResolution {
+  const sequenceStart = Math.max(0, sequence - 1) * P1_CRYSTAL_COUNT
+  if (assignments[sequenceStart + pickupSlot] === playerIndex) return 'assigned'
+  if (sequence === 1 && p1CrystalPickupSequence(assignments, playerIndex) === 2) return 'penalty-only'
+  return 'wrong-held'
+}
+
+export function p1WrongCrystalDropExpired(held: boolean, pickedUpAt: number, now: number): boolean {
+  return held && now - pickedUpAt >= P1_CRYSTAL_PICKUP_SECONDS
+}
+
+export function p1IsInPlayableArena(point: P1Point, center: P1Point): boolean {
+  const radius = Math.hypot(point.x - center.x, point.y - center.y)
+  return radius >= P1_INNER_RADIUS && radius <= P1_OUTER_RADIUS
+}
+
 export function p1NpcCrystalPickupReleased(
   assignments: readonly number[],
   playerIndex: number,

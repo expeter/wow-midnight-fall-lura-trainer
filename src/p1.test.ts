@@ -28,6 +28,7 @@ import {
   p1CrystalExpired,
   p1CrystalPickupSequence,
   p1CrystalSpawnPosition,
+  p1CrystalTouchResolution,
   p1CrystalSpawns,
   p1GlaiveContactStarted,
   p1GlaiveDistanceSpeedMultiplier,
@@ -37,6 +38,7 @@ import {
   p1InterruptCasts,
   p1InterruptState,
   p1InterruptSucceeded,
+  p1IsInPlayableArena,
   p1MemoryOrder,
   p1MemoryPlayerVerdict,
   p1MemoryRuneVisible,
@@ -57,6 +59,7 @@ import {
   p1RotatingBeamHitsPoint,
   p1RotatingBeams,
   p1ValidateMemoryContacts,
+  p1WrongCrystalDropExpired,
 } from './p1'
 
 describe('P1 headless mechanics', () => {
@@ -113,6 +116,24 @@ describe('P1 headless mechanics', () => {
     expect(p1NpcCrystalPickupReleased(assignments, 4, 1, false)).toBe(false)
     expect(p1NpcCrystalPickupReleased(assignments, 4, 1, true)).toBe(true)
     expect(p1NpcCrystalPickupReleased(assignments, 10, 1, false)).toBe(true)
+  })
+
+  it('transfers a wrongly touched crystal unless the player owns the second sequence', () => {
+    const assignments = [2, 4, 6, 8, 10, 12]
+    expect(p1CrystalTouchResolution(assignments, 2, 1, 0)).toBe('assigned')
+    expect(p1CrystalTouchResolution(assignments, 10, 1, 0)).toBe('penalty-only')
+    expect(p1CrystalTouchResolution(assignments, 3, 1, 0)).toBe('wrong-held')
+    expect(p1CrystalTouchResolution(assignments, 2, 2, 0)).toBe('wrong-held')
+    expect(p1WrongCrystalDropExpired(true, 10, 14.99)).toBe(false)
+    expect(p1WrongCrystalDropExpired(true, 10, 15)).toBe(true)
+    expect(p1WrongCrystalDropExpired(false, 10, 20)).toBe(false)
+  })
+
+  it('uses the full Phase 1 annulus instead of the smaller Intermission boundary', () => {
+    const center = { x: 480, y: 270 }
+    expect(p1IsInPlayableArena({ x: 680, y: 270 }, center)).toBe(true)
+    expect(p1IsInPlayableArena({ x: 580, y: 270 }, center)).toBe(false)
+    expect(p1IsInPlayableArena({ x: 741, y: 270 }, center)).toBe(false)
   })
 
   it('seeds five star-like glaives, reflects them from the ring, and expires them after a configurable lifetime', () => {

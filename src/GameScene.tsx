@@ -19,6 +19,8 @@ interface SceneProps {
   p1SoakResolved: number[]
   p1CrystalAssignments: number[]
   p1CrystalCollected: boolean
+  p1WrongCrystalHeld: boolean
+  p1StolenCrystalSlot: number | null
   combatProjectilesEnabled: boolean
   mainProjectileFiredAt: number | null
   positions: Point[]
@@ -364,18 +366,32 @@ function addFlyingSaucer(group: THREE.Group, point: Point, rotation: number, col
     group.add(marker)
   }
 }
-function addInterruptCastOrbs(group: THREE.Group, boss: Point, time: number, progress: number) {
+function addInterruptCastOrbs(
+  group: THREE.Group,
+  boss: Point,
+  time: number,
+  progress: number,
+  conesVisible: boolean,
+  dropProgress = 0,
+  dropTargets: readonly Point[] = [],
+) {
   for (let index = 0; index < 3; index += 1) {
     const angle = time * 2.4 + index * Math.PI * 2 / 3
-    const point = { x: boss.x + Math.cos(angle) * 17, y: boss.y + Math.sin(angle) * 17 }
+    const orbitPoint = { x: boss.x + Math.cos(angle) * 17, y: boss.y + Math.sin(angle) * 17 }
+    const target = dropTargets[index] ?? orbitPoint
+    const easedDrop = dropProgress * dropProgress * (3 - 2 * dropProgress)
+    const point = {
+      x: orbitPoint.x + (target.x - orbitPoint.x) * easedDrop,
+      y: orbitPoint.y + (target.y - orbitPoint.y) * easedDrop,
+    }
     const orb = new THREE.Mesh(
       cachedTransientGeometry('p1-interrupt-cast-orb', () => new THREE.SphereGeometry(2.5, 14, 10)),
       new THREE.MeshBasicMaterial({ color: 0xff4c76, transparent: true, opacity: .68 + progress * .3, depthWrite: false, blending: THREE.AdditiveBlending }),
     )
-    orb.position.set(point.x, 11 + Math.sin(time * 7 + index) * 1.4, point.y)
+    orb.position.set(point.x, (11 + Math.sin(time * 7 + index) * 1.4) * (1 - easedDrop) + 3.8 * easedDrop, point.y)
     orb.renderOrder = 16
     group.add(orb)
-    addFrontalCone(group, point, angle, 58, 0xff315f, .055 + progress * .15)
+    if (conesVisible) addFrontalCone(group, point, angle, 58, 0xff315f, .055 + progress * .15)
   }
 }
 function makeMarkerTexture(symbol: string, color: string) {
@@ -1042,7 +1058,7 @@ export default function GameScene(props: SceneProps) {
           && state.p1CrystalCollected
           && state.p1CrystalAssignments.slice((state.p1Sequence - 1) * 3, state.p1Sequence * 3).includes(state.assignment)
       if (playerCarriedCrystal) playerCarriedCrystal.visible = !phaseFour
-        && (phaseOne ? playerP1CrystalCollected : state.playerIsCrystal && !state.playerCrystalSpent && !state.crystal)
+        && (phaseOne ? playerP1CrystalCollected || state.p1WrongCrystalHeld : state.playerIsCrystal && !state.playerCrystalSpent && !state.crystal)
       const partnerNpcOrdinal = npcProfileIndices.findIndex(profileIndex => p3SideOf(profileIndex) === playerP3Side)
       const markedNpcOrdinals = npcProfileIndices.map((profileIndex, ordinal) => ({ profileIndex, ordinal }))
         .filter(candidate => p3SideOf(candidate.profileIndex) === playerP3Side && candidate.ordinal !== partnerNpcOrdinal)
@@ -1140,6 +1156,12 @@ export default function GameScene(props: SceneProps) {
           p1CanDodgeGlaives = p1NpcMayDodgeGlaive('beam-follow')
         } else if (state.event === 'p1-transition') {
           p1Target = state.intermissionPositions[baseIndex]
+        }
+        const stolenAssignments = state.p1CrystalAssignments.slice((state.p1Sequence - 1) * 3, state.p1Sequence * 3)
+        if (state.p1StolenCrystalSlot !== null && state.crystal
+          && stolenAssignments[state.p1StolenCrystalSlot] === baseIndex) {
+          p1Target = state.crystal
+          p1CanDodgeGlaives = false
         }
         if (p1CanDodgeGlaives) {
           p1Target = p1NpcGlaiveDodgePosition(
@@ -1468,16 +1490,21 @@ export default function GameScene(props: SceneProps) {
           const interrupted = assignedCast
             ? state.p1InterruptPressed
             : castElapsed >= p1NpcInterruptSeconds(state.p1Seed, state.p1Sequence, state.p1InterruptCast)
-          if (!interrupted) {
-            const progress = Math.min(1, castElapsed / 2)
-            addInterruptCastOrbs(hazards, p1Boss, state.time, progress)
-          }
+          const progress = Math.min(1, castElapsed / 2)
+          const dropProgress = state.p1InterruptCast === 4
+            ? Math.max(0, Math.min(1, (castElapsed - 1.7) / .3))
+            : 0
+          const dropTargets = Array.from({ length: 3 }, (_, index) =>
+            p1CrystalSpawnPosition(p1Boss, WORLD.center, index))
+          addInterruptCastOrbs(hazards, p1Boss, state.time, progress, !interrupted, dropProgress, dropTargets)
         }
         if (state.event === 'p1-crystals') {
           const activeAssignments = state.p1CrystalAssignments.slice((state.p1Sequence - 1) * 3, state.p1Sequence * 3)
           activeAssignments.forEach(profileIndex => {
+            const slot = activeAssignments.indexOf(profileIndex)
+            if (state.p1StolenCrystalSlot === slot) return
             if (profileIndex === state.assignment && state.p1CrystalCollected) return
-            const point = p1CrystalSpawnPosition(p1Boss, WORLD.center, activeAssignments.indexOf(profileIndex))
+            const point = p1CrystalSpawnPosition(p1Boss, WORLD.center, slot)
             const npcOrdinal = npcProfileIndices.indexOf(profileIndex)
             if (npcOrdinal >= 0 && distance(npcPositions[npcOrdinal], point) <= 4) return
             addGroundCrystal(hazards, point)

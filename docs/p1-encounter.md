@@ -44,9 +44,10 @@ phase-specific raid-plan persistence.
   casts 1–5. Three red orbs orbit L’ura at a readable speed and each projects
   its own rotating dangerous frontal cone. NPC-assigned casts interrupt
   deterministically between 0.5 and 1.0 seconds, immediately removing their
-  cast bar, orbs, and cones. The controlled player's green kick window lasts
-  1.7 seconds; a missed cast remains dangerous for a final 0.3 seconds before
-  resolving lethally.
+  cast bar and cones. The orbs persist through all five kicks, then descend
+  into the next three ground-crystal positions after the fifth kick. The
+  controlled player's green kick window lasts 1.7 seconds; a missed cast
+  remains dangerous for a final 0.3 seconds before resolving lethally.
 
 ## Crystal pickup
 
@@ -62,6 +63,15 @@ phase-specific raid-plan persistence.
   2, or no pickup.
 - An uncollected crystal wipes the attempt, consistently with existing crystal
   expiration rules.
+- Touching another player’s active crystal logs a mistake and transfers the
+  crystal to the controlled player. They must drop it within five seconds; the
+  assigned NPC then recovers that dropped crystal. Holding it beyond the
+  deadline wipes for playing the wrong crystal assignment.
+- A player assigned to the second pickup sequence who touches a first-sequence
+  crystal receives the mistake penalty without transferring it or disrupting
+  the assigned NPC pickup.
+- Phase 1 movement is validated against its full 102–260 annulus and never
+  falls through to the smaller Intermission boundary check.
 
 ## Heaven Glaives
 

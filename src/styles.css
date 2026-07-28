@@ -331,6 +331,7 @@
 .player-castbar.main-cast b { font-size: 9px; line-height: 17px; text-align: center; }
 .crystal-countdown { position: absolute; z-index: 4; left: 50%; top: 50px; transform: translateX(-50%); padding: 8px 18px; border: 1px solid rgba(255,220,72,.7); border-radius: 8px; color: #ffe95f; background: rgba(12,10,4,.82); text-align: center; pointer-events: none; font: 10px 'DM Mono', monospace; letter-spacing: .08em; }
 .crystal-countdown strong { display: block; margin-top: 2px; font-size: 30px; line-height: 1; }
+.crystal-countdown.wrong-p1-crystal { top: auto; bottom: 18%; color: #ff9e32; border-color: #ff714f; background: rgba(43, 14, 5, .9); }
 .failure-flash::after { content: ''; position: absolute; z-index: 8; inset: 0; pointer-events: none; background: rgba(255,35,55,.52); animation: failure-flash .42s ease-out forwards; }
 @keyframes failure-flash { from { opacity: 1; } to { opacity: 0; } }
 .wipe-overlay { position: absolute; z-index: 9; inset: 0 0 37px; display: grid; place-content: center; justify-items: center; padding: 30px; pointer-events: none; text-align: center; }

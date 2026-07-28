@@ -51,8 +51,11 @@ test('keeps both Phase 1 Heaven Glaive sets alive when the second set launches',
 
   const arena = page.locator('.arena-wrap')
   await expect(arena).toHaveAttribute('data-p1-glaive-sets', '1', { timeout: 25_000 })
+  await expect(page.locator('.p1-rune-grid')).toBeVisible({ timeout: 15_000 })
+  await expect(page.locator('.p1-rune-grid strong')).toHaveCount(5)
+  await expect(page.locator('.p1-rune-grid strong.personal')).toHaveCount(1)
   await expect(arena).toHaveAttribute('data-event', 'p1-beam-position', { timeout: 40_000 })
-  await expect(page.getByRole('heading', { name: 'Move behind the beam.' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Hold behind L’ura.' })).toBeVisible()
   await expect(arena).toHaveAttribute('data-p1-glaive-sets', '2', { timeout: 55_000 })
   const firstTime = Number(await arena.getAttribute('data-event-time'))
   await page.waitForTimeout(500)

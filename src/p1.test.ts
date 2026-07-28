@@ -41,6 +41,7 @@ import {
   p1MemorySlotValid,
   p1MemorySweepAngle,
   p1NpcBeamPosition,
+  p1NpcBeamWaitingPosition,
   p1NpcCrystalPickupReleased,
   p1NpcGlaiveDodgePosition,
   p1NpcMayDodgeGlaive,
@@ -189,7 +190,7 @@ describe('P1 headless mechanics', () => {
     expect(p1BossEncounterPosition(opening, tanks, 2, 'p1-transition', P1_INTERMISSION_POSITION_SECONDS, center)).toEqual(center)
   })
 
-  it('lets memory NPCs roam before settling and makes beam NPCs cross then follow a rotating ray', () => {
+  it('lets memory NPCs roam before settling and keeps beam NPCs centered between rotating rays', () => {
     const target = { x: 400, y: 400 }
     expect(p1NpcMemoryPosition(target, 3, 1, true)).not.toEqual(target)
     expect(p1NpcMemoryPosition(target, 3, 5.4, true)).not.toEqual(target)
@@ -199,29 +200,19 @@ describe('P1 headless mechanics', () => {
     const boss = { x: 400, y: 420 }
     const center = { x: 0, y: 0 }
     const beamAngle = Math.PI / 3
-    const beforeCrossing = p1NpcBeamPosition(3, 0, boss, beamAngle, center)
-    const crossing = p1NpcBeamPosition(3, 1.5, boss, beamAngle, center)
-    const following = p1NpcBeamPosition(3, 2.5, boss, beamAngle, center)
-    expect(crossing).not.toEqual(following)
-    const sideOfBeam = (point: { x: number; y: number }) => {
-      const bossRadius = Math.hypot(boss.x - center.x, boss.y - center.y)
-      const rayPoint = {
-        x: center.x + Math.cos(beamAngle) * bossRadius,
-        y: center.y + Math.sin(beamAngle) * bossRadius,
-      }
-      return (point.x - rayPoint.x) * -Math.sin(beamAngle) + (point.y - rayPoint.y) * Math.cos(beamAngle)
-    }
-    expect(sideOfBeam(beforeCrossing)).toBeLessThan(0)
-    expect(sideOfBeam(crossing)).toBeGreaterThan(0)
-    expect(sideOfBeam(following)).toBeGreaterThan(0)
-    const crystalLane = { x: 180, y: 180 }
-    const stagedNearCrystals = p1NpcBeamPosition(3, 0, boss, beamAngle, center, crystalLane)
-    expect(Math.hypot(stagedNearCrystals.x - center.x, stagedNearCrystals.y - center.y))
-      .toBeLessThan(Math.hypot(beforeCrossing.x - center.x, beforeCrossing.y - center.y))
+    const safe = p1NpcBeamPosition(3, 0, boss, beamAngle, center)
+    const safeAngle = Math.atan2(safe.y - center.y, safe.x - center.x)
+    expect(safeAngle - beamAngle).toBeGreaterThan(18 * Math.PI / 180)
+    expect(safeAngle - beamAngle).toBeLessThan(27 * Math.PI / 180)
+    expect(p1NpcBeamPosition(3, 2.5, boss, beamAngle, center)).toEqual(safe)
+    const waiting = p1NpcBeamWaitingPosition(3, 1, boss, center)
+    const waitingLater = p1NpcBeamWaitingPosition(3, 2, boss, center)
+    expect(waitingLater).not.toEqual(waiting)
+    expect(Math.hypot(waiting.x - boss.x, waiting.y - boss.y)).toBeGreaterThanOrEqual(27)
     const movedBoss = { x: 430, y: 390 }
     const movedWithBoss = p1NpcBeamPosition(3, 3, movedBoss, Math.PI / 3, center)
     expect(Math.hypot(movedWithBoss.x - center.x, movedWithBoss.y - center.y))
-      .toBeGreaterThan(Math.hypot(following.x - center.x, following.y - center.y))
+      .toBeGreaterThan(Math.hypot(safe.x - center.x, safe.y - center.y))
   })
 
   it('gives idle P1 NPCs deterministic cast-and-move waypoints around L’ura', () => {
@@ -340,7 +331,7 @@ describe('P1 headless mechanics', () => {
     expect(initial).toHaveLength(8)
     expect(beams.direction).toBe(1)
     expect(p1RotatingBeams(1, 2, 10, Math.PI / 4, openingAngle).direction).toBe(1)
-    expect(initial[0] - openingAngle).toBeCloseTo(-7 * Math.PI / 180)
+    expect(initial[0] - openingAngle).toBeCloseTo(-17 * Math.PI / 180)
     expect(initial[1] - initial[0]).toBeCloseTo(Math.PI / 4)
     expect(Math.abs(later[0] - initial[0])).toBeCloseTo(Math.PI / 4)
   })

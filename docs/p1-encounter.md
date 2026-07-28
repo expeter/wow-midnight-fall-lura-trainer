@@ -86,6 +86,9 @@ phase-specific raid-plan persistence.
 
 - Two seconds after the glaives launch, display a five-symbol sequence chosen
   from `T`, `X`, `O`, `V`, and `+`.
+- Present the sequence as a centered five-cell positional panel below the
+  encounter cast area, following the original-game 1–5 layout. Number every
+  symbol and outline the controlled player's required rune in yellow.
 - Players have seven seconds to arrange around the boss in that order; radial
   distance is not scored.
 - A single 55-yard dark-blue Starsplinter-style beam begins on the boss-to-outside ray
@@ -107,27 +110,26 @@ phase-specific raid-plan persistence.
 
 ## Rotating beams and reactive Soaks
 
-- After the memory game, NPCs have a four-second positioning window to run
-  behind the reference ray near the active crystal lane. No beam is shown or
-  lethal during this staging window.
+- After the memory game, NPCs spend a four-second hidden-beam window fighting
+  and roaming naturally behind L’ura. They do not pre-position on or reveal
+  the unknown opening ray; no beam is shown or lethal during this window.
 - Eight Intermission-style boss beams then telegraph for two seconds while
   already rotating at player speed.
 - The safe telegraph is a low ground guide. It becomes the full lethal laser
   after two seconds without resetting or discontinuing its rotation.
 - The lethal laser then sweeps exactly 45 degrees before all eight beams
   disappear.
-- One beam begins seven degrees to the left/counterclockwise side of the
+- One beam begins seventeen degrees to the left/counterclockwise side of the
   center-to-boss outward reference. The intended movement is to cross that beam
   left, then follow it without being caught by another beam while continuing
   to dodge the glaives.
-- All eight beams rotate clockwise in both sequences. NPCs play them perfectly:
-  they stage near the active crystal lane just behind a nearby ray, cross
-  counterclockwise during the low telegraph, reform compactly just ahead of
-  it, and follow L’ura for the remainder of the same continuous sweep.
-- Crystal pickup, assigned memory runes, and the initial beam crossing take
-  priority over Heaven Glaive avoidance. Once NPCs are following the lethal
-  rotating beam, they may make short glaive sidesteps while preserving their
-  position ahead of that ray.
+- All eight beams rotate clockwise in both sequences. Once the rays appear,
+  NPCs move into the middle of the nearest 45-degree safe lane with visible
+  clearance from both edges, face and fight L’ura while following that lane,
+  then return to normal positioning after the beams disappear.
+- Crystal pickup and assigned memory runes take priority over Heaven Glaive
+  avoidance. During the rotating beams, NPCs may make short glaive sidesteps
+  while preserving safe clearance from both rays around their lane.
 - Raid-plan positions 1 and 2 choose the tank-led direction for sequence one
   and sequence two. Each L’ura relocation covers one visible 45-degree arena
   arc, including when a tank marker happens to share L’ura’s opening angle.

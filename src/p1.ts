@@ -27,7 +27,7 @@ export const P1_MEMORY_NPC_SETTLE_SECONDS = 1.5
 export const P1_MEMORY_SWEEP_SECONDS = 5
 export const P1_BEAM_POSITION_SECONDS = 4
 export const P1_ROTATING_BEAM_COUNT = 8
-export const P1_ROTATING_BEAM_OFFSET_DEGREES = 7
+export const P1_ROTATING_BEAM_OFFSET_DEGREES = 17
 export const P1_ROTATING_BEAM_TELEGRAPH_SECONDS = 2
 export const P1_ROTATING_BEAM_ACTIVE_SECONDS = 4
 export const P1_ROTATING_BEAM_MAX_BOSS_ARC = Math.PI / 4
@@ -378,27 +378,33 @@ export function p1NpcRoamingPosition(
 
 export function p1NpcBeamPosition(
   npcIndex: number,
-  elapsed: number,
+  _elapsed: number,
   boss: P1Point,
   beamAngle: number,
   center: P1Point = boss,
-  stagingPoint: P1Point = boss,
 ): P1Point {
-  const stagingRadius = Math.hypot(stagingPoint.x - center.x, stagingPoint.y - center.y)
-  const rayPoint = center === boss
-    ? boss
-    : {
-        x: center.x + Math.cos(beamAngle) * stagingRadius,
-        y: center.y + Math.sin(beamAngle) * stagingRadius,
-      }
-  const alongOffset = (npcIndex % 7 - 3) * 3
-  const laneOffset = (Math.floor(npcIndex / 7) - 1) * 1.8
-  const crossingOffset = elapsed < P1_ROTATING_BEAM_TELEGRAPH_SECONDS
-    ? -9 + elapsed / P1_ROTATING_BEAM_TELEGRAPH_SECONDS * 16
-    : 7
+  const safeAngle = beamAngle + Math.PI / P1_ROTATING_BEAM_COUNT
+  const angularOffset = (npcIndex % 5 - 2) * Math.PI / 90
+  const radius = Math.hypot(boss.x - center.x, boss.y - center.y)
+    + (Math.floor(npcIndex / 5) - 1.5) * 5
   return {
-    x: rayPoint.x + Math.cos(beamAngle) * alongOffset - Math.sin(beamAngle) * (crossingOffset + laneOffset),
-    y: rayPoint.y + Math.sin(beamAngle) * alongOffset + Math.cos(beamAngle) * (crossingOffset + laneOffset),
+    x: center.x + Math.cos(safeAngle + angularOffset) * radius,
+    y: center.y + Math.sin(safeAngle + angularOffset) * radius,
+  }
+}
+
+export function p1NpcBeamWaitingPosition(
+  npcIndex: number,
+  time: number,
+  boss: P1Point,
+  center: P1Point,
+): P1Point {
+  const outwardAngle = Math.atan2(boss.y - center.y, boss.x - center.x)
+  const angle = outwardAngle + (npcIndex % 7 - 3) * .055 + Math.sin(time * .7 + npcIndex * 1.3) * .1
+  const radius = 30 + Math.floor(npcIndex / 7) * 6 + Math.sin(time * .9 + npcIndex) * 3
+  return {
+    x: boss.x + Math.cos(angle) * radius,
+    y: boss.y + Math.sin(angle) * radius,
   }
 }
 

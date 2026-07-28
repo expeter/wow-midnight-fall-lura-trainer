@@ -5,7 +5,7 @@ import { p3SpreadPosition, p4PlayerSplinterHitsNpc, p4RenderedNpcSplinterHitsRai
 import { isP3RaidMemberVisible } from './game'
 import { isInsideP3Pool } from './game'
 import { combatProjectileBossCenter, combatProjectileHeight, combatProjectileImpactPoint, combatProjectilePosition, combatProjectileShape, combatProjectileTargetHeight, combatProjectileTravelSeconds, combatProjectilesActive, COMBAT_PROJECTILE_IMPACT_SECONDS, MAX_VISIBLE_NPC_PROJECTILES, npcProjectileShots, type CombatProjectileShape } from './projectiles'
-import { P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_MEMORY_BEAM_LENGTH, P1_MEMORY_BEAM_WIDTH_SCALE, P1_MEMORY_RADIUS, P1_OUTER_RADIUS, P1_REACTIVE_SOAK_RADIUS, p1BeamAngles, p1BossEncounterPosition, p1ClampNpcToArena, p1ContinuousBeamTime, p1CrystalSpawnPosition, p1MemoryRuneVisible, p1MemorySlotAngle, p1MemorySweepAngle, p1NpcBeamPosition, p1NpcCrystalPickupReleased, p1NpcGlaiveDodgePosition, p1NpcMayDodgeGlaive, p1NpcMemoryPosition, p1NpcRoamingPosition, p1RotatingBeams, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
+import { P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_MEMORY_BEAM_LENGTH, P1_MEMORY_BEAM_WIDTH_SCALE, P1_MEMORY_RADIUS, P1_OUTER_RADIUS, P1_REACTIVE_SOAK_RADIUS, p1BeamAngles, p1BossEncounterPosition, p1ClampNpcToArena, p1ContinuousBeamTime, p1CrystalSpawnPosition, p1MemoryRuneVisible, p1MemorySlotAngle, p1MemorySweepAngle, p1NpcBeamPosition, p1NpcBeamWaitingPosition, p1NpcCrystalPickupReleased, p1NpcGlaiveDodgePosition, p1NpcMayDodgeGlaive, p1NpcMemoryPosition, p1NpcRoamingPosition, p1RotatingBeams, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
 
 interface SceneProps {
   p1Sequence: number
@@ -1112,15 +1112,15 @@ export default function GameScene(props: SceneProps) {
             p1CanDodgeGlaives = state.event === 'p1-memory-position' && p1NpcMayDodgeGlaive('idle')
           }
           p1Target = p1NpcMemoryPosition(p1Target, index, state.eventTime, state.event === 'p1-memory-position')
-        } else if (state.event === 'p1-beam-position' || state.event === 'p1-beam-telegraph' || state.event === 'p1-beams') {
+        } else if (state.event === 'p1-beam-position') {
+          p1Target = p1NpcBeamWaitingPosition(index, state.time, p1Boss, WORLD.center)
+          p1CanDodgeGlaives = p1NpcMayDodgeGlaive('idle')
+        } else if (state.event === 'p1-beam-telegraph' || state.event === 'p1-beams') {
           const openingBoss = p1BossEncounterPosition(state.p1BossOpening, state.positions.slice(0, 2), state.p1Sequence, 'p1-beam-telegraph', 0, WORLD.center)
           const beams = p1RotatingBeams(state.p1Seed, state.p1Sequence, 0, Math.PI / 16, Math.atan2(openingBoss.y - WORLD.center.y, openingBoss.x - WORLD.center.x))
-          const elapsed = state.event === 'p1-beam-position' ? 0 : p1ContinuousBeamTime(state.event, state.eventTime)
-          const crystalLane = p1CrystalSpawnPosition(openingBoss, WORLD.center, 1)
-          p1Target = p1NpcBeamPosition(index, elapsed, p1Boss, p1BeamAngles(beams, elapsed)[0], WORLD.center, crystalLane)
-          p1CanDodgeGlaives = state.event === 'p1-beam-position'
-            ? false
-            : p1NpcMayDodgeGlaive(state.event === 'p1-beams' ? 'beam-follow' : 'beam-crossing')
+          const elapsed = p1ContinuousBeamTime(state.event, state.eventTime)
+          p1Target = p1NpcBeamPosition(index, elapsed, p1Boss, p1BeamAngles(beams, elapsed)[0], WORLD.center)
+          p1CanDodgeGlaives = p1NpcMayDodgeGlaive('beam-follow')
         } else if (state.event === 'p1-transition') {
           p1Target = state.intermissionPositions[baseIndex]
         }
@@ -1323,7 +1323,9 @@ export default function GameScene(props: SceneProps) {
         renderedNpcPositions[index] = position
         sprite.position.set(position.x, heights.npc + p3FlightHeight + p4JumpHeight, position.y)
         sprite.rotation.z = state.wipeReason ? (index % 2 ? 1 : -1) * Math.PI / 2 : 0
-        const pathTarget = phaseOne ? p1Target : phaseThree ? p3Target : state.event === 'p2-wait' ? p2WaitTarget : state.event === 'p2-orbs' ? soakTarget : state.event === 'p2-spread' ? spreadTarget : state.event === 'p2-pull' || state.event === 'p2-jump' ? WORLD.center : null
+        const pathTarget = phaseOne && (state.event === 'p1-beam-telegraph' || state.event === 'p1-beams')
+          ? p1Boss
+          : phaseOne ? p1Target : phaseThree ? p3Target : state.event === 'p2-wait' ? p2WaitTarget : state.event === 'p2-orbs' ? soakTarget : state.event === 'p2-spread' ? spreadTarget : state.event === 'p2-pull' || state.event === 'p2-jump' ? WORLD.center : null
         if (!state.wipeReason && pathTarget && distance(position, pathTarget) > .1) sprite.rotation.y = -Math.atan2(pathTarget.y - position.y, pathTarget.x - position.x)
         const glow = sprite.getObjectByName('crystal-glow')
         const p1CollectedAssignments = state.p1CrystalAssignments.slice(

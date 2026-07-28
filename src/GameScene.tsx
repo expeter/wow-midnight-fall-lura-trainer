@@ -5,7 +5,7 @@ import { p3SpreadPosition, p4PlayerSplinterHitsNpc, p4RenderedNpcSplinterHitsRai
 import { isP3RaidMemberVisible } from './game'
 import { isInsideP3Pool } from './game'
 import { combatProjectileBossCenter, combatProjectileHeight, combatProjectileImpactPoint, combatProjectilePosition, combatProjectileShape, combatProjectileTargetHeight, combatProjectileTravelSeconds, combatProjectilesActive, COMBAT_PROJECTILE_IMPACT_SECONDS, MAX_VISIBLE_NPC_PROJECTILES, npcProjectileShots, type CombatProjectileShape } from './projectiles'
-import { P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_MEMORY_BEAM_LENGTH, P1_MEMORY_BEAM_WIDTH_SCALE, P1_MEMORY_RADIUS, P1_OUTER_RADIUS, P1_REACTIVE_SOAK_RADIUS, p1BeamAngles, p1BossEncounterPosition, p1ClampNpcToArena, p1ContinuousBeamTime, p1CrystalSpawnPosition, p1MemoryRuneVisible, p1MemorySlotAngle, p1MemorySweepAngle, p1NpcBeamPosition, p1NpcBeamWaitingPosition, p1NpcCrystalPickupReleased, p1NpcGlaiveDodgePosition, p1NpcMayDodgeGlaive, p1NpcMemoryPosition, p1NpcRoamingPosition, p1RotatingBeams, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
+import { P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_MEMORY_BEAM_LENGTH, P1_MEMORY_BEAM_WIDTH_SCALE, P1_MEMORY_RADIUS, P1_OUTER_RADIUS, P1_REACTIVE_SOAK_RADIUS, p1BeamAngles, p1BossEncounterPosition, p1ClampNpcToArena, p1ContinuousBeamTime, p1CrystalSpawnPosition, p1MemoryRuneVisible, p1MemorySlotAngle, p1MemorySweepAngle, p1NpcBeamPosition, p1NpcBeamWaitingPosition, p1NpcCrystalPickupReleased, p1NpcGlaiveDodgePosition, p1NpcInterruptSeconds, p1NpcMayDodgeGlaive, p1NpcMemoryPosition, p1NpcRoamingPosition, p1RotatingBeams, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
 
 interface SceneProps {
   p1Sequence: number
@@ -366,14 +366,16 @@ function addFlyingSaucer(group: THREE.Group, point: Point, rotation: number, col
 }
 function addInterruptCastOrbs(group: THREE.Group, boss: Point, time: number, progress: number) {
   for (let index = 0; index < 3; index += 1) {
-    const angle = time * 11 + index * Math.PI * 2 / 3
+    const angle = time * 2.4 + index * Math.PI * 2 / 3
+    const point = { x: boss.x + Math.cos(angle) * 17, y: boss.y + Math.sin(angle) * 17 }
     const orb = new THREE.Mesh(
       cachedTransientGeometry('p1-interrupt-cast-orb', () => new THREE.SphereGeometry(2.5, 14, 10)),
       new THREE.MeshBasicMaterial({ color: 0xff4c76, transparent: true, opacity: .68 + progress * .3, depthWrite: false, blending: THREE.AdditiveBlending }),
     )
-    orb.position.set(boss.x + Math.cos(angle) * 17, 11 + Math.sin(time * 14 + index) * 2, boss.y + Math.sin(angle) * 17)
+    orb.position.set(point.x, 11 + Math.sin(time * 7 + index) * 1.4, point.y)
     orb.renderOrder = 16
     group.add(orb)
+    addFrontalCone(group, point, angle, 58, 0xff315f, .055 + progress * .15)
   }
 }
 function makeMarkerTexture(symbol: string, color: string) {
@@ -1134,7 +1136,7 @@ export default function GameScene(props: SceneProps) {
           const openingBoss = p1BossEncounterPosition(state.p1BossOpening, state.positions.slice(0, 2), state.p1Sequence, 'p1-beam-telegraph', 0, WORLD.center)
           const beams = p1RotatingBeams(state.p1Seed, state.p1Sequence, 0, Math.PI / 16, Math.atan2(openingBoss.y - WORLD.center.y, openingBoss.x - WORLD.center.x))
           const elapsed = p1ContinuousBeamTime(state.event, state.eventTime)
-          p1Target = p1NpcBeamPosition(index, elapsed, p1Boss, p1BeamAngles(beams, elapsed)[0], WORLD.center)
+          p1Target = p1NpcBeamPosition(index, elapsed, p1Boss, p1BeamAngles(beams, elapsed)[0], WORLD.center, state.player)
           p1CanDodgeGlaives = p1NpcMayDodgeGlaive('beam-follow')
         } else if (state.event === 'p1-transition') {
           p1Target = state.intermissionPositions[baseIndex]
@@ -1463,11 +1465,11 @@ export default function GameScene(props: SceneProps) {
         if (state.event === 'p1-interrupts') {
           const castElapsed = state.eventTime % 2
           const assignedCast = state.p1InterruptCast === state.p1InterruptAssignment
-          const interrupted = assignedCast ? state.p1InterruptPressed : castElapsed >= 1.72
+          const interrupted = assignedCast
+            ? state.p1InterruptPressed
+            : castElapsed >= p1NpcInterruptSeconds(state.p1Seed, state.p1Sequence, state.p1InterruptCast)
           if (!interrupted) {
             const progress = Math.min(1, castElapsed / 2)
-            const coneAngle = Math.atan2(WORLD.center.y - p1Boss.y, WORLD.center.x - p1Boss.x)
-            addFrontalCone(hazards, p1Boss, coneAngle, 88, 0xff315f, .08 + progress * .26)
             addInterruptCastOrbs(hazards, p1Boss, state.time, progress)
           }
         }

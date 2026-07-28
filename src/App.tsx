@@ -10,7 +10,7 @@ import GameScene from './GameScene'
 import { advanceMainAbilityCast, idleMainAbilityCast, mainAbilityElapsedSeconds, MAIN_ABILITY_CAST_SECONDS, requestMainAbilityCast, type MainAbilityCastState } from './mainAbility'
 import { encounterSoundCuesForState, playEncounterSound } from './encounterSounds'
 import { approachHealthTarget, healthBand, randomHealthTarget, unusedRecoveryPenalty } from './healthRecovery'
-import { P1_BEAM_POSITION_SECONDS, P1_CRYSTAL_PICKUP_SECONDS, P1_DEFAULT_INTERRUPT_KEY, P1_GLAIVE_CONTACT_RADIUS, P1_GLAIVE_INITIAL_SPEED_MULTIPLIER, P1_GLAIVE_RETURN_SPEED_MULTIPLIER, P1_GLAIVE_TELEGRAPH_SECONDS, P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_INTERRUPT_CAST_COUNT, P1_INTERRUPT_CAST_SECONDS, P1_MEMORY_DELAY_SECONDS, P1_MEMORY_POSITION_SECONDS, P1_MEMORY_SWEEP_SECONDS, P1_OUTER_RADIUS, P1_PULL_DELAY_SECONDS, P1_REACTIVE_SOAK_RADIUS, P1_REACTIVE_SOAK_SECONDS, P1_ROTATING_BEAM_ACTIVE_SECONDS, P1_ROTATING_BEAM_TELEGRAPH_SECONDS, P1_SEQUENCE_COUNT, p1AddGlaiveSet, p1AdvanceGlaiveSet, p1BeamHitResolution, p1BossEncounterPosition, p1ContinuousBeamTime, p1CrystalPickupSequence, p1CrystalSpawnPosition, p1GlaiveContactStarted, p1GlaiveSet, p1HasCollectedCrystal, p1InterruptAssignment, p1InterruptState, p1MemoryOrder, p1MemoryPlayerVerdict, p1ReactiveSoaks, p1RotatingBeamHitsPoint, p1RotatingBeams, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
+import { P1_BEAM_POSITION_SECONDS, P1_CRYSTAL_PICKUP_SECONDS, P1_DEFAULT_INTERRUPT_KEY, P1_GLAIVE_CONTACT_RADIUS, P1_GLAIVE_INITIAL_SPEED_MULTIPLIER, P1_GLAIVE_RETURN_SPEED_MULTIPLIER, P1_GLAIVE_TELEGRAPH_SECONDS, P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_INTERRUPT_CAST_COUNT, P1_INTERRUPT_CAST_SECONDS, P1_MEMORY_DELAY_SECONDS, P1_MEMORY_POSITION_SECONDS, P1_MEMORY_SWEEP_SECONDS, P1_OUTER_RADIUS, P1_PLAYER_INTERRUPT_WINDOW_SECONDS, P1_PULL_DELAY_SECONDS, P1_REACTIVE_SOAK_RADIUS, P1_REACTIVE_SOAK_SECONDS, P1_ROTATING_BEAM_ACTIVE_SECONDS, P1_ROTATING_BEAM_TELEGRAPH_SECONDS, P1_SEQUENCE_COUNT, p1AddGlaiveSet, p1AdvanceGlaiveSet, p1BeamHitResolution, p1BossEncounterPosition, p1ContinuousBeamTime, p1CrystalPickupSequence, p1CrystalSpawnPosition, p1GlaiveContactStarted, p1GlaiveSet, p1HasCollectedCrystal, p1InterruptAssignment, p1InterruptState, p1MemoryOrder, p1MemoryPlayerVerdict, p1NpcInterruptSeconds, p1ReactiveSoaks, p1RotatingBeamHitsPoint, p1RotatingBeams, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
 import './styles.css'
 
 type Screen = 'menu' | 'game' | 'results'
@@ -228,6 +228,23 @@ function keyLabel(code: string) {
   if (code === 'Space') return 'Space'
   if (code === 'NumpadDecimal') return 'Num Del'
   return code.replace(/^Key/, '').replace(/^Digit/, '').replace(/^Numpad/, 'Num ')
+}
+function p1LiveRunePositions(
+  player: Point,
+  npcPositions: readonly Point[],
+  assignment: number,
+  profileCount: number,
+): Partial<Record<P1Rune, Point>> {
+  const runes = ['T', 'X', 'O', 'V', '+'] as P1Rune[]
+  return Object.fromEntries(runes.flatMap((rune, runeIndex) => {
+    if (assignment % runes.length === runeIndex) return [[rune, player]]
+    const profileIndex = Array.from({ length: profileCount }, (_, index) => index)
+      .find(index => index !== assignment && index % runes.length === runeIndex)
+    if (profileIndex === undefined) return []
+    const npcOrdinal = profileIndex < assignment ? profileIndex : profileIndex - 1
+    const point = npcPositions[npcOrdinal]
+    return point ? [[rune, point]] : []
+  })) as Partial<Record<P1Rune, Point>>
 }
 function assignUniqueKey(current: KeyBindings, action: keyof KeyBindings, code: string): KeyBindings {
   return Object.fromEntries(Object.entries(current).map(([key, value]) => [key, key === action ? code : value === code ? '' : value])) as unknown as KeyBindings
@@ -1076,7 +1093,8 @@ export default function App() {
       if (!e.repeat && e.code === keyBindings.interrupt && event === 'p1-interrupts') {
         e.preventDefault()
         const cast = Math.min(P1_INTERRUPT_CAST_COUNT - 1, Math.floor(eventTimeRef.current / P1_INTERRUPT_CAST_SECONDS))
-        if (cast === p1InterruptAssignmentRef.current) {
+        const castElapsed = eventTimeRef.current - cast * P1_INTERRUPT_CAST_SECONDS
+        if (cast === p1InterruptAssignmentRef.current && castElapsed <= P1_PLAYER_INTERRUPT_WINDOW_SECONDS) {
           p1InterruptPressedRef.current = true
           setP1InterruptPressed(true)
         } else {
@@ -1114,6 +1132,7 @@ export default function App() {
           rune,
           eventTimeRef.current,
           outwardAngle,
+          p1LiveRunePositions(playerRef.current, renderedNpcPositionsRef.current, assignment, profiles.length),
         )
         p1MemoryPlayerVerdictRef.current = verdict
         if (verdict === false && !p1MemoryFailureTriggeredRef.current) {
@@ -1331,6 +1350,7 @@ export default function App() {
         rune,
         P1_MEMORY_SWEEP_SECONDS,
         outwardAngle,
+        p1LiveRunePositions(playerRef.current, renderedNpcPositionsRef.current, assignment, profiles.length),
       )
       if (verdict !== true && !p1MemoryFailureTriggeredRef.current) {
         p1MemoryFailureTriggeredRef.current = true
@@ -2679,7 +2699,12 @@ function GameArena(props: { p1Sequence: number; p1Seed: number; p1BossOpening: P
     : p3?.title ?? (p2PhaseTransitionRemaining !== null ? 'Phase 3 transition incoming.' : p2?.title) ?? (countdown ? 'Get ready.' : positioning ? 'Take your position.' : finalRecovery ? 'Recover your crystal.' : props.event === 'beam' ? 'Find the gap.' : 'Clear the crystals.')
   const p1CastElapsed = props.eventTime % P1_INTERRUPT_CAST_SECONDS
   const p1AssignedCastActive = props.p1InterruptCast === props.p1InterruptAssignment
-  const p1CastInterrupted = p1AssignedCastActive ? props.p1InterruptPressed : p1CastElapsed >= 1.72
+  const p1NpcInterruptAt = p1NpcInterruptSeconds(props.p1Seed, props.p1Sequence, props.p1InterruptCast)
+  const p1CastInterrupted = p1AssignedCastActive ? props.p1InterruptPressed : p1CastElapsed >= p1NpcInterruptAt
+  const p1KickWindowOpen = p1AssignedCastActive && !props.p1InterruptPressed && p1CastElapsed <= P1_PLAYER_INTERRUPT_WINDOW_SECONDS
+  const p1DisplayState = p1AssignedCastActive && !p1KickWindowOpen && !props.p1InterruptPressed
+    ? 'red'
+    : p1InterruptState(props.p1InterruptAssignment, props.p1InterruptCast)
   return <main className="game-shell">
     <div className="game-top">
       <p className="eyebrow game-phase-label">{phaseLabel} · {props.gameSpeed.toFixed(2)}×</p>
@@ -2780,11 +2805,11 @@ function GameArena(props: { p1Sequence: number; p1Seed: number; p1BossOpening: P
           ? <div className="wipe-minimized" role="alert"><span>WIPED</span><strong>{props.wipeReason}</strong><button type="button" onClick={() => setWipeMinimized(false)}>Restore wipe details</button></div>
           : <div className="wipe-overlay" role="alert"><section className="wipe-dialog"><button className="wipe-minimize" type="button" aria-label="Minimize wipe details" onClick={() => setWipeMinimized(true)}>−</button><p>Raid wiped</p><h2>Wiped due to:</h2><strong>{props.wipeReason}</strong><div><button onClick={props.onRetry}>Try again</button><button className="secondary" onClick={props.onExit}>Change setup</button></div></section></div>)}
         {(props.event === 'p1-countdown' || countdown || props.event === 'p2-countdown' || props.event === 'p3-countdown' || props.event === 'p4-countdown') && <div className="start-countdown">{Math.max(1, Math.ceil(3 - props.eventTime))}</div>}
-        {phaseOne && props.event === 'p1-interrupts' && <><div className={`p1-boss-cast${p1CastInterrupted ? ' interrupted' : ''}`} role="progressbar" aria-label={`Dangerous cone cast ${props.p1InterruptCast + 1}`} aria-valuemin={0} aria-valuemax={2} aria-valuenow={p1CastElapsed}><span>{p1CastInterrupted ? 'INTERRUPTED' : 'DANGEROUS CONE'}</span><i style={{ width: `${Math.min(100, p1CastElapsed / P1_INTERRUPT_CAST_SECONDS * 100)}%` }} /></div><div
-          className={`p1-interrupt-display ${p1InterruptState(props.p1InterruptAssignment, props.p1InterruptCast)}`}
+        {phaseOne && props.event === 'p1-interrupts' && <>{!p1CastInterrupted && <div className="p1-boss-cast" role="progressbar" aria-label={`Dangerous cone cast ${props.p1InterruptCast + 1}`} aria-valuemin={0} aria-valuemax={2} aria-valuenow={p1CastElapsed}><span>DANGEROUS CONE</span><i style={{ width: `${Math.min(100, p1CastElapsed / P1_INTERRUPT_CAST_SECONDS * 100)}%` }} /></div>}<div
+          className={`p1-interrupt-display ${p1DisplayState}`}
           role="status"
-          aria-label={`Interrupt state ${p1InterruptState(props.p1InterruptAssignment, props.p1InterruptCast)}`}
-        ><span>KICK ORDER</span><div>{Array.from({ length: P1_INTERRUPT_CAST_COUNT }, (_, index) => <i className={`${index === props.p1InterruptCast ? 'current ' : ''}${index === props.p1InterruptAssignment ? 'assigned' : ''}${index < props.p1InterruptCast || index === props.p1InterruptCast && p1CastInterrupted ? ' resolved' : ''}`} key={index}>{index + 1}</i>)}</div><strong>{p1CastInterrupted ? 'INTERRUPTED' : props.p1InterruptPressed ? '✓' : p1InterruptState(props.p1InterruptAssignment, props.p1InterruptCast) === 'yellow' ? 'NEXT' : p1InterruptState(props.p1InterruptAssignment, props.p1InterruptCast) === 'green' ? 'KICK' : 'WAIT'}</strong></div></>}
+          aria-label={`Interrupt state ${p1DisplayState}`}
+        ><span>KICK ORDER</span><div>{Array.from({ length: P1_INTERRUPT_CAST_COUNT }, (_, index) => <i className={`${index === props.p1InterruptCast ? 'current ' : ''}${index === props.p1InterruptAssignment ? 'assigned' : ''}${index < props.p1InterruptCast || index === props.p1InterruptCast && p1CastInterrupted ? ' resolved' : ''}`} key={index}>{index + 1}</i>)}</div><strong>{p1AssignedCastActive && !p1KickWindowOpen && !props.p1InterruptPressed ? 'MISSED' : p1CastInterrupted ? 'INTERRUPTED' : props.p1InterruptPressed ? '✓' : p1InterruptState(props.p1InterruptAssignment, props.p1InterruptCast) === 'yellow' ? 'NEXT' : p1KickWindowOpen ? 'KICK' : 'WAIT'}</strong></div></>}
         <div className={`splinter-counter${phaseFour ? ' p4-timers' : phaseThree && props.role === 'carrier' ? ' p3-duty-counter' : phaseOne && props.event === 'p1-interrupts' ? ' p1-interrupt-counter' : ''}`} style={{ left: `${props.hudLayout.mechanic.x}%`, top: `${props.hudLayout.mechanic.y}%` }}>
           {phaseOne && p1
             ? props.event === 'p1-interrupts'

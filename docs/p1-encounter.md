@@ -41,9 +41,12 @@ phase-specific raid-plan persistence.
   - green: the player has two seconds to interrupt.
 - Missing the assigned interrupt wipes the attempt.
 - Synchronize a five-cell kick-order panel and two-second boss cast bar with
-  casts 1–5. Three fast red orbs orbit L’ura while a dangerous frontal cone
-  charges. NPC-assigned casts interrupt shortly before completion; the
-  controlled player's cast stops on their input or resolves lethally if missed.
+  casts 1–5. Three red orbs orbit L’ura at a readable speed and each projects
+  its own rotating dangerous frontal cone. NPC-assigned casts interrupt
+  deterministically between 0.5 and 1.0 seconds, immediately removing their
+  cast bar, orbs, and cones. The controlled player's green kick window lasts
+  1.7 seconds; a missed cast remains dangerous for a final 0.3 seconds before
+  resolving lethally.
 
 ## Crystal pickup
 
@@ -111,6 +114,10 @@ phase-specific raid-plan persistence.
   placement, the visible sweep, and gameplay validation. Correct contact is
   locked when the sweep reaches the controlled player; incorrect contact
   resolves immediately with explicit red rune feedback.
+- Validate the live angular order in which the sweep crosses all five marked
+  players. Radial distance and proximity to an exact template coordinate do
+  not matter: standing immediately before the next rune player is valid when
+  that preserves the displayed sequence.
 - NPCs roam unpredictably during the positioning window, then settle into the
   correct clockwise order shortly before resolution. The controlled player
   remains responsible for finding their own slot.
@@ -131,8 +138,8 @@ phase-specific raid-plan persistence.
   left, then follow it without being caught by another beam while continuing
   to dodge the glaives.
 - All eight beams rotate clockwise in both sequences. Once the rays appear,
-  NPCs first move from the right side through the reference ray to its left
-  during the safe telegraph. They then spread into the middle of the nearest
+  NPCs first move onto the same side of the reference ray as the controlled
+  player during the safe telegraph. They then spread deeper into that adjacent
   45-degree safe lane with visible clearance from both edges and L’ura, face
   and fight the boss while following that lane, and return to normal
   positioning after the beams disappear.

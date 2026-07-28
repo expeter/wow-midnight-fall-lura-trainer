@@ -5,6 +5,8 @@ export interface P1Point {
 
 export const P1_INTERRUPT_CAST_COUNT = 5
 export const P1_INTERRUPT_CAST_SECONDS = 2
+export const P1_PLAYER_INTERRUPT_WINDOW_SECONDS = 1.7
+export const P1_INTERRUPT_RESOLUTION_DELAY_SECONDS = .3
 export const P1_PULL_DELAY_SECONDS = 4
 export const P1_DEFAULT_INTERRUPT_KEY = 'Numpad2'
 export const P1_CRYSTAL_COUNT = 3
@@ -83,6 +85,10 @@ export function p1InterruptSucceeded(
   return pressedCast === assignedCast
     && secondsIntoCast >= 0
     && secondsIntoCast <= P1_INTERRUPT_CAST_SECONDS
+}
+
+export function p1NpcInterruptSeconds(seed: number, sequence: number, cast: number): number {
+  return .5 + seededUnit(seed + sequence * 1009, cast * 43 + 7) * .5
 }
 
 export interface P1CrystalSpawn {
@@ -399,11 +405,13 @@ export function p1NpcBeamPosition(
   boss: P1Point,
   beamAngle: number,
   center: P1Point = boss,
+  referencePoint?: P1Point,
 ): P1Point {
   const crossingProgress = Math.max(0, Math.min(1, _elapsed / P1_ROTATING_BEAM_TELEGRAPH_SECONDS))
-  const safeOffset = crossingProgress < .4
-    ? (-8 + crossingProgress / .4 * 20) * Math.PI / 180
-    : (12 + (crossingProgress - .4) / .6 * 10.5) * Math.PI / 180
+  const referenceSide = referencePoint
+    ? Math.sign((referencePoint.x - center.x) * -Math.sin(beamAngle) + (referencePoint.y - center.y) * Math.cos(beamAngle)) || 1
+    : 1
+  const safeOffset = referenceSide * (12 + crossingProgress * 10.5) * Math.PI / 180
   const safeAngle = beamAngle + safeOffset
   const angularOffset = (npcIndex % 5 - 2) * Math.PI / 90
   const radius = Math.hypot(boss.x - center.x, boss.y - center.y)
@@ -629,8 +637,18 @@ export function p1MemoryPlayerVerdict(
   rune: P1Rune,
   eventTime: number,
   openingAngle = -Math.PI / 2,
+  runePositions?: Partial<Record<P1Rune, P1Point>>,
 ): boolean | null {
   if (existingVerdict !== null || !p1MemoryRuneSwept(order, rune, eventTime)) return existingVerdict
+  if (runePositions && order.every(candidate => runePositions[candidate])) {
+    const angularProgress = (candidate: P1Rune) => {
+      const position = runePositions[candidate]!
+      const angle = Math.atan2(position.y - center.y, position.x - center.x) - openingAngle
+      return (angle % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2)
+    }
+    return [...order].sort((left, right) => angularProgress(left) - angularProgress(right))
+      .every((candidate, index) => candidate === order[index])
+  }
   return p1MemorySlotValid(point, center, order, rune, openingAngle)
 }
 

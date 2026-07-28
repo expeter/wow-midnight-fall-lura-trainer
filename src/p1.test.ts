@@ -13,6 +13,7 @@ import {
   P1_MEMORY_BEAM_WIDTH_SCALE,
   P1_MEMORY_NPC_SETTLE_SECONDS,
   P1_OUTER_RADIUS,
+  P1_PLAYER_INTERRUPT_WINDOW_SECONDS,
   P1_PULL_DELAY_SECONDS,
   P1_REACTIVE_SOAK_RADIUS,
   P1_ROTATING_BEAM_ACTIVE_SECONDS,
@@ -46,6 +47,7 @@ import {
   p1NpcBeamWaitingPosition,
   p1NpcCrystalPickupReleased,
   p1NpcGlaiveDodgePosition,
+  p1NpcInterruptSeconds,
   p1NpcMayDodgeGlaive,
   p1NpcMemoryPosition,
   p1NpcRoamingPosition,
@@ -203,15 +205,16 @@ describe('P1 headless mechanics', () => {
     const boss = { x: 400, y: 420 }
     const center = { x: 0, y: 0 }
     const beamAngle = Math.PI / 3
-    const beforeCross = p1NpcBeamPosition(3, 0, boss, beamAngle, center)
-    const crossedLeft = p1NpcBeamPosition(3, .8, boss, beamAngle, center)
-    const safe = p1NpcBeamPosition(3, 2, boss, beamAngle, center)
+    const playerSide = { x: Math.cos(beamAngle - .5) * 200, y: Math.sin(beamAngle - .5) * 200 }
+    const beforeCross = p1NpcBeamPosition(3, 0, boss, beamAngle, center, playerSide)
+    const crossedLeft = p1NpcBeamPosition(3, .8, boss, beamAngle, center, playerSide)
+    const safe = p1NpcBeamPosition(3, 2, boss, beamAngle, center, playerSide)
     expect(Math.atan2(beforeCross.y, beforeCross.x) - beamAngle).toBeLessThan(0)
-    expect(Math.atan2(crossedLeft.y, crossedLeft.x) - beamAngle).toBeGreaterThan(0)
+    expect(Math.atan2(crossedLeft.y, crossedLeft.x) - beamAngle).toBeLessThan(0)
     const safeAngle = Math.atan2(safe.y - center.y, safe.x - center.x)
-    expect(safeAngle - beamAngle).toBeGreaterThan(18 * Math.PI / 180)
-    expect(safeAngle - beamAngle).toBeLessThan(27 * Math.PI / 180)
-    expect(p1NpcBeamPosition(3, 2.5, boss, beamAngle, center)).toEqual(safe)
+    expect(safeAngle - beamAngle).toBeLessThan(-18 * Math.PI / 180)
+    expect(safeAngle - beamAngle).toBeGreaterThan(-27 * Math.PI / 180)
+    expect(p1NpcBeamPosition(3, 2.5, boss, beamAngle, center, playerSide)).toEqual(safe)
     const waiting = p1NpcBeamWaitingPosition(3, 1, boss, center)
     const waitingLater = p1NpcBeamWaitingPosition(3, 2, boss, center)
     expect(waitingLater).not.toEqual(waiting)
@@ -220,6 +223,15 @@ describe('P1 headless mechanics', () => {
     const movedWithBoss = p1NpcBeamPosition(3, 3, movedBoss, Math.PI / 3, center)
     expect(Math.hypot(movedWithBoss.x - center.x, movedWithBoss.y - center.y))
       .toBeGreaterThan(Math.hypot(safe.x - center.x, safe.y - center.y))
+  })
+
+  it('interrupts NPC casts between half and one second and limits the player window to 1.7 seconds', () => {
+    for (let cast = 0; cast < 5; cast += 1) {
+      expect(p1NpcInterruptSeconds(77, 1, cast)).toBeGreaterThanOrEqual(.5)
+      expect(p1NpcInterruptSeconds(77, 1, cast)).toBeLessThanOrEqual(1)
+      expect(p1NpcInterruptSeconds(77, 1, cast)).toBe(p1NpcInterruptSeconds(77, 1, cast))
+    }
+    expect(P1_PLAYER_INTERRUPT_WINDOW_SECONDS).toBe(1.7)
   })
 
   it('accelerates reflected glaives subtly with distance and includes both visible boundaries in contact', () => {
@@ -339,6 +351,21 @@ describe('P1 headless mechanics', () => {
     const missedVerdict = p1MemoryPlayerVerdict(null, wrongAfterContact, center, order, 'X', 2, outward)
     expect(missedVerdict).toBe(false)
     expect(p1MemoryPlayerVerdict(missedVerdict, correctAtContact, center, order, 'X', 5, outward)).toBe(false)
+  })
+
+  it('accepts radial variation when the live player order around the boss is correct', () => {
+    const order = ['T', 'X', 'O', 'V', '+'] as const
+    const center = { x: 0, y: 0 }
+    const point = (angle: number, radius: number) => ({ x: Math.cos(angle) * radius, y: Math.sin(angle) * radius })
+    const positions = {
+      T: point(.2, 35),
+      X: point(1.1, 82),
+      O: point(2.3, 25),
+      V: point(3.6, 110),
+      '+': point(5, 48),
+    }
+    expect(p1MemoryPlayerVerdict(null, positions.X, center, order, 'X', 1, 0, positions)).toBe(true)
+    expect(p1MemoryPlayerVerdict(null, positions.O, center, order, 'X', 1, 0, { ...positions, X: positions.O, O: positions.X })).toBe(false)
   })
 
   it('rotates eight clockwise beams from the referenced left-side offset for every seed', () => {

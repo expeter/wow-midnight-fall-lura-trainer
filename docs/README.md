@@ -151,6 +151,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-145` | Implemented | Default new users to Phase 1 as the practice target, persist every explicitly selected practice phase in browser-local storage, and restore that last selection on later visits. |
 | `CR-146` | Implemented | In Phase 4, NPC Starsplinters may hit other NPCs without wiping the raid. They remain lethal to the controlled player and floor adds, while the controlled player remains responsible for keeping their own Starsplinter clear of NPCs. |
 | `CR-147` | Implemented | Delay the Phase 2 returning-orb sequence by one second so the crystal recovery window is reliably playable without changing the fixed thirty-second cross-beam cadence. |
+| `CR-148` | Implemented | Move the persisted Phase 1 rune-panel orientation control from general difficulty/movement settings into the HUD settings section, where the panel it configures belongs. |
 | `FR-031` | Implemented | Add an isolated local voice soundboard with five CMU Flite voices, individual Left/Right/Move auditions, exact clocked rhythm previews, a preferred-voice choice, local notes, reproducible generation, and license guidance. |
 | `FR-032` | Implemented | Prepare a standalone tested P1 rules module for later integration without changing the live game: interrupts, crystals, reflective expiring glaives, ordered runes, rotating beams, reactive Soaks, and the Intermission transition. |
 | `FR-033` | Implemented | Add a persistent browser-local achievement collection beneath raid planning with immutable first-earned timestamps, run history for cross-duty feats, and a compact top-page badge summary linking to the full catalogue. |
@@ -348,6 +349,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-101` | Implemented | Allow a crystal player to recover their dropped crystal during the final Intermission recovery window before Phase 2; the Phase 1-specific pickup guard must not block `p1-recover`. |
 | `BUG-102` | Implemented | Give the raid a reliably reachable first post-Archangel Phase 3 relocation window before the next sector begins, including the furthest standard light/assignment move. |
 | `BUG-103` | Implemented | Keep the Phase 2 pull, personal circles, and orb sequence on fixed encounter timing when a crystal player forgets to recover their crystal after a beam. Missing the pickup remains the player's mechanic failure but must not stall later mechanics while the orb clock continues. |
+| `BUG-104` | Implemented | Suppress the Phase 2 carrier `Drop crystal` TTS instruction on Hard while retaining it in Test, Easy, and Normal. Hard players must recognize the mechanic without that coaching call. |
 
 ## Implemented feature inventory
 

@@ -53,7 +53,9 @@ describe('player menu', () => {
   it('persists the selected Phase 1 rune-panel orientation', async () => {
     const user = userEvent.setup()
     render(<App />)
-    const orientation = screen.getByLabelText('P1 rune panel orientation')
+    const hudSettings = screen.getByRole('group', { name: 'Phase 1 HUD' })
+    const orientation = within(hudSettings).getByLabelText('P1 rune panel orientation')
+    expect(within(screen.getByRole('group', { name: 'Difficulty & movement' })).queryByLabelText('P1 rune panel orientation')).not.toBeInTheDocument()
     expect(orientation).toHaveValue('pentagram')
     await user.selectOptions(orientation, 'positional')
     await waitFor(() => expect(localStorage.getItem('lura-p1-rune-panel-orientation')).toBe('positional'))

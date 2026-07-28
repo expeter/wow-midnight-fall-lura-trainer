@@ -104,7 +104,7 @@ export function ttsCuesForState(state: TtsCueState): TtsCue[] {
 
   if (state.event === 'p2-orbs') {
     cues.push({ id: `p2-${state.p2Cycle}-soak`, text: 'Soak beam' })
-    if (state.role === 'carrier' && state.eventTime >= P2_BEAM_SECONDS - 3) {
+    if (state.difficulty !== 'hard' && state.role === 'carrier' && state.eventTime >= P2_BEAM_SECONDS - 3) {
       cues.push({ id: `p2-${state.p2Cycle}-drop`, text: 'Drop crystal' })
     }
   }

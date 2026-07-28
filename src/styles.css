@@ -736,6 +736,14 @@
 .hud-layout-editor {
   margin: 0 0 30px;
 }
+.hud-display-settings {
+  width: min(100%, 952px);
+  min-height: 0;
+  margin: 0 0 14px;
+}
+.hud-display-settings .profile-control {
+  max-width: 420px;
+}
 .hud-preview {
   position: relative;
   width: min(100%, 952px);

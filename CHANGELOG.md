@@ -1,5 +1,12 @@
 # L'ura Trainer changelog
 
+## Unreleased
+
+- CR-148: Integrate the persisted Phase 1 rune-panel orientation control into
+  HUD settings instead of presenting it as a difficulty and movement option.
+- BUG-104: Suppress Phase 2 carrier `Drop crystal` voice coaching on Hard
+  while retaining the call in Test, Easy, and Normal.
+
 ## 0.3.0 · 2026-07-28
 
 - FR-030 / CR-144: Released the complete Phase 1 encounter in production:

@@ -21,7 +21,7 @@ Keep the channels independent:
 | Intermission (Easy only) | `DODGE` | Boss laser telegraph becomes actionable | Remind the player to clear the wide center beam |
 | Intermission (Easy only) | `DROP CRYSTAL` | Player is a carrier and their Starsplinter set begins | Start the drop–move–recover sequence |
 | P2 | `SOAK BEAM` | Cross-beam telegraph begins | Move onto the assigned beam |
-| P2 | `DROP CRYSTAL` | Carrier’s beam countdown reaches 3 seconds | Leave the crystal outside the beam before resolution |
+| P2 (except Hard) | `DROP CRYSTAL` | Carrier’s beam countdown reaches 3 seconds | Leave the crystal outside the beam before resolution |
 | P2 | `SPREAD` | The pull finishes with the raid in the middle | Move to the personal-circle assignment |
 | P2 | `DODGE` | Returning orbs are 3 seconds from reaching the middle | Clear the return path and recover the crystal |
 | P3 | `SOAKS` | The three ground Soaks appear | Begin the group Soak assignment |

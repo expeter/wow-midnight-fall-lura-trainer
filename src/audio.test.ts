@@ -67,7 +67,10 @@ describe('raid-lead TTS cues', () => {
 
   it('times P2 soak, carrier drop, spread, and orb-return dodge calls', () => {
     expect(ttsCuesForState({ ...base, event: 'p2-orbs' }).map(cue => cue.text)).toEqual(['Soak beam'])
-    expect(ttsCuesForState({ ...base, event: 'p2-orbs', eventTime: P2_BEAM_SECONDS - 3, role: 'carrier' }).map(cue => cue.text)).toEqual(['Soak beam', 'Drop crystal'])
+    for (const difficulty of ['test', 'easy', 'normal'] as const) {
+      expect(ttsCuesForState({ ...base, event: 'p2-orbs', eventTime: P2_BEAM_SECONDS - 3, role: 'carrier', difficulty }).map(cue => cue.text)).toEqual(['Soak beam', 'Drop crystal'])
+    }
+    expect(ttsCuesForState({ ...base, event: 'p2-orbs', eventTime: P2_BEAM_SECONDS - 3, role: 'carrier', difficulty: 'hard' }).map(cue => cue.text)).toEqual(['Soak beam'])
     expect(ttsCuesForState({ ...base, event: 'p2-pull', eventTime: P2_PULL_SECONDS - 1.01 }).map(cue => cue.text)).not.toContain('Spread')
     expect(ttsCuesForState({ ...base, event: 'p2-pull', eventTime: P2_PULL_SECONDS - 1 }).map(cue => cue.text)).toContain('Spread')
     expect(ttsCuesForState({ ...base, event: 'p2-spread' }).map(cue => cue.text)).not.toContain('Spread')

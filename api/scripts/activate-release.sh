@@ -36,6 +36,7 @@ tar --extract --gzip --file "${archive}" --directory "${release}" \
 rm -f "${archive}"
 chown -R root:root "${release}"
 chmod -R go-w "${release}"
+chmod 0755 "${release}"
 
 if [[ ! -f "${release}/dist/src/main.js" || ! -f "${release}/migrations/001_initial.sql" ]]; then
   echo "release is missing built service or migrations" >&2

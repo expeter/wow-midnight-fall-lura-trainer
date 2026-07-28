@@ -65,10 +65,9 @@ of Git and screenshots.
    - Perform a restore test into a fresh temporary data directory before
      accepting real accounts.
 
-Until these production items are complete, pushes under `api/**` run the API
-test job but do not deploy. Production deployment is deliberately limited to a
-manual workflow dispatch. Automatic deployment can be enabled after the first
-restore and rollback drills.
+After the VPS bootstrap is complete, pushes under `api/**` test and deploy the
+API through the protected `production-api` environment. Manual workflow
+dispatch remains available for a reviewed redeployment.
 
 ## First VPS bootstrap
 

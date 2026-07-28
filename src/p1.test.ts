@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  P1_BEAM_POSITION_SECONDS,
   P1_DEFAULT_INTERRUPT_KEY,
   P1_GLAIVE_INITIAL_SPEED_MULTIPLIER,
   P1_GLAIVE_LIFETIME_SECONDS,
@@ -11,6 +12,7 @@ import {
   P1_MEMORY_BEAM_WIDTH_SCALE,
   P1_MEMORY_NPC_SETTLE_SECONDS,
   P1_OUTER_RADIUS,
+  P1_PULL_DELAY_SECONDS,
   P1_REACTIVE_SOAK_RADIUS,
   P1_ROTATING_BEAM_ACTIVE_SECONDS,
   p1AddGlaiveSet,
@@ -330,7 +332,7 @@ describe('P1 headless mechanics', () => {
     expect(p1MemoryPlayerVerdict(missedVerdict, correctAtContact, center, order, 'X', 5, outward)).toBe(false)
   })
 
-  it('rotates eight clockwise beams from a two-degree side offset for every seed', () => {
+  it('rotates eight clockwise beams from the referenced left-side offset for every seed', () => {
     const openingAngle = Math.PI * 2 / 3
     const beams = p1RotatingBeams(99, 0, 10, Math.PI / 4, openingAngle)
     const initial = p1BeamAngles(beams, 10)
@@ -338,9 +340,14 @@ describe('P1 headless mechanics', () => {
     expect(initial).toHaveLength(8)
     expect(beams.direction).toBe(1)
     expect(p1RotatingBeams(1, 2, 10, Math.PI / 4, openingAngle).direction).toBe(1)
-    expect(Math.abs(initial[0] - openingAngle)).toBeCloseTo(7 * Math.PI / 180)
+    expect(initial[0] - openingAngle).toBeCloseTo(-7 * Math.PI / 180)
     expect(initial[1] - initial[0]).toBeCloseTo(Math.PI / 4)
     expect(Math.abs(later[0] - initial[0])).toBeCloseTo(Math.PI / 4)
+  })
+
+  it('keeps the requested live pull and post-memory positioning windows explicit', () => {
+    expect(P1_PULL_DELAY_SECONDS).toBe(4)
+    expect(P1_BEAM_POSITION_SECONDS).toBe(4)
   })
 
   it('detects a rotating beam sweeping across a player between rendered frames', () => {

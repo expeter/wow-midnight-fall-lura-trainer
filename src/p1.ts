@@ -5,6 +5,7 @@ export interface P1Point {
 
 export const P1_INTERRUPT_CAST_COUNT = 5
 export const P1_INTERRUPT_CAST_SECONDS = 2
+export const P1_PULL_DELAY_SECONDS = 4
 export const P1_DEFAULT_INTERRUPT_KEY = 'Numpad2'
 export const P1_CRYSTAL_COUNT = 3
 export const P1_CRYSTAL_PICKUP_SECONDS = 5
@@ -24,6 +25,7 @@ export const P1_MEMORY_DELAY_SECONDS = 2
 export const P1_MEMORY_POSITION_SECONDS = 7
 export const P1_MEMORY_NPC_SETTLE_SECONDS = 1.5
 export const P1_MEMORY_SWEEP_SECONDS = 5
+export const P1_BEAM_POSITION_SECONDS = 4
 export const P1_ROTATING_BEAM_COUNT = 8
 export const P1_ROTATING_BEAM_OFFSET_DEGREES = 7
 export const P1_ROTATING_BEAM_TELEGRAPH_SECONDS = 2
@@ -521,7 +523,7 @@ export function p1RotatingBeams(
   return {
     startsAt,
     telegraphEndsAt: startsAt + P1_ROTATING_BEAM_TELEGRAPH_SECONDS,
-    initialAngle: openingAngle + direction * P1_ROTATING_BEAM_OFFSET_DEGREES * Math.PI / 180,
+    initialAngle: openingAngle - direction * P1_ROTATING_BEAM_OFFSET_DEGREES * Math.PI / 180,
     angularSpeed,
     direction,
   }

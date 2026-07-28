@@ -29,6 +29,9 @@ phase-specific raid-plan persistence.
 
 ## Interrupt sequence
 
+- Once the pull countdown ends, the encounter is live for four seconds before
+  the first interrupt begins. All later mechanics retain their order and move
+  four seconds later with it.
 - The boss casts five times; each cast lasts two seconds.
 - Between assigned actions, NPCs alternate short casts with irregular movement
   waypoints around L’ura instead of freezing on their raid-plan markers.
@@ -104,15 +107,19 @@ phase-specific raid-plan persistence.
 
 ## Rotating beams and reactive Soaks
 
-- Two seconds after the memory game, eight Intermission-style boss beams
-  telegraph for two seconds while already rotating at player speed.
+- After the memory game, NPCs have a four-second positioning window to run
+  behind the reference ray near the active crystal lane. No beam is shown or
+  lethal during this staging window.
+- Eight Intermission-style boss beams then telegraph for two seconds while
+  already rotating at player speed.
 - The safe telegraph is a low ground guide. It becomes the full lethal laser
   after two seconds without resetting or discontinuing its rotation.
 - The lethal laser then sweeps exactly 45 degrees before all eight beams
   disappear.
-- One beam begins seven degrees from the boss. The intended movement
-  is to cross that beam, then follow it without being caught by another beam,
-  while continuing to dodge the glaives.
+- One beam begins seven degrees to the left/counterclockwise side of the
+  center-to-boss outward reference. The intended movement is to cross that beam
+  left, then follow it without being caught by another beam while continuing
+  to dodge the glaives.
 - All eight beams rotate clockwise in both sequences. NPCs play them perfectly:
   they stage near the active crystal lane just behind a nearby ray, cross
   counterclockwise during the low telegraph, reform compactly just ahead of

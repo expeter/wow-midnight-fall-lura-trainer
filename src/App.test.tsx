@@ -28,6 +28,7 @@ describe('player menu', () => {
     localStorage.clear()
     localStorage.setItem('lura-entry-mode', 'arena1')
     window.location.hash = ''
+    vi.mocked(window.speechSynthesis.getVoices).mockReturnValue([])
     vi.mocked(fetch).mockReset().mockResolvedValue({
       ok: true,
       json: async () => ({ version: '0.1.0', revision: 'unknown', builtAt: new Date(0).toISOString() }),
@@ -295,6 +296,58 @@ describe('player menu', () => {
     await user.click(screen.getByRole('button', { name: /enter p2/i }))
     await waitFor(() => expect(speak).toHaveBeenCalled())
     expect((speak.mock.calls[0][0] as SpeechSynthesisUtterance).text).toBe('3')
+  })
+  it('selects, previews, persists, and uses an installed Raidlead voice', async () => {
+    const googleVoice = {
+      default: false,
+      lang: 'en-US',
+      localService: false,
+      name: 'Google US English',
+      voiceURI: 'Google US English',
+    } as SpeechSynthesisVoice
+    const selectedVoice = {
+      default: false,
+      lang: 'en-GB',
+      localService: true,
+      name: 'Daniel',
+      voiceURI: 'com.apple.voice.compact.en-GB.Daniel',
+    } as SpeechSynthesisVoice
+    const nonEnglishVoice = {
+      default: true,
+      lang: 'de-DE',
+      localService: true,
+      name: 'Anna',
+      voiceURI: 'com.apple.voice.compact.de-DE.Anna',
+    } as SpeechSynthesisVoice
+    vi.mocked(window.speechSynthesis.getVoices).mockReturnValue([nonEnglishVoice, selectedVoice, googleVoice])
+    const speak = vi.mocked(window.speechSynthesis.speak)
+    speak.mockClear()
+    const user = userEvent.setup()
+    render(<App />)
+
+    const selector = screen.getByLabelText(/raidlead voice/i)
+    expect(selector).toHaveValue(googleVoice.voiceURI)
+    expect(within(selector).getByRole('option', { name: /Daniel · en-GB/i })).toBeInTheDocument()
+    expect(within(selector).queryByRole('option', { name: /Anna/i })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /preview voice/i }))
+    expect((speak.mock.calls.at(-1)?.[0] as SpeechSynthesisUtterance).voice).toBe(googleVoice)
+
+    await user.selectOptions(selector, selectedVoice.voiceURI)
+    await waitFor(() => expect(localStorage.getItem('lura-tts-voice')).toBe(selectedVoice.voiceURI))
+
+    await user.click(screen.getByRole('button', { name: /preview voice/i }))
+    const preview = speak.mock.calls.at(-1)?.[0] as SpeechSynthesisUtterance
+    expect(preview.text).toBe('Raid lead ready')
+    expect(preview.voice).toBe(selectedVoice)
+    expect(preview.lang).toBe('en-GB')
+
+    speak.mockClear()
+    await user.click(screen.getByLabelText(/enable raid lead tts/i))
+    await user.click(screen.getByRole('button', { name: /^P2$/ }))
+    await user.click(screen.getByRole('button', { name: /enter p2/i }))
+    await waitFor(() => expect(speak).toHaveBeenCalled())
+    expect((speak.mock.calls[0][0] as SpeechSynthesisUtterance).voice).toBe(selectedVoice)
   })
   it('defaults the global player movement speed to 18', () => { render(<App />); expect(screen.getByLabelText(/movement speed/i)).toHaveValue('18') })
   it('migrates legacy action conflicts when adding Q/E turning', () => { localStorage.setItem('lura-keybindings', JSON.stringify({ forward: 'KeyW', backward: 'KeyS', left: 'KeyA', right: 'KeyD', crystal: 'KeyE', pause: 'Space', healthPot: 'KeyQ', shield: 'KeyR', mainAbility: 'KeyF' })); render(<App />); expect(screen.getByLabelText(/\(un\)pause keybind/i)).toHaveValue('P'); expect(screen.getByLabelText(/jump keybind/i)).toHaveValue('Space'); expect(screen.getByLabelText(/rotate left keybind/i)).toHaveValue('Q'); expect(screen.getByLabelText(/rotate right keybind/i)).toHaveValue('E'); expect(screen.getByLabelText(/drop crystal keybind/i)).toHaveValue('C'); expect(screen.getByLabelText(/health potion keybind/i)).toHaveValue('Num Del'); expect(screen.getByLabelText(/shield keybind/i)).toHaveValue('Num 7') })

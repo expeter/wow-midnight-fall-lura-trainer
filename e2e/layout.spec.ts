@@ -1,5 +1,14 @@
 import { expect, test } from '@playwright/test'
 
+test('raidlead menu exposes system voice selection and preview', async ({ page }) => {
+  await page.goto('/')
+  const tts = page.getByRole('group', { name: 'TTS settings' })
+  await expect(tts.getByLabel('Raidlead voice')).toBeVisible()
+  await expect(tts.getByRole('option', { name: 'Automatic · English system default' })).toBeAttached()
+  await expect(tts.getByRole('button', { name: 'Preview voice' })).toBeEnabled()
+  await expect(tts).toContainText('Only installed English voices are listed')
+})
+
 test('creator card stays inside the setup layout with readable text', async ({ page }) => {
   for (const viewport of [{ width: 1280, height: 900 }, { width: 375, height: 812 }]) {
     await page.setViewportSize(viewport)

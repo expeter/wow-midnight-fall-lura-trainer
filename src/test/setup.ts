@@ -15,6 +15,7 @@ class MockSpeechSynthesisUtterance {
   lang = ''
   rate = 1
   volume = 1
+  voice: SpeechSynthesisVoice | null = null
 
   constructor(text: string) {
     this.text = text
@@ -30,6 +31,9 @@ Object.defineProperty(window, 'speechSynthesis', {
   value: {
     speak: vi.fn(),
     cancel: vi.fn(),
+    getVoices: vi.fn().mockReturnValue([]),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
   },
 })
 

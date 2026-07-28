@@ -194,6 +194,15 @@ function loadBoolean(key: string, fallback: boolean) {
   const saved = localStorage.getItem(key)
   return saved === null ? fallback : saved === 'true'
 }
+
+function createTtsUtterance(text: string, gameSpeed: number, voice?: SpeechSynthesisVoice) {
+  const utterance = new SpeechSynthesisUtterance(text)
+  utterance.lang = voice?.lang || 'en-US'
+  utterance.rate = Math.min(1.5, Math.max(1, gameSpeed))
+  utterance.volume = 1
+  if (voice) utterance.voice = voice
+  return utterance
+}
 function loadHudLayout(): HudLayout {
   const keys: HudElement[] = ['mechanic', 'beam', 'crystal', 'playerHealth', 'bossHealth', 'castbar']
   try {
@@ -485,6 +494,8 @@ export default function App() {
   const [encounterSoundsEnabled, setEncounterSoundsEnabled] = useState(() => FEATURE_FLAGS.encounterSounds && loadBoolean('lura-encounter-sounds-enabled', false))
   const [encounterSoundVolume, setEncounterSoundVolume] = useState(loadEncounterSoundVolume)
   const [ttsEnabled, setTtsEnabled] = useState(() => loadBoolean('lura-tts-enabled', false))
+  const [ttsVoices, setTtsVoices] = useState<SpeechSynthesisVoice[]>([])
+  const [ttsVoiceId, setTtsVoiceId] = useState(() => localStorage.getItem('lura-tts-voice') || '')
   const [timedVoiceReady, setTimedVoiceReady] = useState(false)
   const [keyBindings, setKeyBindings] = useState<KeyBindings>(loadKeyBindings)
   const [assignment, setAssignment] = useState(loadAssignment)
@@ -690,6 +701,10 @@ export default function App() {
   }, [musicMuted])
   useEffect(() => { localStorage.setItem('lura-tts-enabled', String(ttsEnabled)) }, [ttsEnabled])
   useEffect(() => {
+    if (ttsVoiceId) localStorage.setItem('lura-tts-voice', ttsVoiceId)
+    else localStorage.removeItem('lura-tts-voice')
+  }, [ttsVoiceId])
+  useEffect(() => {
     if (FEATURE_FLAGS.encounterSounds) localStorage.setItem('lura-encounter-sounds-enabled', String(encounterSoundsEnabled))
   }, [encounterSoundsEnabled])
   useEffect(() => {
@@ -728,6 +743,20 @@ export default function App() {
     typeof Audio !== 'undefined',
   )
   const raidleadAvailable = ttsAvailable || timedVoiceAvailable
+  const selectedTtsVoice = ttsVoices.find(voice => voice.voiceURI === ttsVoiceId)
+  useEffect(() => {
+    if (!ttsAvailable) return
+    const refreshVoices = () => {
+      setTtsVoices(window.speechSynthesis.getVoices()
+        .filter(voice => /^en(?:-|_)/i.test(voice.lang))
+        .sort((left, right) => left.lang.localeCompare(right.lang) || left.name.localeCompare(right.name)))
+    }
+    refreshVoices()
+    window.speechSynthesis.addEventListener('voiceschanged', refreshVoices)
+    return () => window.speechSynthesis.removeEventListener('voiceschanged', refreshVoices)
+  }, [ttsAvailable])
+  const automaticTtsVoice = ttsVoices.find(voice => voice.name.toLowerCase() === 'google us english')
+  const activeTtsVoice = selectedTtsVoice || (!ttsVoiceId ? automaticTtsVoice : undefined)
   useEffect(() => {
     if (!timedVoiceAvailable) return
     timedVoiceAudiosRef.current = Object.fromEntries(
@@ -771,17 +800,13 @@ export default function App() {
         audio.preservesPitch = true
         void audio.play().catch(() => {
           if (!ttsAvailable) return
-          const utterance = new SpeechSynthesisUtterance(cue.clip)
-          utterance.lang = 'en-US'
-          utterance.rate = Math.min(1.5, Math.max(1, gameSpeed))
-          utterance.volume = 1
-          window.speechSynthesis.speak(utterance)
+          window.speechSynthesis.speak(createTtsUtterance(cue.clip, gameSpeed, activeTtsVoice))
         })
       }, Math.max(0, remainingRealSeconds) * 1000)
       timedVoiceTimersRef.current.push(timer)
     }
     return stopScheduledVoice
-  }, [timedVoiceReady, ttsAvailable, ttsEnabled, screen, paused, wipeReason, event, p4Cycle, gameSpeed])
+  }, [timedVoiceReady, ttsAvailable, ttsEnabled, screen, paused, wipeReason, event, p4Cycle, gameSpeed, activeTtsVoice])
   useEffect(() => {
     if (!ttsAvailable || !ttsEnabled || screen !== 'game' || paused || wipeReason) {
       if (ttsAvailable) window.speechSynthesis.cancel()
@@ -808,13 +833,9 @@ export default function App() {
     window.speechSynthesis.cancel()
     cues.forEach(cue => {
       ttsSpokenRef.current.add(cue.id)
-      const utterance = new SpeechSynthesisUtterance(cue.text)
-      utterance.lang = 'en-US'
-      utterance.rate = Math.min(1.5, Math.max(1, gameSpeed))
-      utterance.volume = 1
-      window.speechSynthesis.speak(utterance)
+      window.speechSynthesis.speak(createTtsUtterance(cue.text, gameSpeed, activeTtsVoice))
     })
-  }, [ttsAvailable, ttsEnabled, screen, paused, wipeReason, event, eventTime, cycle, p1Sequence, p2Cycle, p2OrbReturnAge, p3Round, p3ArchangelDuty, p3PoolHealth, p3RuneOrder, p3ResolvedRunes, p4Cycle, p4PatternSeed, assignment, activeCrystalAssignments, difficulty, gameSpeed])
+  }, [ttsAvailable, ttsEnabled, screen, paused, wipeReason, event, eventTime, cycle, p1Sequence, p2Cycle, p2OrbReturnAge, p3Round, p3ArchangelDuty, p3PoolHealth, p3RuneOrder, p3ResolvedRunes, p4Cycle, p4PatternSeed, assignment, activeCrystalAssignments, difficulty, gameSpeed, activeTtsVoice])
   useEffect(() => {
     const stopActiveSounds = () => {
       activeEncounterSoundsRef.current.forEach(audio => {
@@ -2293,7 +2314,7 @@ export default function App() {
     <section className="audio-settings-grid">
       {FEATURE_FLAGS.backgroundMusic && <fieldset aria-label="Music settings"><legend>Music</legend><label className="checkbox-control"><input aria-label="Enable background music" type="checkbox" checked={!musicMuted} onChange={event => { setMusicMuted(!event.target.checked); if (!event.target.checked) setMusicPreviewing(false) }} /><span>Enable music<span>Off by default · loops through the complete attempt.</span></span></label><label className="profile-control">Track<select aria-label="Background music track" value={musicTrack} onChange={event => setMusicTrack(event.target.value as MusicTrackId)}>{MUSIC_TRACKS.map(track => <option value={track.id} key={track.id}>{track.label}</option>)}</select></label><button type="button" className="music-preview" disabled={musicMuted} onClick={toggleMusicPreview}>{musicMuted ? 'Enable music to preview' : musicPreviewing ? '■ Stop preview' : '▶ Play preview'}</button><label className="speed-control">Volume <strong>{Math.round(musicVolume * 100)}%</strong><input aria-label="Background music volume" type="range" min="0" max="1" step=".05" value={musicVolume} onChange={event => setMusicVolume(Number(event.target.value))} /></label></fieldset>}
       <fieldset aria-label="Encounter sound settings"><legend>Sounds</legend><label className="checkbox-control"><input aria-label="Enable encounter sounds" type="checkbox" checked={encounterSoundsEnabled} disabled={!FEATURE_FLAGS.encounterSounds} onChange={event => setEncounterSoundsEnabled(event.target.checked)} /><span>Encounter sound effects<span>Main ability release only · off by default.</span></span></label>{FEATURE_FLAGS.encounterSounds && <label className="speed-control">Volume <strong>{Math.round(encounterSoundVolume * 100)}%</strong><input aria-label="Encounter sound volume" type="range" min="0" max="1" step=".05" value={encounterSoundVolume} onChange={event => setEncounterSoundVolume(Number(event.target.value))} /></label>}<p className="hint">Only the Main ability release sound is active; mechanic and failure effects remain deferred in the soundboard.</p><a className="audio-cue-link" href={AUDIO_CUES_URL} target="_blank" rel="noreferrer">View sound cue review ↗</a></fieldset>
-      <fieldset aria-label="TTS settings"><legend>TTS</legend><label className="checkbox-control"><input aria-label="Enable raid lead TTS" type="checkbox" checked={ttsEnabled} disabled={!raidleadAvailable} onChange={event => setTtsEnabled(event.target.checked)} /><span>Raid-lead voice cues<span>{raidleadAvailable ? 'Off by default · browser speech with preloaded, clocked P4 calls.' : 'Raid-lead audio is unavailable in this browser.'}</span></span></label><p className="hint">Calls include Memory Game, Soak Beam, Drop Crystal, Spread, Dodge, Left/Right/Left, and Move. P4 directions use pre-rendered clips for exact rhythm. Intermission Dodge and Drop Crystal coaching is Easy-only.</p><a className="audio-cue-link" href={AUDIO_CUES_URL} target="_blank" rel="noreferrer">Review active calls ↗</a></fieldset>
+      <fieldset aria-label="TTS settings"><legend>TTS</legend><label className="checkbox-control"><input aria-label="Enable raid lead TTS" type="checkbox" checked={ttsEnabled} disabled={!raidleadAvailable} onChange={event => setTtsEnabled(event.target.checked)} /><span>Raid-lead voice cues<span>{raidleadAvailable ? 'Off by default · browser speech with preloaded, clocked P4 calls.' : 'Raid-lead audio is unavailable in this browser.'}</span></span></label><label className="profile-control">Raidlead voice<select aria-label="Raidlead voice" value={selectedTtsVoice?.voiceURI || (!ttsVoiceId ? automaticTtsVoice?.voiceURI : '') || ''} disabled={!ttsAvailable} onChange={event => setTtsVoiceId(event.target.value)}><option value="">Automatic · English system default</option>{ttsVoices.map(voice => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name} · {voice.lang}{voice.default ? ' · Default' : ''}</option>)}</select></label><button type="button" className="music-preview" disabled={!ttsAvailable} onClick={() => { window.speechSynthesis.cancel(); window.speechSynthesis.speak(createTtsUtterance('Raid lead ready', 1, activeTtsVoice)) }}>▶ Preview voice</button><p className="hint">Only installed English voices are listed. Google US English is selected automatically when available; otherwise the browser chooses its English default. P4 directions use pre-rendered clips for exact rhythm. Intermission Dodge and Drop Crystal coaching is Easy-only.</p><a className="audio-cue-link" href={AUDIO_CUES_URL} target="_blank" rel="noreferrer">Review active calls ↗</a></fieldset>
     </section>
     <div className="plan-heading setup-section-heading" id="keyboard-settings"><p className="eyebrow">KEYBOARD SETTINGS</p><h2>Keyboard &amp; mouse controls</h2><p className="hint">Configure movement and action bindings, keyboard turning, and mouse-camera behavior.</p><a className="setup-back-to-top" href="#setup-top" aria-label="Back to top from Keyboard settings" onClick={event => scrollToSetupSection(event, 'setup-top')}>↑ Top</a></div>
     <section className="practice-settings">

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- FR-057: Rebalance the setup page around practice settings and present online
+  standings as a compact Top 10 with a separate full leaderboard view.
 - FR-027: Begin the optional highscore service with an isolated Node/SQLite
   backend, operator preparation guide, privacy-aware public leaderboard
   endpoints, migrations, backups, and VPS deployment scaffolding. Add
@@ -11,6 +13,10 @@
   Add privacy controls and complete cascading deletion, one-use
   character-bound attempts, server-side score recomputation, verified
   achievements, endpoint rate limits, and a plain-language privacy page.
+  Integrate optional login, verified character/privacy management, searchable
+  public leaderboards, online attempt submission, and verified achievements
+  into the trainer while retaining complete offline/local play. Encrypt daily
+  SQLite backup exports and archive rotating generations off the VPS.
 - FR-056: Add an original favicon designed for clear recognition at
   browser-tab size.
 - BUG-105: Prevent active Phase 3 memory-rune NPCs from running away when

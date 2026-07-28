@@ -9,6 +9,22 @@ test('publishes the trainer favicon', async ({ page, request }) => {
   expect((await favicon.body()).byteLength).toBeGreaterThan(1000)
 })
 
+test('keeps optional login and public leaderboards usable without the API', async ({ page }) => {
+  await page.goto('/')
+  const panel = page.getByRole('region', { name: 'Leaderboards' })
+  await expect(panel).toBeVisible()
+  await expect(panel.getByText(/Local play still works|Anonymous play remains fully available/)).toBeVisible()
+  await expect(panel.getByRole('link', { name: 'Europe' })).toHaveAttribute(
+    'href',
+    'http://127.0.0.1:8787/v1/auth/battlenet/start?region=eu',
+  )
+  await expect(panel.getByRole('link', { name: 'Privacy' })).toHaveAttribute('href', '/privacy.html')
+  const box = await panel.boundingBox()
+  expect(box).not.toBeNull()
+  expect(box!.x).toBeGreaterThanOrEqual(0)
+  expect(box!.x + box!.width).toBeLessThanOrEqual(await page.evaluate(() => innerWidth))
+})
+
 test('raidlead menu exposes system voice selection and preview', async ({ page }) => {
   await page.goto('/')
   const tts = page.getByRole('group', { name: 'TTS settings' })

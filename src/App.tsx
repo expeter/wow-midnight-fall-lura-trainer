@@ -11,6 +11,8 @@ import { advanceMainAbilityCast, idleMainAbilityCast, mainAbilityElapsedSeconds,
 import { encounterSoundCuesForState, playEncounterSound } from './encounterSounds'
 import { approachHealthTarget, healthBand, randomHealthTarget, unusedRecoveryPenalty } from './healthRecovery'
 import { P1_BEAM_POSITION_SECONDS, P1_CRYSTAL_PICKUP_SECONDS, P1_DEFAULT_INTERRUPT_KEY, P1_GLAIVE_CONTACT_RADIUS, P1_GLAIVE_INITIAL_SPEED_MULTIPLIER, P1_GLAIVE_RETURN_SPEED_MULTIPLIER, P1_GLAIVE_TELEGRAPH_SECONDS, P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_INTERRUPT_CAST_COUNT, P1_INTERRUPT_CAST_SECONDS, P1_MEMORY_DELAY_SECONDS, P1_MEMORY_POSITION_SECONDS, P1_MEMORY_SWEEP_SECONDS, P1_OUTER_RADIUS, P1_PLAYER_INTERRUPT_WINDOW_SECONDS, P1_PULL_DELAY_SECONDS, P1_REACTIVE_SOAK_RADIUS, P1_REACTIVE_SOAK_SECONDS, P1_ROTATING_BEAM_ACTIVE_SECONDS, P1_ROTATING_BEAM_TELEGRAPH_SECONDS, P1_SEQUENCE_COUNT, p1AddGlaiveSet, p1AdvanceGlaiveSet, p1BeamHitResolution, p1BossEncounterPosition, p1ContinuousBeamTime, p1CrystalPickupSequence, p1CrystalSpawnPosition, p1CrystalTouchResolution, p1GlaiveContactStarted, p1GlaiveSet, p1HasCollectedCrystal, p1InterruptAssignment, p1InterruptState, p1IsInPlayableArena, p1MemoryOrder, p1MemoryPlayerVerdict, p1NpcInterruptSeconds, p1ReactiveSoaks, p1RotatingBeamHitsPoint, p1RotatingBeams, p1WrongCrystalDropExpired, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
+import OnlinePanel from './OnlinePanel'
+import { completeOnlineAttempt, configurationFingerprint, issueOnlineAttempt, type OnlineSession } from './online'
 import './styles.css'
 
 type Screen = 'menu' | 'game' | 'results'
@@ -21,6 +23,7 @@ interface GameStats { score: number; hits: number; crystalDropped: boolean; time
 interface Assignment { x: number; y: number }
 interface Mistake { id: number; time: number; label: string; penalty: number }
 interface PhaseStart { key: PhaseKey; score: number; time: number; hits: number }
+interface ActiveOnlineAttempt { attemptId: string; nonce: string; buildId: string }
 type RecoveryStatus = 'disabled' | 'pending' | 'passed' | 'missed'
 interface PhaseCrystalAssignments { p1: number[]; intermission: number[]; p2: number[]; p3: number[] }
 interface RaidPlan { p1Positions: Assignment[]; p1BossPosition: Assignment; positions: Assignment[]; p2Positions: Assignment[]; p2SpreadPositions: Assignment[]; p3Positions: Assignment[]; p3BossPositions: Assignment[]; startSlots: Assignment[]; profiles: PlayerProfile[]; crystalAssignments: PhaseCrystalAssignments }
@@ -528,6 +531,10 @@ export default function App() {
   const [achievementCollection, setAchievementCollection] = useState(() => parseAchievementCollection(localStorage.getItem(ACHIEVEMENT_STORAGE_KEY)))
   const [achievementPopups, setAchievementPopups] = useState<AchievementDefinition[]>([])
   const [attemptNumber, setAttemptNumber] = useState(() => Math.max(0, Number(localStorage.getItem('lura-attempt-count')) || 0))
+  const [onlineSession, setOnlineSession] = useState<OnlineSession>({ authenticated: false })
+  const [onlineAttempt, setOnlineAttempt] = useState<ActiveOnlineAttempt | null>(null)
+  const [onlineResultStatus, setOnlineResultStatus] = useState('')
+  const onlineCompletionStartedRef = useRef('')
   const [paused, setPaused] = useState(false)
   const [player, setPlayer] = useState<Point>(positions[0])
   const [crystal, setCrystal] = useState<Point | null>(null)
@@ -1082,7 +1089,59 @@ export default function App() {
       setBossHealth(preservedBossHealth)
     }
   }
-  const start = () => initializeAttempt(false)
+  const start = async () => {
+    setOnlineAttempt(null)
+    setOnlineResultStatus('')
+    onlineCompletionStartedRef.current = ''
+    const selectedCharacter = onlineSession.privacy?.selectedCharacterId
+    if (
+      onlineSession.authenticated
+      && onlineSession.csrfToken
+      && selectedCharacter
+      && entryMode === 'arena0'
+      && (difficulty === 'normal' || difficulty === 'hard')
+    ) {
+      try {
+        const buildId = APP_GIT_REVISION === 'unknown' ? `local-${APP_VERSION}` : APP_GIT_REVISION
+        const fingerprint = await configurationFingerprint({
+          assignment,
+          p1Positions,
+          positions,
+          p2Positions,
+          p2SpreadPositions,
+          p3Positions,
+          p3BossPositions,
+          crystalAssignments: {
+            p1: p1CrystalAssignments,
+            intermission: intermissionCrystalAssignments,
+            p2: p2CrystalAssignments,
+            p3: p3CrystalAssignments,
+          },
+        })
+        const crystalDuty = [
+          p1CrystalAssignments,
+          intermissionCrystalAssignments,
+          p2CrystalAssignments,
+          p3CrystalAssignments,
+        ].some(assignments => assignments.includes(assignment))
+        const issued = await issueOnlineAttempt(onlineSession.csrfToken, {
+          difficulty,
+          duty: crystalDuty ? 'crystal' : 'non-crystal',
+          entryMode,
+          phaseScope: 'full',
+          trainerVersion: APP_VERSION,
+          buildId,
+          configurationFingerprint: fingerprint,
+          optionalChallenges: ['recovery', 'main-ability'],
+        })
+        setOnlineAttempt({ attemptId: issued.attemptId, nonce: issued.nonce, buildId })
+        setOnlineResultStatus('Online-eligible attempt active.')
+      } catch {
+        setOnlineResultStatus('Could not issue an online attempt. Continuing as local practice.')
+      }
+    }
+    initializeAttempt(false)
+  }
   function previewCompletionScreen() {
     const previewResults: PhaseResult[] = [
       { key: 'intermission', label: 'Intermission', points: 980, time: 58.4 },
@@ -2193,6 +2252,58 @@ export default function App() {
     const timeout = window.setTimeout(() => setAchievementPopups([]), 5000)
     return () => window.clearTimeout(timeout)
   }, [achievementPopups])
+  useEffect(() => {
+    if (
+      screen !== 'results'
+      || completionPreview
+      || !fullSequenceComplete
+      || !onlineAttempt
+      || !onlineSession.csrfToken
+      || onlineCompletionStartedRef.current === onlineAttempt.attemptId
+    ) return
+    onlineCompletionStartedRef.current = onlineAttempt.attemptId
+    const casts = Math.min(200, mainAbilityCastCountRef.current)
+    const penaltyTotal = mistakes.reduce((total, mistake) => total + Math.max(0, Math.round(mistake.penalty)), 0)
+    const scoreBeforeContinuousPenalty = 1000 - penaltyTotal + recoveryPasses * 50 + casts + Math.floor(casts / 20) * 50
+    const continuousPenalty = Math.max(0, Math.min(1000, scoreBeforeContinuousPenalty - Math.round(stats.score)))
+    setOnlineResultStatus('Submitting verified result…')
+    void completeOnlineAttempt(onlineSession.csrfToken, onlineAttempt.attemptId, {
+      nonce: onlineAttempt.nonce,
+      durationMs: Math.round(stats.time * 1000),
+      phaseResults: phaseResults.map(result => ({
+        key: result.key,
+        durationMs: Math.round(result.time * 1000),
+        mistakes: result.mistakes ?? 0,
+        recovery: result.recovery ?? 'missed',
+      })),
+      mistakes: mistakes.slice().reverse().map(mistake => ({
+        code: mistake.label.slice(0, 80),
+        timeMs: Math.round(mistake.time * 1000),
+        penalty: Math.max(0, Math.round(mistake.penalty)),
+      })),
+      actions: {
+        recoveryPasses,
+        mainAbilityCasts: casts,
+        continuousPenalty,
+      },
+      achievementInputs: {
+        wipeCount: wipeCountRef.current,
+        crystalFailures: playerCrystalFailuresRef.current,
+        runeFailures: playerRuneFailuresRef.current,
+        pauseCycle: playerPauseCycleRef.current,
+        earlyKill: luraKilledEarly,
+        p3EarlyClear: p3DamageClear,
+      },
+      submittedScore: Math.round(stats.score),
+      trainerVersion: APP_VERSION,
+      buildId: onlineAttempt.buildId,
+    }).then(result => {
+      setOnlineResultStatus(`Verified online result posted · ${result.score} points`)
+      setOnlineAttempt(null)
+    }).catch(() => {
+      setOnlineResultStatus('Online verification rejected this result. The local result is unchanged.')
+    })
+  }, [screen, completionPreview, fullSequenceComplete, onlineAttempt?.attemptId])
   const primaryAchievement = achievements.find(achievement => achievement.id === 'superhuman-both-duties')
     ?? achievements.find(achievement => achievement.id === 'hard-score-flawless')
     ?? achievements.find(achievement => achievement.id === 'not-a-scratch')
@@ -2301,6 +2412,7 @@ export default function App() {
     <CreatorCard />
     <header><p className="eyebrow">MIDNIGHT FALLS · MOVEMENT PRACTICE</p><h1>L’ura Trainer</h1><p className="lede">Choose your assigned player below. Its WoW class determines its body color; crystal duty is configured independently beneath each phase plan.</p></header>
     <AchievementBadgeSummary collection={achievementCollection} />
+    <OnlinePanel onSession={setOnlineSession} />
     <div className="entry-choice"><span>Practice target</span>{FEATURE_FLAGS.phaseOne ? <button className={entryMode === 'arena0' ? 'selected' : ''} onClick={() => setEntryMode('arena0')}>P1</button> : <button className="coming-soon" aria-label="P1 — Coming soon" title="P1 is planned but not playable yet" disabled>P1 · Soon</button>}<button className={entryMode === 'arena1' ? 'selected' : ''} onClick={() => setEntryMode('arena1')}>Intermission</button><button className={entryMode === 'arena2' ? 'selected' : ''} onClick={() => setEntryMode('arena2')}>P2</button><button className={entryMode === 'arena3' ? 'selected' : ''} onClick={() => setEntryMode('arena3')}>P3</button><button className={entryMode === 'arena4' ? 'selected' : ''} onClick={() => setEntryMode('arena4')}>P4</button>{difficulty === 'test' && <button className="secondary preview-results" onClick={previewCompletionScreen}>Preview final screen</button>}<button aria-label={entryMode === 'arena0' ? 'Enter P1' : entryMode === 'arena1' ? 'Enter Arena 1 — Enter Intermission' : entryMode === 'arena2' ? 'Enter Arena 2 — Enter P2' : entryMode === 'arena3' ? 'Enter Arena 3 — Enter P3' : 'Enter Arena 4 — Enter P4'} className="start entry-start" onClick={start}>Enter {entryMode === 'arena0' ? 'P1' : entryMode === 'arena1' ? 'Intermission' : entryMode === 'arena2' ? 'P2' : entryMode === 'arena3' ? 'P3' : 'P4'}</button></div>
     <nav className="setup-jump-nav" aria-label="Setup sections"><span>On this page</span><a href="#game-settings" onClick={event => scrollToSetupSection(event, 'game-settings')}>Game settings</a><a href="#keyboard-settings" onClick={event => scrollToSetupSection(event, 'keyboard-settings')}>Keyboard settings</a><a href="#hud-settings" onClick={event => scrollToSetupSection(event, 'hud-settings')}>HUD</a><a href="#raid-planning" onClick={event => scrollToSetupSection(event, 'raid-planning')}>Raid plan</a></nav>
     <div className="plan-heading setup-section-heading" id="game-settings"><p className="eyebrow">GAME SETTINGS</p><h2>Practice configuration</h2><p className="hint">Choose the difficulty, controlled raid position, movement tuning, and optional combat challenges.</p><a className="setup-back-to-top" href="#setup-top" aria-label="Back to top from Game settings" onClick={event => scrollToSetupSection(event, 'setup-top')}>↑ Top</a></div>
@@ -2369,6 +2481,7 @@ export default function App() {
         </article>)}
       </div>
       <p className="completion-extras"><strong>Optional challenges</strong>{extrasSummary}</p>
+      {onlineResultStatus && <p className="online-result-status" role="status">{onlineResultStatus}</p>}
       <div className="completion-actions">
         <button className="copy-completion" onClick={shareCompletionImage}>Copy result image</button>
         <button className="secondary" onClick={copyCompletion}>Copy result text</button>

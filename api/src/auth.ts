@@ -97,6 +97,14 @@ interface AccountProfile {
   }>
 }
 
+interface CharacterProfile {
+  id?: number | string
+  name?: string
+  playable_class?: { name?: string }
+  faction?: { name?: string; type?: string }
+  guild?: { id?: number | string; name?: string; realm?: { name?: string; slug?: string } }
+}
+
 export async function completeOAuth(
   database: Database,
   config: ApiConfig,
@@ -150,6 +158,21 @@ export async function completeOAuth(
       && character.realm?.id !== undefined
       && character.realm.slug
     ))
+  const detailedCharacters = new Map<string, CharacterProfile>()
+  await Promise.all(characters.slice(0, 50).map(async character => {
+    try {
+      const detailResponse = await dependencies.fetch(
+        `https://${stateRow.region}.api.blizzard.com/profile/wow/character/${encodeURIComponent(character.realm!.slug!)}/${encodeURIComponent(character.name!.toLowerCase())}?namespace=profile-${stateRow.region}&locale=en_US`,
+        { headers: { authorization: `Bearer ${token.access_token}` } },
+      )
+      if (!detailResponse.ok) return
+      const detail = await detailResponse.json() as CharacterProfile
+      detailedCharacters.set(String(character.id), detail)
+    } catch {
+      // Character detail is optional enrichment; the verified account roster
+      // remains authoritative when an individual profile is unavailable.
+    }
+  }))
 
   database.exec('BEGIN IMMEDIATE')
   try {
@@ -184,6 +207,7 @@ export async function completeOAuth(
         refreshed_at = excluded.refreshed_at
     `)
     for (const character of characters) {
+      const detail = detailedCharacters.get(String(character.id))
       upsertCharacter.run(
         account.id,
         stateRow.region,
@@ -191,11 +215,17 @@ export async function completeOAuth(
         String(character.realm!.id),
         character.realm!.slug!,
         character.name!,
-        character.playable_class?.name ?? null,
-        character.faction?.name ?? character.faction?.type ?? null,
-        character.guild?.id === undefined ? null : String(character.guild.id),
-        character.guild?.name ?? null,
-        character.guild?.realm?.name ?? character.guild?.realm?.slug ?? null,
+        detail?.playable_class?.name ?? character.playable_class?.name ?? null,
+        detail?.faction?.name ?? detail?.faction?.type ?? character.faction?.name ?? character.faction?.type ?? null,
+        (detail?.guild?.id ?? character.guild?.id) === undefined
+          ? null
+          : String(detail?.guild?.id ?? character.guild?.id),
+        detail?.guild?.name ?? character.guild?.name ?? null,
+        detail?.guild?.realm?.name
+          ?? detail?.guild?.realm?.slug
+          ?? character.guild?.realm?.name
+          ?? character.guild?.realm?.slug
+          ?? null,
         now.toISOString(),
       )
     }
@@ -251,9 +281,8 @@ export function authenticate(
   return { accountId: row.accountId, region: row.region, csrfToken }
 }
 
-export function logout(database: Database, config: ApiConfig, request: Request): void {
-  const session = cookie(request, 'lura_session')
-  if (session) database.prepare('DELETE FROM sessions WHERE id_hash = ?').run(keyedHash(config.sessionSecret, session))
+export function logout(database: Database, accountId: number): void {
+  database.prepare('DELETE FROM sessions WHERE account_id = ?').run(accountId)
 }
 
 export function clearedSessionCookie(): string {

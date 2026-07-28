@@ -18,6 +18,7 @@ interface RawLeaderboardRow {
   alias: string | null
   show_guild: number
   character_name: string
+  region: 'eu' | 'us'
   realm_slug: string
   guild_name: string | null
   score: number
@@ -33,6 +34,7 @@ export interface PublicLeaderboardRow {
   displayName: string
   character: string | null
   realm: string | null
+  region: 'eu' | 'us' | null
   guild: string | null
   score: number
   durationMs: number
@@ -61,6 +63,7 @@ export function listLeaderboard(database: Database, query: LeaderboardQuery): Pu
       p.alias,
       p.show_guild,
       c.name AS character_name,
+      c.region,
       c.realm_slug,
       c.guild_name,
       r.score,
@@ -100,6 +103,7 @@ export function listLeaderboard(database: Database, query: LeaderboardQuery): Pu
           : row.alias?.trim() || 'Anonymous',
       character: character ? row.character_name : null,
       realm: character ? row.realm_slug : null,
+      region: character ? row.region : null,
       guild: !anonymous && row.show_guild ? row.guild_name : null,
       score: row.score,
       durationMs: row.duration_ms,

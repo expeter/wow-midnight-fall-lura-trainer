@@ -18,6 +18,10 @@ function copyResponse(response: Response, target: ServerResponse): Promise<void>
   })
 }
 
+export function isDatabaseBusyError(error: unknown): boolean {
+  return error instanceof Error && /database is (locked|busy)/i.test(error.message)
+}
+
 export function createHttpServer(database: Database, config: ApiConfig) {
   const app = createApp(database, config)
   return createServer(async (incoming, outgoing) => {
@@ -34,9 +38,11 @@ export function createHttpServer(database: Database, config: ApiConfig) {
       await copyResponse(await app.handle(request), outgoing)
     } catch (error) {
       console.error('request_failed', error)
-      outgoing.statusCode = 500
+      const retryable = isDatabaseBusyError(error)
+      outgoing.statusCode = retryable ? 503 : 500
       outgoing.setHeader('content-type', 'application/json; charset=utf-8')
-      outgoing.end(JSON.stringify({ error: 'internal_error' }))
+      if (retryable) outgoing.setHeader('retry-after', '1')
+      outgoing.end(JSON.stringify({ error: retryable ? 'database_busy' : 'internal_error' }))
     }
   })
 }

@@ -1,0 +1,44 @@
+name: Archive encrypted API backup
+
+on:
+  schedule:
+    - cron: "17 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-api-backup
+  cancel-in-progress: false
+
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    environment: production-api
+    steps:
+      - name: Configure verified SSH host and key
+        env:
+          DEPLOY_KEY: ${{ secrets.API_DEPLOY_SSH_KEY }}
+          HOST_KEY: ${{ secrets.API_DEPLOY_HOST_KEY }}
+        run: |
+          install -d -m 0700 ~/.ssh
+          printf '%s\n' "${DEPLOY_KEY}" > ~/.ssh/lura-api
+          printf '%s\n' "${HOST_KEY}" > ~/.ssh/known_hosts
+          chmod 0600 ~/.ssh/lura-api ~/.ssh/known_hosts
+      - name: Download encrypted backup only
+        env:
+          HOST: ${{ secrets.API_DEPLOY_HOST }}
+          USER: ${{ secrets.API_DEPLOY_USER }}
+        run: |
+          scp -i ~/.ssh/lura-api \
+            "${USER}@${HOST}:/var/backups/lura-api-export/lura-latest.sqlite3.p7m" \
+            "lura-${GITHUB_RUN_ID}.sqlite3.p7m"
+          test -s "lura-${GITHUB_RUN_ID}.sqlite3.p7m"
+      - name: Retain encrypted off-VPS generation
+        uses: actions/upload-artifact@v4
+        with:
+          name: lura-api-backup-${{ github.run_id }}
+          path: lura-${{ github.run_id }}.sqlite3.p7m
+          retention-days: 30
+          if-no-files-found: error

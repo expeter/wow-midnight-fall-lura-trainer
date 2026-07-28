@@ -5,6 +5,7 @@ import { createHash, createHmac, randomUUID } from 'node:crypto'
 import { createApp } from '../src/app.js'
 import type { ApiConfig } from '../src/config.js'
 import { applyMigrations, openDatabase, type Database } from '../src/database.js'
+import { isDatabaseBusyError } from '../src/http.js'
 import type { AuthDependencies } from '../src/auth.js'
 
 const config: ApiConfig = {
@@ -104,6 +105,12 @@ describe('Lura API foundation', () => {
     assert.deepEqual(await response.json(), { status: 'ok' })
   })
 
+  it('classifies SQLite writer contention as retryable without exposing internals', () => {
+    assert.equal(isDatabaseBusyError(new Error('database is locked')), true)
+    assert.equal(isDatabaseBusyError(new Error('database is busy')), true)
+    assert.equal(isDatabaseBusyError(new Error('other failure')), false)
+  })
+
   it('merges EU and US results and sorts score, duration, then acceptance time', async () => {
     insertResult(database, {
       region: 'eu', account: '1', character: 'Aegis', realm: 'silvermoon',
@@ -187,7 +194,6 @@ describe('Lura API foundation', () => {
                   realm: { id: 509, slug: 'silvermoon' },
                   playable_class: { name: 'Priest' },
                   faction: { name: 'Alliance' },
-                  guild: { id: 7, name: 'Milestone', realm: { name: 'Silvermoon' } },
                 },
                 {
                   id: 89,
@@ -198,6 +204,15 @@ describe('Lura API foundation', () => {
                 },
               ],
             }],
+          })
+        }
+        if (url.includes('/profile/wow/character/silvermoon/lurana?')) {
+          return Response.json({
+            id: 88,
+            name: 'Lurana',
+            playable_class: { name: 'Priest' },
+            faction: { name: 'Alliance' },
+            guild: { id: 7, name: 'Milestone', realm: { name: 'Silvermoon' } },
           })
         }
         return Response.json({ id: 4242 })
@@ -264,6 +279,8 @@ describe('Lura API foundation', () => {
       headers: { cookie, origin: config.trainerOrigin, 'x-csrf-token': 'wrong' },
     }))
     assert.equal(rejectedLogout.status, 403)
+    insertSession(database, 1, 'second-device-session')
+    assert.equal(database.prepare('SELECT COUNT(*) AS count FROM sessions').get()!.count, 2)
     const logout = await app.handle(new Request('http://api.test/v1/auth/logout', {
       method: 'POST',
       headers: { cookie, origin: config.trainerOrigin, 'x-csrf-token': profile.csrfToken },
@@ -359,6 +376,21 @@ describe('Lura API foundation', () => {
     }))
     assert.equal(response.status, 400)
     assert.deepEqual(await response.json(), { error: 'invalid_character' })
+    const refresh = await app.handle(new Request('http://api.test/v1/me/characters/refresh', {
+      method: 'POST',
+      headers: {
+        cookie: session.cookie,
+        origin: config.trainerOrigin,
+        'x-csrf-token': session.csrf,
+      },
+    }))
+    assert.equal(refresh.status, 200)
+    const refreshBody = await refresh.json() as {
+      reauthenticationRequired: boolean
+      authorizationUrl: string
+    }
+    assert.equal(refreshBody.reauthenticationRequired, true)
+    assert.match(refreshBody.authorizationUrl, /^https:\/\/eu\.battle\.net\/oauth\/authorize\?/)
   })
 
   it('enforces privacy visibility and completely deletes account-linked data', async () => {
@@ -373,6 +405,15 @@ describe('Lura API foundation', () => {
       randomToken: () => 'unused',
       fetch: globalThis.fetch,
     })
+    const me = await app.handle(new Request('http://api.test/v1/me', {
+      headers: { cookie: session.cookie },
+    }))
+    const meBody = await me.json() as {
+      standings: Array<{ difficulty: string; duty: string; position: number; score: number }>
+    }
+    assert.deepEqual(meBody.standings, [{
+      difficulty: 'hard', duty: 'crystal', score: 1000, durationMs: 90_000, position: 1,
+    }])
     const privacy = await app.handle(new Request('http://api.test/v1/me/privacy', {
       method: 'PUT',
       headers: {

@@ -60,8 +60,12 @@ of Git and screenshots.
    - Require manual approval for this environment until the first restore and
      rollback drills have passed.
 7. **Backups**
-   - Schedule `api/scripts/backup.sh` daily with a systemd timer or cron.
-   - Encrypt and copy at least one rotating backup generation off the VPS.
+   - `lura-api-backup.timer` runs `api/scripts/backup.sh` daily.
+   - The script creates a consistent local SQLite generation and encrypts an
+     export to `deploy/backup-recipient.pem`.
+   - `.github/workflows/api-backup.yml` copies only that encrypted export into
+     a rotating 30-day GitHub Actions artifact. Neither GitHub nor the VPS has
+     the private recovery key.
    - Perform a restore test into a fresh temporary data directory before
      accepting real accounts.
 
@@ -109,6 +113,7 @@ provides:
 - `GET /v1/me`
 - `GET /v1/me/characters`
 - `PUT /v1/me/character`
+- `POST /v1/me/characters/refresh`
 - `PUT /v1/me/privacy`
 - `DELETE /v1/me`
 - `POST /v1/attempts`
@@ -138,3 +143,26 @@ The SQLite database uses WAL, foreign keys, and a five-second busy timeout.
 Never back up the live `.sqlite3` file with plain `cp` while WAL is active.
 `lura-api-backup.timer` runs the SQLite online-backup script daily with a
 randomized delay and catches up after downtime.
+
+## Restore an encrypted off-VPS backup
+
+The dedicated private recovery key is local-only:
+`~/.ssh/lura_api_backup_recovery.pem`. Back it up in your normal encrypted
+password-manager or offline-key procedure. It cannot be reconstructed from the
+repository, VPS, or GitHub artifact.
+
+Download one `lura-api-backup-*` artifact and run:
+
+```bash
+openssl cms -decrypt -binary -inform DER \
+  -in lura-<run-id>.sqlite3.p7m \
+  -recip api/deploy/backup-recipient.pem \
+  -inkey ~/.ssh/lura_api_backup_recovery.pem \
+  -out restored.sqlite3
+sqlite3 restored.sqlite3 'PRAGMA integrity_check;'
+```
+
+Restore only after `integrity_check` returns `ok`. Stop the API, preserve the
+current live database separately, install the verified restored file as
+`/var/lib/lura-api/lura.sqlite3` with owner `lura-api:lura-api` and mode
+`0600`, then start the service and verify `/health`.

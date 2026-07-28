@@ -8,9 +8,11 @@ User=lura-api
 Group=lura-api
 EnvironmentFile=/etc/lura-api/env
 Environment=LURA_API_BACKUP_DIRECTORY=/var/backups/lura-api
+Environment=LURA_API_BACKUP_EXPORT_DIRECTORY=/var/backups/lura-api-export
+Environment=LURA_API_BACKUP_RECIPIENT=/etc/lura-api/backup-recipient.pem
 ExecStart=/opt/lura-api/current/scripts/backup.sh
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/var/lib/lura-api /var/backups/lura-api
+ReadWritePaths=/var/lib/lura-api /var/backups/lura-api /var/backups/lura-api-export

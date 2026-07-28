@@ -133,14 +133,35 @@ export function p1CrystalTouchResolution(
   sequence: number,
   pickupSlot: number,
 ): P1CrystalTouchResolution {
-  const sequenceStart = Math.max(0, sequence - 1) * P1_CRYSTAL_COUNT
-  if (assignments[sequenceStart + pickupSlot] === playerIndex) return 'assigned'
-  if (sequence === 1 && p1CrystalPickupSequence(assignments, playerIndex) === 2) return 'penalty-only'
+  void pickupSlot
+  const playerSequence = p1CrystalPickupSequence(assignments, playerIndex)
+  if (playerSequence === sequence) return 'assigned'
+  if (sequence === 1 && playerSequence === 2) return 'penalty-only'
   return 'wrong-held'
 }
 
 export function p1WrongCrystalDropExpired(held: boolean, pickedUpAt: number, now: number): boolean {
   return held && now - pickedUpAt >= P1_CRYSTAL_PICKUP_SECONDS
+}
+
+export function p1PreferredCrystalSlot(
+  currentAssignments: readonly number[],
+  playerIndex: number,
+): number | null {
+  const slot = currentAssignments.indexOf(playerIndex)
+  return slot < 0 ? null : slot
+}
+
+export function p1NpcCrystalTargetSlot(
+  currentAssignments: readonly number[],
+  playerIndex: number,
+  npcIndex: number,
+  playerCollectedSlot: number | null,
+): number | null {
+  const npcSlot = currentAssignments.indexOf(npcIndex)
+  if (npcSlot < 0) return null
+  const playerSlot = p1PreferredCrystalSlot(currentAssignments, playerIndex)
+  return playerSlot !== null && playerCollectedSlot === npcSlot ? playerSlot : npcSlot
 }
 
 export function p1IsInPlayableArena(point: P1Point, center: P1Point): boolean {
@@ -370,13 +391,7 @@ export function p1BossEncounterPosition(
   })
   const start = sequence <= 1 ? opening : stops[sequence - 2] ?? opening
   const target = stops[sequence - 1] ?? start
-  if (event === 'p1-transition') {
-    const progress = Math.max(0, Math.min(1, eventTime / P1_INTERMISSION_POSITION_SECONDS))
-    return {
-      x: target.x + (arenaCenter.x - target.x) * progress,
-      y: target.y + (arenaCenter.y - target.y) * progress,
-    }
-  }
+  if (event === 'p1-transition') return { ...arenaCenter }
   if (event === 'p1-soaks') return { ...target }
   if (event !== 'p1-beam-telegraph' && event !== 'p1-beams') return { ...start }
   const progress = Math.max(0, Math.min(1, p1ContinuousBeamTime(event, eventTime)

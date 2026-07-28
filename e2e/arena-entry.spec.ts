@@ -7,7 +7,7 @@ const MECHANIC_TIMEOUT = 20_000
 
 test.setTimeout(60_000)
 
-test('exposes the complete Phase 1 preview only on localhost and begins its assigned interrupts', async ({ page }) => {
+test('exposes the released Phase 1 encounter and begins its assigned interrupts', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('lura-game-speed', '2.5')
     localStorage.setItem('lura-difficulty', 'test')
@@ -264,12 +264,20 @@ test('Main ability visibly animates and completes only once when its bound key i
   })
   await page.goto('/')
   await page.getByRole('button', { name: /Enter Intermission/ }).click()
-  await page.keyboard.press('4')
+  await page.evaluate(() => {
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Digit4' }))
+    window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Digit4' }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyP' }))
+    window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyP' }))
+  })
 
   const fill = page.locator('.main-cast-fill')
-  await expect(fill).toBeVisible()
+  await expect(page.locator('.player-castbar.main-cast')).toBeVisible()
+  await expect(fill).toBeAttached()
   await expect(fill).toHaveCSS('animation-name', 'main-cast-fill')
   await expect(fill).toHaveCSS('animation-duration', '1s')
+  await expect(fill).toHaveCSS('animation-play-state', 'paused')
+  await page.keyboard.press('p')
 
   await page.keyboard.press('4')
   await page.keyboard.press('4')

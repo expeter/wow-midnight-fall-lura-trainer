@@ -5,7 +5,7 @@ import { p3SpreadPosition, p4PlayerSplinterHitsNpc, p4RenderedNpcSplinterHitsRai
 import { isP3RaidMemberVisible } from './game'
 import { isInsideP3Pool } from './game'
 import { combatProjectileBossCenter, combatProjectileHeight, combatProjectileImpactPoint, combatProjectilePosition, combatProjectileShape, combatProjectileTargetHeight, combatProjectileTravelSeconds, combatProjectilesActive, COMBAT_PROJECTILE_IMPACT_SECONDS, MAX_VISIBLE_NPC_PROJECTILES, npcProjectileShots, type CombatProjectileShape } from './projectiles'
-import { P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_MEMORY_BEAM_LENGTH, P1_MEMORY_BEAM_WIDTH_SCALE, P1_MEMORY_RADIUS, P1_OUTER_RADIUS, P1_REACTIVE_SOAK_RADIUS, p1BeamAngles, p1BossEncounterPosition, p1ClampNpcToArena, p1ContinuousBeamTime, p1CrystalSpawnPosition, p1MemoryRuneVisible, p1MemorySlotAngle, p1MemorySweepAngle, p1NpcBeamPosition, p1NpcBeamWaitingPosition, p1NpcCrystalPickupReleased, p1NpcGlaiveDodgePosition, p1NpcInterruptSeconds, p1NpcMayDodgeGlaive, p1NpcMemoryPosition, p1NpcRoamingPosition, p1RotatingBeams, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
+import { P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_MEMORY_BEAM_LENGTH, P1_MEMORY_BEAM_WIDTH_SCALE, P1_MEMORY_RADIUS, P1_OUTER_RADIUS, P1_REACTIVE_SOAK_RADIUS, p1BeamAngles, p1BossEncounterPosition, p1ClampNpcToArena, p1ContinuousBeamTime, p1CrystalSpawnPosition, p1MemoryRuneVisible, p1MemorySlotAngle, p1MemorySweepAngle, p1NpcBeamPosition, p1NpcBeamWaitingPosition, p1NpcCrystalPickupReleased, p1NpcCrystalTargetSlot, p1NpcGlaiveDodgePosition, p1NpcInterruptSeconds, p1NpcMayDodgeGlaive, p1NpcMemoryPosition, p1NpcRoamingPosition, p1PreferredCrystalSlot, p1RotatingBeams, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
 
 interface SceneProps {
   p1Sequence: number
@@ -313,10 +313,10 @@ function addOrb(group: THREE.Group, point: Point, color = 0xb170ff, size = 5.4, 
   group.add(orb)
   addGroundRing(group, point, size + .6, size + 2.4, color, opacity * .42)
 }
-function addGroundCrystal(group: THREE.Group, point: Point) {
+function addGroundCrystal(group: THREE.Group, point: Point, playerDuty = false) {
   const box = new THREE.Mesh(
     cachedTransientGeometry('ground-crystal-box', () => new THREE.BoxGeometry(4.2, 5.2, 4.2)),
-    new THREE.MeshBasicMaterial({ color: 0xffe13d }),
+    new THREE.MeshBasicMaterial({ color: playerDuty ? 0xffff82 : 0xd8b928 }),
   )
   box.rotation.set(.12, Math.PI / 4, .12)
   box.position.set(point.x, 5.2, point.y)
@@ -324,12 +324,12 @@ function addGroundCrystal(group: THREE.Group, point: Point) {
   group.add(box)
   const glow = new THREE.Mesh(
     cachedTransientGeometry('ground-crystal-glow', () => new THREE.SphereGeometry(5.5, 20, 12)),
-    new THREE.MeshBasicMaterial({ color: 0xffdc48, transparent: true, opacity: .18, depthWrite: false }),
+    new THREE.MeshBasicMaterial({ color: 0xffdc48, transparent: true, opacity: playerDuty ? .34 : .12, depthWrite: false }),
   )
   glow.position.set(point.x, 5.2, point.y)
   glow.renderOrder = 11
   group.add(glow)
-  addGroundRing(group, point, 3.8, 7.5, 0xffe55c, .78, 2.95)
+  addGroundRing(group, point, 3.8, playerDuty ? 8.4 : 7.2, 0xffe55c, playerDuty ? .94 : .52, 2.95)
 }
 function addFlyingSaucer(group: THREE.Group, point: Point, rotation: number, color = 0x89cfff) {
   const body = new THREE.Mesh(
@@ -1013,7 +1013,10 @@ export default function GameScene(props: SceneProps) {
       const p1Boss = p1BossEncounterPosition(state.p1BossOpening, state.positions.slice(0, 2), state.p1Sequence, state.event, state.eventTime, WORLD.center)
       const p1OutwardAngle = Math.atan2(p1Boss.y - WORLD.center.y, p1Boss.x - WORLD.center.x)
       p2Boss.position.set(phaseOne ? p1Boss.x : WORLD.center.x, enlargedCentralBoss ? 16 : 10.5, phaseOne ? p1Boss.y : WORLD.center.y)
-      ;(p2Boss.material as THREE.MeshBasicMaterial).opacity = 1
+      const p1WarpOpacity = state.event === 'p1-transition'
+        ? THREE.MathUtils.smoothstep(state.eventTime, .18, .5)
+        : 1
+      ;(p2Boss.material as THREE.MeshBasicMaterial).opacity = p1WarpOpacity
       p3Bosses.forEach((object, index) => {
         object.visible = phaseThree
         const side: -1 | 1 = index === 0 ? -1 : 1
@@ -1128,8 +1131,14 @@ export default function GameScene(props: SceneProps) {
         }
         if (state.event === 'p1-crystals' && currentP1CrystalAssignments.includes(baseIndex)) {
           const pickupsReleased = p1NpcCrystalPickupReleased(state.p1CrystalAssignments, state.assignment, state.p1Sequence, state.p1CrystalCollected)
+          const reassignedSlot = p1NpcCrystalTargetSlot(
+            currentP1CrystalAssignments,
+            state.assignment,
+            baseIndex,
+            state.p1CrystalCollected ? state.p1StolenCrystalSlot : null,
+          ) ?? p1CrystalSlot
           p1Target = pickupsReleased
-            ? p1CrystalSpawnPosition(p1Boss, WORLD.center, p1CrystalSlot)
+            ? p1CrystalSpawnPosition(p1Boss, WORLD.center, reassignedSlot)
             : state.positions[baseIndex]
           p1CanDodgeGlaives = false
         } else if (state.event === 'p1-memory-position' || state.event === 'p1-memory-sweep') {
@@ -1500,6 +1509,7 @@ export default function GameScene(props: SceneProps) {
         }
         if (state.event === 'p1-crystals') {
           const activeAssignments = state.p1CrystalAssignments.slice((state.p1Sequence - 1) * 3, state.p1Sequence * 3)
+          const playerPlannedSlot = p1PreferredCrystalSlot(activeAssignments, state.assignment)
           activeAssignments.forEach(profileIndex => {
             const slot = activeAssignments.indexOf(profileIndex)
             if (state.p1StolenCrystalSlot === slot) return
@@ -1507,7 +1517,7 @@ export default function GameScene(props: SceneProps) {
             const point = p1CrystalSpawnPosition(p1Boss, WORLD.center, slot)
             const npcOrdinal = npcProfileIndices.indexOf(profileIndex)
             if (npcOrdinal >= 0 && distance(npcPositions[npcOrdinal], point) <= 4) return
-            addGroundCrystal(hazards, point)
+            addGroundCrystal(hazards, point, slot === playerPlannedSlot)
           })
         }
         state.p1GlaiveSets.forEach(set => {

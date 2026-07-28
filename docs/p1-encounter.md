@@ -1,10 +1,9 @@
-# P1 encounter local preview
+# P1 encounter
 
 Ticket: `FR-030`
 
-P1 is implemented before the existing Intermission as a localhost-only
-playable preview. The production build continues to show the disabled teaser
-until the encounter has been playtested and deliberately released.
+P1 is implemented before the existing Intermission and released as part of
+v0.3.0.
 
 The deterministic rules live in [`src/p1.ts`](../src/p1.ts). `FR-030` connects
 them to the application, renderer, controls, phase results, TTS, and
@@ -55,16 +54,20 @@ phase-specific raid-plan persistence.
   and the center bubble. Slots 1–3 belong to sequence one; slots 4–6 to
   sequence two, and the configured carrier order determines each pickup lane.
 - Assigned carriers have five seconds to collect them.
-- If the controlled player belongs to the active trio, NPC carriers wait until
-  the player collects their crystal before moving to their own pickups.
+- If the controlled player belongs to the active trio, any of those three
+  crystals satisfies their duty. NPC carriers wait for the player, then
+  redistribute onto the two remaining crystals when the player takes a
+  different slot from their planned highlight.
 - Non-carriers keep the ambient cast-and-move orbit while active carriers
   override it to collect their assigned crystal.
 - The pull countdown states both Kick 1–5 and Crystal pickup 1, Crystal pickup
   2, or no pickup.
 - An uncollected crystal wipes the attempt, consistently with existing crystal
   expiration rules.
-- Touching another player’s active crystal logs a mistake and transfers the
-  crystal to the controlled player. They must drop it within five seconds; the
+- The player’s planned crystal is brighter than the two NPC crystals as visual
+  guidance, but every crystal in the player’s active trio is valid.
+- A player outside the active trio who touches a crystal logs a mistake and
+  takes responsibility for it. They must drop it within five seconds; the
   assigned NPC then recovers that dropped crystal. Holding it beyond the
   deadline wipes for playing the wrong crystal assignment.
 - A player assigned to the second pickup sequence who touches a first-sequence
@@ -173,8 +176,9 @@ phase-specific raid-plan persistence.
 
 - Simulate two complete sequences.
 - Afterwards, give the raid 15 seconds to reach the existing Intermission
-  assignments before that phase begins. L’ura moves smoothly from her final
-  outside stop to the center during this handoff.
+  assignments before that phase begins. L’ura disappears from her final
+  outside stop and reappears directly in the center instead of visibly
+  travelling across the collapsing room.
 
 ## TTS
 

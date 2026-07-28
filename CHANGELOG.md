@@ -1,9 +1,9 @@
 # L'ura Trainer changelog
 
-## Unreleased
+## 0.3.0 · 2026-07-28
 
-- FR-030: Added the complete Phase 1 encounter as a localhost-only playable
-  preview: five assigned interrupts, two three-crystal pickup sets,
+- FR-030 / CR-144: Released the complete Phase 1 encounter in production:
+  five assigned interrupts, two three-crystal pickup sets,
   ricocheting Heaven Glaives, the ordered TXOV+ memory sweep, rotating beams
   with reactive Soaks, a dedicated raid plan, and the Intermission handoff.
 - BUG-072 / CR-103 / CR-104: Removed invisible P1/Intermission planner
@@ -73,8 +73,8 @@
 - CR-125 / CR-129: Extended the P1 memory sweep to a darker, slightly raised
   40-yard Starsplinter visual, clear each rune as it resolves, and keep all
   roaming NPC targets inside the playable arena.
-- CR-127 / CR-128: Move L’ura smoothly to the Intermission center during the
-  P1 handoff, and ship the reviewed P1 positions/boss marker as the maintained
+- CR-127 / CR-128 / BUG-098: Warp L’ura directly to the Intermission center
+  during the P1 handoff, and ship the reviewed P1 positions/boss marker as the maintained
   I Asgard I fallback for plans without P1 data.
 - CR-130: Made the P1 memory sweep visually decisive after screenshot review:
   a 55-yard, 2.35-times wider dark Starsplinter blade with a stronger raised

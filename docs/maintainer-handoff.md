@@ -8,10 +8,10 @@ original chat history. It complements the detailed ticket log in
 
 ## Current release boundary
 
-- The package version is `0.2.0`.
+- The package version is `0.3.0`.
 - Intermission and Phases 2–4 are production features.
-- Phase 1 is a playable preview only on `localhost`, `127.0.0.1`, and `::1`.
-  Production deliberately keeps it hidden until it is playtested and released.
+- Phase 1 is released in production. The host feature flag remains explicit,
+  but no longer hides P1 outside localhost.
 - `BUG-084` and follow-up `CR-132` make the memory sweep authoritative at
   contact: correct positions remain accepted, while an incorrect controlled
   rune fails immediately with red feedback.
@@ -24,7 +24,6 @@ original chat history. It complements the detailed ticket log in
   `Left`, `Right`, `Left`, `Move` uses separate prerecorded raid-lead clips.
 
 The source of truth for host gates is [`src/features.ts`](../src/features.ts).
-Do not expose P1 in production as an incidental consequence of unrelated work.
 
 ## Product intent that is easy to lose
 
@@ -150,7 +149,7 @@ command prefix for focused runs instead of embedding a variable-length grep in
 the shell command:
 
 ```bash
-npm run test:e2e:local -- --grep "Phase 1 preview|terminal wipe"
+npm run test:e2e:local -- --grep "released Phase 1|terminal wipe"
 ```
 
 This keeps recurring sandbox approval scoped to

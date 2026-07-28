@@ -50,10 +50,12 @@ import {
   p1NpcCrystalPickupReleased,
   p1NpcGlaiveDodgePosition,
   p1NpcInterruptSeconds,
+  p1NpcCrystalTargetSlot,
   p1NpcMayDodgeGlaive,
   p1NpcMemoryPosition,
   p1NpcRoamingPosition,
   p1PlayerSoakFailed,
+  p1PreferredCrystalSlot,
   p1Progress,
   p1ReactiveSoaks,
   p1RotatingBeamHitsPoint,
@@ -121,12 +123,23 @@ describe('P1 headless mechanics', () => {
   it('transfers a wrongly touched crystal unless the player owns the second sequence', () => {
     const assignments = [2, 4, 6, 8, 10, 12]
     expect(p1CrystalTouchResolution(assignments, 2, 1, 0)).toBe('assigned')
+    expect(p1CrystalTouchResolution(assignments, 2, 1, 1)).toBe('assigned')
+    expect(p1CrystalTouchResolution(assignments, 2, 1, 2)).toBe('assigned')
     expect(p1CrystalTouchResolution(assignments, 10, 1, 0)).toBe('penalty-only')
     expect(p1CrystalTouchResolution(assignments, 3, 1, 0)).toBe('wrong-held')
     expect(p1CrystalTouchResolution(assignments, 2, 2, 0)).toBe('wrong-held')
     expect(p1WrongCrystalDropExpired(true, 10, 14.99)).toBe(false)
     expect(p1WrongCrystalDropExpired(true, 10, 15)).toBe(true)
     expect(p1WrongCrystalDropExpired(false, 10, 20)).toBe(false)
+  })
+
+  it('reassigns only the displaced NPC when a player takes another crystal in their trio', () => {
+    const activeTrio = [2, 4, 6]
+    expect(p1PreferredCrystalSlot(activeTrio, 2)).toBe(0)
+    expect(p1NpcCrystalTargetSlot(activeTrio, 2, 4, 1)).toBe(0)
+    expect(p1NpcCrystalTargetSlot(activeTrio, 2, 6, 1)).toBe(2)
+    expect(p1NpcCrystalTargetSlot(activeTrio, 2, 4, 0)).toBe(1)
+    expect(p1NpcCrystalTargetSlot(activeTrio, 2, 8, 1)).toBeNull()
   })
 
   it('uses the full Phase 1 annulus instead of the smaller Intermission boundary', () => {
@@ -211,8 +224,7 @@ describe('P1 headless mechanics', () => {
     const firstStopAngle = Math.atan2(firstStop.y - center.y, firstStop.x - center.x)
     expect(Math.abs(Math.atan2(Math.sin(firstStopAngle - openingAngle), Math.cos(firstStopAngle - openingAngle)))).toBeCloseTo(Math.PI / 4)
     expect(p1BossEncounterPosition(opening, tanks, 2, 'p1-interrupts', 0, center)).toEqual(firstStop)
-    const finalStop = p1BossEncounterPosition(opening, tanks, 2, 'p1-beams', P1_ROTATING_BEAM_ACTIVE_SECONDS, center)
-    expect(p1BossEncounterPosition(opening, tanks, 2, 'p1-transition', 0, center)).toEqual(finalStop)
+    expect(p1BossEncounterPosition(opening, tanks, 2, 'p1-transition', 0, center)).toEqual(center)
     expect(p1BossEncounterPosition(opening, tanks, 2, 'p1-transition', P1_INTERMISSION_POSITION_SECONDS, center)).toEqual(center)
   })
 

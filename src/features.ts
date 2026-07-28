@@ -6,11 +6,11 @@ export function isLocalPreviewHost(hostname: string): boolean {
 }
 
 export function featureFlagsForHost(hostname: string) {
-  const localPreview = isLocalPreviewHost(hostname)
+  void hostname
   return {
     backgroundMusic: true,
     encounterSounds: true,
-    phaseOne: localPreview,
+    phaseOne: true,
     textToSpeech: true,
   } as const
 }

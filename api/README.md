@@ -113,3 +113,5 @@ verified achievements, and frontend integration remain the next FR-027 slice.
 
 The SQLite database uses WAL, foreign keys, and a five-second busy timeout.
 Never back up the live `.sqlite3` file with plain `cp` while WAL is active.
+`lura-api-backup.timer` runs the SQLite online-backup script daily with a
+randomized delay and catches up after downtime.

@@ -34,7 +34,10 @@ fi
 cd "${release_directory}"
 PATH="/opt/lura-api/runtime/bin:${PATH}" npm ci --omit=dev
 install -o root -g root -m 0644 deploy/lura-api.service /etc/systemd/system/lura-api.service
+install -o root -g root -m 0644 deploy/lura-api-backup.service /etc/systemd/system/lura-api-backup.service
+install -o root -g root -m 0644 deploy/lura-api-backup.timer /etc/systemd/system/lura-api-backup.timer
 install -d -o root -g root -m 0755 /opt/lura-api/bin
 install -o root -g root -m 0755 scripts/activate-release.sh /opt/lura-api/bin/activate-release
 systemctl daemon-reload
 systemctl enable lura-api.service
+systemctl enable --now lura-api-backup.timer

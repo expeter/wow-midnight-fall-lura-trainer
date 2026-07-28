@@ -1,0 +1,11 @@
+[Unit]
+Description=Run the L'ura Trainer SQLite backup daily
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+RandomizedDelaySec=1h
+Unit=lura-api-backup.service
+
+[Install]
+WantedBy=timers.target

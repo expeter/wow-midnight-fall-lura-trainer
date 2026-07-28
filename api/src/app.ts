@@ -1,6 +1,17 @@
 import type { ApiConfig } from './config.js'
 import type { Database } from './database.js'
 import { listLeaderboard, type Difficulty, type Duty } from './leaderboards.js'
+import {
+  authenticate,
+  clearedSessionCookie,
+  completeOAuth,
+  defaultAuthDependencies,
+  issueOAuthState,
+  logout,
+  safeEqual,
+  type AuthDependencies,
+  type BattleNetRegion,
+} from './auth.js'
 
 interface App {
   handle(request: Request): Promise<Response>
@@ -24,7 +35,11 @@ function integerParameter(url: URL, name: string, fallback: number, maximum: num
   return Number.isInteger(value) && value >= 0 && value <= maximum ? value : null
 }
 
-export function createApp(database: Database, config: ApiConfig): App {
+export function createApp(
+  database: Database,
+  config: ApiConfig,
+  dependencies: AuthDependencies = defaultAuthDependencies,
+): App {
   const allowedOrigins = new Set([config.trainerOrigin, ...config.localOrigins])
   return {
     async handle(request) {
@@ -50,6 +65,57 @@ export function createApp(database: Database, config: ApiConfig): App {
       if (request.method === 'GET' && url.pathname === '/health') {
         const row = database.prepare('SELECT 1 AS ok').get()
         return json({ status: row?.ok === 1 ? 'ok' : 'degraded' }, row?.ok === 1 ? 200 : 503, corsHeaders)
+      }
+      if (request.method === 'GET' && url.pathname === '/v1/auth/battlenet/start') {
+        const region = url.searchParams.get('region') ?? 'eu'
+        if (region !== 'eu' && region !== 'us') return json({ error: 'invalid_region' }, 400, corsHeaders)
+        try {
+          return Response.redirect(issueOAuthState(database, config, dependencies, region as BattleNetRegion), 302)
+        } catch (error) {
+          if (error instanceof Error && error.message === 'battle_net_not_configured') {
+            return json({ error: 'battle_net_not_configured' }, 503, corsHeaders)
+          }
+          throw error
+        }
+      }
+      if (request.method === 'GET' && url.pathname === '/v1/auth/battlenet/callback') {
+        const code = url.searchParams.get('code')
+        const state = url.searchParams.get('state')
+        if (!code || !state) return json({ error: 'invalid_oauth_callback' }, 400, corsHeaders)
+        try {
+          const completed = await completeOAuth(database, config, dependencies, code, state)
+          return new Response(null, {
+            status: 302,
+            headers: { location: completed.redirect, 'set-cookie': completed.cookie },
+          })
+        } catch (error) {
+          const known = new Set(['invalid_oauth_state', 'oauth_exchange_failed', 'oauth_identity_failed'])
+          if (error instanceof Error && known.has(error.message)) return json({ error: error.message }, 400, corsHeaders)
+          throw error
+        }
+      }
+      if (request.method === 'GET' && url.pathname === '/v1/me') {
+        const session = authenticate(database, config, dependencies, request)
+        if (!session) return json({ authenticated: false }, 401, corsHeaders)
+        const profile = database.prepare(`
+          SELECT p.identity_mode AS identityMode, p.alias, p.show_guild AS showGuild
+          FROM privacy_settings p WHERE p.account_id = ?
+        `).get(session.accountId)
+        return json({
+          authenticated: true,
+          region: session.region,
+          csrfToken: session.csrfToken,
+          privacy: profile,
+        }, 200, corsHeaders)
+      }
+      if (request.method === 'POST' && url.pathname === '/v1/auth/logout') {
+        if (!origin || !allowedOrigins.has(origin)) return json({ error: 'origin_not_allowed' }, 403, corsHeaders)
+        const session = authenticate(database, config, dependencies, request)
+        if (!session) return json({ error: 'not_authenticated' }, 401, corsHeaders)
+        const csrf = request.headers.get('x-csrf-token')
+        if (!csrf || !safeEqual(csrf, session.csrfToken)) return json({ error: 'invalid_csrf' }, 403, corsHeaders)
+        logout(database, config, request)
+        return json({ loggedOut: true }, 200, { ...corsHeaders, 'set-cookie': clearedSessionCookie() })
       }
       if (request.method === 'GET' && (url.pathname === '/v1/leaderboards' || url.pathname === '/v1/leaderboards/search')) {
         const difficulty = url.searchParams.get('difficulty')

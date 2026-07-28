@@ -90,18 +90,31 @@ cd api
 npm ci
 npm run build
 LURA_API_DATABASE=:memory: npm test
-LURA_API_DATABASE=./local.sqlite3 npm start
+npm run start:local
 ```
+
+`start:local` reads the repository-root `.env`. In addition to the Battle.net
+client values, set distinct local `SESSION_SECRET` and `CSRF_SECRET` values of
+at least 32 characters, `BATTLE_NET_CALLBACK_URL` to
+`http://127.0.0.1:8787/v1/auth/battlenet/callback`, and
+`LURA_API_DATABASE=./local.sqlite3`.
 
 The server listens on `127.0.0.1:8787` by default. The current implementation
 provides:
 
 - `GET /health`
+- `GET /v1/auth/battlenet/start?region=eu|us`
+- `GET /v1/auth/battlenet/callback`
+- `POST /v1/auth/logout`
+- `GET /v1/me`
 - `GET /v1/leaderboards`
 - `GET /v1/leaderboards/search`
 
-Authentication, selected-character management, attempt issuance/completion,
-verified achievements, and frontend integration remain the next FR-027 slice.
+Battle.net access tokens are used only during the callback and are not stored.
+For local development, `BNET_CLIENT_ID`/`BNET_SECRET` are accepted aliases for
+the production `BATTLE_NET_CLIENT_ID`/`BATTLE_NET_CLIENT_SECRET` names.
+Selected-character management, attempt issuance/completion, verified
+achievements, and frontend integration remain the next FR-027 slices.
 
 ## Production paths
 

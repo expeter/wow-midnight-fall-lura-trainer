@@ -9,6 +9,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "node dist/src/main.js",
+    "start:local": "node --env-file=../.env dist/src/main.js",
     "migrate": "node dist/src/migrate.js",
     "test": "npm run build && node --test dist/tests/*.test.js"
   },

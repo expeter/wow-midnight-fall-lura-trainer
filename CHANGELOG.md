@@ -4,7 +4,10 @@
 
 - FR-027: Begin the optional highscore service with an isolated Node/SQLite
   backend, operator preparation guide, privacy-aware public leaderboard
-  endpoints, migrations, backups, and VPS deployment scaffolding.
+  endpoints, migrations, backups, and VPS deployment scaffolding. Add
+  Battle.net authorization-code login with one-use state, short-lived provider
+  tokens, opaque application sessions, authenticated profile lookup, and
+  origin/CSRF-protected logout.
 - FR-056: Add an original favicon designed for clear recognition at
   browser-tab size.
 - BUG-105: Prevent active Phase 3 memory-rune NPCs from running away when

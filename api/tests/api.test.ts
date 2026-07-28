@@ -4,6 +4,7 @@ import { resolve } from 'node:path'
 import { createApp } from '../src/app.js'
 import type { ApiConfig } from '../src/config.js'
 import { applyMigrations, openDatabase, type Database } from '../src/database.js'
+import type { AuthDependencies } from '../src/auth.js'
 
 const config: ApiConfig = {
   host: '127.0.0.1',
@@ -12,6 +13,11 @@ const config: ApiConfig = {
   trainerOrigin: 'https://trainer.example',
   localOrigins: ['http://127.0.0.1:5173'],
   currentTrainerVersion: '0.3.0',
+  battleNetClientId: 'client-id',
+  battleNetClientSecret: 'client-secret',
+  battleNetCallbackUrl: 'http://api.test/v1/auth/battlenet/callback',
+  sessionSecret: 'session-secret-with-at-least-32-bytes',
+  csrfSecret: 'csrf-secret-with-at-least-32-bytes---',
 }
 
 function insertResult(
@@ -137,5 +143,92 @@ describe('Lura API foundation', () => {
     assert.equal(database.prepare('SELECT COUNT(*) AS count FROM characters').get()!.count, 0)
     assert.equal(database.prepare('SELECT COUNT(*) AS count FROM attempts').get()!.count, 0)
     assert.equal(database.prepare('SELECT COUNT(*) AS count FROM results').get()!.count, 0)
+  })
+
+  it('completes Battle.net OAuth without retaining the provider token', async () => {
+    const requests: Array<{ url: string; authorization: string | null }> = []
+    const tokens = ['oauth-state', 'application-session']
+    const dependencies: AuthDependencies = {
+      now: () => new Date('2026-07-28T12:00:00.000Z'),
+      randomToken: () => tokens.shift()!,
+      fetch: async (input, init) => {
+        const url = String(input)
+        requests.push({
+          url,
+          authorization: new Headers(init?.headers).get('authorization'),
+        })
+        if (url.endsWith('/oauth/token')) {
+          assert.match(String(init?.body), /code=authorization-code/)
+          return Response.json({ access_token: 'short-lived-provider-token' })
+        }
+        return Response.json({ id: 4242 })
+      },
+    }
+    const app = createApp(database, config, dependencies)
+    const start = await app.handle(new Request('http://api.test/v1/auth/battlenet/start?region=us'))
+    assert.equal(start.status, 302)
+    const authorization = new URL(start.headers.get('location')!)
+    assert.equal(authorization.origin, 'https://us.battle.net')
+    assert.equal(authorization.searchParams.get('scope'), 'wow.profile')
+    assert.equal(authorization.searchParams.get('state'), 'oauth-state')
+
+    const callback = await app.handle(new Request(
+      'http://api.test/v1/auth/battlenet/callback?code=authorization-code&state=oauth-state',
+    ))
+    assert.equal(callback.status, 302)
+    assert.equal(callback.headers.get('location'), 'https://trainer.example/?online=connected')
+    const setCookie = callback.headers.get('set-cookie')!
+    assert.match(setCookie, /^lura_session=/)
+    assert.match(setCookie, /HttpOnly/)
+    assert.match(setCookie, /Secure/)
+    assert.equal(requests[0].authorization, `Basic ${Buffer.from('client-id:client-secret').toString('base64')}`)
+    assert.equal(requests[1].authorization, 'Bearer short-lived-provider-token')
+    assert.equal(database.prepare('SELECT COUNT(*) AS count FROM accounts').get()!.count, 1)
+    assert.equal(database.prepare('SELECT COUNT(*) AS count FROM sessions').get()!.count, 1)
+    assert.equal(database.prepare('SELECT COUNT(*) AS count FROM oauth_states').get()!.count, 0)
+    assert.equal(JSON.stringify(database.prepare('SELECT * FROM sessions').get()).includes('provider-token'), false)
+
+    const cookie = setCookie.split(';', 1)[0]
+    const me = await app.handle(new Request('http://api.test/v1/me', { headers: { cookie } }))
+    assert.equal(me.status, 200)
+    const profile = await me.json() as { authenticated: boolean; region: string; csrfToken: string }
+    assert.equal(profile.authenticated, true)
+    assert.equal(profile.region, 'us')
+    assert.ok(profile.csrfToken)
+
+    const rejectedLogout = await app.handle(new Request('http://api.test/v1/auth/logout', {
+      method: 'POST',
+      headers: { cookie, origin: config.trainerOrigin, 'x-csrf-token': 'wrong' },
+    }))
+    assert.equal(rejectedLogout.status, 403)
+    const logout = await app.handle(new Request('http://api.test/v1/auth/logout', {
+      method: 'POST',
+      headers: { cookie, origin: config.trainerOrigin, 'x-csrf-token': profile.csrfToken },
+    }))
+    assert.equal(logout.status, 200)
+    assert.match(logout.headers.get('set-cookie')!, /Max-Age=0/)
+    assert.equal(database.prepare('SELECT COUNT(*) AS count FROM sessions').get()!.count, 0)
+  })
+
+  it('rejects expired or replayed OAuth state before exchanging a code', async () => {
+    let now = new Date('2026-07-28T12:00:00.000Z')
+    let exchanges = 0
+    const dependencies: AuthDependencies = {
+      now: () => now,
+      randomToken: () => 'one-use-state',
+      fetch: async () => {
+        exchanges += 1
+        return Response.json({ access_token: 'unused' })
+      },
+    }
+    const app = createApp(database, config, dependencies)
+    await app.handle(new Request('http://api.test/v1/auth/battlenet/start?region=eu'))
+    now = new Date('2026-07-28T12:11:00.000Z')
+    const expired = await app.handle(new Request(
+      'http://api.test/v1/auth/battlenet/callback?code=x&state=one-use-state',
+    ))
+    assert.equal(expired.status, 400)
+    assert.deepEqual(await expired.json(), { error: 'invalid_oauth_state' })
+    assert.equal(exchanges, 0)
   })
 })

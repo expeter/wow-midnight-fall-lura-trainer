@@ -44,6 +44,7 @@ export const P3_LANDING_SOAK_RADIUS = 12
 export const P3_FLIGHT_SECONDS = 2
 export const P3_SECTOR_SECONDS = 40
 export const P3_FINAL_SECTOR_MOVE_SECONDS = 9
+export const P3_SECTOR_MOVE_SECONDS = 6
 export const P3_STARS_START_SECONDS = 5
 export const P3_STARS_TELEGRAPH_SECONDS = 4.5
 export const P3_STARS_INTERVAL_SECONDS = P3_STARS_TELEGRAPH_SECONDS + 3
@@ -377,6 +378,10 @@ export function p3AssignmentForRound(initial: Point, center: Point, round: numbe
   )
 }
 
+export function p3SectorMovementSpeed(configuredSpeed: number): number {
+  return Math.max(18, configuredSpeed) * 2
+}
+
 function keepClearOfP3ConsumedSector(point: Point, side: -1 | 1, center: Point, clearance: number): Point {
   const radius = distance(point, center)
   if (radius <= clearance) return point
@@ -643,23 +648,6 @@ export function p4RenderedNpcSplinterHitsPlayer(renderedNpcPositions: Point[], o
     player,
     playerRadius,
   )
-}
-
-export function p4RenderedNpcSplinterHitsRaid(
-  renderedNpcPositions: Point[],
-  ordinal: number,
-  fallback: Point,
-  rotation: number,
-  player: Point,
-  playerRadius = 3,
-  npcRadius = 4,
-): 'player' | 'npc' | null {
-  const originIndex = ordinal * 3 + 1
-  const origin = p4RenderedNpcSplinterOrigin(renderedNpcPositions, ordinal, fallback)
-  if (p4SplinterHitsGroup(origin, rotation, player, playerRadius)) return 'player'
-  return renderedNpcPositions.some((target, index) =>
-    index !== originIndex && p4SplinterHitsGroup(origin, rotation, target, npcRadius),
-  ) ? 'npc' : null
 }
 
 export function p4PlayerSplinterHitsNpc(renderedNpcPositions: Point[], origin: Point, rotation: number, npcRadius = 4): boolean {
@@ -1138,6 +1126,9 @@ export function npcEntryPosition(target: Point, startSlot: Point, index: number,
 }
 export function canPickupCrystal(player: Point, crystal: Point, groundAge: number, pickupRadius = 3): boolean {
   return groundAge >= 1 && distance(player, crystal) <= pickupRadius
+}
+export function canPickupCrystalDuringEvent(event: string): boolean {
+  return (!event.startsWith('p1-') || event === 'p1-recover') && event !== 'p3-archangel'
 }
 export function crystalWipeReason(state: { assigned: boolean; splinterResolving: boolean; dropped: boolean; crystalHit: boolean; expired: boolean }): string | null {
   if (state.expired) return 'Crystal expired before pickup'

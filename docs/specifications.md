@@ -23,6 +23,9 @@ change before implementation.
 
 ## SPEC-003 · Phase 3 to Phase 4 transition
 
+- The first post-Archangel sector relocation lasts six seconds and provides at
+  least the normal doubled movement speed, independent of Hard-mode backward
+  movement slowdown, so the next standard light/assignment is reachable.
 - After the second Dark Archangel sector, every actor gathers on one exact
   north-stack point.
 - Normal spread, side, and raid-plan positioning rules no longer apply during
@@ -54,6 +57,9 @@ change before implementation.
 - Three Starsplinters begin 1.1 seconds apart and each detonates after 3.5
   seconds.
 - The final Starsplinter detonates exactly one second before Heaven & Hell.
+- An NPC Starsplinter is lethal to the controlled player but does not wipe for
+  crossing another NPC. The controlled player's own Starsplinter remains
+  lethal to NPCs, preserving responsibility for the practiced mechanic.
 - Every NPC remains inside the moving yellow protection zone. Active
   Starsplinter NPCs move to safe left/right/left positions within its edge,
   hold until detonation, and return to the stack before the next detonation.

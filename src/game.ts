@@ -21,8 +21,9 @@ export const P2_POSITIONING_SECONDS = 5
 export const P2_BEAM_SECONDS = 7
 export const P2_PULL_SECONDS = 5
 export const P2_SPREAD_SECONDS = 5
+export const P2_FETCH_SECONDS = 6
 export const P2_BEAM_CADENCE_SECONDS = 30
-export const P2_ORB_RETURN_SECONDS = 13
+export const P2_ORB_RETURN_SECONDS = 14
 export const P2_ORB_GLOW_LEAD_SECONDS = 1
 export const P2_ORB_RETURN_GLOW_SECONDS = 1
 export const P2_ORB_RETURN_TRAVEL_SECONDS = 1
@@ -981,6 +982,9 @@ export function p2NpcCrystalDrops(center: Point, count: number, radius = 6): Poi
     const angle = -Math.PI / 2 + index * Math.PI * 2 / Math.max(1, count)
     return { x: center.x + Math.cos(angle) * radius, y: center.y + Math.sin(angle) * radius }
   })
+}
+export function p2PostBeamEvent(): 'p2-pull' {
+  return 'p2-pull'
 }
 export function p2OrbReturnState(age: number, orbitRadius = 82): { phase: 'inactive' | 'orbiting' | 'charging' | 'returning' | 'done'; radius: number } {
   if (age < 0) return { phase: 'inactive', radius: orbitRadius }

@@ -848,9 +848,22 @@ export function shouldHoldP3RunePartner(
   playerRune: RuneSymbol,
   resolvedRunes: RuneSymbol[],
 ): boolean {
+  return isActiveP3RuneDuty(event, activeRune, playerRune, resolvedRunes)
+}
+
+export function isActiveP3RuneDuty(
+  event: string,
+  activeRune: RuneSymbol | undefined,
+  npcRune: RuneSymbol,
+  resolvedRunes: RuneSymbol[],
+): boolean {
   return (event === 'p3-light-pools' || event === 'p3-lattice-memory')
-    && activeRune === playerRune
-    && !resolvedRunes.includes(playerRune)
+    && activeRune === npcRune
+    && !resolvedRunes.includes(npcRune)
+}
+
+export function shouldApplyP3NpcDisplacement(runePartnerActive: boolean, runePairActive: boolean): boolean {
+  return !runePartnerActive && !runePairActive
 }
 
 export function p3StarsTiming(eventTime: number): { active: boolean; cycle: number; localTime: number } {

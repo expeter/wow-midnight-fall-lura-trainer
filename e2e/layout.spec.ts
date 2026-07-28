@@ -1,5 +1,14 @@
 import { expect, test } from '@playwright/test'
 
+test('publishes the trainer favicon', async ({ page, request }) => {
+  await page.goto('/')
+  await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', '/favicon.png')
+  const favicon = await request.get('/favicon.png')
+  expect(favicon.ok()).toBe(true)
+  expect(favicon.headers()['content-type']).toBe('image/png')
+  expect((await favicon.body()).byteLength).toBeGreaterThan(1000)
+})
+
 test('raidlead menu exposes system voice selection and preview', async ({ page }) => {
   await page.goto('/')
   const tts = page.getByRole('group', { name: 'TTS settings' })

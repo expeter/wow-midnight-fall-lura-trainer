@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
-import { angleToward, assignmentRevealDistance, constrainP3NpcTargetToSide, crystalCarrierPosition, distance, distanceToSegment, hasActiveP3CrystalLight, jumpHeights, keepP3CrystalPoolCovered, keepP3NpcInSoak, keepP4NpcInProtection, npcEntryPosition, OPENING_BOOST_SECONDS, P1_STAR_LENGTH, P2_BEAM_SECONDS, P2_ORBIT_SPEED, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_INNER_RADIUS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p2NpcRoamingPosition, p2NpcShouldReturnToSoak, p2OrbPosition, p2OrbReturnState, p2ReturningOrbPositions, p3ActiveCrystalAssignments, P3_APPROACH_NPC_SPEED_MULTIPLIER, p3ArchangelStackPosition, p3BossPosition, p3CrystalPoolCoverageTargets, p3FlightPosition, P3_FLIGHT_SECONDS, p3LandingGroupIndex, p3LandingPlanIndex, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3NpcPoolAssignment, p3NpcRuneReactionDelay, p3NpcSoaksActive, p3PoolCenters, p3PoolLayoutId, p3ProtectionBubbleCenter, p3RuneEdges, p3RuneOrbs, p3RunePartnerPosition, p3SideForPosition, p3StarsTiming, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, p4EncounterBoxStates, p4FrontSoakerPosition, p4GroupPosition, p4NpcRelocationPace, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4StackPosition, p4TankConeActive, p4TankConeHitsBox, p4TransitionStartPosition, P4_FRONT_CONE_RANGE, P4_HEAVEN_MOVE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, roamingNpcPosition, separateP3NpcTarget, shouldHoldP3RunePartner, starsplinterHitsPoint, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type RuneSymbol } from './game'
+import { angleToward, assignmentRevealDistance, constrainP3NpcTargetToSide, crystalCarrierPosition, distance, distanceToSegment, hasActiveP3CrystalLight, isActiveP3RuneDuty, jumpHeights, keepP3CrystalPoolCovered, keepP3NpcInSoak, keepP4NpcInProtection, npcEntryPosition, OPENING_BOOST_SECONDS, P1_STAR_LENGTH, P2_BEAM_SECONDS, P2_ORBIT_SPEED, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_INNER_RADIUS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p2NpcRoamingPosition, p2NpcShouldReturnToSoak, p2OrbPosition, p2OrbReturnState, p2ReturningOrbPositions, p3ActiveCrystalAssignments, P3_APPROACH_NPC_SPEED_MULTIPLIER, p3ArchangelStackPosition, p3BossPosition, p3CrystalPoolCoverageTargets, p3FlightPosition, P3_FLIGHT_SECONDS, p3LandingGroupIndex, p3LandingPlanIndex, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3NpcPoolAssignment, p3NpcRuneReactionDelay, p3NpcSoaksActive, p3PoolCenters, p3PoolLayoutId, p3ProtectionBubbleCenter, p3RuneEdges, p3RuneOrbs, p3RunePartnerPosition, p3SideForPosition, p3StarsTiming, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, p4EncounterBoxStates, p4FrontSoakerPosition, p4GroupPosition, p4NpcRelocationPace, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4StackPosition, p4TankConeActive, p4TankConeHitsBox, p4TransitionStartPosition, P4_FRONT_CONE_RANGE, P4_HEAVEN_MOVE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, roamingNpcPosition, separateP3NpcTarget, shouldApplyP3NpcDisplacement, shouldHoldP3RunePartner, starsplinterHitsPoint, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type RuneSymbol } from './game'
 import { p3SectorMovementSpeed, p3SpreadPosition, p4PlayerSplinterHitsNpc, p4RenderedNpcSplinterHitsPlayer, p4RenderedNpcSplinterOrigin, p4TankKillsBox } from './game'
 import { isP3RaidMemberVisible } from './game'
 import { isInsideP3Pool } from './game'
@@ -1287,10 +1287,15 @@ export default function GameScene(props: SceneProps) {
           const pair = Math.floor(pairOrdinal / 2)
           const playerRune = (['T', 'X', 'O'] as RuneSymbol[])[state.assignment % 3]
           const otherRunes = (['T', 'X', 'O'] as RuneSymbol[]).filter(symbol => symbol !== playerRune)
-          if (pairOrdinal % 2 === 1 && state.eventTime >= P3_MEMORY_START_SECONDS && state.p3RuneOrder[state.p3RuneStep] === otherRunes[pair]) {
-            const stationaryNpc = markedNpcOrdinals[pairOrdinal - 1]
-            p3Target = renderedNpcPositions[stationaryNpc] ?? p3Target
+          const pairRune = otherRunes[pair]
+          if (state.eventTime >= P3_MEMORY_START_SECONDS && isActiveP3RuneDuty(state.event, state.p3RuneOrder[state.p3RuneStep], pairRune, state.p3ResolvedRunes)) {
             p3RunePairApproach = true
+            if (pairOrdinal % 2 === 1) {
+              const stationaryNpc = markedNpcOrdinals[pairOrdinal - 1]
+              p3Target = renderedNpcPositions[stationaryNpc] ?? p3Target
+            } else {
+              p3Target = renderedNpcPositions[index] ?? p3Target
+            }
           }
         }
         const keepP3Formation = phaseThree
@@ -1303,19 +1308,20 @@ export default function GameScene(props: SceneProps) {
           && state.event !== 'p3-sector-move'
           && !p3RunePartnerApproach
           && !p3RunePairApproach
+        const p3NpcDisplacementAllowed = shouldApplyP3NpcDisplacement(p3RunePartnerApproach, p3RunePairApproach)
         if (keepP3Formation) p3Target = separateP3NpcTarget(p3Target, npcP3CrystalActive, plannedP3Targets, baseIndex)
-        if (p3PoolTarget && !p3RunePartnerApproach && !p3RunePairApproach) p3Target = keepP3NpcInSoak(p3Target, p3PoolTarget)
+        if (p3PoolTarget && p3NpcDisplacementAllowed) p3Target = keepP3NpcInSoak(p3Target, p3PoolTarget)
         const crystalPoolSupport = p3CrystalPoolSupport.get(baseIndex)
-        if (crystalPoolSupport && !p3RunePartnerApproach && !p3RunePairApproach) p3Target = keepP3CrystalPoolCovered(p3Target, crystalPoolSupport.pool)
+        if (crystalPoolSupport && p3NpcDisplacementAllowed) p3Target = keepP3CrystalPoolCovered(p3Target, crystalPoolSupport.pool)
         if (phaseThree) plannedP3Targets.push({ point: p3Target, crystal: npcP3CrystalActive })
-        if (state.event === 'p3-light-pools') {
+        if (state.event === 'p3-light-pools' && p3NpcDisplacementAllowed) {
           const stars = p3StarsTiming(state.eventTime)
           if (stars.active && stars.localTime >= 2.5 && stars.localTime <= 4.5) {
             const current = renderedNpcPositions[index] ?? p3Target
             p3Target = avoidP3Stars(current, p3Target, p3StarsField(npcP3Side, state.p3Round, stars.cycle), index)
           }
         }
-        if (phaseThree && state.event !== 'p3-flight' && state.event !== 'p3-landing') {
+        if (phaseThree && state.event !== 'p3-flight' && state.event !== 'p3-landing' && p3NpcDisplacementAllowed) {
           p3Target = constrainP3NpcTargetToSide(p3Target, npcP3Side, WORLD.center, npcP3CrystalActive ? P3_LIGHT_RADIUS + 2 : 3, state.event, state.p3Round)
         }
         const normal = phaseOne

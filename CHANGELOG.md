@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- FR-056: Add an original favicon designed for clear recognition at
+  browser-tab size.
+- BUG-105: Prevent active Phase 3 memory-rune NPCs from running away when
+  Stars avoidance or other positioning rules overlap their matching turn.
 - CR-148: Integrate the persisted Phase 1 rune-panel orientation control into
   HUD settings instead of presenting it as a difficulty and movement option.
 - BUG-104: Suppress Phase 2 carrier `Drop crystal` voice coaching on Hard

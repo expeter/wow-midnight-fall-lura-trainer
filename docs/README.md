@@ -243,6 +243,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `FR-053` | Implemented behind localhost preview | Each P1 interrupt cast now synchronizes casts 1–5 with three fast orbs orbiting L’ura, a charging dangerous frontal cone, a two-second boss cast bar, NPC/player interruption feedback, and immediate lethal resolution when the controlled player misses their assigned kick. |
 | `FR-054` | Implemented behind localhost preview | Keep the three P1 cast orbs visible through all five interrupts, removing only each cast's cones/bar on interruption, then animate the persistent orbs down into the three ground crystals used by the active pickup sequence. |
 | `FR-055` | Implemented | Add a persistent Raidlead voice selector and preview to the TTS settings, list only English speech voices installed in the current browser and operating system, and prefer Google US English by default when available. |
+| `FR-056` | Implemented | Add an original, high-contrast favicon for the trainer that remains recognizable at browser-tab size. |
 | `SPEC-001` | Implemented | Define the stable ticket lifecycle: assign an ID, record intent, add focused regression coverage, validate, and commit. |
 | `SPEC-002` | Implemented | Define the creator business card’s stable content, readability, compact layout, and external-link behavior. |
 | `SPEC-003` | Implemented | Define the P3-to-P4 north gather, shared knockup origin, and phase-local HUD boundary. |
@@ -351,6 +352,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-102` | Implemented | Give the raid a reliably reachable first post-Archangel Phase 3 relocation window before the next sector begins, including the furthest standard light/assignment move. |
 | `BUG-103` | Implemented | Keep the Phase 2 pull, personal circles, and orb sequence on fixed encounter timing when a crystal player forgets to recover their crystal after a beam. Missing the pickup remains the player's mechanic failure but must not stall later mechanics while the orb clock continues. |
 | `BUG-104` | Implemented | Suppress the Phase 2 carrier `Drop crystal` TTS instruction on Hard while retaining it in Test, Easy, and Normal. Hard players must recognize the mechanic without that coaching call. |
+| `BUG-105` | Implemented | Give active Phase 3 memory-rune duties final movement priority. The controlled player's matching NPC and both members of an NPC pair must never be displaced by formation, Soak, crystal-support, side-clamp, or Stars avoidance while their unresolved rune is active. |
 
 ## Implemented feature inventory
 

@@ -5,7 +5,7 @@ import { p3ProtectionBubbleCenter } from './game'
 import type { Point } from './game'
 import { P3_LIGHT_RADIUS, p3SpreadPosition, p4NpcSplinterMovementAge, p4NpcSplinterOutwardSeconds, p4RenderedNpcSplinterHitsPlayer, p4RenderedNpcSplinterOrigin, p4TankConeHitsBox, p4TankKillsBox, P4_TANK_KILL_RADIUS } from './game'
 import { isP3RaidMemberVisible, p3ActiveCrystalAssignments } from './game'
-import { bossDamageScoreBonus, isInsideP3Pool, p4BossHealthWithPlayerDamage, p4PlayerSplinterHitsNpc, p4StartingBossState, P1_STAR_LENGTH, preP4BossHealth, shouldHoldP3RunePartner, shouldSuppressRepeatedWipe, shouldTriggerP3EarlyClear, starsplinterHitsCrystalCarrier, starsplinterHitsPoint } from './game'
+import { bossDamageScoreBonus, isActiveP3RuneDuty, isInsideP3Pool, p4BossHealthWithPlayerDamage, p4PlayerSplinterHitsNpc, p4StartingBossState, P1_STAR_LENGTH, preP4BossHealth, shouldApplyP3NpcDisplacement, shouldHoldP3RunePartner, shouldSuppressRepeatedWipe, shouldTriggerP3EarlyClear, starsplinterHitsCrystalCarrier, starsplinterHitsPoint } from './game'
 
 describe('Intermission game rules', () => {
   it('creates six deterministic stars for a seed', () => { expect(seededStars(42)).toEqual(seededStars(42)); expect(seededStars(42)).toHaveLength(6) })
@@ -96,6 +96,16 @@ describe('Intermission game rules', () => {
     expect(shouldHoldP3RunePartner('p3-light-pools', 'T', 'X', [])).toBe(false)
     expect(shouldHoldP3RunePartner('p3-light-pools', 'X', 'X', ['X'])).toBe(false)
     expect(shouldHoldP3RunePartner('p3-big-boom', 'X', 'X', [])).toBe(false)
+  })
+  it('gives both members of an unresolved active NPC rune pair priority over other movement', () => {
+    expect(isActiveP3RuneDuty('p3-light-pools', 'T', 'T', [])).toBe(true)
+    expect(isActiveP3RuneDuty('p3-lattice-memory', 'O', 'O', [])).toBe(true)
+    expect(isActiveP3RuneDuty('p3-light-pools', 'X', 'T', [])).toBe(false)
+    expect(isActiveP3RuneDuty('p3-light-pools', 'T', 'T', ['T'])).toBe(false)
+    expect(isActiveP3RuneDuty('p3-big-boom', 'T', 'T', [])).toBe(false)
+    expect(shouldApplyP3NpcDisplacement(true, false)).toBe(false)
+    expect(shouldApplyP3NpcDisplacement(false, true)).toBe(false)
+    expect(shouldApplyP3NpcDisplacement(false, false)).toBe(true)
   })
   it('uses a five-second opening boost and tighter assignment reveals by difficulty', () => { expect(OPENING_BOOST_SECONDS).toBe(5); expect(assignmentRevealDistance('easy')).toBe(Infinity); expect(assignmentRevealDistance('normal')).toBe(45); expect(assignmentRevealDistance('hard')).toBe(22) })
   it('keeps Test mode assisted and recoverable regardless of strike count', () => { expect(difficultySettings('test').helper).toBe(true); expect(assignmentRevealDistance('test')).toBe(Infinity); expect(canRecoverFromWipe('test', 20, 0, WIPE_PENALTY)).toBe(true) })

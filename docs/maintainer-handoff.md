@@ -12,8 +12,9 @@ original chat history. It complements the detailed ticket log in
 - Intermission and Phases 2–4 are production features.
 - Phase 1 is a playable preview only on `localhost`, `127.0.0.1`, and `::1`.
   Production deliberately keeps it hidden until it is playtested and released.
-- The first unresolved P1 blocker is `BUG-084`: a correct memory-rune position
-  may wipe while an earlier `+` remains visible after the sweep passed it.
+- `BUG-084` and follow-up `CR-132` make the memory sweep authoritative at
+  contact: correct positions remain accepted, while an incorrect controlled
+  rune fails immediately with red feedback.
 - The maintained I Asgard I plan is bundled in
   [`public/raidplans/asgard.txt`](../public/raidplans/asgard.txt). Loading it is
   an in-app fetch and persistence operation, never a redirect to the hosted
@@ -163,7 +164,6 @@ targeted shared mechanic timeout for renderer-heavy transitions.
 Start with the current statuses in the request log, not this snapshot. At the
 time of writing, the meaningful non-complete work is:
 
-- `BUG-084`: P1 memory sweep/rune-removal ordering.
 - `CR-051`: deferred P3 second-sequence memory/Soak order swap.
 - `FR-022` and `FR-023`: playable P4 tank cone and random protection carrier.
 - `FR-027`: optional API-backed leaderboard/achievement verification.

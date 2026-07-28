@@ -41,6 +41,7 @@ import {
   p1NpcBeamPosition,
   p1NpcCrystalPickupReleased,
   p1NpcGlaiveDodgePosition,
+  p1NpcMayDodgeGlaive,
   p1NpcMemoryPosition,
   p1NpcRoamingPosition,
   p1PlayerSoakFailed,
@@ -211,6 +212,10 @@ describe('P1 headless mechanics', () => {
     expect(sideOfBeam(beforeCrossing)).toBeLessThan(0)
     expect(sideOfBeam(crossing)).toBeGreaterThan(0)
     expect(sideOfBeam(following)).toBeGreaterThan(0)
+    const crystalLane = { x: 180, y: 180 }
+    const stagedNearCrystals = p1NpcBeamPosition(3, 0, boss, beamAngle, center, crystalLane)
+    expect(Math.hypot(stagedNearCrystals.x - center.x, stagedNearCrystals.y - center.y))
+      .toBeLessThan(Math.hypot(beforeCrossing.x - center.x, beforeCrossing.y - center.y))
     const movedBoss = { x: 430, y: 390 }
     const movedWithBoss = p1NpcBeamPosition(3, 3, movedBoss, Math.PI / 3, center)
     expect(Math.hypot(movedWithBoss.x - center.x, movedWithBoss.y - center.y))
@@ -238,6 +243,11 @@ describe('P1 headless mechanics', () => {
     expect(dodge.x).toBe(target.x)
     expect(Math.abs(dodge.y - target.y)).toBe(17)
     expect(p1ClampNpcToArena({ x: 300, y: 0 }, { x: 0, y: 0 })).toEqual({ x: 250, y: 0 })
+    expect(p1NpcMayDodgeGlaive('idle')).toBe(true)
+    expect(p1NpcMayDodgeGlaive('beam-follow')).toBe(true)
+    expect(p1NpcMayDodgeGlaive('beam-crossing')).toBe(false)
+    expect(p1NpcMayDodgeGlaive('crystal-pickup')).toBe(false)
+    expect(p1NpcMayDodgeGlaive('memory-rune')).toBe(false)
   })
 
   it('removes expired glaives and caps the live field at the newest two sets', () => {
@@ -328,7 +338,7 @@ describe('P1 headless mechanics', () => {
     expect(initial).toHaveLength(8)
     expect(beams.direction).toBe(1)
     expect(p1RotatingBeams(1, 2, 10, Math.PI / 4, openingAngle).direction).toBe(1)
-    expect(Math.abs(initial[0] - openingAngle)).toBeCloseTo(Math.PI / 90)
+    expect(Math.abs(initial[0] - openingAngle)).toBeCloseTo(7 * Math.PI / 180)
     expect(initial[1] - initial[0]).toBeCloseTo(Math.PI / 4)
     expect(Math.abs(later[0] - initial[0])).toBeCloseTo(Math.PI / 4)
   })

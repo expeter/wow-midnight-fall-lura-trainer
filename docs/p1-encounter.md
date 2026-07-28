@@ -92,10 +92,12 @@ phase-specific raid-plan persistence.
 - Each resolved rune disappears as the sweep passes it. A slim raised laser
   core and a 2.35-times wider layered blade keep the moving verification
   unmistakable without changing its collision order.
-- An incorrect order wipes the attempt.
+- An incorrect controlled-player position triggers its wipe as soon as the
+  sweep reaches that rune. The failed rune turns red in the frozen wipe scene.
 - The configured P1 boss marker is the single origin for rendering, NPC rune
-  placement, the visible sweep, and gameplay validation. The verdict is
-  resolved after the sweep so the player can see which order was checked.
+  placement, the visible sweep, and gameplay validation. Correct contact is
+  locked when the sweep reaches the controlled player; incorrect contact
+  resolves immediately with explicit red rune feedback.
 - NPCs roam unpredictably during the positioning window, then settle into the
   correct clockwise order shortly before resolution. The controlled player
   remains responsible for finding their own slot.
@@ -108,13 +110,17 @@ phase-specific raid-plan persistence.
   after two seconds without resetting or discontinuing its rotation.
 - The lethal laser then sweeps exactly 45 degrees before all eight beams
   disappear.
-- One beam begins two degrees from the boss. The intended movement
+- One beam begins seven degrees from the boss. The intended movement
   is to cross that beam, then follow it without being caught by another beam,
   while continuing to dodge the glaives.
 - All eight beams rotate clockwise in both sequences. NPCs play them perfectly:
-  they begin just behind a nearby ray, cross counterclockwise during the low
-  telegraph, reform compactly just ahead of it, and follow L’ura for the
-  remainder of the same continuous sweep.
+  they stage near the active crystal lane just behind a nearby ray, cross
+  counterclockwise during the low telegraph, reform compactly just ahead of
+  it, and follow L’ura for the remainder of the same continuous sweep.
+- Crystal pickup, assigned memory runes, and the initial beam crossing take
+  priority over Heaven Glaive avoidance. Once NPCs are following the lethal
+  rotating beam, they may make short glaive sidesteps while preserving their
+  position ahead of that ray.
 - Raid-plan positions 1 and 2 choose the tank-led direction for sequence one
   and sequence two. Each L’ura relocation covers one visible 45-degree arena
   arc, including when a tank marker happens to share L’ura’s opening angle.

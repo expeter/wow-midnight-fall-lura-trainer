@@ -5,7 +5,7 @@ import { p3SpreadPosition, p4PlayerSplinterHitsNpc, p4RenderedNpcSplinterHitsRai
 import { isP3RaidMemberVisible } from './game'
 import { isInsideP3Pool } from './game'
 import { combatProjectileBossCenter, combatProjectileHeight, combatProjectileImpactPoint, combatProjectilePosition, combatProjectileShape, combatProjectileTargetHeight, combatProjectileTravelSeconds, combatProjectilesActive, COMBAT_PROJECTILE_IMPACT_SECONDS, MAX_VISIBLE_NPC_PROJECTILES, npcProjectileShots, type CombatProjectileShape } from './projectiles'
-import { P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_MEMORY_BEAM_LENGTH, P1_MEMORY_BEAM_WIDTH_SCALE, P1_MEMORY_RADIUS, P1_OUTER_RADIUS, P1_REACTIVE_SOAK_RADIUS, p1BeamAngles, p1BossEncounterPosition, p1ClampNpcToArena, p1ContinuousBeamTime, p1CrystalSpawnPosition, p1MemoryRuneVisible, p1MemorySlotAngle, p1MemorySweepAngle, p1NpcBeamPosition, p1NpcCrystalPickupReleased, p1NpcGlaiveDodgePosition, p1NpcMemoryPosition, p1NpcRoamingPosition, p1RotatingBeams, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
+import { P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_MEMORY_BEAM_LENGTH, P1_MEMORY_BEAM_WIDTH_SCALE, P1_MEMORY_RADIUS, P1_OUTER_RADIUS, P1_REACTIVE_SOAK_RADIUS, p1BeamAngles, p1BossEncounterPosition, p1ClampNpcToArena, p1ContinuousBeamTime, p1CrystalSpawnPosition, p1MemoryRuneVisible, p1MemorySlotAngle, p1MemorySweepAngle, p1NpcBeamPosition, p1NpcCrystalPickupReleased, p1NpcGlaiveDodgePosition, p1NpcMayDodgeGlaive, p1NpcMemoryPosition, p1NpcRoamingPosition, p1RotatingBeams, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
 
 interface SceneProps {
   p1Sequence: number
@@ -29,6 +29,7 @@ interface SceneProps {
   movementBonus: boolean
   difficulty: Difficulty
   paused: boolean
+  wipeReason: string
   p2Cycle: number
   p2OrbReturnAge: number
   onP2OrbitAngle: (angle: number) => void
@@ -478,6 +479,54 @@ function makeEntity(profile: PlayerProfile, player = false) {
   group.scale.setScalar(.77)
   return group
 }
+
+function makeArenaGroundTexture() {
+  const canvas = document.createElement('canvas')
+  canvas.width = 512
+  canvas.height = 512
+  const context = canvas.getContext('2d')!
+  context.fillStyle = '#ffffff'
+  context.fillRect(0, 0, 512, 512)
+  context.strokeStyle = 'rgba(42, 48, 78, .22)'
+  context.lineWidth = 1
+  for (let coordinate = 0; coordinate <= 512; coordinate += 64) {
+    context.beginPath()
+    context.moveTo(coordinate, 0)
+    context.lineTo(coordinate, 512)
+    context.moveTo(0, coordinate)
+    context.lineTo(512, coordinate)
+    context.stroke()
+  }
+  let seed = 0x51a7
+  const random = () => {
+    seed = seed * 1664525 + 1013904223 >>> 0
+    return seed / 0x100000000
+  }
+  context.strokeStyle = 'rgba(24, 25, 48, .28)'
+  context.lineWidth = 2
+  for (let crack = 0; crack < 18; crack += 1) {
+    let x = random() * 512
+    let y = random() * 512
+    context.beginPath()
+    context.moveTo(x, y)
+    const heading = random() * Math.PI * 2
+    for (let segment = 0; segment < 4 + Math.floor(random() * 4); segment += 1) {
+      const angle = heading + (random() - .5) * 1.2
+      const length = 8 + random() * 22
+      x += Math.cos(angle) * length
+      y += Math.sin(angle) * length
+      context.lineTo(x, y)
+    }
+    context.stroke()
+  }
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.colorSpace = THREE.SRGBColorSpace
+  texture.wrapS = THREE.RepeatWrapping
+  texture.wrapT = THREE.RepeatWrapping
+  texture.repeat.set(4, 4)
+  return texture
+}
+
 function makeCrystal() {
   const crystal = new THREE.Group()
   const box = new THREE.Mesh(new THREE.BoxGeometry(4.2, 5.2, 4.2), new THREE.MeshBasicMaterial({ color: 0xffe13d }))
@@ -618,15 +667,16 @@ export default function GameScene(props: SceneProps) {
     scene.background = new THREE.Color(0x070812)
     scene.fog = new THREE.Fog(0x070812, 290, 620)
     const camera = new THREE.PerspectiveCamera(55, (element.clientWidth || 760) / (element.clientHeight || 540), .1, 1400)
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(WORLD.width, WORLD.height), new THREE.MeshBasicMaterial({ color: 0x070812 }))
+    const groundTexture = makeArenaGroundTexture()
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(WORLD.width, WORLD.height), new THREE.MeshBasicMaterial({ color: 0x070812, map: groundTexture }))
     floor.rotation.x = -Math.PI / 2
     floor.position.set(WORLD.width / 2, 0, WORLD.height / 2)
     scene.add(floor)
-    const playableFloor = new THREE.Mesh(new THREE.RingGeometry(WORLD.innerRadius, WORLD.outerRadius, 128), new THREE.MeshBasicMaterial({ color: 0x302c52, transparent: true, opacity: .96, side: THREE.DoubleSide }))
+    const playableFloor = new THREE.Mesh(new THREE.RingGeometry(WORLD.innerRadius, WORLD.outerRadius, 128), new THREE.MeshBasicMaterial({ color: 0x302c52, map: groundTexture, transparent: true, opacity: .96, side: THREE.DoubleSide }))
     playableFloor.rotation.x = -Math.PI / 2
     playableFloor.position.set(WORLD.center.x, 1, WORLD.center.y)
     scene.add(playableFloor)
-    const p1Floor = new THREE.Mesh(new THREE.RingGeometry(P1_INNER_RADIUS, P1_OUTER_RADIUS, 128), new THREE.MeshBasicMaterial({ color: 0x302c52, transparent: true, opacity: .96, side: THREE.DoubleSide }))
+    const p1Floor = new THREE.Mesh(new THREE.RingGeometry(P1_INNER_RADIUS, P1_OUTER_RADIUS, 128), new THREE.MeshBasicMaterial({ color: 0x302c52, map: groundTexture, transparent: true, opacity: .96, side: THREE.DoubleSide }))
     p1Floor.rotation.x = -Math.PI / 2
     p1Floor.position.set(WORLD.center.x, 1.02, WORLD.center.y)
     p1Floor.visible = false
@@ -637,12 +687,12 @@ export default function GameScene(props: SceneProps) {
     innerVoid.rotation.x = -Math.PI / 2
     innerVoid.position.set(WORLD.center.x, 1.2, WORLD.center.y)
     scene.add(innerVoid)
-    const p2Floor = new THREE.Mesh(new THREE.CircleGeometry(P2_RADIUS, 128), new THREE.MeshBasicMaterial({ color: 0x29264a, transparent: true, opacity: .96, side: THREE.DoubleSide }))
+    const p2Floor = new THREE.Mesh(new THREE.CircleGeometry(P2_RADIUS, 128), new THREE.MeshBasicMaterial({ color: 0x29264a, map: groundTexture, transparent: true, opacity: .96, side: THREE.DoubleSide }))
     p2Floor.rotation.x = -Math.PI / 2
     p2Floor.position.set(WORLD.center.x, 1.1, WORLD.center.y)
     p2Floor.visible = false
     scene.add(p2Floor)
-    const p3Floor = new THREE.Mesh(new THREE.RingGeometry(WORLD.innerRadius, P3_OUTER_RADIUS, 128), new THREE.MeshBasicMaterial({ color: 0x282344, transparent: true, opacity: .96, side: THREE.DoubleSide }))
+    const p3Floor = new THREE.Mesh(new THREE.RingGeometry(WORLD.innerRadius, P3_OUTER_RADIUS, 128), new THREE.MeshBasicMaterial({ color: 0x282344, map: groundTexture, transparent: true, opacity: .96, side: THREE.DoubleSide }))
     p3Floor.rotation.x = -Math.PI / 2
     p3Floor.position.set(WORLD.center.x, 1.05, WORLD.center.y)
     p3Floor.visible = false
@@ -919,6 +969,7 @@ export default function GameScene(props: SceneProps) {
       const p4JumpHeight = state.event === 'p4-transition' ? Math.sin(Math.min(1, state.eventTime / P4_KNOCKUP_SECONDS) * Math.PI) * 30 : 0
       const p3FlightHeight = state.event === 'p3-flight' ? Math.sin(Math.min(1, state.eventTime / P3_FLIGHT_SECONDS) * Math.PI) * 46 : 0
       player.position.set(state.player.x, heights.player + p3FlightHeight + p4JumpHeight, state.player.y)
+      player.rotation.z = state.wipeReason ? Math.PI / 2 : 0
       boss.visible = !phaseTwo && !phaseFour
       ;(boss.material as THREE.MeshBasicMaterial).opacity = phaseThree ? .42 : .58
       ;(boss.material as THREE.MeshBasicMaterial).depthWrite = phaseThree
@@ -1040,7 +1091,7 @@ export default function GameScene(props: SceneProps) {
         const p1NpcRoams = ['p1-interrupts', 'p1-crystals', 'p1-glaives', 'p1-soaks'].includes(state.event)
         if (p1NpcRoams) {
           p1Target = p1NpcRoamingPosition(state.positions[baseIndex], p1Boss, index, state.time, state.p1Seed + state.p1Sequence * 1009)
-          p1CanDodgeGlaives = true
+          p1CanDodgeGlaives = p1NpcMayDodgeGlaive('idle')
         }
         if (state.event === 'p1-crystals' && currentP1CrystalAssignments.includes(baseIndex)) {
           const pickupsReleased = p1NpcCrystalPickupReleased(state.p1CrystalAssignments, state.assignment, state.p1Sequence, state.p1CrystalCollected)
@@ -1058,14 +1109,16 @@ export default function GameScene(props: SceneProps) {
             }
           } else {
             p1Target = p1NpcRoamingPosition(state.positions[baseIndex], p1Boss, index, state.time, state.p1Seed + state.p1Sequence * 1009)
-            p1CanDodgeGlaives = state.event === 'p1-memory-position'
+            p1CanDodgeGlaives = state.event === 'p1-memory-position' && p1NpcMayDodgeGlaive('idle')
           }
           p1Target = p1NpcMemoryPosition(p1Target, index, state.eventTime, state.event === 'p1-memory-position')
         } else if (state.event === 'p1-beam-telegraph' || state.event === 'p1-beams') {
           const openingBoss = p1BossEncounterPosition(state.p1BossOpening, state.positions.slice(0, 2), state.p1Sequence, 'p1-beam-telegraph', 0, WORLD.center)
           const beams = p1RotatingBeams(state.p1Seed, state.p1Sequence, 0, Math.PI / 16, Math.atan2(openingBoss.y - WORLD.center.y, openingBoss.x - WORLD.center.x))
           const elapsed = p1ContinuousBeamTime(state.event, state.eventTime)
-          p1Target = p1NpcBeamPosition(index, elapsed, p1Boss, p1BeamAngles(beams, elapsed)[0], WORLD.center)
+          const crystalLane = p1CrystalSpawnPosition(openingBoss, WORLD.center, 1)
+          p1Target = p1NpcBeamPosition(index, elapsed, p1Boss, p1BeamAngles(beams, elapsed)[0], WORLD.center, crystalLane)
+          p1CanDodgeGlaives = p1NpcMayDodgeGlaive(state.event === 'p1-beams' ? 'beam-follow' : 'beam-crossing')
         } else if (state.event === 'p1-transition') {
           p1Target = state.intermissionPositions[baseIndex]
         }
@@ -1267,8 +1320,9 @@ export default function GameScene(props: SceneProps) {
         }
         renderedNpcPositions[index] = position
         sprite.position.set(position.x, heights.npc + p3FlightHeight + p4JumpHeight, position.y)
+        sprite.rotation.z = state.wipeReason ? (index % 2 ? 1 : -1) * Math.PI / 2 : 0
         const pathTarget = phaseOne ? p1Target : phaseThree ? p3Target : state.event === 'p2-wait' ? p2WaitTarget : state.event === 'p2-orbs' ? soakTarget : state.event === 'p2-spread' ? spreadTarget : state.event === 'p2-pull' || state.event === 'p2-jump' ? WORLD.center : null
-        if (pathTarget && distance(position, pathTarget) > .1) sprite.rotation.y = -Math.atan2(pathTarget.y - position.y, pathTarget.x - position.x)
+        if (!state.wipeReason && pathTarget && distance(position, pathTarget) > .1) sprite.rotation.y = -Math.atan2(pathTarget.y - position.y, pathTarget.x - position.x)
         const glow = sprite.getObjectByName('crystal-glow')
         const p1CollectedAssignments = state.p1CrystalAssignments.slice(
           0,
@@ -1771,5 +1825,5 @@ export default function GameScene(props: SceneProps) {
     }
   }, [])
 
-  return <div ref={host} className="scene-3d" aria-label="3D L'ura Intermission arena" data-combat-projectiles={props.combatProjectilesEnabled ? 'on' : 'off'} data-p1-boss-opening={`${props.p1BossOpening.x},${props.p1BossOpening.y}`} />
+  return <div ref={host} className="scene-3d" aria-label="3D L'ura Intermission arena" data-combat-projectiles={props.combatProjectilesEnabled ? 'on' : 'off'} data-p1-boss-opening={`${props.p1BossOpening.x},${props.p1BossOpening.y}`} data-defeated={Boolean(props.wipeReason)} data-ground-texture="grid-cracks" />
 }

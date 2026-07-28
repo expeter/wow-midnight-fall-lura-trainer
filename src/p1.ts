@@ -25,7 +25,7 @@ export const P1_MEMORY_POSITION_SECONDS = 7
 export const P1_MEMORY_NPC_SETTLE_SECONDS = 1.5
 export const P1_MEMORY_SWEEP_SECONDS = 5
 export const P1_ROTATING_BEAM_COUNT = 8
-export const P1_ROTATING_BEAM_OFFSET_DEGREES = 2
+export const P1_ROTATING_BEAM_OFFSET_DEGREES = 7
 export const P1_ROTATING_BEAM_TELEGRAPH_SECONDS = 2
 export const P1_ROTATING_BEAM_ACTIVE_SECONDS = 4
 export const P1_ROTATING_BEAM_MAX_BOSS_ARC = Math.PI / 4
@@ -380,13 +380,14 @@ export function p1NpcBeamPosition(
   boss: P1Point,
   beamAngle: number,
   center: P1Point = boss,
+  stagingPoint: P1Point = boss,
 ): P1Point {
-  const bossRadius = Math.hypot(boss.x - center.x, boss.y - center.y)
+  const stagingRadius = Math.hypot(stagingPoint.x - center.x, stagingPoint.y - center.y)
   const rayPoint = center === boss
     ? boss
     : {
-        x: center.x + Math.cos(beamAngle) * bossRadius,
-        y: center.y + Math.sin(beamAngle) * bossRadius,
+        x: center.x + Math.cos(beamAngle) * stagingRadius,
+        y: center.y + Math.sin(beamAngle) * stagingRadius,
       }
   const alongOffset = (npcIndex % 7 - 3) * 3
   const laneOffset = (Math.floor(npcIndex / 7) - 1) * 1.8
@@ -428,6 +429,12 @@ export function p1NpcGlaiveDodgePosition(
     x: target.x - threat.glaive.direction.y * side * 17,
     y: target.y + threat.glaive.direction.x * side * 17,
   }
+}
+
+export type P1NpcMovementDuty = 'idle' | 'crystal-pickup' | 'memory-rune' | 'beam-crossing' | 'beam-follow'
+
+export function p1NpcMayDodgeGlaive(duty: P1NpcMovementDuty): boolean {
+  return duty === 'idle' || duty === 'beam-follow'
 }
 
 export function p1ClampNpcToArena(

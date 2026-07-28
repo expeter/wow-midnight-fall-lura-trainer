@@ -916,6 +916,7 @@
   box-shadow: 0 0 12px #51cfff;
 }
 .rune-order strong.done { opacity: .38; }
+.rune-order strong.failed { color: #ff5c68; border-color: #ff5c68; background: rgba(130, 12, 30, .76); }
 
 @media (max-width: 850px) {
   .game-shell { height: 100dvh; padding: 8px; }

@@ -19,4 +19,9 @@ describe('shared visual rules', () => {
     expect(styles).toContain('animation: achievement-popup-life 5s ease both')
     expect(styles).toContain('@keyframes achievement-popup-life')
   })
+
+  it('shows an immediately failed P1 memory rune in red', () => {
+    expect(styles).toContain('.rune-order strong.failed')
+    expect(styles).toContain('color: #ff5c68')
+  })
 })

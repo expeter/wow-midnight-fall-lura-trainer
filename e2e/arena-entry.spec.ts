@@ -348,6 +348,8 @@ test('keeps a terminal wipe over the frozen arena and allows minimizing its deta
   await page.getByRole('button', { name: /Enter Arena 3/ }).click()
   const wipe = page.getByRole('alert')
   await expect(wipe).toContainText(/Wiped due to:/, { timeout: MECHANIC_TIMEOUT })
+  await expect(page.locator('.scene-3d')).toHaveAttribute('data-defeated', 'true')
+  await expect(page.locator('.scene-3d')).toHaveAttribute('data-ground-texture', 'grid-cracks')
   await expect(page.locator('canvas')).toBeVisible()
   await page.getByRole('button', { name: 'Minimize wipe details' }).click()
   await expect(wipe).toContainText('Restore wipe details')

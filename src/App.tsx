@@ -3,14 +3,14 @@ import { bossBeamHitsPlayer, canPickupCrystal, canRecoverFromWipe, crystalWipeRe
 import { buildPhaseResult, completionShareText, isFullSequenceCompletion, type PhaseKey, type PhaseResult } from './completion'
 import { bossDamageScoreBonus, isInsideP3Pool, p4BossHealthWithPlayerDamage, p4RenderedNpcSplinterOrigin, p4StartingBossState, p4TankKillsBox, preP4BossHealth, shouldSuppressRepeatedWipe, shouldTriggerP3EarlyClear, starsplinterHitsCrystalCarrier } from './game'
 import { p4TimedVoiceCues, timedVoiceDelaySeconds, timedVoiceSupported, ttsCuesForState, type P4VoiceClip } from './audio'
-import AchievementCollection, { AchievementBadgeSummary, AchievementUnlockPopups } from './AchievementCollection'
+import AchievementCollection, { AchievementBadgeSummary, AchievementUnlockPopups } from './AchievementLedger'
 import { ACHIEVEMENT_STORAGE_KEY, collectibleAchievements, mergeEarnedAchievements, newlyEarnedAchievements, parseAchievementCollection, serializeAchievementCollection, type AchievementDefinition } from './achievementCollection'
 import { FEATURE_FLAGS } from './features'
 import GameScene from './GameScene'
 import { advanceMainAbilityCast, idleMainAbilityCast, mainAbilityElapsedSeconds, MAIN_ABILITY_CAST_SECONDS, requestMainAbilityCast, type MainAbilityCastState } from './mainAbility'
 import { encounterSoundCuesForState, playEncounterSound } from './encounterSounds'
 import { approachHealthTarget, healthBand, randomHealthTarget, unusedRecoveryPenalty } from './healthRecovery'
-import { P1_CRYSTAL_PICKUP_SECONDS, P1_DEFAULT_INTERRUPT_KEY, P1_GLAIVE_INITIAL_SPEED_MULTIPLIER, P1_GLAIVE_RETURN_SPEED_MULTIPLIER, P1_GLAIVE_TELEGRAPH_SECONDS, P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_INTERRUPT_CAST_COUNT, P1_INTERRUPT_CAST_SECONDS, P1_MEMORY_DELAY_SECONDS, P1_MEMORY_POSITION_SECONDS, P1_MEMORY_SWEEP_SECONDS, P1_OUTER_RADIUS, P1_REACTIVE_SOAK_RADIUS, P1_REACTIVE_SOAK_SECONDS, P1_ROTATING_BEAM_ACTIVE_SECONDS, P1_ROTATING_BEAM_TELEGRAPH_SECONDS, P1_SEQUENCE_COUNT, p1AddGlaiveSet, p1AdvanceGlaiveSet, p1BeamHitResolution, p1BossEncounterPosition, p1ContinuousBeamTime, p1CrystalPickupSequence, p1CrystalSpawnPosition, p1GlaiveContactStarted, p1GlaiveSet, p1HasCollectedCrystal, p1InterruptAssignment, p1InterruptState, p1MemoryOrder, p1MemorySlotValid, p1ReactiveSoaks, p1RotatingBeamHitsPoint, p1RotatingBeams, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
+import { P1_CRYSTAL_PICKUP_SECONDS, P1_DEFAULT_INTERRUPT_KEY, P1_GLAIVE_INITIAL_SPEED_MULTIPLIER, P1_GLAIVE_RETURN_SPEED_MULTIPLIER, P1_GLAIVE_TELEGRAPH_SECONDS, P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_INTERRUPT_CAST_COUNT, P1_INTERRUPT_CAST_SECONDS, P1_MEMORY_DELAY_SECONDS, P1_MEMORY_POSITION_SECONDS, P1_MEMORY_SWEEP_SECONDS, P1_OUTER_RADIUS, P1_REACTIVE_SOAK_RADIUS, P1_REACTIVE_SOAK_SECONDS, P1_ROTATING_BEAM_ACTIVE_SECONDS, P1_ROTATING_BEAM_TELEGRAPH_SECONDS, P1_SEQUENCE_COUNT, p1AddGlaiveSet, p1AdvanceGlaiveSet, p1BeamHitResolution, p1BossEncounterPosition, p1ContinuousBeamTime, p1CrystalPickupSequence, p1CrystalSpawnPosition, p1GlaiveContactStarted, p1GlaiveSet, p1HasCollectedCrystal, p1InterruptAssignment, p1InterruptState, p1MemoryOrder, p1MemoryPlayerVerdict, p1ReactiveSoaks, p1RotatingBeamHitsPoint, p1RotatingBeams, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
 import './styles.css'
 
 type Screen = 'menu' | 'game' | 'results'
@@ -616,6 +616,7 @@ export default function App() {
   const p1GlaiveSetsRef = useRef<P1GlaiveSet[]>([])
   const p1GlaiveContactRef = useRef(false)
   const p1SoakHitRef = useRef(false)
+  const p1MemoryPlayerVerdictRef = useRef<boolean | null>(null)
   const crystalNoticeTimerRef = useRef<number | null>(null)
   const keysHeld = useRef(new Set<string>())
   statsRef.current = stats
@@ -1087,6 +1088,20 @@ export default function App() {
       previous = now
       eventTimeRef.current += dt; setEventTime(eventTimeRef.current); timeRef.current += dt; setStats(s => ({ ...s, time: s.time + dt }))
       if (event === 'p1-interrupts') setP1InterruptCast(Math.min(P1_INTERRUPT_CAST_COUNT - 1, Math.floor(eventTimeRef.current / P1_INTERRUPT_CAST_SECONDS)))
+      if (event === 'p1-memory-sweep' && p1MemoryPlayerVerdictRef.current === null) {
+        const rune = (['T', 'X', 'O', 'V', '+'] as P1Rune[])[assignment % 5]
+        const memoryBoss = p1BossEncounterPosition(p1BossOpening, p1Positions.slice(0, 2), p1Sequence, event, eventTimeRef.current, WORLD.center)
+        const outwardAngle = Math.atan2(memoryBoss.y - WORLD.center.y, memoryBoss.x - WORLD.center.x)
+        p1MemoryPlayerVerdictRef.current = p1MemoryPlayerVerdict(
+          null,
+          playerRef.current,
+          memoryBoss,
+          p1MemoryOrderState,
+          rune,
+          eventTimeRef.current,
+          outwardAngle,
+        )
+      }
       if (event.startsWith('p1-') && p1GlaiveSetsRef.current.length) {
         p1GlaiveSetsRef.current = p1GlaiveSetsRef.current
           .map(set => p1AdvanceGlaiveSet(set, timeRef.current - dt, timeRef.current, WORLD.center, P1_OUTER_RADIUS - 5, P1_INNER_RADIUS + 5))
@@ -1247,7 +1262,7 @@ export default function App() {
     }
     frame = requestAnimationFrame(tick)
     return () => { cancelAnimationFrame(frame); window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); window.removeEventListener('blur', clearMovement) }
-  }, [screen, paused, movementSpeed, movementBonus, gameSpeed, event, beamAngles, npcSplinters, crystal, npcCrystals, keyBindings, difficulty, assignment, p1Sequence, p1Seed, p1Soaks, p1Positions, p1BossOpening, p3Round, p3RuneOrder, p3ResolvedRunes, p3Positions, p4PatternSeed, encounterSoundsEnabled, encounterSoundVolume])
+  }, [screen, paused, movementSpeed, movementBonus, gameSpeed, event, beamAngles, npcSplinters, crystal, npcCrystals, keyBindings, difficulty, assignment, p1Sequence, p1Seed, p1Soaks, p1Positions, p1BossOpening, p1MemoryOrderState, p3Round, p3RuneOrder, p3ResolvedRunes, p3Positions, p4PatternSeed, encounterSoundsEnabled, encounterSoundVolume])
 
   useEffect(() => {
     if (screen !== 'game' || paused) return
@@ -1277,12 +1292,22 @@ export default function App() {
     } else if (event === 'p1-glaives') {
       setEvent('p1-memory-position')
     } else if (event === 'p1-memory-position') {
+      p1MemoryPlayerVerdictRef.current = null
       setEvent('p1-memory-sweep')
     } else if (event === 'p1-memory-sweep') {
       const rune = (['T', 'X', 'O', 'V', '+'] as P1Rune[])[assignment % 5]
       const memoryBoss = p1BossEncounterPosition(p1BossOpening, p1Positions.slice(0, 2), p1Sequence, event, eventTimeRef.current, WORLD.center)
       const outwardAngle = Math.atan2(memoryBoss.y - WORLD.center.y, memoryBoss.x - WORLD.center.x)
-      if (!p1MemorySlotValid(playerRef.current, memoryBoss, p1MemoryOrderState, rune, outwardAngle) && triggerWipe(`Rune ${rune} was out of order around L’ura`)) return
+      const verdict = p1MemoryPlayerVerdict(
+        p1MemoryPlayerVerdictRef.current,
+        playerRef.current,
+        memoryBoss,
+        p1MemoryOrderState,
+        rune,
+        P1_MEMORY_SWEEP_SECONDS,
+        outwardAngle,
+      )
+      if (verdict !== true && triggerWipe(`Rune ${rune} was out of order around L’ura`)) return
       setEvent('p1-beam-telegraph')
     } else if (event === 'p1-beam-telegraph') {
       p1SoakHitRef.current = false

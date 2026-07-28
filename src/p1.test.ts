@@ -33,6 +33,7 @@ import {
   p1InterruptState,
   p1InterruptSucceeded,
   p1MemoryOrder,
+  p1MemoryPlayerVerdict,
   p1MemoryRuneVisible,
   p1MemorySlotAngle,
   p1MemorySlotValid,
@@ -295,6 +296,28 @@ describe('P1 headless mechanics', () => {
     expect(p1MemoryRuneVisible(order, 'X', .99)).toBe(true)
     expect(p1MemoryRuneVisible(order, 'X', 1)).toBe(false)
     expect(p1MemoryRuneVisible(order, '+', 3.99)).toBe(true)
+  })
+
+  it('locks the player verdict when their rune is swept and removes every earlier rune', () => {
+    const order = ['T', '+', 'X', 'O', 'V'] as const
+    const center = { x: 480, y: 270 }
+    const outward = Math.PI / 3
+    const xAngle = p1MemorySlotAngle(order, 'X', outward)
+    const correctAtContact = {
+      x: center.x + Math.cos(xAngle) * 80,
+      y: center.y + Math.sin(xAngle) * 80,
+    }
+    const wrongAfterContact = { x: center.x + 80, y: center.y }
+
+    expect(p1MemoryPlayerVerdict(null, correctAtContact, center, order, 'X', 1.99, outward)).toBeNull()
+    const verdict = p1MemoryPlayerVerdict(null, correctAtContact, center, order, 'X', 2, outward)
+    expect(verdict).toBe(true)
+    expect(p1MemoryRuneVisible(order, '+', 2)).toBe(false)
+    expect(p1MemoryRuneVisible(order, 'X', 2)).toBe(false)
+    expect(p1MemoryPlayerVerdict(verdict, wrongAfterContact, center, order, 'X', 5, outward)).toBe(true)
+    const missedVerdict = p1MemoryPlayerVerdict(null, wrongAfterContact, center, order, 'X', 2, outward)
+    expect(missedVerdict).toBe(false)
+    expect(p1MemoryPlayerVerdict(missedVerdict, correctAtContact, center, order, 'X', 5, outward)).toBe(false)
   })
 
   it('rotates eight clockwise beams from a two-degree side offset for every seed', () => {

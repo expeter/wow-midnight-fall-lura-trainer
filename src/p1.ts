@@ -557,9 +557,13 @@ export function p1MemorySweepAngle(startsAt: number, now: number, openingAngle =
   return openingAngle + progress * Math.PI * 2
 }
 
-export function p1MemoryRuneVisible(order: readonly P1Rune[], rune: P1Rune, eventTime: number): boolean {
+export function p1MemoryRuneSwept(order: readonly P1Rune[], rune: P1Rune, eventTime: number): boolean {
   const index = order.indexOf(rune)
-  return index >= 0 && eventTime < index / order.length * P1_MEMORY_SWEEP_SECONDS
+  return index >= 0 && eventTime >= index / order.length * P1_MEMORY_SWEEP_SECONDS
+}
+
+export function p1MemoryRuneVisible(order: readonly P1Rune[], rune: P1Rune, eventTime: number): boolean {
+  return order.includes(rune) && !p1MemoryRuneSwept(order, rune, eventTime)
 }
 
 export function p1MemorySlotAngle(order: readonly P1Rune[], rune: P1Rune, openingAngle = -Math.PI / 2): number {
@@ -579,6 +583,19 @@ export function p1MemorySlotValid(
   const actual = Math.atan2(point.y - center.y, point.x - center.x)
   const expected = p1MemorySlotAngle(order, rune, openingAngle)
   return Math.abs(Math.atan2(Math.sin(actual - expected), Math.cos(actual - expected))) <= toleranceRadians
+}
+
+export function p1MemoryPlayerVerdict(
+  existingVerdict: boolean | null,
+  point: P1Point,
+  center: P1Point,
+  order: readonly P1Rune[],
+  rune: P1Rune,
+  eventTime: number,
+  openingAngle = -Math.PI / 2,
+): boolean | null {
+  if (existingVerdict !== null || !p1MemoryRuneSwept(order, rune, eventTime)) return existingVerdict
+  return p1MemorySlotValid(point, center, order, rune, openingAngle)
 }
 
 export function p1CrystalSpawnPosition(boss: P1Point, center: P1Point, pickupIndex: number): P1Point {

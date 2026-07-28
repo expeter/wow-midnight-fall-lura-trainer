@@ -80,6 +80,19 @@ interface UserInfo {
   sub?: number | string
 }
 
+interface AccountProfile {
+  wow_accounts?: Array<{
+    characters?: Array<{
+      id?: number | string
+      name?: string
+      realm?: { id?: number | string; slug?: string }
+      playable_class?: { name?: string }
+      faction?: { name?: string; type?: string }
+      guild?: { id?: number | string; name?: string; realm?: { name?: string; slug?: string } }
+    }>
+  }>
+}
+
 export async function completeOAuth(
   database: Database,
   config: ApiConfig,
@@ -119,6 +132,21 @@ export async function completeOAuth(
   const providerId = String(user.id ?? user.sub ?? '')
   if (!providerId) throw new Error('oauth_identity_failed')
 
+  const profileResponse = await dependencies.fetch(
+    `https://${stateRow.region}.api.blizzard.com/profile/user/wow?namespace=profile-${stateRow.region}&locale=en_US`,
+    { headers: { authorization: `Bearer ${token.access_token}` } },
+  )
+  if (!profileResponse.ok) throw new Error('oauth_profile_failed')
+  const profile = await profileResponse.json() as AccountProfile
+  const characters = (profile.wow_accounts ?? [])
+    .flatMap(account => account.characters ?? [])
+    .filter(character => (
+      character.id !== undefined
+      && character.name
+      && character.realm?.id !== undefined
+      && character.realm.slug
+    ))
+
   database.exec('BEGIN IMMEDIATE')
   try {
     database.prepare(`
@@ -134,6 +162,39 @@ export async function completeOAuth(
       INSERT INTO privacy_settings (account_id, updated_at) VALUES (?, ?)
       ON CONFLICT (account_id) DO NOTHING
     `).run(account.id, now.toISOString())
+    const upsertCharacter = database.prepare(`
+      INSERT INTO characters (
+        account_id, region, character_id, realm_id, realm_slug, name,
+        class_name, faction, guild_id, guild_name, guild_realm, refreshed_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT (region, character_id) DO UPDATE SET
+        account_id = excluded.account_id,
+        realm_id = excluded.realm_id,
+        realm_slug = excluded.realm_slug,
+        name = excluded.name,
+        class_name = excluded.class_name,
+        faction = excluded.faction,
+        guild_id = excluded.guild_id,
+        guild_name = excluded.guild_name,
+        guild_realm = excluded.guild_realm,
+        refreshed_at = excluded.refreshed_at
+    `)
+    for (const character of characters) {
+      upsertCharacter.run(
+        account.id,
+        stateRow.region,
+        String(character.id),
+        String(character.realm!.id),
+        character.realm!.slug!,
+        character.name!,
+        character.playable_class?.name ?? null,
+        character.faction?.name ?? character.faction?.type ?? null,
+        character.guild?.id === undefined ? null : String(character.guild.id),
+        character.guild?.name ?? null,
+        character.guild?.realm?.name ?? character.guild?.realm?.slug ?? null,
+        now.toISOString(),
+      )
+    }
     const session = dependencies.randomToken()
     const csrf = keyedHash(config.csrfSecret, session)
     database.prepare(`

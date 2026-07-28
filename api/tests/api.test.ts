@@ -161,6 +161,29 @@ describe('Lura API foundation', () => {
           assert.match(String(init?.body), /code=authorization-code/)
           return Response.json({ access_token: 'short-lived-provider-token' })
         }
+        if (url.includes('.api.blizzard.com/profile/user/wow')) {
+          return Response.json({
+            wow_accounts: [{
+              characters: [
+                {
+                  id: 88,
+                  name: 'Lurana',
+                  realm: { id: 509, slug: 'silvermoon' },
+                  playable_class: { name: 'Priest' },
+                  faction: { name: 'Alliance' },
+                  guild: { id: 7, name: 'Milestone', realm: { name: 'Silvermoon' } },
+                },
+                {
+                  id: 89,
+                  name: 'Altana',
+                  realm: { id: 510, slug: 'draenor' },
+                  playable_class: { name: 'Mage' },
+                  faction: { name: 'Horde' },
+                },
+              ],
+            }],
+          })
+        }
         return Response.json({ id: 4242 })
       },
     }
@@ -183,9 +206,11 @@ describe('Lura API foundation', () => {
     assert.match(setCookie, /Secure/)
     assert.equal(requests[0].authorization, `Basic ${Buffer.from('client-id:client-secret').toString('base64')}`)
     assert.equal(requests[1].authorization, 'Bearer short-lived-provider-token')
+    assert.equal(requests[2].authorization, 'Bearer short-lived-provider-token')
     assert.equal(database.prepare('SELECT COUNT(*) AS count FROM accounts').get()!.count, 1)
     assert.equal(database.prepare('SELECT COUNT(*) AS count FROM sessions').get()!.count, 1)
     assert.equal(database.prepare('SELECT COUNT(*) AS count FROM oauth_states').get()!.count, 0)
+    assert.equal(database.prepare('SELECT COUNT(*) AS count FROM characters').get()!.count, 2)
     assert.equal(JSON.stringify(database.prepare('SELECT * FROM sessions').get()).includes('provider-token'), false)
 
     const cookie = setCookie.split(';', 1)[0]
@@ -195,6 +220,28 @@ describe('Lura API foundation', () => {
     assert.equal(profile.authenticated, true)
     assert.equal(profile.region, 'us')
     assert.ok(profile.csrfToken)
+
+    const characters = await app.handle(new Request('http://api.test/v1/me/characters', { headers: { cookie } }))
+    assert.equal(characters.status, 200)
+    const characterRows = (await characters.json() as {
+      rows: Array<{ id: number; name: string; guildName: string | null; selected: number }>
+    }).rows
+    assert.deepEqual(characterRows.map(row => row.name), ['Altana', 'Lurana'])
+    assert.equal(characterRows[1].guildName, 'Milestone')
+    assert.equal(characterRows[1].selected, 0)
+
+    const selection = await app.handle(new Request('http://api.test/v1/me/character', {
+      method: 'PUT',
+      headers: {
+        cookie,
+        origin: config.trainerOrigin,
+        'content-type': 'application/json',
+        'x-csrf-token': profile.csrfToken,
+      },
+      body: JSON.stringify({ characterId: characterRows[1].id }),
+    }))
+    assert.equal(selection.status, 200)
+    assert.deepEqual(await selection.json(), { selectedCharacterId: characterRows[1].id })
 
     const rejectedLogout = await app.handle(new Request('http://api.test/v1/auth/logout', {
       method: 'POST',
@@ -230,5 +277,51 @@ describe('Lura API foundation', () => {
     assert.equal(expired.status, 400)
     assert.deepEqual(await expired.json(), { error: 'invalid_oauth_state' })
     assert.equal(exchanges, 0)
+  })
+
+  it('prevents selecting another account character', async () => {
+    const ownerId = insertResult(database, {
+      region: 'eu', account: 'owner', character: 'Owner', realm: 'draenor',
+      mode: 'anonymous', score: 100, duration: 100_000,
+      acceptedAt: '2026-07-28T00:00:00.000Z',
+    })
+    const otherId = insertResult(database, {
+      region: 'eu', account: 'other', character: 'Other', realm: 'silvermoon',
+      mode: 'anonymous', score: 90, duration: 110_000,
+      acceptedAt: '2026-07-28T00:01:00.000Z',
+    })
+    const sessionToken = 'owned-session'
+    const { createHmac, createHash } = await import('node:crypto')
+    const csrf = createHmac('sha256', config.csrfSecret).update(sessionToken).digest('hex')
+    database.prepare(`
+      INSERT INTO sessions (id_hash, account_id, csrf_hash, expires_at, created_at)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(
+      createHmac('sha256', config.sessionSecret).update(sessionToken).digest('hex'),
+      ownerId,
+      createHash('sha256').update(csrf).digest('hex'),
+      '2026-07-29T00:00:00.000Z',
+      '2026-07-28T00:00:00.000Z',
+    )
+    const otherCharacter = database.prepare(
+      'SELECT id FROM characters WHERE account_id = ?',
+    ).get(otherId) as { id: number }
+    const app = createApp(database, config, {
+      now: () => new Date('2026-07-28T12:00:00.000Z'),
+      randomToken: () => 'unused',
+      fetch: globalThis.fetch,
+    })
+    const response = await app.handle(new Request('http://api.test/v1/me/character', {
+      method: 'PUT',
+      headers: {
+        cookie: `lura_session=${sessionToken}`,
+        origin: config.trainerOrigin,
+        'content-type': 'application/json',
+        'x-csrf-token': csrf,
+      },
+      body: JSON.stringify({ characterId: otherCharacter.id }),
+    }))
+    assert.equal(response.status, 400)
+    assert.deepEqual(await response.json(), { error: 'invalid_character' })
   })
 })

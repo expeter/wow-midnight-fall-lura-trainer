@@ -89,7 +89,12 @@ export function createApp(
             headers: { location: completed.redirect, 'set-cookie': completed.cookie },
           })
         } catch (error) {
-          const known = new Set(['invalid_oauth_state', 'oauth_exchange_failed', 'oauth_identity_failed'])
+          const known = new Set([
+            'invalid_oauth_state',
+            'oauth_exchange_failed',
+            'oauth_identity_failed',
+            'oauth_profile_failed',
+          ])
           if (error instanceof Error && known.has(error.message)) return json({ error: error.message }, 400, corsHeaders)
           throw error
         }
@@ -98,8 +103,10 @@ export function createApp(
         const session = authenticate(database, config, dependencies, request)
         if (!session) return json({ authenticated: false }, 401, corsHeaders)
         const profile = database.prepare(`
-          SELECT p.identity_mode AS identityMode, p.alias, p.show_guild AS showGuild
-          FROM privacy_settings p WHERE p.account_id = ?
+          SELECT p.identity_mode AS identityMode, p.alias, p.show_guild AS showGuild,
+            a.selected_character_id AS selectedCharacterId
+          FROM privacy_settings p JOIN accounts a ON a.id = p.account_id
+          WHERE p.account_id = ?
         `).get(session.accountId)
         return json({
           authenticated: true,
@@ -107,6 +114,45 @@ export function createApp(
           csrfToken: session.csrfToken,
           privacy: profile,
         }, 200, corsHeaders)
+      }
+      if (request.method === 'GET' && url.pathname === '/v1/me/characters') {
+        const session = authenticate(database, config, dependencies, request)
+        if (!session) return json({ error: 'not_authenticated' }, 401, corsHeaders)
+        const rows = database.prepare(`
+          SELECT c.id, c.region, c.character_id AS characterId,
+            c.realm_id AS realmId, c.realm_slug AS realmSlug, c.name,
+            c.class_name AS className, c.faction, c.guild_name AS guildName,
+            c.guild_realm AS guildRealm, c.refreshed_at AS refreshedAt,
+            CASE WHEN c.id = a.selected_character_id THEN 1 ELSE 0 END AS selected
+          FROM characters c JOIN accounts a ON a.id = c.account_id
+          WHERE c.account_id = ?
+          ORDER BY c.name COLLATE NOCASE, c.realm_slug COLLATE NOCASE
+        `).all(session.accountId)
+        return json({ rows }, 200, corsHeaders)
+      }
+      if (request.method === 'PUT' && url.pathname === '/v1/me/character') {
+        if (!origin || !allowedOrigins.has(origin)) return json({ error: 'origin_not_allowed' }, 403, corsHeaders)
+        const session = authenticate(database, config, dependencies, request)
+        if (!session) return json({ error: 'not_authenticated' }, 401, corsHeaders)
+        const csrf = request.headers.get('x-csrf-token')
+        if (!csrf || !safeEqual(csrf, session.csrfToken)) return json({ error: 'invalid_csrf' }, 403, corsHeaders)
+        let characterId: number
+        try {
+          const body = await request.json() as { characterId?: unknown }
+          characterId = Number(body.characterId)
+        } catch {
+          return json({ error: 'invalid_body' }, 400, corsHeaders)
+        }
+        if (!Number.isInteger(characterId) || characterId < 1) {
+          return json({ error: 'invalid_character' }, 400, corsHeaders)
+        }
+        const owned = database.prepare(
+          'SELECT id FROM characters WHERE id = ? AND account_id = ?',
+        ).get(characterId, session.accountId)
+        if (!owned) return json({ error: 'invalid_character' }, 400, corsHeaders)
+        database.prepare('UPDATE accounts SET selected_character_id = ?, updated_at = ? WHERE id = ?')
+          .run(characterId, dependencies.now().toISOString(), session.accountId)
+        return json({ selectedCharacterId: characterId }, 200, corsHeaders)
       }
       if (request.method === 'POST' && url.pathname === '/v1/auth/logout') {
         if (!origin || !allowedOrigins.has(origin)) return json({ error: 'origin_not_allowed' }, 403, corsHeaders)

@@ -107,14 +107,16 @@ provides:
 - `GET /v1/auth/battlenet/callback`
 - `POST /v1/auth/logout`
 - `GET /v1/me`
+- `GET /v1/me/characters`
+- `PUT /v1/me/character`
 - `GET /v1/leaderboards`
 - `GET /v1/leaderboards/search`
 
 Battle.net access tokens are used only during the callback and are not stored.
 For local development, `BNET_CLIENT_ID`/`BNET_SECRET` are accepted aliases for
 the production `BATTLE_NET_CLIENT_ID`/`BATTLE_NET_CLIENT_SECRET` names.
-Selected-character management, attempt issuance/completion, verified
-achievements, and frontend integration remain the next FR-027 slices.
+Character refresh, attempt issuance/completion, verified achievements, and
+frontend integration remain the next FR-027 slices.
 
 ## Production paths
 

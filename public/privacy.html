@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy · L’ura Trainer</title>
+  <style>
+    :root { color-scheme: dark; font: 18px/1.6 system-ui, sans-serif; background: #090b18; color: #eeeaff; }
+    body { max-width: 760px; margin: 0 auto; padding: 3rem 1.25rem 5rem; }
+    h1, h2 { color: #fff; line-height: 1.2; }
+    h2 { margin-top: 2rem; }
+    a { color: #bba6ff; }
+    .note { padding: 1rem 1.2rem; border: 1px solid #6657a5; border-radius: 12px; background: #15132b; }
+  </style>
+</head>
+<body>
+  <main>
+    <p><a href="./">← Back to L’ura Trainer</a></p>
+    <h1>Privacy</h1>
+    <p class="note">You can play the complete trainer without logging in. Anonymous play does not post highscores or send gameplay data to the leaderboard API.</p>
+
+    <h2>Services used</h2>
+    <p>GitHub Pages hosts the trainer. The optional leaderboard uses <code>api.asgard.website</code>. There are no advertising, analytics, fingerprinting, or unrelated tracking systems.</p>
+
+    <h2>When you log in</h2>
+    <p>Battle.net login verifies your account and the World of Warcraft characters available to it. The API stores the Battle.net account identifier, imported character and cached guild labels, your selected character, privacy choices, application sessions, issued attempts, accepted highscores, and verified achievements.</p>
+    <p>Battle.net access tokens are used during login and are not retained as ordinary account data. BattleTags and provider tokens are never published.</p>
+
+    <h2>Public identity</h2>
+    <p>You choose whether leaderboard rows show Anonymous, a trainer alias, or your verified character. Guild display is separately optional. Hidden character, realm, and guild fields are not publicly searchable.</p>
+
+    <h2>Logout and deletion</h2>
+    <p>Logout invalidates the current application session but retains your online records. “Delete online data” permanently removes the live account record and its Blizzard identifiers, sessions, characters, guild cache, attempts, results, achievements, and privacy settings.</p>
+    <p>Encrypted or protected operational backups may retain a deleted record until their rotating retention period expires; VPS backup generations currently expire after 14 days. Backups are used only for disaster recovery.</p>
+
+    <h2>Source and contact</h2>
+    <p>The trainer and API implementation are published in the <a href="https://github.com/expeter/wow-midnight-fall-lura-trainer">GitHub repository</a>. You can inspect the code or file an issue there.</p>
+  </main>
+</body>
+</html>

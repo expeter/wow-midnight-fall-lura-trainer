@@ -8,6 +8,9 @@
   Battle.net authorization-code login with one-use state, short-lived provider
   tokens, verified WoW character import and selection, opaque application
   sessions, authenticated profile lookup, and origin/CSRF-protected logout.
+  Add privacy controls and complete cascading deletion, one-use
+  character-bound attempts, server-side score recomputation, verified
+  achievements, endpoint rate limits, and a plain-language privacy page.
 - FR-056: Add an original favicon designed for clear recognition at
   browser-tab size.
 - BUG-105: Prevent active Phase 3 memory-rune NPCs from running away when

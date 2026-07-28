@@ -1,6 +1,7 @@
 import type { ApiConfig } from './config.js'
 import type { Database } from './database.js'
 import { listLeaderboard, type Difficulty, type Duty } from './leaderboards.js'
+import { completeAttempt, issueAttempt } from './attempts.js'
 import {
   authenticate,
   clearedSessionCookie,
@@ -41,6 +42,19 @@ export function createApp(
   dependencies: AuthDependencies = defaultAuthDependencies,
 ): App {
   const allowedOrigins = new Set([config.trainerOrigin, ...config.localOrigins])
+  const rateLimits = new Map<string, { count: number; resetsAt: number }>()
+  function rateLimited(request: Request, bucket: string, limit: number, windowMs: number): boolean {
+    const client = request.headers.get('x-forwarded-for')?.split(',', 1)[0].trim() || 'local'
+    const key = `${bucket}:${client}`
+    const now = dependencies.now().getTime()
+    const current = rateLimits.get(key)
+    if (!current || current.resetsAt <= now) {
+      rateLimits.set(key, { count: 1, resetsAt: now + windowMs })
+      return false
+    }
+    current.count += 1
+    return current.count > limit
+  }
   return {
     async handle(request) {
       const url = new URL(request.url)
@@ -67,6 +81,9 @@ export function createApp(
         return json({ status: row?.ok === 1 ? 'ok' : 'degraded' }, row?.ok === 1 ? 200 : 503, corsHeaders)
       }
       if (request.method === 'GET' && url.pathname === '/v1/auth/battlenet/start') {
+        if (rateLimited(request, 'auth-start', 10, 10 * 60_000)) {
+          return json({ error: 'rate_limited' }, 429, { ...corsHeaders, 'retry-after': '600' })
+        }
         const region = url.searchParams.get('region') ?? 'eu'
         if (region !== 'eu' && region !== 'us') return json({ error: 'invalid_region' }, 400, corsHeaders)
         try {
@@ -79,6 +96,9 @@ export function createApp(
         }
       }
       if (request.method === 'GET' && url.pathname === '/v1/auth/battlenet/callback') {
+        if (rateLimited(request, 'auth-callback', 20, 10 * 60_000)) {
+          return json({ error: 'rate_limited' }, 429, { ...corsHeaders, 'retry-after': '600' })
+        }
         const code = url.searchParams.get('code')
         const state = url.searchParams.get('state')
         if (!code || !state) return json({ error: 'invalid_oauth_callback' }, 400, corsHeaders)
@@ -154,6 +174,156 @@ export function createApp(
           .run(characterId, dependencies.now().toISOString(), session.accountId)
         return json({ selectedCharacterId: characterId }, 200, corsHeaders)
       }
+      if (request.method === 'PUT' && url.pathname === '/v1/me/privacy') {
+        if (!origin || !allowedOrigins.has(origin)) return json({ error: 'origin_not_allowed' }, 403, corsHeaders)
+        const session = authenticate(database, config, dependencies, request)
+        if (!session) return json({ error: 'not_authenticated' }, 401, corsHeaders)
+        const csrf = request.headers.get('x-csrf-token')
+        if (!csrf || !safeEqual(csrf, session.csrfToken)) return json({ error: 'invalid_csrf' }, 403, corsHeaders)
+        let input: { identityMode?: unknown; alias?: unknown; showGuild?: unknown }
+        try {
+          input = await request.json() as typeof input
+        } catch {
+          return json({ error: 'invalid_body' }, 400, corsHeaders)
+        }
+        if (
+          input.identityMode !== 'anonymous'
+          && input.identityMode !== 'alias'
+          && input.identityMode !== 'character'
+        ) return json({ error: 'invalid_identity_mode' }, 400, corsHeaders)
+        const alias = typeof input.alias === 'string' ? input.alias.trim() : ''
+        if (alias.length > 40 || (input.identityMode === 'alias' && alias.length < 1)) {
+          return json({ error: 'invalid_alias' }, 400, corsHeaders)
+        }
+        if (typeof input.showGuild !== 'boolean') return json({ error: 'invalid_guild_visibility' }, 400, corsHeaders)
+        database.prepare(`
+          UPDATE privacy_settings
+          SET identity_mode = ?, alias = ?, show_guild = ?, updated_at = ?
+          WHERE account_id = ?
+        `).run(
+          input.identityMode,
+          alias || null,
+          input.identityMode === 'anonymous' ? 0 : Number(input.showGuild),
+          dependencies.now().toISOString(),
+          session.accountId,
+        )
+        return json({
+          identityMode: input.identityMode,
+          alias: alias || null,
+          showGuild: input.identityMode === 'anonymous' ? false : input.showGuild,
+        }, 200, corsHeaders)
+      }
+      if (request.method === 'DELETE' && url.pathname === '/v1/me') {
+        if (rateLimited(request, 'account-delete', 5, 60 * 60_000)) {
+          return json({ error: 'rate_limited' }, 429, { ...corsHeaders, 'retry-after': '3600' })
+        }
+        if (!origin || !allowedOrigins.has(origin)) return json({ error: 'origin_not_allowed' }, 403, corsHeaders)
+        const session = authenticate(database, config, dependencies, request)
+        if (!session) return json({ error: 'not_authenticated' }, 401, corsHeaders)
+        const csrf = request.headers.get('x-csrf-token')
+        if (!csrf || !safeEqual(csrf, session.csrfToken)) return json({ error: 'invalid_csrf' }, 403, corsHeaders)
+        let confirmation: unknown
+        try {
+          confirmation = (await request.json() as { confirmation?: unknown }).confirmation
+        } catch {
+          return json({ error: 'invalid_body' }, 400, corsHeaders)
+        }
+        if (confirmation !== 'DELETE') return json({ error: 'deletion_not_confirmed' }, 400, corsHeaders)
+        database.prepare('DELETE FROM accounts WHERE id = ?').run(session.accountId)
+        return json({ deleted: true }, 200, { ...corsHeaders, 'set-cookie': clearedSessionCookie() })
+      }
+      if (request.method === 'POST' && url.pathname === '/v1/attempts') {
+        if (!origin || !allowedOrigins.has(origin)) return json({ error: 'origin_not_allowed' }, 403, corsHeaders)
+        const session = authenticate(database, config, dependencies, request)
+        if (!session) return json({ error: 'not_authenticated' }, 401, corsHeaders)
+        const csrf = request.headers.get('x-csrf-token')
+        if (!csrf || !safeEqual(csrf, session.csrfToken)) return json({ error: 'invalid_csrf' }, 403, corsHeaders)
+        let input: unknown
+        try {
+          input = await request.json()
+        } catch {
+          return json({ error: 'invalid_body' }, 400, corsHeaders)
+        }
+        try {
+          return json(issueAttempt(database, config, dependencies, session.accountId, input as never), 201, corsHeaders)
+        } catch (error) {
+          if (error instanceof Error) return json({ error: error.message }, 400, corsHeaders)
+          throw error
+        }
+      }
+      const completionMatch = url.pathname.match(/^\/v1\/attempts\/([^/]+)\/complete$/)
+      if (request.method === 'POST' && completionMatch) {
+        if (rateLimited(request, 'attempt-complete', 30, 60_000)) {
+          return json({ error: 'rate_limited' }, 429, { ...corsHeaders, 'retry-after': '60' })
+        }
+        if (!origin || !allowedOrigins.has(origin)) return json({ error: 'origin_not_allowed' }, 403, corsHeaders)
+        const session = authenticate(database, config, dependencies, request)
+        if (!session) return json({ error: 'not_authenticated' }, 401, corsHeaders)
+        const csrf = request.headers.get('x-csrf-token')
+        if (!csrf || !safeEqual(csrf, session.csrfToken)) return json({ error: 'invalid_csrf' }, 403, corsHeaders)
+        let input: unknown
+        try {
+          input = await request.json()
+        } catch {
+          return json({ error: 'invalid_body' }, 400, corsHeaders)
+        }
+        try {
+          return json(
+            completeAttempt(database, dependencies, session.accountId, decodeURIComponent(completionMatch[1]), input as never),
+            200,
+            corsHeaders,
+          )
+        } catch (error) {
+          if (error instanceof Error) {
+            const conflict = error.message === 'attempt_already_used'
+            return json({ error: error.message }, conflict ? 409 : 400, corsHeaders)
+          }
+          throw error
+        }
+      }
+      if (request.method === 'GET' && url.pathname === '/v1/me/attempts') {
+        const session = authenticate(database, config, dependencies, request)
+        if (!session) return json({ error: 'not_authenticated' }, 401, corsHeaders)
+        const rows = database.prepare(`
+          SELECT a.id, a.difficulty, a.duty, a.trainer_version AS trainerVersion,
+            a.build_id AS buildId, a.issued_at AS issuedAt, a.expires_at AS expiresAt,
+            a.consumed_at AS consumedAt, s.accepted_score AS score,
+            s.duration_ms AS durationMs
+          FROM attempts a LEFT JOIN attempt_summaries s ON s.attempt_id = a.id
+          WHERE a.account_id = ? ORDER BY a.issued_at DESC LIMIT 100
+        `).all(session.accountId)
+        return json({ rows }, 200, corsHeaders)
+      }
+      const deleteAttemptMatch = url.pathname.match(/^\/v1\/me\/attempts\/([^/]+)$/)
+      if (request.method === 'DELETE' && deleteAttemptMatch) {
+        if (!origin || !allowedOrigins.has(origin)) return json({ error: 'origin_not_allowed' }, 403, corsHeaders)
+        const session = authenticate(database, config, dependencies, request)
+        if (!session) return json({ error: 'not_authenticated' }, 401, corsHeaders)
+        const csrf = request.headers.get('x-csrf-token')
+        if (!csrf || !safeEqual(csrf, session.csrfToken)) return json({ error: 'invalid_csrf' }, 403, corsHeaders)
+        const deleted = database.prepare(`
+          DELETE FROM attempts WHERE id = ? AND account_id = ? AND consumed_at IS NULL
+        `).run(decodeURIComponent(deleteAttemptMatch[1]), session.accountId)
+        if (deleted.changes !== 1) return json({ error: 'attempt_not_deletable' }, 404, corsHeaders)
+        return json({ deleted: true }, 200, corsHeaders)
+      }
+      if (request.method === 'GET' && url.pathname === '/v1/me/achievements') {
+        const session = authenticate(database, config, dependencies, request)
+        if (!session) return json({ error: 'not_authenticated' }, 401, corsHeaders)
+        const rows = database.prepare(`
+          SELECT aa.achievement_id AS achievementId, aa.trainer_version AS trainerVersion,
+            aa.build_id AS buildId, aa.first_earned_at AS firstEarnedAt,
+            a.title, a.currently_obtainable AS currentlyObtainable,
+            c.name AS characterName, c.realm_slug AS realmSlug
+          FROM account_achievements aa
+          JOIN achievements a
+            ON a.id = aa.achievement_id AND a.trainer_version = aa.trainer_version
+          JOIN characters c ON c.id = aa.character_id
+          WHERE aa.account_id = ?
+          ORDER BY aa.first_earned_at, aa.achievement_id
+        `).all(session.accountId)
+        return json({ rows }, 200, corsHeaders)
+      }
       if (request.method === 'POST' && url.pathname === '/v1/auth/logout') {
         if (!origin || !allowedOrigins.has(origin)) return json({ error: 'origin_not_allowed' }, 403, corsHeaders)
         const session = authenticate(database, config, dependencies, request)
@@ -164,6 +334,9 @@ export function createApp(
         return json({ loggedOut: true }, 200, { ...corsHeaders, 'set-cookie': clearedSessionCookie() })
       }
       if (request.method === 'GET' && (url.pathname === '/v1/leaderboards' || url.pathname === '/v1/leaderboards/search')) {
+        if (url.pathname.endsWith('/search') && rateLimited(request, 'leaderboard-search', 60, 60_000)) {
+          return json({ error: 'rate_limited' }, 429, { ...corsHeaders, 'retry-after': '60' })
+        }
         const difficulty = url.searchParams.get('difficulty')
         const duty = url.searchParams.get('duty')
         const limit = integerParameter(url, 'limit', 50, 100)

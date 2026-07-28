@@ -109,13 +109,21 @@ provides:
 - `GET /v1/me`
 - `GET /v1/me/characters`
 - `PUT /v1/me/character`
+- `PUT /v1/me/privacy`
+- `DELETE /v1/me`
+- `POST /v1/attempts`
+- `POST /v1/attempts/{attemptId}/complete`
+- `GET /v1/me/attempts`
+- `DELETE /v1/me/attempts/{attemptId}`
+- `GET /v1/me/achievements`
 - `GET /v1/leaderboards`
 - `GET /v1/leaderboards/search`
 
 Battle.net access tokens are used only during the callback and are not stored.
 For local development, `BNET_CLIENT_ID`/`BNET_SECRET` are accepted aliases for
 the production `BATTLE_NET_CLIENT_ID`/`BATTLE_NET_CLIENT_SECRET` names.
-Character refresh, attempt issuance/completion, verified achievements, and
+The API recomputes accepted scores from bounded completion telemetry and rejects
+expired, replayed, mismatched, or tampered attempts. Character refresh and
 frontend integration remain the next FR-027 slices.
 
 ## Production paths

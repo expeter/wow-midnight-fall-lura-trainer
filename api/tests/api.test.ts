@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { afterEach, beforeEach, describe, it } from 'node:test'
 import { resolve } from 'node:path'
+import { createHash, createHmac, randomUUID } from 'node:crypto'
 import { createApp } from '../src/app.js'
 import type { ApiConfig } from '../src/config.js'
 import { applyMigrations, openDatabase, type Database } from '../src/database.js'
@@ -69,6 +70,21 @@ function insertResult(
     ) VALUES (?, ?, ?, 'hard', 'crystal', ?, ?, '0.3.0', 'build-1', ?)
   `).run(attemptId, accountId, characterId, input.score, input.duration, input.acceptedAt)
   return accountId
+}
+
+function insertSession(database: Database, accountId: number, token = 'owned-session') {
+  const csrf = createHmac('sha256', config.csrfSecret).update(token).digest('hex')
+  database.prepare(`
+    INSERT INTO sessions (id_hash, account_id, csrf_hash, expires_at, created_at)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(
+    createHmac('sha256', config.sessionSecret).update(token).digest('hex'),
+    accountId,
+    createHash('sha256').update(csrf).digest('hex'),
+    '2026-07-29T00:00:00.000Z',
+    '2026-07-28T00:00:00.000Z',
+  )
+  return { cookie: `lura_session=${token}`, csrf }
 }
 
 describe('Lura API foundation', () => {
@@ -293,6 +309,24 @@ describe('Lura API foundation', () => {
     assert.equal(database.prepare('SELECT COUNT(*) AS count FROM oauth_states').get()!.count, 0)
   })
 
+  it('rate limits repeated authentication starts by forwarded client address', async () => {
+    const app = createApp(database, config, {
+      now: () => new Date('2026-07-28T12:00:00.000Z'),
+      randomToken: () => randomUUID(),
+      fetch: globalThis.fetch,
+    })
+    let response!: Response
+    for (let index = 0; index < 11; index += 1) {
+      response = await app.handle(new Request(
+        'http://api.test/v1/auth/battlenet/start?region=eu',
+        { headers: { 'x-forwarded-for': '192.0.2.8' } },
+      ))
+    }
+    assert.equal(response.status, 429)
+    assert.deepEqual(await response.json(), { error: 'rate_limited' })
+    assert.equal(response.headers.get('retry-after'), '600')
+  })
+
   it('prevents selecting another account character', async () => {
     const ownerId = insertResult(database, {
       region: 'eu', account: 'owner', character: 'Owner', realm: 'draenor',
@@ -304,19 +338,7 @@ describe('Lura API foundation', () => {
       mode: 'anonymous', score: 90, duration: 110_000,
       acceptedAt: '2026-07-28T00:01:00.000Z',
     })
-    const sessionToken = 'owned-session'
-    const { createHmac, createHash } = await import('node:crypto')
-    const csrf = createHmac('sha256', config.csrfSecret).update(sessionToken).digest('hex')
-    database.prepare(`
-      INSERT INTO sessions (id_hash, account_id, csrf_hash, expires_at, created_at)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(
-      createHmac('sha256', config.sessionSecret).update(sessionToken).digest('hex'),
-      ownerId,
-      createHash('sha256').update(csrf).digest('hex'),
-      '2026-07-29T00:00:00.000Z',
-      '2026-07-28T00:00:00.000Z',
-    )
+    const session = insertSession(database, ownerId)
     const otherCharacter = database.prepare(
       'SELECT id FROM characters WHERE account_id = ?',
     ).get(otherId) as { id: number }
@@ -328,14 +350,217 @@ describe('Lura API foundation', () => {
     const response = await app.handle(new Request('http://api.test/v1/me/character', {
       method: 'PUT',
       headers: {
-        cookie: `lura_session=${sessionToken}`,
+        cookie: session.cookie,
         origin: config.trainerOrigin,
         'content-type': 'application/json',
-        'x-csrf-token': csrf,
+        'x-csrf-token': session.csrf,
       },
       body: JSON.stringify({ characterId: otherCharacter.id }),
     }))
     assert.equal(response.status, 400)
     assert.deepEqual(await response.json(), { error: 'invalid_character' })
+  })
+
+  it('enforces privacy visibility and completely deletes account-linked data', async () => {
+    const accountId = insertResult(database, {
+      region: 'eu', account: 'privacy', character: 'Private', realm: 'draenor',
+      guild: 'Secret Guild', mode: 'anonymous', score: 1000, duration: 90_000,
+      acceptedAt: '2026-07-28T00:00:00.000Z',
+    })
+    const session = insertSession(database, accountId)
+    const app = createApp(database, config, {
+      now: () => new Date('2026-07-28T12:00:00.000Z'),
+      randomToken: () => 'unused',
+      fetch: globalThis.fetch,
+    })
+    const privacy = await app.handle(new Request('http://api.test/v1/me/privacy', {
+      method: 'PUT',
+      headers: {
+        cookie: session.cookie,
+        origin: config.trainerOrigin,
+        'content-type': 'application/json',
+        'x-csrf-token': session.csrf,
+      },
+      body: JSON.stringify({ identityMode: 'alias', alias: '  Runner  ', showGuild: true }),
+    }))
+    assert.equal(privacy.status, 200)
+    assert.deepEqual(await privacy.json(), {
+      identityMode: 'alias', alias: 'Runner', showGuild: true,
+    })
+    const publicRows = await app.handle(new Request(
+      'http://api.test/v1/leaderboards?difficulty=hard&duty=crystal',
+    ))
+    assert.deepEqual(
+      (await publicRows.json() as { rows: Array<{ displayName: string; guild: string }> }).rows
+        .map(row => [row.displayName, row.guild]),
+      [['Runner', 'Secret Guild']],
+    )
+
+    const unconfirmed = await app.handle(new Request('http://api.test/v1/me', {
+      method: 'DELETE',
+      headers: {
+        cookie: session.cookie,
+        origin: config.trainerOrigin,
+        'content-type': 'application/json',
+        'x-csrf-token': session.csrf,
+      },
+      body: JSON.stringify({ confirmation: 'no' }),
+    }))
+    assert.equal(unconfirmed.status, 400)
+    const deletion = await app.handle(new Request('http://api.test/v1/me', {
+      method: 'DELETE',
+      headers: {
+        cookie: session.cookie,
+        origin: config.trainerOrigin,
+        'content-type': 'application/json',
+        'x-csrf-token': session.csrf,
+      },
+      body: JSON.stringify({ confirmation: 'DELETE' }),
+    }))
+    assert.equal(deletion.status, 200)
+    assert.match(deletion.headers.get('set-cookie')!, /Max-Age=0/)
+    for (const table of ['accounts', 'sessions', 'characters', 'privacy_settings', 'attempts', 'results']) {
+      assert.equal(database.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get()!.count, 0, table)
+    }
+  })
+
+  it('issues one-use attempts and publishes only server-recomputed results', async () => {
+    const accountId = insertResult(database, {
+      region: 'eu', account: 'online', character: 'Verified', realm: 'silvermoon',
+      mode: 'character', score: 500, duration: 500_000,
+      acceptedAt: '2026-07-27T00:00:00.000Z',
+    })
+    const selected = database.prepare('SELECT id FROM characters WHERE account_id = ?')
+      .get(accountId) as { id: number }
+    database.prepare('UPDATE accounts SET selected_character_id = ? WHERE id = ?').run(selected.id, accountId)
+    const session = insertSession(database, accountId)
+    const randomTokens = ['online-attempt', 'online-nonce']
+    const app = createApp(database, config, {
+      now: () => new Date('2026-07-28T12:00:00.000Z'),
+      randomToken: () => randomTokens.shift()!,
+      fetch: globalThis.fetch,
+    })
+    const headers = {
+      cookie: session.cookie,
+      origin: config.trainerOrigin,
+      'content-type': 'application/json',
+      'x-csrf-token': session.csrf,
+    }
+    const issued = await app.handle(new Request('http://api.test/v1/attempts', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        difficulty: 'hard',
+        duty: 'crystal',
+        entryMode: 'arena0',
+        phaseScope: 'full',
+        trainerVersion: '0.3.0',
+        buildId: 'build-online',
+        configurationFingerprint: 'raid-plan-sha256',
+        optionalChallenges: ['main-ability', 'recovery'],
+      }),
+    }))
+    assert.equal(issued.status, 201)
+    const attempt = await issued.json() as { attemptId: string; nonce: string }
+    assert.deepEqual(attempt, { ...attempt, attemptId: 'online-attempt', nonce: 'online-nonce' })
+
+    const completion = {
+      nonce: attempt.nonce,
+      durationMs: 300_000,
+      phaseResults: ['p1', 'intermission', 'p2', 'p3', 'p4'].map(key => ({
+        key, durationMs: 60_000, mistakes: 0, recovery: 'passed',
+      })),
+      mistakes: [],
+      actions: { recoveryPasses: 5, mainAbilityCasts: 20, continuousPenalty: 0 },
+      achievementInputs: {
+        wipeCount: 0,
+        crystalFailures: 0,
+        runeFailures: 0,
+        pauseCycle: false,
+        earlyKill: false,
+        p3EarlyClear: false,
+      },
+      submittedScore: 1320,
+      trainerVersion: '0.3.0',
+      buildId: 'build-online',
+    }
+    const tampered = await app.handle(new Request(
+      `http://api.test/v1/attempts/${attempt.attemptId}/complete`,
+      { method: 'POST', headers, body: JSON.stringify({ ...completion, submittedScore: 2000 }) },
+    ))
+    assert.equal(tampered.status, 400)
+    assert.deepEqual(await tampered.json(), { error: 'score_mismatch' })
+    assert.equal(
+      database.prepare('SELECT consumed_at AS consumedAt FROM attempts WHERE id = ?')
+        .get(attempt.attemptId)!.consumedAt,
+      null,
+    )
+
+    const accepted = await app.handle(new Request(
+      `http://api.test/v1/attempts/${attempt.attemptId}/complete`,
+      { method: 'POST', headers, body: JSON.stringify(completion) },
+    ))
+    assert.equal(accepted.status, 200)
+    const acceptedBody = await accepted.json() as { score: number; achievementIds: string[] }
+    assert.equal(acceptedBody.score, 1320)
+    assert.ok(acceptedBody.achievementIds.includes('hard-score-flawless'))
+    const duplicate = await app.handle(new Request(
+      `http://api.test/v1/attempts/${attempt.attemptId}/complete`,
+      { method: 'POST', headers, body: JSON.stringify(completion) },
+    ))
+    assert.equal(duplicate.status, 409)
+    assert.deepEqual(await duplicate.json(), { error: 'attempt_already_used' })
+
+    const board = await app.handle(new Request(
+      'http://api.test/v1/leaderboards?difficulty=hard&duty=crystal',
+    ))
+    const rows = (await board.json() as { rows: Array<{ score: number; displayName: string }> }).rows
+    assert.deepEqual(rows[0], { ...rows[0], score: 1320, displayName: 'Verified' })
+    const achievements = await app.handle(new Request(
+      'http://api.test/v1/me/achievements',
+      { headers: { cookie: session.cookie } },
+    ))
+    assert.equal(achievements.status, 200)
+    const achievementRows = (await achievements.json() as {
+      rows: Array<{ achievementId: string; buildId: string }>
+    }).rows
+    assert.ok(achievementRows.some(row => (
+      row.achievementId === 'hard-score-flawless' && row.buildId === 'build-online'
+    )))
+  })
+
+  it('requires a selected verified character before issuing an attempt', async () => {
+    const accountId = insertResult(database, {
+      region: 'us', account: 'unselected', character: 'Unselected', realm: 'illidan',
+      mode: 'anonymous', score: 100, duration: 500_000,
+      acceptedAt: '2026-07-27T00:00:00.000Z',
+    })
+    const session = insertSession(database, accountId)
+    const app = createApp(database, config, {
+      now: () => new Date('2026-07-28T12:00:00.000Z'),
+      randomToken: () => 'unused',
+      fetch: globalThis.fetch,
+    })
+    const response = await app.handle(new Request('http://api.test/v1/attempts', {
+      method: 'POST',
+      headers: {
+        cookie: session.cookie,
+        origin: config.trainerOrigin,
+        'content-type': 'application/json',
+        'x-csrf-token': session.csrf,
+      },
+      body: JSON.stringify({
+        difficulty: 'normal',
+        duty: 'non-crystal',
+        entryMode: 'arena0',
+        phaseScope: 'full',
+        trainerVersion: '0.3.0',
+        buildId: 'build',
+        configurationFingerprint: 'config',
+        optionalChallenges: [],
+      }),
+    }))
+    assert.equal(response.status, 400)
+    assert.deepEqual(await response.json(), { error: 'character_required' })
   })
 })

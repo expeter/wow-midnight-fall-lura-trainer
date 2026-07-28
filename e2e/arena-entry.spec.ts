@@ -126,7 +126,7 @@ test('a shared hash plan drives every live phase and survives a clean reload', a
 
   const expectedPoint = (point: { x: number; y: number }) => `${point.x},${point.y}`
   const enterAndInspect = async (phase: 'Intermission' | 'P2' | 'P3' | 'P4') => {
-    if (phase !== 'Intermission') await page.getByRole('button', { name: phase, exact: true }).click()
+    await page.getByRole('button', { name: phase, exact: true }).click()
     await page.getByRole('button', { name: phase === 'Intermission' ? /Enter Arena/ : new RegExp(`Enter ${phase}`) }).click()
     const arena = page.locator('.arena-wrap')
     await expect(arena).toHaveAttribute('data-player-profile', 'Zoxzy|mage')
@@ -220,6 +220,7 @@ test('Space jumps while actions are locked and P pauses', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: 'easy' }).click()
   await page.getByLabel('Assignment position').fill('8')
+  await page.getByRole('button', { name: 'Intermission', exact: true }).click()
   await page.getByRole('button', { name: /Enter Intermission/ }).click()
 
   await expect(page.getByText('Take your position.')).toBeVisible({ timeout: 3_000 })
@@ -264,6 +265,7 @@ test('Main ability visibly animates and completes only once when its bound key i
     }))
   })
   await page.goto('/')
+  await page.getByRole('button', { name: 'Intermission', exact: true }).click()
   await page.getByRole('button', { name: /Enter Intermission/ }).click()
   await page.evaluate(() => {
     window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Digit4' }))

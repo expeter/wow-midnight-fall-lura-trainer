@@ -26,6 +26,7 @@ const asgardRaidPlanCode = btoa(encodeURIComponent(JSON.stringify({
 describe('player menu', () => {
   beforeEach(() => {
     localStorage.clear()
+    localStorage.setItem('lura-entry-mode', 'arena1')
     window.location.hash = ''
     vi.mocked(fetch).mockReset().mockResolvedValue({
       ok: true,
@@ -33,6 +34,20 @@ describe('player menu', () => {
     } as Response)
   })
   afterEach(() => cleanup())
+
+  it('defaults new users to P1 and restores the last selected practice phase', async () => {
+    localStorage.removeItem('lura-entry-mode')
+    const user = userEvent.setup()
+    const view = render(<App />)
+    expect(screen.getByRole('button', { name: /^p1$/i })).toHaveClass('selected')
+    expect(screen.getByRole('button', { name: /enter p1/i })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /^p3$/i }))
+    await waitFor(() => expect(localStorage.getItem('lura-entry-mode')).toBe('arena3'))
+    view.unmount()
+    render(<App />)
+    expect(screen.getByRole('button', { name: /^p3$/i })).toHaveClass('selected')
+    expect(screen.getByRole('button', { name: /enter p3/i })).toBeInTheDocument()
+  })
 
   it('persists the selected Phase 1 rune-panel orientation', async () => {
     const user = userEvent.setup()

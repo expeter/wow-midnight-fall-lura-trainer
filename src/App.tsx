@@ -440,6 +440,13 @@ function phaseForEntry(entryMode: EntryMode): PhaseKey {
   return 'intermission'
 }
 
+function loadEntryMode(): EntryMode {
+  const saved = localStorage.getItem('lura-entry-mode')
+  return saved === 'arena0' || saved === 'arena1' || saved === 'arena2' || saved === 'arena3' || saved === 'arena4'
+    ? saved
+    : 'arena0'
+}
+
 function loadInitialSharedRaidPlan(): RaidPlan | null {
   if (!window.location.hash.startsWith('#raidplan=')) return null
   const decoded = decodeRaidPlan(window.location.hash)
@@ -452,7 +459,7 @@ function loadInitialSharedRaidPlan(): RaidPlan | null {
 export default function App() {
   const [screen, setScreen] = useState<Screen>('menu')
   const [difficulty, setDifficulty] = useState<Difficulty>('normal')
-  const [entryMode, setEntryMode] = useState<EntryMode>('arena1')
+  const [entryMode, setEntryMode] = useState<EntryMode>(loadEntryMode)
   const [initialSharedPlan] = useState(loadInitialSharedRaidPlan)
   const [useAsgardAsInitialPlan] = useState(() => !initialSharedPlan && !localStorage.getItem('lura-player-positions'))
   const [movementSpeed, setMovementSpeed] = useState(18)
@@ -653,6 +660,7 @@ export default function App() {
   bossHealthRef.current = bossHealth
 
   useEffect(() => { localStorage.setItem('lura-selected-position', String(assignment)) }, [assignment])
+  useEffect(() => { localStorage.setItem('lura-entry-mode', entryMode) }, [entryMode])
   useEffect(() => { localStorage.setItem('lura-player-name', playerName) }, [playerName])
   useEffect(() => { localStorage.setItem('lura-keybindings', JSON.stringify(keyBindings)) }, [keyBindings])
   useEffect(() => { localStorage.setItem('lura-p1-crystal-assignments', JSON.stringify(p1CrystalAssignments)) }, [p1CrystalAssignments])

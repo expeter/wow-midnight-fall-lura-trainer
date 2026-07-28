@@ -42,7 +42,6 @@ if [[ ! -f "${release}/dist/src/main.js" || ! -f "${release}/migrations/001_init
   exit 1
 fi
 
-sudo -u lura-api /opt/lura-api/runtime/bin/node --env-file=/etc/lura-api/env "${release}/dist/src/migrate.js"
 ln -sfn "${release}" /opt/lura-api/current
 systemctl restart lura-api.service
 

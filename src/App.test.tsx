@@ -33,6 +33,15 @@ describe('player menu', () => {
     } as Response)
   })
   afterEach(() => cleanup())
+
+  it('persists the selected Phase 1 rune-panel orientation', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    const orientation = screen.getByLabelText('P1 rune panel orientation')
+    expect(orientation).toHaveValue('pentagram')
+    await user.selectOptions(orientation, 'positional')
+    await waitFor(() => expect(localStorage.getItem('lura-p1-rune-panel-orientation')).toBe('positional'))
+  })
   it('derives crystal duty from the phase roster and starts with a countdown', async () => { const user = userEvent.setup(); render(<App />); fireEvent.change(screen.getByLabelText(/assignment position/i), { target: { value: '1' } }); expect(screen.getByLabelText(/intermission crystal 1/i)).toHaveValue('1'); await user.click(screen.getByRole('button', { name: /enter arena/i })); expect(screen.getByText(/Get ready/i)).toBeInTheDocument(); expect(screen.getByText('3')).toBeInTheDocument(); expect(screen.getByText(/CRYSTAL CARRIER/i)).toBeInTheDocument(); expect(screen.getByText(/You received a crystal · Intermission/i)).toBeInTheDocument(); expect(screen.getByText('The veil shudders with every step.')).toBeInTheDocument(); expect(screen.queryByText(/MAIN ABILITY READY/i)).not.toBeInTheDocument(); expect(screen.getByText('Points')).toBeInTheDocument(); expect(document.querySelector('.hud')).not.toBeInTheDocument() })
   it('shows the assignment control and difficulty choices', () => { render(<App />); expect(screen.getByLabelText(/assignment position/i)).toBeInTheDocument(); expect(screen.getByRole('button', { name: 'easy' })).toBeInTheDocument(); expect(screen.getByRole('button', { name: 'hard' })).toBeInTheDocument() })
   it('offers the localhost-only P1 preview before Intermission', async () => {

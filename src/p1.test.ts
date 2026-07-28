@@ -4,6 +4,7 @@ import {
   P1_DEFAULT_INTERRUPT_KEY,
   P1_GLAIVE_INITIAL_SPEED_MULTIPLIER,
   P1_GLAIVE_LIFETIME_SECONDS,
+  P1_GLAIVE_CONTACT_RADIUS,
   P1_GLAIVE_RETURN_SPEED_MULTIPLIER,
   P1_INNER_RADIUS,
   P1_INTERMISSION_POSITION_SECONDS,
@@ -28,6 +29,7 @@ import {
   p1CrystalSpawnPosition,
   p1CrystalSpawns,
   p1GlaiveContactStarted,
+  p1GlaiveDistanceSpeedMultiplier,
   p1GlaiveSet,
   p1HasCollectedCrystal,
   p1InterruptAssignment,
@@ -123,7 +125,8 @@ describe('P1 headless mechanics', () => {
       glaives: [{ id: 0, position: { x: 0, y: 0 }, direction: { x: 1, y: 0 } }],
     }
     const reflected = p1AdvanceGlaiveSet(radial, 7, 8.5, { x: 0, y: 0 }, 10)
-    expect(reflected.glaives[0].position.x).toBeCloseTo(8.1667, 3)
+    expect(reflected.glaives[0].position.x).toBeCloseTo(7.7633, 3)
+    expect(reflected.glaives[0].position.x).toBeLessThan(8.1667)
     expect(reflected.glaives[0].direction.x).toBeCloseTo(-1)
     expect(reflected.glaives[0].reflected).toBe(true)
   })
@@ -200,7 +203,11 @@ describe('P1 headless mechanics', () => {
     const boss = { x: 400, y: 420 }
     const center = { x: 0, y: 0 }
     const beamAngle = Math.PI / 3
-    const safe = p1NpcBeamPosition(3, 0, boss, beamAngle, center)
+    const beforeCross = p1NpcBeamPosition(3, 0, boss, beamAngle, center)
+    const crossedLeft = p1NpcBeamPosition(3, .8, boss, beamAngle, center)
+    const safe = p1NpcBeamPosition(3, 2, boss, beamAngle, center)
+    expect(Math.atan2(beforeCross.y, beforeCross.x) - beamAngle).toBeLessThan(0)
+    expect(Math.atan2(crossedLeft.y, crossedLeft.x) - beamAngle).toBeGreaterThan(0)
     const safeAngle = Math.atan2(safe.y - center.y, safe.x - center.x)
     expect(safeAngle - beamAngle).toBeGreaterThan(18 * Math.PI / 180)
     expect(safeAngle - beamAngle).toBeLessThan(27 * Math.PI / 180)
@@ -213,6 +220,17 @@ describe('P1 headless mechanics', () => {
     const movedWithBoss = p1NpcBeamPosition(3, 3, movedBoss, Math.PI / 3, center)
     expect(Math.hypot(movedWithBoss.x - center.x, movedWithBoss.y - center.y))
       .toBeGreaterThan(Math.hypot(safe.x - center.x, safe.y - center.y))
+  })
+
+  it('accelerates reflected glaives subtly with distance and includes both visible boundaries in contact', () => {
+    const center = { x: 0, y: 0 }
+    const inner = p1GlaiveDistanceSpeedMultiplier({ x: 102, y: 0 }, center, 102, 255)
+    const middle = p1GlaiveDistanceSpeedMultiplier({ x: 180, y: 0 }, center, 102, 255)
+    const outer = p1GlaiveDistanceSpeedMultiplier({ x: 255, y: 0 }, center, 102, 255)
+    expect(inner).toBe(1)
+    expect(middle).toBeGreaterThan(inner)
+    expect(outer).toBeCloseTo(1.22)
+    expect(P1_GLAIVE_CONTACT_RADIUS).toBeCloseTo(15.42)
   })
 
   it('gives idle P1 NPCs deterministic cast-and-move waypoints around L’ura', () => {

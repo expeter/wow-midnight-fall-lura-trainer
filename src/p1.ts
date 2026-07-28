@@ -15,6 +15,9 @@ export const P1_GLAIVE_LIFETIME_SECONDS = 60
 export const P1_GLAIVE_REFLECTED_SPEED_MULTIPLIER = 1.1
 export const P1_GLAIVE_INITIAL_SPEED_MULTIPLIER = 4.5
 export const P1_GLAIVE_RETURN_SPEED_MULTIPLIER = 1.65
+export const P1_GLAIVE_VISUAL_RADIUS = 11.92
+export const P1_PLAYER_BODY_RADIUS = 3.5
+export const P1_GLAIVE_CONTACT_RADIUS = P1_GLAIVE_VISUAL_RADIUS + P1_PLAYER_BODY_RADIUS
 export const P1_MAX_GLAIVE_SETS = 2
 export const P1_INNER_RADIUS = 102
 export const P1_OUTER_RADIUS = 260
@@ -227,7 +230,9 @@ function advanceGlaive(
   let remainingSeconds = Math.max(0, seconds)
 
   for (let reflection = 0; reflection < 16 && remainingSeconds > 1e-8; reflection += 1) {
-    const speed = reflected ? reflectedSpeed : initialSpeed
+    const speed = reflected
+      ? reflectedSpeed * p1GlaiveDistanceSpeedMultiplier(position, center, innerRadius, outerRadius)
+      : initialSpeed
     const outerDistance = distanceToRingAlongRay(position, direction, center, outerRadius)
     const innerDistance = innerRadius > 0
       ? distanceToRingAlongRay(position, direction, center, innerRadius)
@@ -266,6 +271,18 @@ function advanceGlaive(
   }
 
   return { ...glaive, position, direction, reflected }
+}
+
+export function p1GlaiveDistanceSpeedMultiplier(
+  position: P1Point,
+  center: P1Point,
+  innerRadius: number,
+  outerRadius: number,
+): number {
+  const range = Math.max(1, outerRadius - innerRadius)
+  const progress = Math.max(0, Math.min(1, (Math.hypot(position.x - center.x, position.y - center.y) - innerRadius) / range))
+  const smooth = progress * progress * (3 - 2 * progress)
+  return 1 + smooth * .22
 }
 
 export function p1AdvanceGlaiveSet(
@@ -383,7 +400,11 @@ export function p1NpcBeamPosition(
   beamAngle: number,
   center: P1Point = boss,
 ): P1Point {
-  const safeAngle = beamAngle + Math.PI / P1_ROTATING_BEAM_COUNT
+  const crossingProgress = Math.max(0, Math.min(1, _elapsed / P1_ROTATING_BEAM_TELEGRAPH_SECONDS))
+  const safeOffset = crossingProgress < .4
+    ? (-8 + crossingProgress / .4 * 20) * Math.PI / 180
+    : (12 + (crossingProgress - .4) / .6 * 10.5) * Math.PI / 180
+  const safeAngle = beamAngle + safeOffset
   const angularOffset = (npcIndex % 5 - 2) * Math.PI / 90
   const radius = Math.hypot(boss.x - center.x, boss.y - center.y)
     + (Math.floor(npcIndex / 5) - 1.5) * 5

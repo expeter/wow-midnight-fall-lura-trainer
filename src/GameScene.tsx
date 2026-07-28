@@ -10,6 +10,9 @@ import { P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_MEMORY_BEAM_LENGT
 interface SceneProps {
   p1Sequence: number
   p1Seed: number
+  p1InterruptAssignment: number
+  p1InterruptCast: number
+  p1InterruptPressed: boolean
   p1MemoryOrder: P1Rune[]
   p1GlaiveSets: P1GlaiveSet[]
   p1Soaks: P1ReactiveSoak[]
@@ -359,6 +362,18 @@ function addFlyingSaucer(group: THREE.Group, point: Point, rotation: number, col
     marker.position.set(point.x + Math.cos(angle) * 7.1, 9.05, point.y + Math.sin(angle) * 7.1)
     marker.renderOrder = 15
     group.add(marker)
+  }
+}
+function addInterruptCastOrbs(group: THREE.Group, boss: Point, time: number, progress: number) {
+  for (let index = 0; index < 3; index += 1) {
+    const angle = time * 11 + index * Math.PI * 2 / 3
+    const orb = new THREE.Mesh(
+      cachedTransientGeometry('p1-interrupt-cast-orb', () => new THREE.SphereGeometry(2.5, 14, 10)),
+      new THREE.MeshBasicMaterial({ color: 0xff4c76, transparent: true, opacity: .68 + progress * .3, depthWrite: false, blending: THREE.AdditiveBlending }),
+    )
+    orb.position.set(boss.x + Math.cos(angle) * 17, 11 + Math.sin(time * 14 + index) * 2, boss.y + Math.sin(angle) * 17)
+    orb.renderOrder = 16
+    group.add(orb)
   }
 }
 function makeMarkerTexture(symbol: string, color: string) {
@@ -1445,6 +1460,17 @@ export default function GameScene(props: SceneProps) {
         if (guideLength > 4) addFlatBeam(hazards, state.player, Math.atan2(guideDy, guideDx), guideLength, 1.7, 0x73e0c1, .72)
       }
       if (phaseOne) {
+        if (state.event === 'p1-interrupts') {
+          const castElapsed = state.eventTime % 2
+          const assignedCast = state.p1InterruptCast === state.p1InterruptAssignment
+          const interrupted = assignedCast ? state.p1InterruptPressed : castElapsed >= 1.72
+          if (!interrupted) {
+            const progress = Math.min(1, castElapsed / 2)
+            const coneAngle = Math.atan2(WORLD.center.y - p1Boss.y, WORLD.center.x - p1Boss.x)
+            addFrontalCone(hazards, p1Boss, coneAngle, 88, 0xff315f, .08 + progress * .26)
+            addInterruptCastOrbs(hazards, p1Boss, state.time, progress)
+          }
+        }
         if (state.event === 'p1-crystals') {
           const activeAssignments = state.p1CrystalAssignments.slice((state.p1Sequence - 1) * 3, state.p1Sequence * 3)
           activeAssignments.forEach(profileIndex => {

@@ -40,7 +40,10 @@ phase-specific raid-plan persistence.
   - yellow: the player is next;
   - green: the player has two seconds to interrupt.
 - Missing the assigned interrupt wipes the attempt.
-- The final visual representation of the cast remains open for design.
+- Synchronize a five-cell kick-order panel and two-second boss cast bar with
+  casts 1–5. Three fast red orbs orbit L’ura while a dangerous frontal cone
+  charges. NPC-assigned casts interrupt shortly before completion; the
+  controlled player's cast stops on their input or resolves lethally if missed.
 
 ## Crystal pickup
 
@@ -66,29 +69,33 @@ phase-specific raid-plan persistence.
   of appearing from one overlapping point.
 - Each disc launches from the outside boss at 4.5 times player/NPC speed,
   keeps that full speed until its first impact, then continues at 165% of
-  configured player speed.
+  configured player speed. Reflected discs receive a smooth distance-based
+  multiplier from 1.0 near the inner ring to 1.22 near the outer wall so long
+  room crossings return to the raid slightly sooner.
 - Render each disc as a broad, flat luminous flying saucer rather than an orb.
   The reviewed version is 1.5 times larger and uses rotating surface markers
   so its spin remains readable from the play camera.
 - Glaives reflect from both the 260-yard outer wall and the 102-yard middle
   bubble, so they never pass through the protected center.
-- The glaives continue roaming while later mechanics occur.
+- The active set continues through its memory game, then despawns when that
+  memory sweep ends. A later sequence launches a fresh set.
 - Unassigned NPCs make short sidesteps out of approaching glaive lanes when
   that does not conflict with a crystal, memory, or rotating-beam duty.
-- Each glaive remains active for 60 seconds and then disappears. Keep
-  the lifetime configurable for tuning and cap the live hazard field at two
-  generated sets, allowing the first and second sequence sets to overlap.
 - Contact is a 500-point wipe. Leaving a disc and touching that same disc again
   starts another contact and therefore another wipe; remaining continuously
-  inside it does not spam duplicate failures every frame.
+  inside it does not spam duplicate failures every frame. Contact includes the
+  luminous rim's full 11.92-yard visual radius plus the controlled player's
+  3.5-yard body radius.
 
 ## Five-rune memory game
 
 - Two seconds after the glaives launch, display a five-symbol sequence chosen
   from `T`, `X`, `O`, `V`, and `+`.
-- Present the sequence as a centered five-cell positional panel below the
-  encounter cast area, following the original-game 1–5 layout. Number every
-  symbol and outline the controlled player's required rune in yellow.
+- Present the sequence in the lower-center HUD reference area so it does not
+  block the arena. Number every symbol and outline the controlled player's
+  required rune in yellow. The default raid pentagram places 5/1 across the
+  top, 4/2 across the middle, and 3 at the bottom; a persisted game setting
+  can switch to the earlier positional orientation with 3 at the top.
 - Players have seven seconds to arrange around the boss in that order; radial
   distance is not scored.
 - A single 55-yard dark-blue Starsplinter-style beam begins on the boss-to-outside ray
@@ -124,9 +131,11 @@ phase-specific raid-plan persistence.
   left, then follow it without being caught by another beam while continuing
   to dodge the glaives.
 - All eight beams rotate clockwise in both sequences. Once the rays appear,
-  NPCs move into the middle of the nearest 45-degree safe lane with visible
-  clearance from both edges, face and fight L’ura while following that lane,
-  then return to normal positioning after the beams disappear.
+  NPCs first move from the right side through the reference ray to its left
+  during the safe telegraph. They then spread into the middle of the nearest
+  45-degree safe lane with visible clearance from both edges and L’ura, face
+  and fight the boss while following that lane, and return to normal
+  positioning after the beams disappear.
 - Crystal pickup and assigned memory runes take priority over Heaven Glaive
   avoidance. During the rotating beams, NPCs may make short glaive sidesteps
   while preserving safe clearance from both rays around their lane.

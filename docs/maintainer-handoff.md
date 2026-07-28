@@ -141,13 +141,24 @@ Run the focused Playwright test for the changed behavior. Run the complete
 suite when changes cross phase/state-machine boundaries:
 
 ```bash
-PLAYWRIGHT_BROWSERS_PATH="$PWD/.tmp/ms-playwright" npm run test:e2e
+npm run test:e2e:local
 ```
 
-Chromium is intentionally installed under `.tmp/ms-playwright`, and `.tmp/` is
-ignored. In WSL, use Playwright's native Linux Chromium; do not introduce
-`chrome-launcher` path conversion. A process sandbox may require narrowly
-scoped permission to bind the local test server.
+The stable `test:e2e:local` wrapper owns `PLAYWRIGHT_BROWSERS_PATH`, changes to
+the repository root, and forwards every argument to Playwright. Use the same
+command prefix for focused runs instead of embedding a variable-length grep in
+the shell command:
+
+```bash
+npm run test:e2e:local -- --grep "Phase 1 preview|terminal wipe"
+```
+
+This keeps recurring sandbox approval scoped to
+`npm run test:e2e:local` while allowing different `--grep`, project, reporter,
+or retry arguments. Chromium is intentionally installed under
+`.tmp/ms-playwright`, and `.tmp/` is ignored. In WSL, use Playwright's native
+Linux Chromium; do not introduce `chrome-launcher` path conversion. A process
+sandbox may require narrowly scoped permission to bind the local test server.
 
 GitHub Pages CI uses Node 22 and separates UI tests into:
 

@@ -33,12 +33,13 @@ test('exposes the complete Phase 1 preview only on localhost and begins its assi
   await expect(interruptCounter).toHaveCSS('gap', '10px')
   const interrupt = page.locator('.p1-interrupt-display')
   await expect(interrupt).toBeVisible()
-  await expect(interrupt).toHaveCSS('width', '100px')
-  await expect(interrupt).toHaveCSS('height', '100px')
-  await expect(interrupt).toContainText(/WAIT|NEXT|KICK/)
+  await expect(interrupt.locator('i')).toHaveCount(5)
+  await expect(interrupt.locator('i.assigned')).toHaveCount(1)
+  await expect(interrupt).toContainText(/WAIT|NEXT|KICK|INTERRUPTED/)
+  await expect(page.getByRole('progressbar', { name: /Dangerous cone cast/ })).toBeVisible()
 })
 
-test('keeps both Phase 1 Heaven Glaive sets alive when the second set launches', async ({ page }) => {
+test('despawns the first Phase 1 Heaven Glaive set before the second sequence launches', async ({ page }) => {
   test.setTimeout(90_000)
   await page.addInitScript(() => {
     localStorage.setItem('lura-game-speed', '2.5')
@@ -56,7 +57,9 @@ test('keeps both Phase 1 Heaven Glaive sets alive when the second set launches',
   await expect(page.locator('.p1-rune-grid strong.personal')).toHaveCount(1)
   await expect(arena).toHaveAttribute('data-event', 'p1-beam-position', { timeout: 40_000 })
   await expect(page.getByRole('heading', { name: 'Hold behind L’ura.' })).toBeVisible()
-  await expect(arena).toHaveAttribute('data-p1-glaive-sets', '2', { timeout: 55_000 })
+  await expect(arena).toHaveAttribute('data-p1-glaive-sets', '0')
+  await expect(arena).toHaveAttribute('data-p1-glaive-set-ids', '2', { timeout: 55_000 })
+  await expect(arena).toHaveAttribute('data-p1-glaive-sets', '1')
   const firstTime = Number(await arena.getAttribute('data-event-time'))
   await page.waitForTimeout(500)
   const laterTime = Number(await arena.getAttribute('data-event-time'))

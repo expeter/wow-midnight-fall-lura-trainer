@@ -278,12 +278,22 @@
 .splinter-counter.p3-duty-counter > span + span { padding-left: 10px; border-left: 1px solid rgba(255,225,61,.4); color: #ffe13d; }
 .splinter-counter.p3-duty-counter > span.spent { color: #9a9ca8; }
 .splinter-counter.p1-interrupt-counter { display: flex; gap: 10px; align-items: center; }
-.p1-interrupt-display { position: absolute; z-index: 6; width: 100px; height: 100px; transform: translate(-50%,-50%); display: grid; place-content: center; gap: 5px; border: 3px solid currentColor; border-radius: 14px; text-align: center; color: #fff; background: rgba(40,8,12,.94); box-shadow: 0 0 28px currentColor; pointer-events: none; font-family: 'DM Mono', monospace; }
+.p1-interrupt-display { position: absolute; z-index: 6; left: 50%; bottom: 5%; width: 250px; transform: translateX(-50%); display: grid; place-content: center; gap: 6px; padding: 10px 14px; border: 2px solid currentColor; border-radius: 10px; text-align: center; color: #fff; background: rgba(40,8,12,.94); box-shadow: 0 0 22px currentColor; pointer-events: none; font-family: 'DM Mono', monospace; }
 .p1-interrupt-display span { font-size: 12px; letter-spacing: .09em; }
-.p1-interrupt-display strong { font-size: 25px; line-height: 1; }
+.p1-interrupt-display > div { display: flex; justify-content: center; gap: 7px; }
+.p1-interrupt-display i { display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid currentColor; border-radius: 50%; font-style: normal; opacity: .55; }
+.p1-interrupt-display i.current { opacity: 1; box-shadow: 0 0 10px currentColor; }
+.p1-interrupt-display i.assigned { border-width: 3px; }
+.p1-interrupt-display i.resolved { color: #73e0a2; opacity: .75; }
+.p1-interrupt-display strong { font-size: 15px; line-height: 1; }
 .p1-interrupt-display.red { color: #ff4359; background: rgba(47,6,12,.94); }
 .p1-interrupt-display.yellow { color: #ff9e32; background: rgba(55,27,4,.95); }
 .p1-interrupt-display.green { color: #43f08e; background: rgba(4,48,25,.95); }
+.p1-boss-cast { position: absolute; z-index: 6; left: 50%; bottom: 16%; width: 270px; transform: translateX(-50%); overflow: hidden; border: 1px solid #ff6685; border-radius: 5px; color: #fff; background: rgba(35,5,12,.9); text-align: center; pointer-events: none; font: 10px/18px 'DM Mono', monospace; }
+.p1-boss-cast span { position: relative; z-index: 1; }
+.p1-boss-cast i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, #8e1734, #ff315f); transition: width .04s linear; }
+.p1-boss-cast.interrupted { border-color: #73e0a2; }
+.p1-boss-cast.interrupted i { background: #267451; }
 .start-countdown { position: absolute; z-index: 5; left: 50%; top: 50%; transform: translate(-50%, -50%); color: #fff; text-shadow: 0 0 22px rgba(115,224,193,.95), 0 3px 4px #000; pointer-events: none; font: 800 92px Manrope, sans-serif; animation: countdown-pulse .9s ease-out infinite; }
 @keyframes countdown-pulse { from { transform: translate(-50%, -50%) scale(1.12); opacity: 1; } to { transform: translate(-50%, -50%) scale(.86); opacity: .55; } }
 .player-health { position: absolute; z-index: 5; left: 50%; top: 86%; transform: translate(-50%, -50%); width: 270px; padding: 7px 9px; border: 1px solid rgba(115,224,193,.45); border-radius: 7px; background: rgba(5,8,16,.86); text-align: center; pointer-events: none; }
@@ -918,7 +928,8 @@
 .rune-order strong.done { opacity: .38; }
 .rune-order strong.failed { color: #ff5c68; border-color: #ff5c68; background: rgba(130, 12, 30, .76); }
 .p1-rune-order {
-  top: 21%;
+  top: auto;
+  bottom: 5%;
   display: block;
   width: 220px;
   padding: 10px 12px 12px;
@@ -940,11 +951,16 @@
   border-radius: 7px;
   font-size: 24px;
 }
-.p1-rune-grid strong:nth-child(1) { grid-area: 3 / 1; }
-.p1-rune-grid strong:nth-child(2) { grid-area: 2 / 1; }
-.p1-rune-grid strong:nth-child(3) { grid-area: 1 / 2; }
-.p1-rune-grid strong:nth-child(4) { grid-area: 2 / 3; }
-.p1-rune-grid strong:nth-child(5) { grid-area: 3 / 3; }
+.p1-rune-order.positional .p1-rune-grid strong:nth-child(1) { grid-area: 3 / 1; }
+.p1-rune-order.positional .p1-rune-grid strong:nth-child(2) { grid-area: 2 / 1; }
+.p1-rune-order.positional .p1-rune-grid strong:nth-child(3) { grid-area: 1 / 2; }
+.p1-rune-order.positional .p1-rune-grid strong:nth-child(4) { grid-area: 2 / 3; }
+.p1-rune-order.positional .p1-rune-grid strong:nth-child(5) { grid-area: 3 / 3; }
+.p1-rune-order.pentagram .p1-rune-grid strong:nth-child(1) { grid-area: 1 / 3; }
+.p1-rune-order.pentagram .p1-rune-grid strong:nth-child(2) { grid-area: 2 / 3; }
+.p1-rune-order.pentagram .p1-rune-grid strong:nth-child(3) { grid-area: 3 / 2; }
+.p1-rune-order.pentagram .p1-rune-grid strong:nth-child(4) { grid-area: 2 / 1; }
+.p1-rune-order.pentagram .p1-rune-grid strong:nth-child(5) { grid-area: 1 / 1; }
 .p1-rune-grid strong small {
   position: absolute;
   top: -12px;

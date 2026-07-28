@@ -30,8 +30,11 @@ of Git and screenshots.
      `/etc/lura-api/env` and the protected GitHub environment.
    - Enable only the WoW profile scope needed to read the account's characters.
 3. **VPS access**
-   - Confirm Node.js 22.13 or newer, `systemd`, `sqlite3`, `curl`, `rsync`,
-     and the existing Caddy installation.
+   - Install Node.js 22.13 or newer as the isolated runtime
+     `/opt/lura-api/runtime/bin/node`; do not replace another site's global
+     Node installation.
+   - Confirm `systemd`, `sqlite3`, `curl`, `rsync`, and the existing Caddy
+     installation.
    - Create a dedicated deployment user that may write only the L'ura release
      directory and restart `lura-api.service` through a narrow `sudoers` rule.
    - Create a dedicated SSH deployment key. Put only its public key on the VPS.

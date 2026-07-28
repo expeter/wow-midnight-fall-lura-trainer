@@ -12,6 +12,11 @@ if [[ -z "${release_directory}" || ! -f "${release_directory}/package-lock.json"
   exit 1
 fi
 
+if [[ ! -x /opt/lura-api/runtime/bin/node ]]; then
+  echo "install the isolated Node 22 runtime at /opt/lura-api/runtime before setup" >&2
+  exit 1
+fi
+
 if ! id lura-api >/dev/null 2>&1; then
   useradd --system --home /var/lib/lura-api --shell /usr/sbin/nologin lura-api
 fi
@@ -27,7 +32,7 @@ if [[ ! -f /etc/lura-api/env ]]; then
 fi
 
 cd "${release_directory}"
-npm ci --omit=dev
+PATH="/opt/lura-api/runtime/bin:${PATH}" npm ci --omit=dev
 install -o root -g root -m 0644 deploy/lura-api.service /etc/systemd/system/lura-api.service
 install -d -o root -g root -m 0755 /opt/lura-api/bin
 install -o root -g root -m 0755 scripts/activate-release.sh /opt/lura-api/bin/activate-release

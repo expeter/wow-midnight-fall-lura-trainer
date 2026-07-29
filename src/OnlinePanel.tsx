@@ -44,12 +44,26 @@ export function OnlineStandingSummary({ session, onManage }: { session: OnlineSe
   </aside>
 }
 
-export default function OnlinePanel({ onSession }: { onSession: (session: OnlineSession) => void }) {
+export default function OnlinePanel({
+  onSession,
+  view = 'leaderboard',
+  compact = false,
+  difficulty: requestedDifficulty,
+  duty: requestedDuty,
+  onOpenLeaderboard,
+}: {
+  onSession: (session: OnlineSession) => void
+  view?: 'profile' | 'leaderboard'
+  compact?: boolean
+  difficulty?: 'normal' | 'hard'
+  duty?: 'crystal' | 'non-crystal'
+  onOpenLeaderboard?: () => void
+}) {
   const [session, setSession] = useState<OnlineSession>({ authenticated: false })
   const [characters, setCharacters] = useState<OnlineCharacter[]>([])
   const [onlineAchievements, setOnlineAchievements] = useState<OnlineAchievement[]>([])
-  const [difficulty, setDifficulty] = useState<'normal' | 'hard'>('hard')
-  const [duty, setDuty] = useState<'crystal' | 'non-crystal'>('crystal')
+  const [difficulty, setDifficulty] = useState<'normal' | 'hard'>(requestedDifficulty ?? 'hard')
+  const [duty, setDuty] = useState<'crystal' | 'non-crystal'>(requestedDuty ?? 'crystal')
   const [search, setSearch] = useState('')
   const [rows, setRows] = useState<LeaderboardRow[]>([])
   const [leaderboardLoaded, setLeaderboardLoaded] = useState(false)
@@ -59,7 +73,6 @@ export default function OnlinePanel({ onSession }: { onSession: (session: Online
   const [identityMode, setIdentityMode] = useState<'anonymous' | 'alias' | 'character'>('anonymous')
   const [alias, setAlias] = useState('')
   const [showGuild, setShowGuild] = useState(false)
-  const [view, setView] = useState<'profile' | 'leaderboard'>('leaderboard')
 
   async function refreshSession() {
     try {
@@ -67,7 +80,6 @@ export default function OnlinePanel({ onSession }: { onSession: (session: Online
       setSession(next)
       onSession(next)
       if (next.authenticated) {
-        setView('profile')
         setIdentityMode(next.privacy?.identityMode ?? 'anonymous')
         setAlias(next.privacy?.alias ?? '')
         setShowGuild(Boolean(next.privacy?.showGuild))
@@ -109,22 +121,21 @@ export default function OnlinePanel({ onSession }: { onSession: (session: Online
 
   useEffect(() => { void refreshSession() }, [])
   useEffect(() => { void refreshLeaderboard() }, [difficulty, duty, showFullLeaderboard])
+  useEffect(() => { if (requestedDifficulty) setDifficulty(requestedDifficulty) }, [requestedDifficulty])
+  useEffect(() => { if (requestedDuty) setDuty(requestedDuty) }, [requestedDuty])
 
   const csrf = session.csrfToken ?? ''
+  const ownStanding = session.standings?.find(row => row.difficulty === difficulty && row.duty === duty)
   const displayedRows = rows.length || !leaderboardLoaded || !['localhost', '127.0.0.1'].includes(window.location.hostname)
     ? rows
     : LOCAL_FIXTURES
   const selectedCharacter = characters.find(character => character.selected)
-  return <section className="online-panel" aria-labelledby="online-title">
+  return <section className={`online-panel ${compact ? 'compact' : ''}`} aria-labelledby="online-title">
     <header>
       <div><p className="eyebrow">Optional online profile</p><h2 id="online-title">{view === 'profile' ? 'My characters' : showFullLeaderboard ? 'Full leaderboard' : 'Top 10 leaderboard'}</h2></div>
       <a href={`${import.meta.env.BASE_URL}privacy.html`}>Privacy</a>
     </header>
     <p role="status">{status}</p>
-    <nav className="online-view-tabs" aria-label="Online sections">
-      {session.authenticated && <button className={view === 'profile' ? 'selected' : ''} aria-current={view === 'profile' ? 'page' : undefined} onClick={() => setView('profile')}>My characters</button>}
-      <button className={view === 'leaderboard' ? 'selected' : ''} aria-current={view === 'leaderboard' ? 'page' : undefined} onClick={() => setView('leaderboard')}>Leaderboard</button>
-    </nav>
     {view === 'profile' && session.authenticated ? <div className="online-account">
       <div className="online-explainer">
         <strong>Choose who represents your verified runs</strong>
@@ -184,26 +195,35 @@ export default function OnlinePanel({ onSession }: { onSession: (session: Online
           }
         }}>Delete all my online data</button>
       </details>
-    </div> : view === 'profile' ? null : <div className="online-leaderboard">
+    </div> : view === 'profile' ? <div className="online-profile-login">
       <div className="online-explainer">
-        <strong>Verified public rankings</strong>
-        <p>Each row is one player’s best server-verified result for the selected difficulty and duty. Rank is ordered by score, then completion time.</p>
+        <strong>Connect your own characters</strong>
+        <p>Battle.net login imports only the WoW characters owned by your account. Anonymous practice remains available without signing in.</p>
       </div>
-      {!session.authenticated && <div className="online-login">
-        <span>Want your runs listed?</span>
+      <div className="online-login">
         <label>Region<select aria-label="Battle.net region" value={loginRegion} onChange={event => setLoginRegion(event.target.value as 'eu' | 'us')}>
           <option value="eu">EU</option><option value="us">US</option>
         </select></label>
         <a className="button-link" href={battleNetLoginUrl(loginRegion)}>Login with Battle.net</a>
-      </div>}
-      <div className="leaderboard-controls">
-        <label>Difficulty<select aria-label="Leaderboard difficulty" value={difficulty} onChange={event => setDifficulty(event.target.value as 'normal' | 'hard')}>
-          <option value="normal">Normal</option><option value="hard">Hard</option>
-        </select></label>
-        <label>Assignment<select aria-label="Leaderboard duty" value={duty} onChange={event => setDuty(event.target.value as 'crystal' | 'non-crystal')}>
-          <option value="crystal">Crystal carrier</option><option value="non-crystal">Non-crystal</option>
-        </select></label>
       </div>
+    </div> : <div className={`online-leaderboard ${compact ? 'compact' : ''}`}>
+      <div className="online-explainer">
+        <strong>Verified public rankings</strong>
+        <p>Each row is one player’s best server-verified result for the selected difficulty and duty. Rank is ordered by score, then completion time.</p>
+      </div>
+      {compact ? <p className="compact-leaderboard-filter">{difficulty === 'hard' ? 'Hard' : 'Normal'} · {duty === 'crystal' ? 'Crystal carrier' : 'Non-crystal'} · Top 10</p> : <div className="leaderboard-categories" aria-label="Leaderboard categories">
+        {([
+          ['normal', 'crystal', 'Normal · Crystal'],
+          ['hard', 'crystal', 'Hard · Crystal'],
+          ['normal', 'non-crystal', 'Normal · Non-crystal'],
+          ['hard', 'non-crystal', 'Hard · Non-crystal'],
+        ] as const).map(([nextDifficulty, nextDuty, label]) => <button
+          key={`${nextDifficulty}-${nextDuty}`}
+          className={difficulty === nextDifficulty && duty === nextDuty ? 'selected' : ''}
+          aria-current={difficulty === nextDifficulty && duty === nextDuty ? 'page' : undefined}
+          onClick={() => { setDifficulty(nextDifficulty); setDuty(nextDuty) }}
+        >{label}</button>)}
+      </div>}
       <div className="leaderboard-columns" aria-hidden="true"><span>Rank and player</span><span>Guild · score · time</span></div>
       {displayedRows.length ? <ol className={`leaderboard-rows ${showFullLeaderboard ? 'full' : 'top-ten'}`}>
         {displayedRows.map((row, index) => <li key={`${row.displayName}-${row.durationMs}-${index}`}>
@@ -213,7 +233,11 @@ export default function OnlinePanel({ onSession }: { onSession: (session: Online
           <span>{row.guild ? `${row.guild} · ` : ''}{row.score} pts · {(row.durationMs / 1000).toFixed(1)}s</span>
         </li>)}
       </ol> : <p>No matching verified results yet.</p>}
-      <div className="leaderboard-search">
+      {ownStanding && <div className="leaderboard-own-position" aria-label="Your leaderboard position">
+        <span aria-hidden="true">…</span>
+        <p><b>{ownStanding.position}. Your verified position</b><span>{ownStanding.score} pts · {(ownStanding.durationMs / 1000).toFixed(1)}s</span></p>
+      </div>}
+      {!compact && <div className="leaderboard-search">
         <label><span>Find a public ranking</span><small>Searches public character names, aliases, realms, and guilds—not your Battle.net character list.</small>
           <input aria-label="Search public leaderboard" value={search} onChange={event => setSearch(event.target.value)} placeholder="Character, alias, realm, or guild" />
         </label>
@@ -221,7 +245,8 @@ export default function OnlinePanel({ onSession }: { onSession: (session: Online
         <button className="secondary full-leaderboard-toggle" onClick={() => setShowFullLeaderboard(current => !current)}>
           {showFullLeaderboard ? 'Back to Top 10' : 'View full leaderboard'}
         </button>
-      </div>
+      </div>}
+      {compact && <button className="secondary full-leaderboard-toggle compact-leaderboard-link" onClick={onOpenLeaderboard}>Open full leaderboard</button>}
     </div>}
   </section>
 }

@@ -27,8 +27,14 @@ describe('optional online profile', () => {
       }
       throw new Error(`unexpected ${url}`)
     }))
-    render(<OnlinePanel onSession={() => undefined} />)
+    const view = render(<OnlinePanel view="leaderboard" onSession={() => undefined} />)
     expect(await screen.findByText(/Anonymous play remains fully available/)).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Login with Battle.net' })).not.toBeInTheDocument()
+    expect(await screen.findByText('1200 pts · 300.0s')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Top 10 leaderboard' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'View full leaderboard' }))
+    expect(await screen.findByRole('heading', { name: 'Full leaderboard' })).toBeInTheDocument()
+    view.rerender(<OnlinePanel view="profile" onSession={() => undefined} />)
     expect(screen.getByRole('link', { name: 'Login with Battle.net' })).toHaveAttribute(
       'href',
       'http://127.0.0.1:8787/v1/auth/battlenet/start?region=eu',
@@ -38,10 +44,6 @@ describe('optional online profile', () => {
       'href',
       'http://127.0.0.1:8787/v1/auth/battlenet/start?region=us',
     )
-    expect(await screen.findByText('1200 pts · 300.0s')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Top 10 leaderboard' })).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'View full leaderboard' }))
-    expect(await screen.findByRole('heading', { name: 'Full leaderboard' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Privacy' })).toHaveAttribute('href', '/privacy.html')
   })
 
@@ -63,7 +65,7 @@ describe('optional online profile', () => {
       if (url.includes('/v1/leaderboards')) return json({ rows: [] })
       throw new Error(`unexpected ${url}`)
     }))
-    render(<OnlinePanel onSession={() => undefined} />)
+    render(<OnlinePanel view="leaderboard" onSession={() => undefined} />)
     const character = await screen.findByRole('link', { name: 'Aegis' })
     expect(character).toHaveAttribute(
       'href',
@@ -89,6 +91,7 @@ describe('optional online profile', () => {
           showGuild: 0,
           selectedCharacterId: null,
         },
+        standings: [{ difficulty: 'hard', duty: 'crystal', position: 18, score: 1110, durationMs: 320000 }],
       })
       if (url.endsWith('/v1/me/characters')) return json({ rows: [{
         id: 7,
@@ -109,8 +112,8 @@ describe('optional online profile', () => {
       throw new Error(`unexpected ${url}`)
     }))
     const user = userEvent.setup()
-    render(<OnlinePanel onSession={() => undefined} />)
-    const heading = await screen.findByRole('heading', { name: 'My characters' })
+    const view = render(<OnlinePanel view="profile" onSession={() => undefined} />)
+    const heading = await within(view.container).findByRole('heading', { name: 'My characters' })
     const panel = heading.closest('section')!
     expect(within(panel).queryByText('Verified public rankings')).not.toBeInTheDocument()
     const character = within(panel).getByLabelText(/Active character/)
@@ -131,9 +134,11 @@ describe('optional online profile', () => {
       && request.body.includes('"alias":"Runner"')
       && request.body.includes('"showGuild":true')
     ))).toBe(true))
-    await user.click(within(panel).getByRole('button', { name: 'Leaderboard' }))
-    expect(within(panel).getByText('Verified public rankings')).toBeInTheDocument()
-    expect(within(panel).getByText(/Searches public character names/)).toBeInTheDocument()
-    expect(within(panel).queryByLabelText(/Active character/)).not.toBeInTheDocument()
+    view.rerender(<OnlinePanel view="leaderboard" onSession={() => undefined} />)
+    const leaderboardPanel = view.container.querySelector('section')!
+    expect(within(leaderboardPanel).getByText('Verified public rankings')).toBeInTheDocument()
+    expect(within(leaderboardPanel).getByText(/Searches public character names/)).toBeInTheDocument()
+    expect(within(leaderboardPanel).queryByLabelText(/Active character/)).not.toBeInTheDocument()
+    expect(within(leaderboardPanel).getByLabelText('Your leaderboard position')).toHaveTextContent('18. Your verified position')
   })
 })

@@ -11,38 +11,52 @@ test('publishes the trainer favicon', async ({ page, request }) => {
 
 test('keeps optional login and public leaderboards usable without the API', async ({ page }) => {
   await page.goto('/')
-  await page.getByRole('button', { name: 'Online profile & leaderboard' }).click()
+  await page.getByRole('button', { name: 'Leaderboard', exact: true }).click()
   const panel = page.getByRole('region', { name: 'Top 10 leaderboard' })
   await expect(panel).toBeVisible()
   await expect(panel.getByText(/Local play still works|Anonymous play remains fully available/)).toBeVisible()
-  await expect(panel.getByRole('link', { name: 'Login with Battle.net' })).toHaveAttribute(
+  await expect(panel.getByRole('link', { name: 'Login with Battle.net' })).toHaveCount(0)
+  await expect(panel.getByRole('button', { name: 'Normal · Crystal' })).toBeVisible()
+  await expect(panel.getByRole('button', { name: 'Hard · Crystal' })).toBeVisible()
+  await expect(panel.getByRole('button', { name: 'Normal · Non-crystal' })).toBeVisible()
+  await expect(panel.getByRole('button', { name: 'Hard · Non-crystal' })).toBeVisible()
+  await expect(panel.getByLabel('Search public leaderboard')).toBeVisible()
+  await page.getByRole('button', { name: 'Profile', exact: true }).click()
+  const profile = page.getByRole('region', { name: 'My characters' })
+  await expect(profile.getByRole('link', { name: 'Login with Battle.net' })).toHaveAttribute(
     'href',
     'http://127.0.0.1:8787/v1/auth/battlenet/start?region=eu',
   )
-  await panel.getByLabel('Battle.net region').selectOption('us')
-  await expect(panel.getByRole('link', { name: 'Login with Battle.net' })).toHaveAttribute(
+  await profile.getByLabel('Battle.net region').selectOption('us')
+  await expect(profile.getByRole('link', { name: 'Login with Battle.net' })).toHaveAttribute(
     'href',
     'http://127.0.0.1:8787/v1/auth/battlenet/start?region=us',
   )
-  await expect(panel.getByRole('link', { name: 'Privacy' })).toHaveAttribute('href', '/privacy.html')
-  await expect(panel.getByRole('button', { name: 'View full leaderboard' })).toBeVisible()
-  const box = await panel.boundingBox()
+  await expect(profile.getByRole('link', { name: 'Privacy' })).toHaveAttribute('href', '/privacy.html')
+  const box = await profile.boundingBox()
   expect(box).not.toBeNull()
   expect(box!.x).toBeGreaterThanOrEqual(0)
   expect(box!.x + box!.width).toBeLessThanOrEqual(await page.evaluate(() => innerWidth))
 })
 
-test('keeps practice first while exposing Online and Raid plan as shallow tabs', async ({ page }) => {
+test('shows one of six setup sections and keeps the current Top 10 below game settings', async ({ page }) => {
   await page.goto('/')
   const practice = page.getByRole('heading', { name: 'Practice configuration' })
-  const assignment = page.getByRole('group', { name: 'Selected assignment' })
+  const assignment = page.getByRole('group', { name: 'Character to play' })
   const difficulty = page.getByRole('group', { name: 'Difficulty & movement' })
   await expect(practice).toBeVisible()
   await expect(assignment.getByLabel('Your player name')).toBeVisible()
   await expect(difficulty.getByLabel('Your player name')).toHaveCount(0)
+  await expect(page.getByLabel('Current practice configuration')).toContainText('Normal · Non-crystal')
+  await expect(page.getByRole('heading', { name: 'Top 10 leaderboard' })).toBeVisible()
   const tabs = page.getByRole('navigation', { name: 'Setup sections' })
-  await expect(tabs.getByRole('button')).toHaveCount(3)
-  await tabs.getByRole('button', { name: 'Online profile & leaderboard' }).click()
+  await expect(tabs.getByRole('button')).toHaveCount(6)
+  await tabs.getByRole('button', { name: 'Keyboard settings' }).click()
+  await expect(page.getByRole('heading', { name: 'Keyboard & mouse controls' })).toBeVisible()
+  await expect(practice).toBeHidden()
+  await tabs.getByRole('button', { name: 'HUD' }).click()
+  await expect(page.getByRole('heading', { name: 'HUD positions' })).toBeVisible()
+  await tabs.getByRole('button', { name: 'Leaderboard' }).click()
   await expect(page.getByRole('heading', { name: 'Top 10 leaderboard' })).toBeVisible()
   await page.getByRole('region', { name: 'Top 10 leaderboard' }).getByRole('button', { name: 'View full leaderboard' }).click()
   await expect(page.getByRole('heading', { name: 'Full leaderboard' })).toBeVisible()
@@ -80,6 +94,7 @@ test('creator card stays inside the setup layout with readable text', async ({ p
 test('raid sharing spans the setup width between HUD settings and raid planning', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.goto('/')
+  await page.getByRole('button', { name: 'HUD' }).click()
   const hud = page.getByLabel('Phase 2 HUD layout preview')
   const hudBounds = await hud.boundingBox()
   await page.getByRole('button', { name: 'Raid plan', exact: true }).click()
@@ -99,7 +114,7 @@ test('game settings use one compact three-card row on desktop', async ({ page })
   await page.goto('/')
   const cards = [
     page.getByRole('group', { name: 'Difficulty & movement' }),
-    page.getByRole('group', { name: 'Selected assignment' }),
+    page.getByRole('group', { name: 'Character to play' }),
     page.getByRole('group', { name: 'Combat actions' }),
   ]
   const bounds = await Promise.all(cards.map(card => card.boundingBox()))
@@ -121,37 +136,18 @@ test('game settings use one compact three-card row on desktop', async ({ page })
   }
 })
 
-test('setup topics use one clear heading hierarchy in document order', async ({ page }) => {
+test('setup tabs preserve the raid-plan hash and expose one section at a time', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.goto('/')
-  const practiceHeadings = [
-    page.getByRole('heading', { name: 'Practice configuration' }),
-    page.getByRole('heading', { name: 'Keyboard & mouse controls' }),
-    page.getByRole('heading', { name: 'HUD positions' }),
-  ]
-  const bounds = await Promise.all(practiceHeadings.map(heading => heading.boundingBox()))
-  expect(bounds.every(Boolean)).toBe(true)
-  for (let index = 1; index < bounds.length; index += 1) {
-    expect(bounds[index]!.y).toBeGreaterThan(bounds[index - 1]!.y)
-  }
-  await expect(page.getByRole('group', { name: 'Input bindings' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Practice configuration' })).toBeVisible()
   await expect(page.getByText('GAME SETTINGS', { exact: true })).toBeVisible()
-  await expect(page.getByText('KEYBOARD SETTINGS', { exact: true })).toBeVisible()
-
-  const headingContentPairs = [
-    [page.getByRole('heading', { name: 'Practice configuration' }).locator('..'), page.getByRole('group', { name: 'Difficulty & movement' })],
-    [page.getByRole('heading', { name: 'Keyboard & mouse controls' }).locator('..'), page.getByRole('group', { name: 'Input bindings' })],
-  ]
-  for (const [heading, content] of headingContentPairs) {
-    const [headingBounds, contentBounds] = await Promise.all([heading.boundingBox(), content.boundingBox()])
-    expect(headingBounds).not.toBeNull()
-    expect(contentBounds).not.toBeNull()
-    expect(contentBounds!.y - (headingBounds!.y + headingBounds!.height)).toBeGreaterThanOrEqual(10)
-    expect(contentBounds!.y - (headingBounds!.y + headingBounds!.height)).toBeLessThanOrEqual(18)
-  }
+  await expect(page.getByText('KEYBOARD SETTINGS', { exact: true })).toBeHidden()
 
   const jumpNav = page.getByRole('navigation', { name: 'Setup sections' })
-  await expect(jumpNav.getByRole('button')).toHaveCount(3)
+  await expect(jumpNav.getByRole('button')).toHaveCount(6)
+  await jumpNav.getByRole('button', { name: 'Keyboard settings' }).click()
+  await expect(page.getByRole('group', { name: 'Input bindings' })).toBeVisible()
+  await expect(page.getByText('GAME SETTINGS', { exact: true })).toBeHidden()
   await page.evaluate(() => history.replaceState(null, '', '#raidplan=preserve-this-hash'))
   await jumpNav.getByRole('button', { name: 'Raid plan' }).click()
   await expect(page).toHaveURL(/#raidplan=preserve-this-hash$/)

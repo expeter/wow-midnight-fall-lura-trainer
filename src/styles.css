@@ -24,7 +24,7 @@
 .setup-jump-nav a:hover, .setup-jump-nav a:focus-visible { color: #c9fff1; text-decoration-color: #73e0c1; outline: none; }
 .setup-tabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 8px;
   margin: 18px 0 8px;
   padding: 7px;
@@ -35,6 +35,16 @@
 .setup-tabs button { min-height: 46px; margin: 0; background: transparent; color: #9ba8c2; }
 .setup-tabs button.selected { color: #d9fff5; background: rgba(55,151,132,.22); border-color: #73e0c1; }
 .setup-tab-panel[hidden] { display: none; }
+.current-run-summary {
+  margin: 8px 0 0;
+  padding: 9px 13px;
+  border: 1px solid rgba(115,224,193,.22);
+  border-radius: 9px;
+  background: rgba(7,15,28,.62);
+  color: #aebbd0;
+  font: 12px 'DM Mono', monospace;
+}
+.current-run-summary strong { color: #73e0c1; text-transform: uppercase; letter-spacing: .06em; }
 .position-map { position: relative; width: min(100%, 952px); aspect-ratio: 16 / 9; margin: 0 0 24px; border: 1px solid #354361; border-radius: 12px; background-size: 140%; background-position: center; overflow: hidden; }
 .position-map::before, .position-map::after { content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); aspect-ratio: 1; border: 2px solid rgba(190,185,232,.78); border-radius: 50%; pointer-events: none; }
 .position-map::before { width: 36.7%; }
@@ -1121,6 +1131,7 @@
   border-radius: 16px;
   background: linear-gradient(135deg, rgba(35, 29, 72, .92), rgba(12, 14, 34, .96));
 }
+.online-panel.compact { padding: 1rem; }
 .setup-overview { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, .65fr); gap: 12px; align-items: stretch; }
 .setup-overview .achievement-summary-link { margin: 0; }
 .online-standing-summary {
@@ -1219,8 +1230,18 @@
 .online-guild-toggle input { flex: 0 0 auto; margin-top: 3px; accent-color: #73e0c1; }
 .online-guild-toggle span { color: #d9e4f4; font-size: 14px; }
 .online-leaderboard { display: grid; gap: 13px; }
+.online-leaderboard.compact { margin-top: 20px; }
+.online-leaderboard.compact .online-explainer { display: none; }
 .leaderboard-controls { margin-top: 2px; }
 .leaderboard-controls label { flex: 1 1 190px; }
+.leaderboard-categories {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.leaderboard-categories button { min-height: 58px; margin: 0; background: rgba(10,18,35,.7); color: #aebbd0; }
+.leaderboard-categories button.selected { border-color: #73e0c1; background: rgba(53,151,132,.22); color: #d9fff5; }
+.compact-leaderboard-filter { color: #73e0c1; font: 12px 'DM Mono', monospace; letter-spacing: .05em; text-transform: uppercase; }
 .leaderboard-columns { display: flex; justify-content: space-between; padding: 0 12px; color: #7f8da7; font: 10px 'DM Mono', monospace; letter-spacing: .08em; text-transform: uppercase; }
 .leaderboard-search { align-items: end; margin-top: .25rem; }
 .leaderboard-search label { flex: 1 1 320px; }
@@ -1235,6 +1256,9 @@
   background: rgba(255,255,255,.055);
 }
 .leaderboard-rows a { color: #8ff0d3; text-decoration-color: rgba(143,240,211,.45); text-underline-offset: 3px; }
+.leaderboard-own-position > span { display: block; padding-left: 18px; color: #74829b; font: 20px 'DM Mono', monospace; letter-spacing: .18em; }
+.leaderboard-own-position p { display: flex; justify-content: space-between; gap: 1rem; padding: .7rem .8rem; border: 1px solid rgba(115,224,193,.4); border-radius: 8px; background: rgba(53,151,132,.12); color: #d9fff5; }
+.compact-leaderboard-link { justify-self: end; }
 .danger { background: #8b2941 !important; }
 .online-result-status {
   padding: .75rem;
@@ -1243,7 +1267,9 @@
 }
 @media (max-width: 700px) {
   .setup-overview { grid-template-columns: 1fr; }
-  .setup-tabs { grid-template-columns: 1fr; }
+  .setup-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .online-account { grid-template-columns: 1fr; }
+  .leaderboard-categories { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .leaderboard-rows li { flex-direction: column; gap: .2rem; }
+  .leaderboard-own-position p { flex-direction: column; }
 }

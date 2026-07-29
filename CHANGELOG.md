@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- CR-153: Split setup into six one-active-section tabs, keep character choice
+  and a compact current-category Top 10 in Game settings, and make Leaderboard
+  a rankings-only view with four primary categories and the user's rank below
+  the first ten rows.
 - CR-152: Split online character/profile management from public rankings,
   explain visibility saves, leaderboard rows, filters, and search, and restyle
   the controls to match the trainer.

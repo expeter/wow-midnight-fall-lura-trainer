@@ -144,7 +144,7 @@ test('a shared hash plan drives every live phase and survives a clean reload', a
     await page.getByRole('button', { name: 'Exit' }).click()
   }
 
-  await page.getByRole('button', { name: 'Practice settings' }).click()
+  await page.getByRole('button', { name: 'Game settings' }).click()
   await page.getByRole('button', { name: 'easy' }).click()
   await enterAndInspect('Intermission')
   await enterAndInspect('P2')
@@ -195,7 +195,7 @@ test('shows the early crystal drop warning on Easy only', async ({ page }) => {
 test('continues the current Phase 2 sequence after the first Normal wipe', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('lura-game-speed', '2.5'))
   await page.goto('/')
-  await page.getByLabel('Assignment position').fill('8')
+  await page.getByLabel('Character to play').selectOption('8')
   await page.getByRole('button', { name: 'P2', exact: true }).click()
   await page.getByRole('button', { name: /Enter P2/ }).click()
 
@@ -222,7 +222,7 @@ test('Space jumps while actions are locked and P pauses', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('lura-game-speed', '2.5'))
   await page.goto('/')
   await page.getByRole('button', { name: 'easy' }).click()
-  await page.getByLabel('Assignment position').fill('8')
+  await page.getByLabel('Character to play').selectOption('8')
   await page.getByRole('button', { name: 'Intermission', exact: true }).click()
   await page.getByRole('button', { name: /Enter Intermission/ }).click()
 
@@ -302,7 +302,7 @@ test('enters Phase 3 directly in non-blocking Test mode', { tag: '@late-arena' }
   await page.addInitScript(() => localStorage.setItem('lura-game-speed', '2.5'))
   await page.goto('/')
   await page.getByRole('button', { name: 'test' }).click()
-  await page.getByLabel('Assignment position').fill('8')
+  await page.getByLabel('Character to play').selectOption('8')
   await page.getByRole('button', { name: 'P3', exact: true }).click()
   await page.getByRole('button', { name: /Enter P3/ }).click()
 

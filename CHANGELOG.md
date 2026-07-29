@@ -13,6 +13,11 @@
   without adding a public bypass or awarding unverifiable achievements.
 - CR-163: Keep all five phase cards and wrapped completion details inside the
   copied result image.
+- BUG-112: Store authenticated Normal/Hard wipes independently from profile
+  visibility, resolve identity when reading the feed, and backfill the
+  explicitly confirmed Pestivator Phase 4 wipe.
+- FR-061: Add future-only first-earned achievement events to the same
+  privacy-aware chronological activity feed without backfilling history.
 
 ## 0.4.1 · 2026-07-29
 

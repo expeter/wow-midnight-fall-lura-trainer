@@ -10,12 +10,13 @@ afterEach(() => {
 })
 
 describe('online attempt integration', () => {
-  it('shows the public wipe feed with a Raider.IO character link', async () => {
+  it('shows chronological wipe and achievement activity with a Raider.IO character link', async () => {
     history.replaceState(null, '', '/?wipe-feed-test=1')
     vi.stubGlobal('fetch', vi.fn(async input => {
       const url = String(input)
-      if (url.includes('/v1/wipes')) return Response.json({ rows: [{
-        id: 1,
+      if (url.includes('/v1/activity')) return Response.json({ rows: [{
+        id: 'wipe:1',
+        type: 'wipe',
         displayName: 'Lurana',
         character: 'Lurana',
         realm: 'silvermoon',
@@ -25,6 +26,20 @@ describe('online attempt integration', () => {
         reason: 'Touched a Stars beam',
         trainerVersion: '0.3.0',
         occurredAt: '2026-07-29T18:00:00.000Z',
+        achievementTitle: null,
+      }, {
+        id: 'achievement:1',
+        type: 'achievement',
+        displayName: 'Lurana',
+        character: 'Lurana',
+        realm: 'silvermoon',
+        region: 'eu',
+        phase: null,
+        difficulty: null,
+        reason: null,
+        achievementTitle: 'Ready for Raid Night',
+        trainerVersion: '0.3.0',
+        occurredAt: '2026-07-29T18:01:00.000Z',
       }] })
       if (url.endsWith('/v1/me')) return Response.json({ authenticated: false }, { status: 401 })
       if (url.includes('/v1/leaderboards')) return Response.json({ rows: [] })
@@ -32,9 +47,11 @@ describe('online attempt integration', () => {
       throw new Error(`unexpected ${url}`)
     }))
     render(<App />)
-    const link = await screen.findByRole('link', { name: 'Lurana—silvermoon' })
-    expect(link).toHaveAttribute('href', 'https://raider.io/characters/eu/silvermoon/Lurana')
+    const links = await screen.findAllByRole('link', { name: 'Lurana—silvermoon' })
+    expect(links).toHaveLength(2)
+    expect(links[0]).toHaveAttribute('href', 'https://raider.io/characters/eu/silvermoon/Lurana')
     expect(screen.getByText(/wiped on: Phase 3 · normal/i)).toBeInTheDocument()
+    expect(screen.getByText(/earned achievement:/i)).toHaveTextContent('Ready for Raid Night')
   })
 
   it('issues a character-bound attempt before an eligible full Normal run', async () => {

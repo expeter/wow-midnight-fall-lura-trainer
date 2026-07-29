@@ -75,15 +75,17 @@ export interface OnlineAchievement {
   realmSlug: string
 }
 
-export interface WipeFeedRow {
-  id: number
+export interface ActivityFeedRow {
+  id: string
+  type: 'wipe' | 'achievement'
   displayName: string
   character: string | null
   realm: string | null
   region: 'eu' | 'us' | null
-  phase: string
-  difficulty: 'normal' | 'hard'
-  reason: string
+  phase: string | null
+  difficulty: 'normal' | 'hard' | null
+  reason: string | null
+  achievementTitle: string | null
   trainerVersion: string
   occurredAt: string
 }
@@ -187,8 +189,20 @@ export function loadAchievementHall(search = '', limit = 10): Promise<{
   return api(`/v1/achievement-hall?${query}`)
 }
 
-export function loadWipeFeed(limit = 20): Promise<{ rows: WipeFeedRow[] }> {
-  return api(`/v1/wipes?limit=${limit}`)
+export function loadActivityFeed(limit = 20): Promise<{ rows: ActivityFeedRow[] }> {
+  return api(`/v1/activity?limit=${limit}`)
+}
+
+export function canRecordOnlineWipe(
+  session: Pick<OnlineSession, 'authenticated' | 'csrfToken' | 'privacy'>,
+  difficulty: string,
+): session is OnlineSession & { csrfToken: string } {
+  return (
+    (difficulty === 'normal' || difficulty === 'hard')
+    && session.authenticated
+    && Boolean(session.csrfToken)
+    && Boolean(session.privacy?.selectedCharacterId)
+  )
 }
 
 export function recordOnlineWipe(

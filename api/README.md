@@ -120,6 +120,8 @@ provides:
 - `GET /v1/me/attempts`
 - `DELETE /v1/me/attempts/{attemptId}`
 - `GET /v1/me/achievements`
+- `GET /v1/activity`
+- `POST /v1/wipes`
 - `GET /v1/leaderboards`
 - `GET /v1/leaderboards/search`
 

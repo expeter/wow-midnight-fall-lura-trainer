@@ -660,6 +660,19 @@ describe('Lura API foundation', () => {
     const acceptedBody = await accepted.json() as { score: number; achievementIds: string[] }
     assert.equal(acceptedBody.score, 2020)
     assert.ok(acceptedBody.achievementIds.includes('hard-score-flawless'))
+    const activity = await app.handle(new Request('http://api.test/v1/activity?limit=100'))
+    const achievementActivity = (await activity.json() as {
+      rows: Array<{ type: string; displayName: string; achievementTitle: string; occurredAt: string }>
+    }).rows.filter(row => row.type === 'achievement')
+    assert.ok(achievementActivity.some(row => (
+      row.displayName === 'Verified'
+      && row.achievementTitle === 'The Midnight Shift'
+      && row.occurredAt === '2026-07-28T12:00:00.000Z'
+    )))
+    assert.equal(
+      database.prepare('SELECT COUNT(*) AS count FROM achievement_events').get()!.count,
+      achievementActivity.length,
+    )
     const duplicate = await app.handle(new Request(
       `http://api.test/v1/attempts/${attempt.attemptId}/complete`,
       { method: 'POST', headers, body: JSON.stringify(completion) },

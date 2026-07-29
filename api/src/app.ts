@@ -113,11 +113,27 @@ export function createApp(
           trainerVersion: config.currentTrainerVersion,
         }, row?.ok === 1 ? 200 : 503, corsHeaders)
       }
-      if (request.method === 'GET' && url.pathname === '/v1/wipes') {
+      if (request.method === 'GET' && (url.pathname === '/v1/activity' || url.pathname === '/v1/wipes')) {
         const limit = integerParameter(url, 'limit', 20, 100)
         if (limit === null) return json({ error: 'invalid_limit' }, 400, corsHeaders)
         const rows = database.prepare(`
-          SELECT w.id,
+          WITH activity AS (
+            SELECT 'wipe' AS type, 'wipe:' || w.id AS id,
+              w.account_id AS accountId, w.character_id AS characterId,
+              w.phase, w.difficulty, w.reason,
+              NULL AS achievementTitle,
+              w.trainer_version AS trainerVersion, w.occurred_at AS occurredAt
+            FROM wipe_events w
+            UNION ALL
+            SELECT 'achievement' AS type, 'achievement:' || e.id AS id,
+              e.account_id AS accountId, e.character_id AS characterId,
+              NULL AS phase, NULL AS difficulty, NULL AS reason,
+              c.title AS achievementTitle,
+              e.trainer_version AS trainerVersion, e.occurred_at AS occurredAt
+            FROM achievement_events e
+            JOIN achievement_catalog c ON c.id = e.achievement_id
+          )
+          SELECT activity.id, activity.type,
             CASE
               WHEN p.identity_mode = 'character' THEN c.name
               WHEN p.identity_mode = 'alias' THEN COALESCE(p.alias, 'Anonymous')
@@ -126,14 +142,14 @@ export function createApp(
             CASE WHEN p.identity_mode = 'character' THEN c.name ELSE NULL END AS character,
             CASE WHEN p.identity_mode = 'character' THEN c.realm_slug ELSE NULL END AS realm,
             CASE WHEN p.identity_mode = 'character' THEN c.region ELSE NULL END AS region,
-            w.phase, w.difficulty, w.reason,
-            w.trainer_version AS trainerVersion, w.occurred_at AS occurredAt
-          FROM wipe_events w
-          JOIN privacy_settings p ON p.account_id = w.account_id
-          JOIN accounts a ON a.id = w.account_id
-          JOIN characters c ON c.id = w.character_id
-          WHERE a.selected_character_id = w.character_id
-          ORDER BY w.occurred_at DESC, w.id DESC
+            activity.phase, activity.difficulty, activity.reason,
+            activity.achievementTitle, activity.trainerVersion, activity.occurredAt
+          FROM activity
+          JOIN privacy_settings p ON p.account_id = activity.accountId
+          JOIN accounts a ON a.id = activity.accountId
+          JOIN characters c ON c.id = activity.characterId
+          WHERE a.selected_character_id = activity.characterId
+          ORDER BY activity.occurredAt DESC, activity.id DESC
           LIMIT ?
         `).all(limit)
         return json({ rows }, 200, corsHeaders)

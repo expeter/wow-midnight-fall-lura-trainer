@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  canRecordOnlineWipe,
   completeOnlineAttempt,
   configurationFingerprint,
   issueOnlineAttempt,
@@ -45,5 +46,28 @@ describe('online API client', () => {
     const second = await configurationFingerprint({ assignment: 3, positions: [{ x: 1, y: 2 }] })
     expect(first).toMatch(/^[a-f0-9]{64}$/)
     expect(first).toBe(second)
+  })
+
+  it('records authenticated wipes even while the selected profile is anonymous', () => {
+    expect(canRecordOnlineWipe({
+      authenticated: true,
+      csrfToken: 'csrf-token',
+      privacy: {
+        identityMode: 'anonymous',
+        alias: null,
+        showGuild: 0,
+        selectedCharacterId: 7,
+      },
+    }, 'normal')).toBe(true)
+    expect(canRecordOnlineWipe({
+      authenticated: true,
+      csrfToken: 'csrf-token',
+      privacy: {
+        identityMode: 'character',
+        alias: null,
+        showGuild: 0,
+        selectedCharacterId: null,
+      },
+    }, 'normal')).toBe(false)
   })
 })

@@ -13,7 +13,7 @@ import { encounterSoundCuesForState, playEncounterSound } from './encounterSound
 import { approachHealthTarget, healthBand, randomHealthTarget, unusedRecoveryPenalty } from './healthRecovery'
 import { P1_BEAM_POSITION_SECONDS, P1_CRYSTAL_PICKUP_SECONDS, P1_DEFAULT_INTERRUPT_KEY, P1_GLAIVE_CONTACT_RADIUS, P1_GLAIVE_INITIAL_SPEED_MULTIPLIER, P1_GLAIVE_RETURN_SPEED_MULTIPLIER, P1_GLAIVE_TELEGRAPH_SECONDS, P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_INTERRUPT_CAST_COUNT, P1_INTERRUPT_CAST_SECONDS, P1_MEMORY_DELAY_SECONDS, P1_MEMORY_POSITION_SECONDS, P1_MEMORY_SWEEP_SECONDS, P1_OUTER_RADIUS, P1_PLAYER_INTERRUPT_WINDOW_SECONDS, P1_PULL_DELAY_SECONDS, P1_REACTIVE_SOAK_RADIUS, P1_REACTIVE_SOAK_SECONDS, P1_ROTATING_BEAM_ACTIVE_SECONDS, P1_ROTATING_BEAM_TELEGRAPH_SECONDS, P1_SEQUENCE_COUNT, p1AddGlaiveSet, p1AdvanceGlaiveSet, p1BeamHitResolution, p1BossEncounterPosition, p1ContinuousBeamTime, p1CrystalPickupSequence, p1CrystalSpawnPosition, p1CrystalTouchResolution, p1GlaiveContactStarted, p1GlaiveSet, p1HasCollectedCrystal, p1InterruptAssignment, p1InterruptState, p1IsInPlayableArena, p1MemoryOrder, p1MemoryPlayerVerdict, p1NpcInterruptSeconds, p1ReactiveSoaks, p1RotatingBeamHitsPoint, p1RotatingBeams, p1WrongCrystalDropExpired, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
 import OnlinePanel, { OnlineStandingSummary } from './OnlinePanel'
-import { completeOnlineAttempt, configurationFingerprint, issueOnlineAttempt, loadWipeFeed, logoutOnline, recordOnlineWipe, type OnlineSession, type WipeFeedRow } from './online'
+import { canRecordOnlineWipe, completeOnlineAttempt, configurationFingerprint, issueOnlineAttempt, loadActivityFeed, logoutOnline, recordOnlineWipe, type ActivityFeedRow, type OnlineSession } from './online'
 import './styles.css'
 
 type Screen = 'menu' | 'game' | 'results'
@@ -548,7 +548,7 @@ export default function App() {
   const [setupTab, setSetupTab] = useState<'game' | 'keyboard' | 'hud' | 'raidplan' | 'leaderboard' | 'profile'>(() => window.location.hash.startsWith('#raidplan=') ? 'raidplan' : 'game')
   const [onlineAttempt, setOnlineAttempt] = useState<ActiveOnlineAttempt | null>(null)
   const [onlineResultStatus, setOnlineResultStatus] = useState('')
-  const [wipeFeed, setWipeFeed] = useState<WipeFeedRow[]>([])
+  const [activityFeed, setActivityFeed] = useState<ActivityFeedRow[]>([])
   const onlineCompletionStartedRef = useRef('')
   const layoutSaveFeedbackTimerRef = useRef<number | null>(null)
   const [paused, setPaused] = useState(false)
@@ -906,8 +906,8 @@ export default function App() {
     if (screen !== 'menu' || (import.meta.env.MODE === 'test' && !new URLSearchParams(window.location.search).has('wipe-feed-test'))) return
     let active = true
     const refresh = () => {
-      void loadWipeFeed(20)
-        .then(result => { if (active && Array.isArray(result.rows)) setWipeFeed(result.rows) })
+      void loadActivityFeed(20)
+        .then(result => { if (active && Array.isArray(result.rows)) setActivityFeed(result.rows) })
         .catch(() => undefined)
     }
     refresh()
@@ -2193,13 +2193,8 @@ export default function App() {
       window.setTimeout(() => setSoftWipeNotice(current => current === notice ? '' : current), 1800)
       return false
     }
-    if (
-      (difficulty === 'normal' || difficulty === 'hard')
-      && onlineSession.authenticated
-      && onlineSession.csrfToken
-      && onlineSession.privacy?.identityMode === 'character'
-      && onlineSession.privacy.selectedCharacterId
-    ) {
+    if (canRecordOnlineWipe(onlineSession, difficulty)) {
+      const recordedDifficulty = difficulty === 'hard' ? 'hard' : 'normal'
       const phase = event.startsWith('p1-') ? 'Phase 1'
         : event.startsWith('p2-') ? 'Phase 2'
           : event.startsWith('p3-') ? 'Phase 3'
@@ -2207,7 +2202,7 @@ export default function App() {
               : 'Intermission'
       void recordOnlineWipe(onlineSession.csrfToken, {
         phase,
-        difficulty,
+        difficulty: recordedDifficulty,
         reason: label,
         trainerVersion: APP_VERSION,
       }).catch(() => undefined)
@@ -2469,14 +2464,16 @@ export default function App() {
     <CreatorCard />
     <header><p className="eyebrow">MIDNIGHT FALLS · MOVEMENT PRACTICE</p><h1>L’ura Trainer</h1><p className="lede">Choose your assigned player below. Its WoW class determines its body color; crystal duty is configured independently beneath each phase plan.</p></header>
     <div className="setup-overview"><AchievementBadgeSummary collection={achievementCollection} /><OnlineStandingSummary session={onlineSession} onManage={() => setSetupTab('profile')} onLogout={onlineSession.csrfToken ? () => { void logoutOnline(onlineSession.csrfToken!).then(() => setOnlineSession({ authenticated: false })) } : undefined} /></div>
-    {wipeFeed.length > 0 && <section className="wipe-feed" aria-label="Recent public wipes">
-      <header><div><p className="eyebrow">LIVE ACTIVITY</p><h2>Recent wipes</h2></div><span>Refreshes every 5s</span></header>
-      <ol>{wipeFeed.map(row => <li key={row.id}>
+    {activityFeed.length > 0 && <section className="wipe-feed" aria-label="Recent public activity">
+      <header><div><p className="eyebrow">LIVE ACTIVITY</p><h2>Recent activity</h2></div><span>Refreshes every 5s</span></header>
+      <ol>{activityFeed.map(row => <li key={row.id}>
         <time dateTime={row.occurredAt}>{new Date(row.occurredAt).toLocaleString()}</time>
         {row.character && row.realm && row.region
           ? <a href={`https://raider.io/characters/${row.region}/${row.realm}/${encodeURIComponent(row.character)}`} target="_blank" rel="noreferrer">{row.character}—{row.realm}</a>
           : <strong>{row.displayName}</strong>}
-        <span>wiped on: {row.phase} · {row.difficulty}</span>
+        <span>{row.type === 'achievement'
+          ? <>earned achievement: <strong>{row.achievementTitle}</strong></>
+          : <>wiped on: {row.phase} · {row.difficulty}</>}</span>
       </li>)}</ol>
     </section>}
     <div className="entry-choice"><span>Practice target</span>{FEATURE_FLAGS.phaseOne ? <button className={entryMode === 'arena0' ? 'selected' : ''} onClick={() => setEntryMode('arena0')}>P1</button> : <button className="coming-soon" aria-label="P1 — Coming soon" title="P1 is planned but not playable yet" disabled>P1 · Soon</button>}<button className={entryMode === 'arena1' ? 'selected' : ''} onClick={() => setEntryMode('arena1')}>Intermission</button><button className={entryMode === 'arena2' ? 'selected' : ''} onClick={() => setEntryMode('arena2')}>P2</button><button className={entryMode === 'arena3' ? 'selected' : ''} onClick={() => setEntryMode('arena3')}>P3</button><button className={entryMode === 'arena4' ? 'selected' : ''} onClick={() => setEntryMode('arena4')}>P4</button>{difficulty === 'test' && <button className="secondary preview-results" onClick={previewCompletionScreen}>Preview final screen</button>}<button aria-label={entryMode === 'arena0' ? 'Enter P1' : entryMode === 'arena1' ? 'Enter Arena 1 — Enter Intermission' : entryMode === 'arena2' ? 'Enter Arena 2 — Enter P2' : entryMode === 'arena3' ? 'Enter Arena 3 — Enter P3' : 'Enter Arena 4 — Enter P4'} className="start entry-start" onClick={start}>Enter {entryMode === 'arena0' ? 'P1' : entryMode === 'arena1' ? 'Intermission' : entryMode === 'arena2' ? 'P2' : entryMode === 'arena3' ? 'P3' : 'P4'}</button></div>

@@ -381,7 +381,7 @@ export function completeAttempt(
         VALUES (?, ?, ?)
         ON CONFLICT (id, trainer_version) DO NOTHING
       `).run(achievementId, attempt.trainerVersion, achievementId)
-      database.prepare(`
+      const insertedAchievement = database.prepare(`
         INSERT INTO account_achievements (
           account_id, character_id, achievement_id, trainer_version,
           build_id, source_attempt_id, first_earned_at
@@ -396,6 +396,21 @@ export function completeAttempt(
         attemptId,
         acceptedAt,
       )
+      if (insertedAchievement.changes === 1) {
+        database.prepare(`
+          INSERT INTO achievement_events (
+            account_id, character_id, achievement_id, trainer_version,
+            source_attempt_id, occurred_at
+          ) VALUES (?, ?, ?, ?, ?, ?)
+        `).run(
+          accountId,
+          attempt.characterId,
+          achievementId,
+          attempt.trainerVersion,
+          attemptId,
+          acceptedAt,
+        )
+      }
     }
     database.exec('COMMIT')
   } catch (error) {

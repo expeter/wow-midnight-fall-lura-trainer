@@ -108,7 +108,10 @@ export function createApp(
       }
       if (request.method === 'GET' && url.pathname === '/health') {
         const row = database.prepare('SELECT 1 AS ok').get()
-        return json({ status: row?.ok === 1 ? 'ok' : 'degraded' }, row?.ok === 1 ? 200 : 503, corsHeaders)
+        return json({
+          status: row?.ok === 1 ? 'ok' : 'degraded',
+          trainerVersion: config.currentTrainerVersion,
+        }, row?.ok === 1 ? 200 : 503, corsHeaders)
       }
       if (request.method === 'GET' && url.pathname === '/v1/wipes') {
         const limit = integerParameter(url, 'limit', 20, 100)

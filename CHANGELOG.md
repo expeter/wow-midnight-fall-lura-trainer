@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.4.2 · 2026-07-29
+
+- BUG-111: Restore production online-attempt issuance after the VPS retained an
+  obsolete trainer-version override. The API now owns and reports its release
+  compatibility version, and deployment verification rejects a mismatched
+  frontend/API release.
+
 ## 0.4.1 · 2026-07-29
 
 - CR-162: Hide an empty wipe feed and retain private-profile wipe activity

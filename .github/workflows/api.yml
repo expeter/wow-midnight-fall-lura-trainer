@@ -73,4 +73,6 @@ jobs:
         run: |
           ssh -i ~/.ssh/lura-api "${USER}@${HOST}" \
             "sudo /opt/lura-api/bin/activate-release '${GITHUB_SHA}' '/tmp/lura-api-${GITHUB_SHA}.tar.gz'"
-          curl --fail --retry 5 --retry-delay 3 https://api.asgard.website/health
+          EXPECTED_VERSION="$(node -p "require('./package.json').version")"
+          curl --fail --retry 5 --retry-delay 3 https://api.asgard.website/health \
+            | grep --fixed-strings "\"trainerVersion\":\"${EXPECTED_VERSION}\""

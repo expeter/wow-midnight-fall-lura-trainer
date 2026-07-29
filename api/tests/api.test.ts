@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, it } from 'node:test'
 import { resolve } from 'node:path'
 import { createHash, createHmac, randomUUID } from 'node:crypto'
 import { createApp } from '../src/app.js'
-import type { ApiConfig } from '../src/config.js'
+import { loadConfig, type ApiConfig } from '../src/config.js'
 import { applyMigrations, openDatabase, type Database } from '../src/database.js'
 import { isDatabaseBusyError } from '../src/http.js'
 import type { AuthDependencies } from '../src/auth.js'
@@ -102,7 +102,15 @@ describe('Lura API foundation', () => {
     assert.deepEqual(applyMigrations(database, resolve(process.cwd(), 'migrations')), [])
     const response = await createApp(database, config).handle(new Request('http://api.test/health'))
     assert.equal(response.status, 200)
-    assert.deepEqual(await response.json(), { status: 'ok' })
+    assert.deepEqual(await response.json(), {
+      status: 'ok',
+      trainerVersion: config.currentTrainerVersion,
+    })
+  })
+
+  it('does not let a stale environment override pin attempt compatibility', () => {
+    const releaseConfig = loadConfig({ TRAINER_CURRENT_VERSION: '0.3.0' })
+    assert.equal(releaseConfig.currentTrainerVersion, '0.4.2')
   })
 
   it('accepts both loopback hostname forms for configured local CORS origins', async () => {

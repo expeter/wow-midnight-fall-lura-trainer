@@ -47,7 +47,9 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): ApiCon
       .map(origin => origin.trim())
       .filter(Boolean)
       .map(origin => requiredUrl(origin, 'LOCAL_ORIGINS')),
-    currentTrainerVersion: environment.TRAINER_CURRENT_VERSION ?? '0.4.1',
+    // Release compatibility is part of the deployed code. Do not allow a
+    // long-lived VPS environment file to pin an older trainer version.
+    currentTrainerVersion: '0.4.2',
     battleNetClientId,
     battleNetClientSecret,
     battleNetCallbackUrl: requiredAbsoluteUrl(

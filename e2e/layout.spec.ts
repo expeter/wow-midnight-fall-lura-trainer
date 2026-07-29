@@ -12,7 +12,7 @@ test('publishes the trainer favicon', async ({ page, request }) => {
 test('keeps optional login and public leaderboards usable without the API', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: 'Online profile & leaderboard' }).click()
-  const panel = page.getByRole('region', { name: 'Top 10' })
+  const panel = page.getByRole('region', { name: 'Top 10 leaderboard' })
   await expect(panel).toBeVisible()
   await expect(panel.getByText(/Local play still works|Anonymous play remains fully available/)).toBeVisible()
   await expect(panel.getByRole('link', { name: 'Login with Battle.net' })).toHaveAttribute(
@@ -43,8 +43,8 @@ test('keeps practice first while exposing Online and Raid plan as shallow tabs',
   const tabs = page.getByRole('navigation', { name: 'Setup sections' })
   await expect(tabs.getByRole('button')).toHaveCount(3)
   await tabs.getByRole('button', { name: 'Online profile & leaderboard' }).click()
-  await expect(page.getByRole('heading', { name: 'Top 10' })).toBeVisible()
-  await page.getByRole('region', { name: 'Top 10' }).getByRole('button', { name: 'View full leaderboard' }).click()
+  await expect(page.getByRole('heading', { name: 'Top 10 leaderboard' })).toBeVisible()
+  await page.getByRole('region', { name: 'Top 10 leaderboard' }).getByRole('button', { name: 'View full leaderboard' }).click()
   await expect(page.getByRole('heading', { name: 'Full leaderboard' })).toBeVisible()
   await tabs.getByRole('button', { name: 'Raid plan' }).click()
   await expect(page.getByRole('heading', { name: 'Layouts and sharing' })).toBeVisible()

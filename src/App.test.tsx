@@ -167,7 +167,7 @@ describe('player menu', () => {
     const setupNav = screen.getByRole('navigation', { name: /setup sections/i })
     expect(within(setupNav).getAllByRole('button')).toHaveLength(3)
     expect(screen.getByText('RAID PLANNING')).not.toBeVisible()
-    expect(screen.getByText('Top 10')).not.toBeVisible()
+    expect(screen.getByText('Top 10 leaderboard')).not.toBeVisible()
     expect(gameHeading.parentElement).toHaveClass('plan-heading', 'setup-section-heading')
     expect(keyboardHeading.parentElement).toHaveClass('plan-heading', 'setup-section-heading')
     expect(difficulty.parentElement).toHaveClass('setup-grid')
@@ -186,7 +186,7 @@ describe('player menu', () => {
     expect(screen.getByText('GAME SETTINGS')).not.toBeVisible()
 
     fireEvent.click(within(setupNav).getByRole('button', { name: 'Online profile & leaderboard' }))
-    expect(screen.getByRole('heading', { name: 'Top 10' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Top 10 leaderboard' })).toBeInTheDocument()
     expect(screen.getByText('RAID PLANNING')).not.toBeVisible()
   })
   it('shows the Season 2 recruitment banner outside the arena only', async () => { const user = userEvent.setup(); render(<App />); const link = screen.getByRole('link', { name: /asgard.*raider\.io/i }); expect(link).toHaveAttribute('href', 'https://raider.io/guilds/eu/blackrock/IAsgardI'); await user.click(screen.getByRole('button', { name: /enter arena/i })); expect(screen.queryByRole('link', { name: /asgard.*raider\.io/i })).not.toBeInTheDocument() })

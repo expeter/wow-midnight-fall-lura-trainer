@@ -45,7 +45,7 @@ describe('online attempt integration', () => {
     const user = userEvent.setup()
     const view = render(<App />)
     await user.click(screen.getByRole('button', { name: 'Online profile & leaderboard' }))
-    await screen.findByLabelText(/Verified character/)
+    await screen.findByLabelText(/Active character/)
     await user.click(screen.getByRole('button', { name: 'Practice settings' }))
     await user.click(screen.getByRole('button', { name: 'normal' }))
     await user.click(screen.getByRole('button', { name: 'Enter P1' }))

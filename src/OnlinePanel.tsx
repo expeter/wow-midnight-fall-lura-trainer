@@ -59,6 +59,7 @@ export default function OnlinePanel({ onSession }: { onSession: (session: Online
   const [identityMode, setIdentityMode] = useState<'anonymous' | 'alias' | 'character'>('anonymous')
   const [alias, setAlias] = useState('')
   const [showGuild, setShowGuild] = useState(false)
+  const [view, setView] = useState<'profile' | 'leaderboard'>('leaderboard')
 
   async function refreshSession() {
     try {
@@ -66,6 +67,7 @@ export default function OnlinePanel({ onSession }: { onSession: (session: Online
       setSession(next)
       onSession(next)
       if (next.authenticated) {
+        setView('profile')
         setIdentityMode(next.privacy?.identityMode ?? 'anonymous')
         setAlias(next.privacy?.alias ?? '')
         setShowGuild(Boolean(next.privacy?.showGuild))
@@ -112,21 +114,24 @@ export default function OnlinePanel({ onSession }: { onSession: (session: Online
   const displayedRows = rows.length || !leaderboardLoaded || !['localhost', '127.0.0.1'].includes(window.location.hostname)
     ? rows
     : LOCAL_FIXTURES
+  const selectedCharacter = characters.find(character => character.selected)
   return <section className="online-panel" aria-labelledby="online-title">
     <header>
-      <div><p className="eyebrow">Optional online profile</p><h2 id="online-title">{showFullLeaderboard ? 'Full leaderboard' : 'Top 10'}</h2></div>
+      <div><p className="eyebrow">Optional online profile</p><h2 id="online-title">{view === 'profile' ? 'My characters' : showFullLeaderboard ? 'Full leaderboard' : 'Top 10 leaderboard'}</h2></div>
       <a href={`${import.meta.env.BASE_URL}privacy.html`}>Privacy</a>
     </header>
     <p role="status">{status}</p>
-    {!session.authenticated ? <div className="online-login">
-      <span>Post verified results:</span>
-      <select aria-label="Battle.net region" value={loginRegion} onChange={event => setLoginRegion(event.target.value as 'eu' | 'us')}>
-        <option value="eu">EU</option><option value="us">US</option>
-      </select>
-      <a className="button-link" href={battleNetLoginUrl(loginRegion)}>Login with Battle.net</a>
-    </div> : <div className="online-account">
-      <label>Verified character <small>Selection saves automatically.</small>
-        <select value={characters.find(character => character.selected)?.id ?? ''} onChange={async event => {
+    <nav className="online-view-tabs" aria-label="Online sections">
+      {session.authenticated && <button className={view === 'profile' ? 'selected' : ''} aria-current={view === 'profile' ? 'page' : undefined} onClick={() => setView('profile')}>My characters</button>}
+      <button className={view === 'leaderboard' ? 'selected' : ''} aria-current={view === 'leaderboard' ? 'page' : undefined} onClick={() => setView('leaderboard')}>Leaderboard</button>
+    </nav>
+    {view === 'profile' && session.authenticated ? <div className="online-account">
+      <div className="online-explainer">
+        <strong>Choose who represents your verified runs</strong>
+        <p>Your active character is used for new verified attempts. Character selection saves immediately; visibility changes save only when you use the save button.</p>
+      </div>
+      <label className="online-field">Active character <small>Only characters imported from your Battle.net account appear here. Selection saves automatically.</small>
+        <select aria-label="Active character" value={selectedCharacter?.id ?? ''} onChange={async event => {
           await selectCharacter(Number(event.target.value), csrf)
           await refreshSession()
           setStatus('Character selected and saved.')
@@ -137,24 +142,24 @@ export default function OnlinePanel({ onSession }: { onSession: (session: Online
           </option>)}
         </select>
       </label>
-      <label>Public identity
+      <label className="online-field">Leaderboard name <small>Choose what other players see beside your verified scores.</small>
         <select value={identityMode} onChange={event => setIdentityMode(event.target.value as typeof identityMode)}>
-          <option value="anonymous">Anonymous</option>
-          <option value="character">Verified character</option>
-          <option value="alias">Trainer alias</option>
+          <option value="anonymous">Anonymous — hide my identity</option>
+          <option value="character">Character — show my selected character</option>
+          <option value="alias">Alias — show a trainer name</option>
         </select>
       </label>
-      {identityMode === 'alias' && <label>Public trainer alias
+      {identityMode === 'alias' && <label className="online-field">Public trainer alias
         <input maxLength={40} value={alias} onChange={event => setAlias(event.target.value)} />
       </label>}
       <label className="online-guild-toggle">
         <input type="checkbox" checked={showGuild} disabled={identityMode === 'anonymous'} onChange={event => setShowGuild(event.target.checked)} />
-        Show cached guild
+        <span>Show my guild on leaderboard rows<small>Uses the guild recorded during the latest Battle.net character import.</small></span>
       </label>
       <div className="online-account-actions">
         <button className="secondary" onClick={() => void refreshCharacters(csrf).then(result => {
           window.location.assign(result.authorizationUrl)
-        }).catch(() => setStatus('Could not refresh characters.'))}>Re-import Battle.net characters</button>
+        }).catch(() => setStatus('Could not refresh characters.'))}>Update my Battle.net characters</button>
         <button onClick={() => void updatePrivacy(csrf, {
           identityMode,
           alias,
@@ -162,13 +167,8 @@ export default function OnlinePanel({ onSession }: { onSession: (session: Online
         }).then(() => {
           setStatus('Privacy settings saved.')
           return refreshSession()
-        }).catch(() => setStatus('Could not save privacy settings.'))}>Save public profile settings</button>
+        }).catch(() => setStatus('Could not save privacy settings.'))}>Save leaderboard visibility</button>
         <button className="secondary" onClick={() => void logoutOnline(csrf).then(refreshSession)}>Log out of online profile</button>
-        <button className="danger" onClick={() => {
-          if (window.confirm('Permanently delete all online L’ura Trainer data?')) {
-            void deleteOnlineData(csrf).then(refreshSession)
-          }
-        }}>Delete online data</button>
       </div>
       <details className="online-achievements">
         <summary>Verified online achievements · {onlineAchievements.length}</summary>
@@ -176,29 +176,52 @@ export default function OnlinePanel({ onSession }: { onSession: (session: Online
           <b>{achievement.achievementId}</b> · {achievement.characterName} · v{achievement.trainerVersion}
         </li>)}</ul> : <p>Complete a server-issued attempt to earn verified achievements.</p>}
       </details>
+      <details className="online-danger-zone">
+        <summary>Account and data removal</summary>
+        <button className="danger" onClick={() => {
+          if (window.confirm('Permanently delete all online L’ura Trainer data?')) {
+            void deleteOnlineData(csrf).then(refreshSession)
+          }
+        }}>Delete all my online data</button>
+      </details>
+    </div> : view === 'profile' ? null : <div className="online-leaderboard">
+      <div className="online-explainer">
+        <strong>Verified public rankings</strong>
+        <p>Each row is one player’s best server-verified result for the selected difficulty and duty. Rank is ordered by score, then completion time.</p>
+      </div>
+      {!session.authenticated && <div className="online-login">
+        <span>Want your runs listed?</span>
+        <label>Region<select aria-label="Battle.net region" value={loginRegion} onChange={event => setLoginRegion(event.target.value as 'eu' | 'us')}>
+          <option value="eu">EU</option><option value="us">US</option>
+        </select></label>
+        <a className="button-link" href={battleNetLoginUrl(loginRegion)}>Login with Battle.net</a>
+      </div>}
+      <div className="leaderboard-controls">
+        <label>Difficulty<select aria-label="Leaderboard difficulty" value={difficulty} onChange={event => setDifficulty(event.target.value as 'normal' | 'hard')}>
+          <option value="normal">Normal</option><option value="hard">Hard</option>
+        </select></label>
+        <label>Assignment<select aria-label="Leaderboard duty" value={duty} onChange={event => setDuty(event.target.value as 'crystal' | 'non-crystal')}>
+          <option value="crystal">Crystal carrier</option><option value="non-crystal">Non-crystal</option>
+        </select></label>
+      </div>
+      <div className="leaderboard-columns" aria-hidden="true"><span>Rank and player</span><span>Guild · score · time</span></div>
+      {displayedRows.length ? <ol className={`leaderboard-rows ${showFullLeaderboard ? 'full' : 'top-ten'}`}>
+        {displayedRows.map((row, index) => <li key={`${row.displayName}-${row.durationMs}-${index}`}>
+          <b>{row.rank ?? index + 1}. {row.character && row.region && row.realm
+            ? <a href={`https://raider.io/characters/${row.region}/${row.realm}/${row.character}`} target="_blank" rel="noreferrer">{row.displayName}</a>
+            : row.displayName}</b>
+          <span>{row.guild ? `${row.guild} · ` : ''}{row.score} pts · {(row.durationMs / 1000).toFixed(1)}s</span>
+        </li>)}
+      </ol> : <p>No matching verified results yet.</p>}
+      <div className="leaderboard-search">
+        <label><span>Find a public ranking</span><small>Searches public character names, aliases, realms, and guilds—not your Battle.net character list.</small>
+          <input aria-label="Search public leaderboard" value={search} onChange={event => setSearch(event.target.value)} placeholder="Character, alias, realm, or guild" />
+        </label>
+        <button className="secondary" onClick={() => void refreshLeaderboard()}>Search rankings</button>
+        <button className="secondary full-leaderboard-toggle" onClick={() => setShowFullLeaderboard(current => !current)}>
+          {showFullLeaderboard ? 'Back to Top 10' : 'View full leaderboard'}
+        </button>
+      </div>
     </div>}
-    <div className="leaderboard-controls">
-      <select aria-label="Leaderboard difficulty" value={difficulty} onChange={event => setDifficulty(event.target.value as 'normal' | 'hard')}>
-        <option value="normal">Normal</option><option value="hard">Hard</option>
-      </select>
-      <select aria-label="Leaderboard duty" value={duty} onChange={event => setDuty(event.target.value as 'crystal' | 'non-crystal')}>
-        <option value="crystal">Crystal</option><option value="non-crystal">Non-crystal</option>
-      </select>
-    </div>
-    {displayedRows.length ? <ol className={`leaderboard-rows ${showFullLeaderboard ? 'full' : 'top-ten'}`}>
-      {displayedRows.map((row, index) => <li key={`${row.displayName}-${row.durationMs}-${index}`}>
-        <b>{row.rank ?? index + 1}. {row.character && row.region && row.realm
-          ? <a href={`https://raider.io/characters/${row.region}/${row.realm}/${row.character}`} target="_blank" rel="noreferrer">{row.displayName}</a>
-          : row.displayName}</b>
-        <span>{row.guild ? `${row.guild} · ` : ''}{row.score} pts · {(row.durationMs / 1000).toFixed(1)}s</span>
-      </li>)}
-    </ol> : <p>No matching verified results yet.</p>}
-    <div className="leaderboard-search">
-      <input aria-label="Search leaderboard" value={search} onChange={event => setSearch(event.target.value)} placeholder="Character, alias, realm, guild" />
-      <button className="secondary" onClick={() => void refreshLeaderboard()}>Search</button>
-      <button className="secondary full-leaderboard-toggle" onClick={() => setShowFullLeaderboard(current => !current)}>
-        {showFullLeaderboard ? 'Back to Top 10' : 'View full leaderboard'}
-      </button>
-    </div>
   </section>
 }

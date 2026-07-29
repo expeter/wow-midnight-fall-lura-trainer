@@ -1158,7 +1158,29 @@
 }
 .online-panel > header { justify-content: space-between; }
 .online-panel h2, .online-panel p { margin: .2rem 0; }
-.online-login { margin: 1rem 0; }
+.online-panel > [role='status']:empty { display: none; }
+.online-view-tabs {
+  display: flex;
+  gap: 7px;
+  margin: 18px 0 12px;
+  padding: 5px;
+  border: 1px solid rgba(117, 95, 188, .42);
+  border-radius: 11px;
+  background: rgba(7, 11, 27, .52);
+}
+.online-view-tabs button { flex: 1 1 0; margin: 0; background: transparent; color: #9daac3; }
+.online-view-tabs button.selected { border-color: #73e0c1; background: rgba(53, 151, 132, .2); color: #d9fff5; }
+.online-explainer {
+  grid-column: 1 / -1;
+  padding: 13px 15px;
+  border-left: 3px solid #73e0c1;
+  border-radius: 0 9px 9px 0;
+  background: rgba(31, 50, 67, .42);
+}
+.online-explainer strong { color: #d8fff4; font: 700 14px 'DM Mono', monospace; }
+.online-explainer p { margin-top: 5px; color: #aeb9cd; font-size: 14px; line-height: 1.45; }
+.online-login { margin: 1rem 0; padding: 12px 14px; border: 1px solid rgba(115,224,193,.24); border-radius: 10px; background: rgba(7,14,27,.5); }
+.online-login label, .leaderboard-controls label, .leaderboard-search label { display: grid; gap: 5px; color: #c9d3e5; font-size: 13px; }
 .button-link {
   display: inline-flex;
   padding: .6rem .9rem;
@@ -1175,12 +1197,33 @@
   margin: 1rem 0;
 }
 .online-account label { display: grid; gap: .35rem; }
+.online-field small, .online-guild-toggle small, .leaderboard-search small { display: block; color: #8f9cb3; font-size: 12px; line-height: 1.35; }
+.online-panel select,
+.online-panel input[type='text'],
+.online-panel input:not([type]) {
+  width: 100%;
+  min-height: 43px;
+  padding: 8px 38px 8px 11px;
+  border: 1px solid #405070;
+  border-radius: 9px;
+  background-color: #0c1427;
+  color: #edf7ff;
+  font: 14px 'DM Sans', sans-serif;
+}
+.online-panel select:focus, .online-panel input:focus { border-color: #73e0c1; outline: 2px solid rgba(115,224,193,.16); }
 .online-account-actions { grid-column: 1 / -1; }
 .online-achievements { grid-column: 1 / -1; }
-.online-guild-toggle { display: flex !important; align-items: center; }
-.leaderboard-controls { margin-top: 1rem; }
-.leaderboard-search { margin-top: .8rem; }
-.leaderboard-search input { flex: 1 1 240px; }
+.online-danger-zone { grid-column: 1 / -1; padding-top: 4px; border-top: 1px solid rgba(66,79,111,.45); color: #9da9bd; }
+.online-danger-zone button { margin-top: 10px; }
+.online-guild-toggle { display: flex !important; align-items: flex-start; gap: 9px; padding: 9px 11px; border: 1px solid rgba(64,80,112,.65); border-radius: 9px; background: rgba(8,15,29,.46); }
+.online-guild-toggle input { flex: 0 0 auto; margin-top: 3px; accent-color: #73e0c1; }
+.online-guild-toggle span { color: #d9e4f4; font-size: 14px; }
+.online-leaderboard { display: grid; gap: 13px; }
+.leaderboard-controls { margin-top: 2px; }
+.leaderboard-controls label { flex: 1 1 190px; }
+.leaderboard-columns { display: flex; justify-content: space-between; padding: 0 12px; color: #7f8da7; font: 10px 'DM Mono', monospace; letter-spacing: .08em; text-transform: uppercase; }
+.leaderboard-search { align-items: end; margin-top: .25rem; }
+.leaderboard-search label { flex: 1 1 320px; }
 .leaderboard-rows { display: grid; gap: .35rem; padding: 0; list-style: none; }
 .leaderboard-rows.top-ten { max-height: 31rem; overflow-y: auto; }
 .leaderboard-rows li {
@@ -1191,6 +1234,7 @@
   border-radius: 8px;
   background: rgba(255,255,255,.055);
 }
+.leaderboard-rows a { color: #8ff0d3; text-decoration-color: rgba(143,240,211,.45); text-underline-offset: 3px; }
 .danger { background: #8b2941 !important; }
 .online-result-status {
   padding: .75rem;

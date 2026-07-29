@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import OnlinePanel, { OnlineStandingSummary } from './OnlinePanel'
 
@@ -39,7 +39,7 @@ describe('optional online profile', () => {
       'http://127.0.0.1:8787/v1/auth/battlenet/start?region=us',
     )
     expect(await screen.findByText('1200 pts · 300.0s')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Top 10' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Top 10 leaderboard' })).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'View full leaderboard' }))
     expect(await screen.findByRole('heading', { name: 'Full leaderboard' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Privacy' })).toHaveAttribute('href', '/privacy.html')
@@ -110,7 +110,10 @@ describe('optional online profile', () => {
     }))
     const user = userEvent.setup()
     render(<OnlinePanel onSession={() => undefined} />)
-    const character = await screen.findByLabelText(/Verified character/)
+    const heading = await screen.findByRole('heading', { name: 'My characters' })
+    const panel = heading.closest('section')!
+    expect(within(panel).queryByText('Verified public rankings')).not.toBeInTheDocument()
+    const character = within(panel).getByLabelText(/Active character/)
     await user.selectOptions(character, '7')
     await waitFor(() => expect(requests.some(request => (
       request.url.endsWith('/v1/me/character')
@@ -118,15 +121,19 @@ describe('optional online profile', () => {
       && request.body.includes('"characterId":7')
     ))).toBe(true))
     expect(screen.getByText('Character selected and saved.')).toBeInTheDocument()
-    await user.selectOptions(screen.getByLabelText('Public identity'), 'alias')
-    await user.type(screen.getByLabelText('Public trainer alias'), 'Runner')
-    await user.click(screen.getByLabelText('Show cached guild'))
-    await user.click(screen.getByRole('button', { name: 'Save public profile settings' }))
+    await user.selectOptions(within(panel).getByLabelText(/Leaderboard name/), 'alias')
+    await user.type(within(panel).getByLabelText('Public trainer alias'), 'Runner')
+    await user.click(within(panel).getByLabelText(/Show my guild on leaderboard rows/))
+    await user.click(within(panel).getByRole('button', { name: 'Save leaderboard visibility' }))
     await waitFor(() => expect(requests.some(request => (
       request.url.endsWith('/v1/me/privacy')
       && request.body.includes('"identityMode":"alias"')
       && request.body.includes('"alias":"Runner"')
       && request.body.includes('"showGuild":true')
     ))).toBe(true))
+    await user.click(within(panel).getByRole('button', { name: 'Leaderboard' }))
+    expect(within(panel).getByText('Verified public rankings')).toBeInTheDocument()
+    expect(within(panel).getByText(/Searches public character names/)).toBeInTheDocument()
+    expect(within(panel).queryByLabelText(/Active character/)).not.toBeInTheDocument()
   })
 })

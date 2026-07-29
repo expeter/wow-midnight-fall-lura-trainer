@@ -6,7 +6,8 @@ export type Duty = 'crystal' | 'non-crystal'
 interface LeaderboardQuery {
   difficulty: Difficulty
   duty: Duty
-  version: string
+  version?: string
+  season?: string
   limit: number
   offset: number
   search?: string
@@ -56,6 +57,9 @@ const publicSearchClause = `
 
 export function listLeaderboard(database: Database, query: LeaderboardQuery): PublicLeaderboardRow[] {
   const search = query.search?.trim()
+  const releaseClause = query.season
+    ? 'r.leaderboard_season = ?'
+    : 'r.trainer_version = ?'
   const statement = database.prepare(`
     SELECT
       r.id AS result_id,
@@ -74,7 +78,7 @@ export function listLeaderboard(database: Database, query: LeaderboardQuery): Pu
     FROM results r
     JOIN characters c ON c.id = r.character_id
     JOIN privacy_settings p ON p.account_id = r.account_id
-    WHERE r.difficulty = ? AND r.duty = ? AND r.trainer_version = ?
+    WHERE r.difficulty = ? AND r.duty = ? AND ${releaseClause}
       AND r.run_eligible = 1
       AND p.identity_mode != 'anonymous'
       ${search ? publicSearchClause : ''}
@@ -84,7 +88,7 @@ export function listLeaderboard(database: Database, query: LeaderboardQuery): Pu
   const parameters: Array<string | number> = [
     query.difficulty,
     query.duty,
-    query.version,
+    query.season ?? query.version ?? '',
   ]
   if (search) {
     const pattern = `%${search.replaceAll('%', '\\%').replaceAll('_', '\\_')}%`

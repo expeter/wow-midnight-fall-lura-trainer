@@ -111,6 +111,7 @@ export function createApp(
         return json({
           status: row?.ok === 1 ? 'ok' : 'degraded',
           trainerVersion: config.currentTrainerVersion,
+          leaderboardSeason: config.currentLeaderboardSeason,
         }, row?.ok === 1 ? 200 : 503, corsHeaders)
       }
       if (request.method === 'GET' && (url.pathname === '/v1/activity' || url.pathname === '/v1/wipes')) {
@@ -525,11 +526,14 @@ export function createApp(
           return json({ error: 'invalid_search' }, 400, corsHeaders)
         }
         const requestedVersion = url.searchParams.get('version') ?? 'current'
-        const version = requestedVersion === 'current' ? config.currentTrainerVersion : requestedVersion
+        const current = requestedVersion === 'current'
+        const version = current ? config.currentTrainerVersion : requestedVersion
         const rows = listLeaderboard(database, {
           difficulty: difficulty as Difficulty,
           duty: duty as Duty,
-          version,
+          ...(current
+            ? { season: config.currentLeaderboardSeason }
+            : { version }),
           limit,
           offset,
           search,

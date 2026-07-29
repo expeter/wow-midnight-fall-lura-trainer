@@ -74,8 +74,8 @@ export function issueAttempt(
     INSERT INTO attempts (
       id, account_id, character_id, nonce_hash, difficulty, duty, entry_mode,
       phase_scope, trainer_version, build_id, configuration_json, issued_at, expires_at,
-      verified_difficulty
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      verified_difficulty, leaderboard_season
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id,
     accountId,
@@ -91,6 +91,7 @@ export function issueAttempt(
     issuedAt.toISOString(),
     expiresAt.toISOString(),
     verifiedDifficulty,
+    config.currentLeaderboardSeason,
   )
   return {
     attemptId: id,
@@ -302,7 +303,8 @@ export function completeAttempt(
     SELECT id, character_id AS characterId, difficulty,
       COALESCE(verified_difficulty, difficulty) AS verifiedDifficulty,
       duty, trainer_version AS trainerVersion,
-      build_id AS buildId, nonce_hash AS nonceHash, expires_at AS expiresAt, consumed_at AS consumedAt
+      build_id AS buildId, leaderboard_season AS leaderboardSeason,
+      nonce_hash AS nonceHash, expires_at AS expiresAt, consumed_at AS consumedAt
     FROM attempts WHERE id = ? AND account_id = ?
   `).get(attemptId, accountId) as {
     id: string
@@ -312,6 +314,7 @@ export function completeAttempt(
     duty: string
     trainerVersion: string
     buildId: string
+    leaderboardSeason: string
     nonceHash: string
     expiresAt: string
     consumedAt: string | null
@@ -358,8 +361,8 @@ export function completeAttempt(
       INSERT INTO results (
         attempt_id, account_id, character_id, difficulty, duty, score,
         duration_ms, trainer_version, build_id, accepted_at, verified_difficulty,
-        run_eligible
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        run_eligible, leaderboard_season
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       attemptId,
       accountId,
@@ -373,6 +376,7 @@ export function completeAttempt(
       acceptedAt,
       attempt.verifiedDifficulty,
       Number(attempt.verifiedDifficulty === 'normal' || attempt.verifiedDifficulty === 'hard'),
+      attempt.leaderboardSeason,
     )
     achievementIds.push(...aggregateAchievementIds(database, accountId))
     for (const achievementId of [...new Set(achievementIds)]) {

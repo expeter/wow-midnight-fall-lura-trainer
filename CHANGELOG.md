@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 0.5.1 · 2026-07-29
+
+- BUG-115: Decouple run-leaderboard seasons from trainer SemVer. Compatible
+  releases now share the explicitly selected `season-1`, while exact historical
+  version queries remain available and a fresh board requires a deliberate
+  season change.
+
 ## 0.5.0 · 2026-07-29
 
 - BUG-113: Restrict the legacy Intermission annulus check to its live beam and

@@ -15,6 +15,7 @@ const config: ApiConfig = {
   trainerOrigin: 'https://trainer.example',
   localOrigins: ['http://127.0.0.1:5173'],
   currentTrainerVersion: '0.3.0',
+  currentLeaderboardSeason: 'season-1',
   battleNetClientId: 'client-id',
   battleNetClientSecret: 'client-secret',
   battleNetCallbackUrl: 'http://api.test/v1/auth/battlenet/callback',
@@ -105,12 +106,14 @@ describe('Lura API foundation', () => {
     assert.deepEqual(await response.json(), {
       status: 'ok',
       trainerVersion: config.currentTrainerVersion,
+      leaderboardSeason: config.currentLeaderboardSeason,
     })
   })
 
   it('does not let a stale environment override pin attempt compatibility', () => {
     const releaseConfig = loadConfig({ TRAINER_CURRENT_VERSION: '0.3.0' })
-    assert.equal(releaseConfig.currentTrainerVersion, '0.5.0')
+    assert.equal(releaseConfig.currentTrainerVersion, '0.5.1')
+    assert.equal(releaseConfig.currentLeaderboardSeason, 'season-1')
   })
 
   it('accepts both loopback hostname forms for configured local CORS origins', async () => {
@@ -130,10 +133,13 @@ describe('Lura API foundation', () => {
   })
 
   it('merges EU and US results and sorts score, duration, then acceptance time', async () => {
-    insertResult(database, {
+    const priorReleaseAccount = insertResult(database, {
       region: 'eu', account: '1', character: 'Aegis', realm: 'silvermoon',
       mode: 'character', score: 1200, duration: 90_000, acceptedAt: '2026-07-28T00:03:00.000Z',
     })
+    database.prepare(
+      'UPDATE results SET trainer_version = ? WHERE account_id = ?',
+    ).run('0.2.9', priorReleaseAccount)
     insertResult(database, {
       region: 'us', account: '2', character: 'Beacon', realm: 'illidan',
       mode: 'character', score: 1200, duration: 80_000, acceptedAt: '2026-07-28T00:02:00.000Z',
@@ -149,6 +155,13 @@ describe('Lura API foundation', () => {
     const payload = await response.json() as { rows: Array<{ displayName: string; realm: string | null }> }
     assert.deepEqual(payload.rows.map(row => row.displayName), ['Beacon', 'Aegis'])
     assert.deepEqual(payload.rows.map(row => row.realm), ['illidan', 'silvermoon'])
+    const priorRelease = await createApp(database, config).handle(new Request(
+      'http://api.test/v1/leaderboards?difficulty=hard&duty=crystal&version=0.2.9',
+    ))
+    assert.deepEqual(
+      (await priorRelease.json() as { rows: Array<{ displayName: string }> }).rows.map(row => row.displayName),
+      ['Aegis'],
+    )
   })
 
   it('searches only fields made public by privacy settings', async () => {

@@ -43,6 +43,11 @@ describe('optional online profile', () => {
       'href',
       'http://127.0.0.1:8787/v1/auth/battlenet/start?region=us',
     )
+    const login = screen.getByRole('link', { name: 'Login with Battle.net' })
+    login.addEventListener('click', event => event.preventDefault())
+    await userEvent.click(login)
+    expect(screen.getByRole('link', { name: 'Redirecting to Battle.net' })).toHaveTextContent('Redirecting to Battle.net…')
+    expect(screen.getByRole('link', { name: 'Redirecting to Battle.net' }).querySelector('.online-login-spinner')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Privacy policy' })).toHaveAttribute('href', '/privacy.html')
   })
 

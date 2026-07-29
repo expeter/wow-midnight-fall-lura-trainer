@@ -20,5 +20,7 @@ describe('localhost online submission lab', () => {
     middleware?.({ url: '/' }, { statusCode: 0, setHeader, end }, vi.fn())
     expect(end).toHaveBeenCalledWith(expect.stringContaining('Development-only test data.'))
     expect(end).toHaveBeenCalledWith(expect.stringContaining('Verified submission lab'))
+    expect(end).toHaveBeenCalledWith(expect.stringContaining("location.hostname==='localhost'"))
+    expect(end).toHaveBeenCalledWith(expect.stringContaining("'http://127.0.0.1:'"))
   })
 })

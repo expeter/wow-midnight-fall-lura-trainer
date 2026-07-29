@@ -1224,6 +1224,11 @@
   font-weight: 700;
 }
 .online-login .button-link { min-height: 43px; align-items: center; justify-content: center; }
+.online-login-action { display: inline-flex; gap: .55rem; }
+.online-login-action.pending { cursor: wait; opacity: .82; }
+.online-login-spinner { width: 1rem; height: 1rem; flex: 0 0 auto; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: online-login-spin .7s linear infinite; }
+@keyframes online-login-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .online-login-spinner { animation-duration: 1.4s; } }
 .practice-identity-status {
   display: flex;
   align-items: center;

@@ -34,6 +34,7 @@ button{cursor:pointer;background:#1b3a44;border-color:#73e0c1;font-weight:700}pr
 </form>
 <h2>Response</h2><pre id="output">Ready.</pre>
 <script>
+if(location.hostname==='localhost'){location.replace('http://127.0.0.1:'+location.port+location.pathname+location.search)}
 const API='http://127.0.0.1:8787'; const form=document.querySelector('#lab'); const output=document.querySelector('#output');
 const value=name=>form.elements[name]; const number=name=>Number(value(name).value);
 function score(){const casts=number('casts'),result=Math.max(0,1000-number('penalty')-number('continuous')+number('recovery')*50+casts+Math.floor(casts/20)*50);value('score').value=result;return result}

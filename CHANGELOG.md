@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- CR-158: Show a spinner and explicit Battle.net redirect status immediately
+  after the login action is clicked.
+- BUG-107: Canonicalize the localhost submission lab to `127.0.0.1` so the
+  OAuth callback's loopback session cookie is included in API requests.
 - BUG-106: Treat `localhost` and `127.0.0.1` as equivalent only for explicitly
   configured loopback CORS origins, fixing local verified submission requests.
 - FR-058: Add the account-wide Achievement Hall of Fame with canonical

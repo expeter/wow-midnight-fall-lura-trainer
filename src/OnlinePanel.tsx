@@ -119,6 +119,7 @@ export default function OnlinePanel({
   const [hallOwn, setHallOwn] = useState<AchievementHallRow | null>(null)
   const [hallLoaded, setHallLoaded] = useState(false)
   const [loginRegion, setLoginRegion] = useState<'eu' | 'us'>('eu')
+  const [loginPending, setLoginPending] = useState(false)
   const [status, setStatus] = useState('Loading online profile…')
   const [identityMode, setIdentityMode] = useState<'anonymous' | 'alias' | 'character'>('anonymous')
   const [alias, setAlias] = useState('')
@@ -280,7 +281,15 @@ export default function OnlinePanel({
         <label>Region<select aria-label="Battle.net region" value={loginRegion} onChange={event => setLoginRegion(event.target.value as 'eu' | 'us')}>
           <option value="eu">EU</option><option value="us">US</option>
         </select></label>
-        <a className="button-link" href={battleNetLoginUrl(loginRegion)}>Login with Battle.net</a>
+        <a
+          className={`button-link online-login-action${loginPending ? ' pending' : ''}`}
+          href={battleNetLoginUrl(loginRegion)}
+          aria-label={loginPending ? 'Redirecting to Battle.net' : 'Login with Battle.net'}
+          aria-live="polite"
+          onClick={() => setLoginPending(true)}
+        >{loginPending && <span className="online-login-spinner" aria-hidden="true" />}
+          {loginPending ? 'Redirecting to Battle.net…' : 'Login with Battle.net'}
+        </a>
       </div>
     </div> : <div className={`online-leaderboard ${compact ? 'compact' : ''}`}>
       {!compact && <div className="leaderboard-view-switch" aria-label="Leaderboard type">

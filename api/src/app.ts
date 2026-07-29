@@ -38,6 +38,17 @@ function integerParameter(url: URL, name: string, fallback: number, maximum: num
   return Number.isInteger(value) && value >= 0 && value <= maximum ? value : null
 }
 
+function allowedOriginVariants(origins: string[]): Set<string> {
+  const allowed = new Set(origins)
+  for (const origin of origins) {
+    const url = new URL(origin)
+    if (url.hostname !== 'localhost' && url.hostname !== '127.0.0.1') continue
+    url.hostname = url.hostname === 'localhost' ? '127.0.0.1' : 'localhost'
+    allowed.add(url.origin)
+  }
+  return allowed
+}
+
 export function createApp(
   database: Database,
   config: ApiConfig,
@@ -60,7 +71,7 @@ export function createApp(
     achievement.introducedVersion,
     achievement.retiredVersion,
   )
-  const allowedOrigins = new Set([config.trainerOrigin, ...config.localOrigins])
+  const allowedOrigins = allowedOriginVariants([config.trainerOrigin, ...config.localOrigins])
   const rateLimits = new Map<string, { count: number; resetsAt: number }>()
   function rateLimited(request: Request, bucket: string, limit: number, windowMs: number): boolean {
     const client = request.headers.get('x-forwarded-for')?.split(',', 1)[0].trim() || 'local'

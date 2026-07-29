@@ -105,6 +105,16 @@ describe('Lura API foundation', () => {
     assert.deepEqual(await response.json(), { status: 'ok' })
   })
 
+  it('accepts both loopback hostname forms for configured local CORS origins', async () => {
+    const app = createApp(database, config)
+    const response = await app.handle(new Request('http://api.test/v1/me', {
+      method: 'OPTIONS',
+      headers: { origin: 'http://localhost:5173' },
+    }))
+    assert.equal(response.status, 204)
+    assert.equal(response.headers.get('access-control-allow-origin'), 'http://localhost:5173')
+  })
+
   it('classifies SQLite writer contention as retryable without exposing internals', () => {
     assert.equal(isDatabaseBusyError(new Error('database is locked')), true)
     assert.equal(isDatabaseBusyError(new Error('database is busy')), true)

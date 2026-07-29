@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- BUG-106: Treat `localhost` and `127.0.0.1` as equivalent only for explicitly
+  configured loopback CORS origins, fixing local verified submission requests.
 - FR-058: Add the account-wide Achievement Hall of Fame with canonical
   weighted tiers, lifetime totals, highest-achievement timestamps, privacy
   filtering, local preview data, and Top 10/full/search presentations.

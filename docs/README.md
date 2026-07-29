@@ -364,6 +364,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-103` | Implemented | Keep the Phase 2 pull, personal circles, and orb sequence on fixed encounter timing when a crystal player forgets to recover their crystal after a beam. Missing the pickup remains the player's mechanic failure but must not stall later mechanics while the orb clock continues. |
 | `BUG-104` | Implemented | Suppress the Phase 2 carrier `Drop crystal` TTS instruction on Hard while retaining it in Test, Easy, and Normal. Hard players must recognize the mechanic without that coaching call. |
 | `BUG-105` | Implemented | Give active Phase 3 memory-rune duties final movement priority. The controlled player's matching NPC and both members of an NPC pair must never be displaced by formation, Soak, crystal-support, side-clamp, or Stars avoidance while their unresolved rune is active. |
+| `BUG-106` | Implemented | Allow the loopback hostname twin of a local trainer origin (`localhost` or `127.0.0.1`) through API CORS. The development submission lab works when OAuth returns to `localhost:5173` even if the API configuration names `127.0.0.1:5173`, without broadening production origins. Covered by an API CORS regression and a live preflight check against the restarted local service. |
 
 ## Implemented feature inventory
 

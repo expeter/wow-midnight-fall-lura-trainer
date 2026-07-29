@@ -1171,7 +1171,23 @@ export function canPickupCrystal(player: Point, crystal: Point, groundAge: numbe
   return groundAge >= 1 && distance(player, crystal) <= pickupRadius
 }
 export function canPickupCrystalDuringEvent(event: string): boolean {
-  return (!event.startsWith('p1-') || event === 'p1-recover') && event !== 'p3-archangel'
+  return event !== 'p3-archangel'
+}
+export function shouldCheckIntermissionVoid(event: string): boolean {
+  return event === 'beam' || event === 'splinter'
+}
+export function playerCarriesCrystal(state: {
+  phaseOne: boolean
+  p1AssignedAndCollected: boolean
+  p1WrongCrystalHeld: boolean
+  assigned: boolean
+  spent: boolean
+  dropped: boolean
+  phaseFour: boolean
+}): boolean {
+  if (state.phaseFour || state.dropped) return false
+  if (state.phaseOne) return state.p1AssignedAndCollected || state.p1WrongCrystalHeld
+  return state.assigned && !state.spent
 }
 export function crystalWipeReason(state: { assigned: boolean; splinterResolving: boolean; dropped: boolean; crystalHit: boolean; expired: boolean }): string | null {
   if (state.expired) return 'Crystal expired before pickup'

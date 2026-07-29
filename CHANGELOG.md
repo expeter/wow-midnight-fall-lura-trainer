@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+## 0.5.0 · 2026-07-29
+
+- BUG-113: Restrict the legacy Intermission annulus check to its live beam and
+  Splinter mechanics so Phase 2 and the Phase 2-to-Phase 3 handoff cannot emit
+  the generic “Entered the void zone” message.
+- BUG-114: Suppress player and NPC combat projectiles during the Phase
+  1-to-Intermission handoff, then target centered Intermission L’ura.
+- CR-165: Include each recorded wipe reason in the public activity feed.
+- CR-166: Let a Phase 1 crystal carrier drop and recollect their assigned
+  crystal through the normal six-second explosion countdown without treating
+  the interaction itself as a failure.
+- CR-167: Keep a small yellow ground glow visible beneath the controlled player
+  whenever they actually carry a crystal, including Phase 2.
+
 ## 0.4.2 · 2026-07-29
 
 - BUG-111: Restore production online-attempt issuance after the VPS retained an

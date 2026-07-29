@@ -110,7 +110,7 @@ describe('Lura API foundation', () => {
 
   it('does not let a stale environment override pin attempt compatibility', () => {
     const releaseConfig = loadConfig({ TRAINER_CURRENT_VERSION: '0.3.0' })
-    assert.equal(releaseConfig.currentTrainerVersion, '0.4.2')
+    assert.equal(releaseConfig.currentTrainerVersion, '0.5.0')
   })
 
   it('accepts both loopback hostname forms for configured local CORS origins', async () => {

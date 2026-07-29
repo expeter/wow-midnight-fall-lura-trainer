@@ -50,7 +50,7 @@ describe('online attempt integration', () => {
     const links = await screen.findAllByRole('link', { name: 'Lurana—silvermoon' })
     expect(links).toHaveLength(2)
     expect(links[0]).toHaveAttribute('href', 'https://raider.io/characters/eu/silvermoon/Lurana')
-    expect(screen.getByText(/wiped on: Phase 3 · normal/i)).toBeInTheDocument()
+    expect(screen.getByText(/wiped on: Phase 3 · normal/i)).toHaveTextContent('Touched a Stars beam')
     expect(screen.getByText(/earned achievement:/i)).toHaveTextContent('Ready for Raid Night')
   })
 

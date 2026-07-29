@@ -95,6 +95,7 @@ export function npcProjectileShots(time: number, npcCount: number): NpcProjectil
 export function combatProjectilesActive(event: string) {
   return !event.includes('countdown')
     && event !== 'positioning'
+    && event !== 'p1-transition'
     && event !== 'p2-jump'
     && event !== 'p3-flight'
     && event !== 'p4-transition'

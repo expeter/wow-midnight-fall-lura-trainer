@@ -65,6 +65,8 @@ describe('cosmetic combat projectiles', () => {
     expect(combatProjectilesActive('beam')).toBe(true)
     expect(combatProjectilesActive('p3-flight')).toBe(false)
     expect(combatProjectilesActive('p4-countdown')).toBe(false)
+    expect(combatProjectilesActive('p1-transition')).toBe(false)
+    expect(combatProjectilesActive('beam')).toBe(true)
   })
 
   it('keeps transition suppression scoped to ambient NPC shots', () => {

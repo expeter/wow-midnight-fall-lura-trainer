@@ -5,11 +5,34 @@ import {
   configurationFingerprint,
   issueOnlineAttempt,
   loadLeaderboard,
+  recentActivityRows,
 } from './online'
 
 afterEach(() => vi.restoreAllMocks())
 
 describe('online API client', () => {
+  it('keeps only activity from the last ten minutes for the live front-page signal', () => {
+    const now = Date.parse('2026-07-29T20:00:00.000Z')
+    const row = (id: string, occurredAt: string) => ({
+      id,
+      type: 'wipe' as const,
+      displayName: 'Player',
+      character: null,
+      realm: null,
+      region: null,
+      phase: 'Phase 2',
+      difficulty: 'normal' as const,
+      reason: 'Wipe',
+      achievementTitle: null,
+      trainerVersion: '0.5.0',
+      occurredAt,
+    })
+    expect(recentActivityRows([
+      row('recent', '2026-07-29T19:50:00.000Z'),
+      row('old', '2026-07-29T19:49:59.999Z'),
+      row('future', '2026-07-29T20:00:00.001Z'),
+    ], now).map(activity => activity.id)).toEqual(['recent'])
+  })
   it('sends credentialed attempt issuance and completion requests with CSRF', async () => {
     const requests: Array<{ url: string; init: RequestInit }> = []
     vi.stubGlobal('fetch', vi.fn(async (input, init = {}) => {

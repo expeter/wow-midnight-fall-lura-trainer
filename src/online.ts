@@ -90,6 +90,19 @@ export interface ActivityFeedRow {
   occurredAt: string
 }
 
+export const LIVE_ACTIVITY_WINDOW_MS = 10 * 60_000
+
+export function recentActivityRows(
+  rows: ActivityFeedRow[],
+  now = Date.now(),
+  windowMs = LIVE_ACTIVITY_WINDOW_MS,
+): ActivityFeedRow[] {
+  return rows.filter(row => {
+    const occurredAt = Date.parse(row.occurredAt)
+    return Number.isFinite(occurredAt) && occurredAt <= now && now - occurredAt <= windowMs
+  })
+}
+
 async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`${ONLINE_API_ORIGIN}${path}`, {
     ...init,

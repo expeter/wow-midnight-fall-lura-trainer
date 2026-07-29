@@ -25,7 +25,7 @@ describe('online attempt integration', () => {
         difficulty: 'normal',
         reason: 'Touched a Stars beam',
         trainerVersion: '0.3.0',
-        occurredAt: '2026-07-29T18:00:00.000Z',
+        occurredAt: new Date(Date.now() - 60_000).toISOString(),
         achievementTitle: null,
       }, {
         id: 'achievement:1',
@@ -39,7 +39,7 @@ describe('online attempt integration', () => {
         reason: null,
         achievementTitle: 'Ready for Raid Night',
         trainerVersion: '0.3.0',
-        occurredAt: '2026-07-29T18:01:00.000Z',
+        occurredAt: new Date(Date.now() - 30_000).toISOString(),
       }] })
       if (url.endsWith('/v1/me')) return Response.json({ authenticated: false }, { status: 401 })
       if (url.includes('/v1/leaderboards')) return Response.json({ rows: [] })

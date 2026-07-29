@@ -15,6 +15,8 @@
   the interaction itself as a failure.
 - CR-167: Keep a small yellow ground glow visible beneath the controlled player
   whenever they actually carry a crystal, including Phase 2.
+- CR-168: Show the front-page activity box only while it contains activity from
+  the last ten minutes, leaving permanent records intact.
 
 ## 0.4.2 · 2026-07-29
 

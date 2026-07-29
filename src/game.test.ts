@@ -6,6 +6,7 @@ import type { Point } from './game'
 import { P3_LIGHT_RADIUS, p3SpreadPosition, p4NpcSplinterMovementAge, p4NpcSplinterOutwardSeconds, p4RenderedNpcSplinterHitsPlayer, p4RenderedNpcSplinterOrigin, p4TankConeHitsBox, p4TankKillsBox, P4_TANK_KILL_RADIUS } from './game'
 import { isP3RaidMemberVisible, p3ActiveCrystalAssignments } from './game'
 import { bossDamageScoreBonus, isActiveP3RuneDuty, isInsideP3Pool, p4BossHealthWithPlayerDamage, p4PlayerSplinterHitsNpc, p4StartingBossState, P1_STAR_LENGTH, preP4BossHealth, shouldApplyP3NpcDisplacement, shouldHoldP3RunePartner, shouldSuppressRepeatedWipe, shouldTriggerP3EarlyClear, starsplinterHitsCrystalCarrier, starsplinterHitsPoint } from './game'
+import { p4UnsafePenaltyTicks, P4_SAFE_ZONE_HEALTH_DRAIN_PER_SECOND, P4_SAFE_ZONE_PENALTY_PER_SECOND } from './game'
 
 describe('Intermission game rules', () => {
   it('creates six deterministic stars for a seed', () => { expect(seededStars(42)).toEqual(seededStars(42)); expect(seededStars(42)).toHaveLength(6) })
@@ -185,6 +186,13 @@ describe('Intermission game rules', () => {
   })
   it('gives the assisting memory partner a stable one-to-six-second reaction delay', () => { const delay = p3NpcRuneReactionDelay(1234, 7, 2); expect(delay).toBe(p3NpcRuneReactionDelay(1234, 7, 2)); expect(delay).toBeGreaterThanOrEqual(1); expect(delay).toBeLessThan(6); expect(new Set(Array.from({ length: 12 }, (_, seed) => p3NpcRuneReactionDelay(seed, 7, 2).toFixed(2))).size).toBeGreaterThan(4) })
   it('counts the visible player footprint at the edge of Dark Archangel protection', () => { const bubble = { x: 100, y: 100 }; expect(isProtectedByP3Bubble({ x: 130, y: 100 }, bubble)).toBe(true); expect(isProtectedByP3Bubble({ x: 130.1, y: 100 }, bubble)).toBe(false) })
+  it('drains Phase 4 health faster than passive health movement and charges ten points each unsafe second', () => {
+    expect(P4_SAFE_ZONE_HEALTH_DRAIN_PER_SECOND).toBe(30)
+    expect(P4_SAFE_ZONE_PENALTY_PER_SECOND).toBe(10)
+    expect(p4UnsafePenaltyTicks(0, .99)).toBe(0)
+    expect(p4UnsafePenaltyTicks(.99, 1.01)).toBe(1)
+    expect(p4UnsafePenaltyTicks(1.01, 3.2)).toBe(2)
+  })
   it('accepts a protection crystal anywhere inside the visible Dark Archangel protection area', () => { const stack = { x: 100, y: 100 }; expect(isP3ProtectionCrystalPlaced({ x: 126, y: 100 }, stack)).toBe(true); expect(isP3ProtectionCrystalPlaced({ x: 126.1, y: 100 }, stack)).toBe(false) })
   it('uses NPC protection when the player is assigned to the other Dark Archangel', () => { const stack = { x: 100, y: 100 }; const prematurePlayerCrystal = { x: 150, y: 150 }; expect(p3ProtectionBubbleCenter(stack, prematurePlayerCrystal, 2, 1)).toEqual(stack); expect(p3ProtectionBubbleCenter(stack, prematurePlayerCrystal, 2, 2)).toEqual(prematurePlayerCrystal) })
   it('requires three players and accelerates a P3 Soak for every extra player', () => { expect(P3_POOL_HEALTH).toBe(29.75); expect(p3PoolSoakRate(0)).toBe(0); expect(p3PoolSoakRate(1)).toBe(0); expect(p3PoolSoakRate(2)).toBe(0); expect(p3PoolSoakRate(3)).toBe(3); expect(p3PoolSoakRate(4)).toBe(4); expect(p3PoolSoakRate(5)).toBe(5); expect(p3PoolSoakRate(6)).toBe(6); expect(P3_POOL_HEALTH / p3PoolSoakRate(3)).toBeCloseTo(9.92, 2) })

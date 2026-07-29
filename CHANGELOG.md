@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- CR-156: Make time outside the Phase 4 protected stack visibly drain health
+  and deduct ten points for every full unsafe second.
 - CR-155: Polish leaderboard/profile controls, add distinct localhost
   categories, expose profile-linked practice naming and direct logout, and
   retain privacy-mode anonymous results without publishing them.

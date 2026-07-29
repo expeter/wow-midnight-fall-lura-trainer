@@ -57,6 +57,8 @@ export const P3_MEMORY_STEP_SECONDS = 5
 export const P3_SECOND_SOAK_NPC_DELAY_SECONDS = 4
 export const P4_STACK_RADIUS = 150
 export const P4_PROTECTION_RADIUS = 22.572
+export const P4_SAFE_ZONE_HEALTH_DRAIN_PER_SECOND = 30
+export const P4_SAFE_ZONE_PENALTY_PER_SECOND = 10
 export const P4_GROUP_HIT_RADIUS = 10
 export const P4_INITIAL_SPLINTER_START_SECONDS = 14.3
 export const P4_SPLINTER_START_SECONDS = 14.3
@@ -665,6 +667,10 @@ export function keepP4NpcInProtection(position: Point, groupCenter: Point, margi
     x: groupCenter.x + dx / currentRadius * allowedRadius,
     y: groupCenter.y + dy / currentRadius * allowedRadius,
   }
+}
+
+export function p4UnsafePenaltyTicks(previousUnsafeSeconds: number, nextUnsafeSeconds: number): number {
+  return Math.max(0, Math.floor(nextUnsafeSeconds) - Math.floor(previousUnsafeSeconds))
 }
 
 export function p4BossHealth(cycle: number, eventTime: number): number {

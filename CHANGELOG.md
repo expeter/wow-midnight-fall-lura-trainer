@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- CR-155: Polish leaderboard/profile controls, add distinct localhost
+  categories, expose profile-linked practice naming and direct logout, and
+  retain privacy-mode anonymous results without publishing them.
 - CR-154: Simplify the rankings-only leaderboard and populate empty or
   unavailable localhost categories with 100 deterministic preview players,
   including a test position at rank 65 beneath the first ten.

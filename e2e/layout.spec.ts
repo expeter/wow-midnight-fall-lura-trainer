@@ -31,7 +31,7 @@ test('keeps optional login and public leaderboards usable without the API', asyn
     'href',
     'http://127.0.0.1:8787/v1/auth/battlenet/start?region=us',
   )
-  await expect(profile.getByRole('link', { name: 'Privacy' })).toHaveAttribute('href', '/privacy.html')
+  await expect(profile.getByRole('link', { name: 'Privacy policy' })).toHaveAttribute('href', '/privacy.html')
   const box = await profile.boundingBox()
   expect(box).not.toBeNull()
   expect(box!.x).toBeGreaterThanOrEqual(0)
@@ -44,8 +44,8 @@ test('shows one of six setup sections and keeps the current Top 10 below game se
   const assignment = page.getByRole('group', { name: 'Character to play' })
   const difficulty = page.getByRole('group', { name: 'Difficulty & movement' })
   await expect(practice).toBeVisible()
-  await expect(assignment.getByLabel('Your player name')).toBeVisible()
-  await expect(difficulty.getByLabel('Your player name')).toHaveCount(0)
+  await expect(assignment.getByLabel('Name used in practice')).toBeVisible()
+  await expect(difficulty.getByLabel('Name used in practice')).toHaveCount(0)
   await expect(page.getByLabel('Current practice configuration')).toContainText('Normal · Non-crystal')
   await expect(page.getByRole('heading', { name: 'Top 10 leaderboard' })).toBeVisible()
   const tabs = page.getByRole('navigation', { name: 'Setup sections' })

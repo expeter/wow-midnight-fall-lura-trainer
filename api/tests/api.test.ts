@@ -129,8 +129,8 @@ describe('Lura API foundation', () => {
     ))
     assert.equal(response.status, 200)
     const payload = await response.json() as { rows: Array<{ displayName: string; realm: string | null }> }
-    assert.deepEqual(payload.rows.map(row => row.displayName), ['Beacon', 'Aegis', 'Anonymous'])
-    assert.deepEqual(payload.rows.map(row => row.realm), ['illidan', 'silvermoon', null])
+    assert.deepEqual(payload.rows.map(row => row.displayName), ['Beacon', 'Aegis'])
+    assert.deepEqual(payload.rows.map(row => row.realm), ['illidan', 'silvermoon'])
   })
 
   it('searches only fields made public by privacy settings', async () => {
@@ -414,6 +414,12 @@ describe('Lura API foundation', () => {
     assert.deepEqual(meBody.standings, [{
       difficulty: 'hard', duty: 'crystal', score: 1000, durationMs: 90_000, position: 1,
     }])
+    const hiddenRows = await app.handle(new Request(
+      'http://api.test/v1/leaderboards?difficulty=hard&duty=crystal',
+    ))
+    assert.deepEqual((await hiddenRows.json() as { rows: unknown[] }).rows, [])
+    assert.equal(database.prepare('SELECT COUNT(*) AS count FROM results').get()!.count, 1)
+
     const privacy = await app.handle(new Request('http://api.test/v1/me/privacy', {
       method: 'PUT',
       headers: {

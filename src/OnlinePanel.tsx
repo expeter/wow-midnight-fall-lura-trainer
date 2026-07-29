@@ -19,24 +19,29 @@ import {
 const LOCAL_NAMES = ['Aegis', 'Voidrunner', 'Starweaver', 'Nightbloom', 'Dawnshield', 'Riftwalker', 'Moonstrike', 'Emberward', 'Silversong', 'Astralyn']
 const LOCAL_REALMS = ['silvermoon', 'blackrock', 'draenor', 'tarren-mill', 'twisting-nether']
 const LOCAL_GUILDS = ['I Asgard I', 'Midnight Crew', 'Nocturne', 'Crystal Clear', 'Last Pull']
-const LOCAL_FIXTURES: LeaderboardRow[] = Array.from({ length: 100 }, (_, index) => {
+function localFixtures(difficulty: 'normal' | 'hard', duty: 'crystal' | 'non-crystal'): LeaderboardRow[] {
+  const categoryOffset = (difficulty === 'hard' ? 3 : 0) + (duty === 'non-crystal' ? 5 : 0)
+  const categoryCode = `${difficulty === 'hard' ? 'H' : 'N'}${duty === 'crystal' ? 'C' : 'N'}`
+  const topScore = difficulty === 'hard' ? 1780 : 1605
+  return Array.from({ length: 100 }, (_, index) => {
   const rank = index + 1
-  const baseName = LOCAL_NAMES[index % LOCAL_NAMES.length]
-  const displayName = rank === 65 ? 'Your localhost character' : rank <= 2 ? baseName : `${baseName}${String(rank).padStart(2, '0')}`
+  const baseName = LOCAL_NAMES[(index + categoryOffset) % LOCAL_NAMES.length]
+  const displayName = rank === 65 ? `Your localhost character · ${categoryCode}` : `${baseName}-${categoryCode}${String(rank).padStart(2, '0')}`
   return {
     rank,
     displayName,
     character: rank % 4 === 0 ? null : displayName,
-    realm: rank % 4 === 0 ? null : LOCAL_REALMS[index % LOCAL_REALMS.length],
+    realm: rank % 4 === 0 ? null : LOCAL_REALMS[(index + categoryOffset) % LOCAL_REALMS.length],
     region: rank % 4 === 0 ? null : 'eu',
-    guild: rank % 5 === 0 ? null : LOCAL_GUILDS[index % LOCAL_GUILDS.length],
-    score: 1605 - rank * 6,
-    durationMs: 270000 + rank * 1250,
+    guild: rank % 5 === 0 ? null : LOCAL_GUILDS[(index + categoryOffset) % LOCAL_GUILDS.length],
+    score: topScore - rank * (difficulty === 'hard' ? 7 : 6) - (duty === 'non-crystal' ? 18 : 0),
+    durationMs: 265000 + categoryOffset * 2100 + rank * (difficulty === 'hard' ? 1400 : 1250),
     trainerVersion: '0.3.0',
   }
-})
+  })
+}
 
-export function OnlineStandingSummary({ session, onManage }: { session: OnlineSession; onManage: () => void }) {
+export function OnlineStandingSummary({ session, onManage, onLogout }: { session: OnlineSession; onManage: () => void; onLogout?: () => void }) {
   const standings = session.standings ?? []
   const best = (difficulty: 'normal' | 'hard') => standings
     .filter(row => row.difficulty === difficulty)
@@ -54,7 +59,10 @@ export function OnlineStandingSummary({ session, onManage }: { session: OnlineSe
           {' · '}Hard {best('hard') ? `#${best('hard')!.position}` : '—'}
         </small></>}
     </div>
-    <button className="online-summary-action" onClick={onManage}>{session.authenticated ? 'Manage profile' : 'Login'}</button>
+    <div className="online-summary-actions">
+      <button className="online-summary-action" onClick={onManage}>{session.authenticated ? 'Manage profile' : 'Login'}</button>
+      {session.authenticated && onLogout && <button className="online-summary-logout" onClick={onLogout}>Log out</button>}
+    </div>
   </aside>
 }
 
@@ -140,17 +148,18 @@ export default function OnlinePanel({
 
   const csrf = session.csrfToken ?? ''
   const localhostPreview = ['localhost', '127.0.0.1'].includes(window.location.hostname)
+  const localRows = localFixtures(difficulty, duty)
   const ownStanding = session.standings?.find(row => row.difficulty === difficulty && row.duty === duty)
     ?? (localhostPreview ? {
       difficulty,
       duty,
       position: 65,
-      score: LOCAL_FIXTURES[64].score,
-      durationMs: LOCAL_FIXTURES[64].durationMs,
+      score: localRows[64].score,
+      durationMs: localRows[64].durationMs,
     } : undefined)
-  const sourceRows = localhostPreview && (!leaderboardLoaded || rows.length === 0) ? LOCAL_FIXTURES : rows
+  const sourceRows = localhostPreview && (!leaderboardLoaded || rows.length === 0) ? localRows : rows
   const normalizedSearch = search.trim().toLocaleLowerCase()
-  const filteredRows = normalizedSearch && sourceRows === LOCAL_FIXTURES
+  const filteredRows = normalizedSearch && sourceRows === localRows
     ? sourceRows.filter(row => [row.displayName, row.character, row.realm, row.guild].some(value => value?.toLocaleLowerCase().includes(normalizedSearch)))
     : sourceRows
   const displayedRows = showFullLeaderboard ? filteredRows : filteredRows.slice(0, 10)
@@ -158,7 +167,7 @@ export default function OnlinePanel({
   return <section className={`online-panel ${compact ? 'compact' : ''}`} aria-labelledby="online-title">
     <header>
       <div><p className="eyebrow">{view === 'profile' ? 'Optional online profile' : 'Verified rankings'}</p><h2 id="online-title">{view === 'profile' ? 'My characters' : showFullLeaderboard ? 'Full leaderboard' : 'Top 10 leaderboard'}</h2></div>
-      {view === 'profile' && <a href={`${import.meta.env.BASE_URL}privacy.html`}>Privacy</a>}
+      {view === 'profile' && <a className="online-privacy-link" href={`${import.meta.env.BASE_URL}privacy.html`}>Privacy policy</a>}
     </header>
     {view === 'profile' && <p role="status">{status}</p>}
     {view === 'profile' && session.authenticated ? <div className="online-account">

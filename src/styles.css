@@ -337,6 +337,7 @@
 .boss-health-track { height: 10px; margin-top: 5px; overflow: hidden; border-radius: 5px; background: #21102b; }
 .boss-health-track i { display: block; height: 100%; background: linear-gradient(90deg, #9139a6, #d77ee8); transition: width .2s linear; }
 .boss-health > small { margin-top: 5px; color: #cfa9dc; font-size: 8px; }
+.boss-health-shield { color: #8ff2d5; font: inherit; font-style: normal; text-shadow: 0 0 8px rgba(115,224,193,.65); }
 .main-cast { position: relative; height: 15px; margin-top: 6px; overflow: hidden; border: 1px solid #5f5276; border-radius: 4px; background: #151126; }
 .main-cast i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, #3e7db5, #70caff); }
 .main-cast .main-cast-fill { width: 100%; transform: scaleX(0); transform-origin: left center; animation: main-cast-fill 1s linear forwards; }

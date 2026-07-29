@@ -528,7 +528,7 @@ describe('Lura API foundation', () => {
         key, durationMs: 60_000, mistakes: 0, recovery: 'passed',
       })),
       mistakes: [],
-      actions: { recoveryPasses: 5, mainAbilityCasts: 20, continuousPenalty: 0 },
+      actions: { recoveryPasses: 5, mainAbilityCasts: 220, continuousPenalty: 0 },
       achievementInputs: {
         wipeCount: 0,
         crystalFailures: 0,
@@ -537,7 +537,7 @@ describe('Lura API foundation', () => {
         earlyKill: false,
         p3EarlyClear: false,
       },
-      submittedScore: 1320,
+      submittedScore: 2020,
       trainerVersion: '0.3.0',
       buildId: 'build-online',
     }
@@ -552,6 +552,19 @@ describe('Lura API foundation', () => {
         .get(attempt.attemptId)!.consumedAt,
       null,
     )
+    const impossibleCastRate = await app.handle(new Request(
+      `http://api.test/v1/attempts/${attempt.attemptId}/complete`,
+      {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          ...completion,
+          actions: { ...completion.actions, mainAbilityCasts: 301 },
+        }),
+      },
+    ))
+    assert.equal(impossibleCastRate.status, 400)
+    assert.deepEqual(await impossibleCastRate.json(), { error: 'invalid_actions' })
 
     const accepted = await app.handle(new Request(
       `http://api.test/v1/attempts/${attempt.attemptId}/complete`,
@@ -559,7 +572,7 @@ describe('Lura API foundation', () => {
     ))
     assert.equal(accepted.status, 200)
     const acceptedBody = await accepted.json() as { score: number; achievementIds: string[] }
-    assert.equal(acceptedBody.score, 1320)
+    assert.equal(acceptedBody.score, 2020)
     assert.ok(acceptedBody.achievementIds.includes('hard-score-flawless'))
     const duplicate = await app.handle(new Request(
       `http://api.test/v1/attempts/${attempt.attemptId}/complete`,
@@ -572,7 +585,7 @@ describe('Lura API foundation', () => {
       'http://api.test/v1/leaderboards?difficulty=hard&duty=crystal',
     ))
     const rows = (await board.json() as { rows: Array<{ score: number; displayName: string }> }).rows
-    assert.deepEqual(rows[0], { ...rows[0], score: 1320, displayName: 'Verified' })
+    assert.deepEqual(rows[0], { ...rows[0], score: 2020, displayName: 'Verified' })
     const achievements = await app.handle(new Request(
       'http://api.test/v1/me/achievements',
       { headers: { cookie: session.cookie } },

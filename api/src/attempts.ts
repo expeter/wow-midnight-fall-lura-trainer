@@ -125,7 +125,7 @@ function validatedCompletion(input: CompletionInput) {
   if (!Number.isInteger(durationMs) || durationMs < 60_000 || durationMs > 3_600_000) {
     throw new Error('implausible_duration')
   }
-  if (!Number.isInteger(submittedScore) || submittedScore < 0 || submittedScore > 2500) {
+  if (!Number.isInteger(submittedScore) || submittedScore < 0 || submittedScore > 10_000) {
     throw new Error('invalid_score')
   }
   if (!Array.isArray(input.phaseResults) || input.phaseResults.length !== PHASES.length) {
@@ -170,7 +170,8 @@ function validatedCompletion(input: CompletionInput) {
   if (
     !Number.isInteger(recoveryPasses) || recoveryPasses < 0 || recoveryPasses > PHASES.length
     || recoveryPasses !== phases.filter(phase => phase.recovery === 'passed').length
-    || !Number.isInteger(mainAbilityCasts) || mainAbilityCasts < 0 || mainAbilityCasts > 200
+    || !Number.isInteger(mainAbilityCasts) || mainAbilityCasts < 0
+    || mainAbilityCasts > Math.floor(durationMs / 1_000)
     || !Number.isInteger(continuousPenalty) || continuousPenalty < 0 || continuousPenalty > 1000
   ) throw new Error('invalid_actions')
   const mistakePenalty = mistakes.reduce((total, mistake) => total + mistake.penalty, 0)

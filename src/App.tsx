@@ -1323,7 +1323,7 @@ export default function App() {
           return
         }
       }
-      if (shouldTriggerP3EarlyClear(event, bossPlayerDamageRef.current)) {
+      if (shouldTriggerP3EarlyClear(event, bossPlayerDamageRef.current, p3Round)) {
         keys.clear()
         beginP3DamageClear()
         return
@@ -1414,7 +1414,7 @@ export default function App() {
         bossPlayerDamageRef.current = nextDamage
         const nextBossHealth = event === 'p4-cycle'
           ? p4BossHealthWithPlayerDamage(p4CycleRef.current, eventTimeRef.current, nextDamage)
-          : preP4BossHealth(nextDamage)
+          : preP4BossHealth(nextDamage, p3Round < 2)
         bossHealthRef.current = nextBossHealth
         setBossHealth(nextBossHealth)
         setStats(current => ({ ...current, score: current.score + 1 + damageBonus }))
@@ -2279,7 +2279,7 @@ export default function App() {
       || onlineCompletionStartedRef.current === onlineAttempt.attemptId
     ) return
     onlineCompletionStartedRef.current = onlineAttempt.attemptId
-    const casts = Math.min(200, mainAbilityCastCountRef.current)
+    const casts = mainAbilityCastCountRef.current
     const penaltyTotal = mistakes.reduce((total, mistake) => total + Math.max(0, Math.round(mistake.penalty)), 0)
     const scoreBeforeContinuousPenalty = 1000 - penaltyTotal + recoveryPasses * 50 + casts + Math.floor(casts / 20) * 50
     const continuousPenalty = Math.max(0, Math.min(1000, scoreBeforeContinuousPenalty - Math.round(stats.score)))
@@ -3122,7 +3122,7 @@ function GameArena(props: { p1Sequence: number; p1Seed: number; p1BossOpening: P
         {props.p1WrongCrystalDeadline !== null && <div className="crystal-countdown wrong-p1-crystal"><>DROP WRONG CRYSTAL<br /><strong>{Math.max(1, Math.ceil(props.p1WrongCrystalDeadline - props.stats.time))}</strong></></div>}
         {props.crystal && <div className="crystal-countdown" style={{ left: `${props.hudLayout.crystal.x}%`, top: `${props.hudLayout.crystal.y}%` }}>{props.event === 'p3-archangel' ? <>PROTECTION<br /><strong>{Math.max(1, Math.ceil(6 - props.eventTime))}</strong></> : <>PICK UP IN<br /><strong>{finalRecovery ? Math.max(1, Math.ceil(2 - props.eventTime)) : Math.max(1, Math.ceil(6 - props.crystalAge))}</strong></>}</div>}
         <div className={`player-health health-${healthBand(props.health)}`} style={{ left: `${props.hudLayout.playerHealth.x}%`, top: `${props.hudLayout.playerHealth.y}%` }}><div className="health-abilities" aria-label="Recovery charges"><b className={props.healthPotUsed ? 'used' : ''} title={props.healthPotUsed ? 'Health potion used until next phase' : 'Health potion ready'}>🧪 <span>{keyLabel(props.keyBindings.healthPot)}</span></b><b className={props.shieldUsed ? 'used' : ''} title={props.shieldUsed ? 'Shield used until next phase' : 'Shield ready'}>🛡 <span>{keyLabel(props.keyBindings.shield)}</span></b></div><div className="health-track"><i style={{ width: `${props.health}%` }} /></div><span>{Math.round(props.health)}%</span></div>
-        <><div className="boss-health" style={{ left: `${props.hudLayout.bossHealth.x}%`, top: `${props.hudLayout.bossHealth.y}%` }}><span>L’URA · {props.bossHealth.toFixed(1)}%</span><div className="boss-health-track"><i style={{ width: `${props.bossHealth}%` }} /></div><small>{phaseFour ? 'L’URA falls steadily over the 88-second phase' : 'The veil shudders with every step.'}</small></div>{props.mainCastRemaining > 0 && <div className="player-castbar main-cast" style={{ left: `${props.hudLayout.castbar.x}%`, top: `${props.hudLayout.castbar.y}%` }}><i className="main-cast-fill" style={{ animationDuration: `${MAIN_ABILITY_CAST_SECONDS / Math.max(.01, props.gameSpeed)}s`, animationPlayState: props.paused ? 'paused' : 'running' }} /><b>MAIN ABILITY · {props.mainCastRemaining.toFixed(1)}s</b></div>}</>
+        <><div className="boss-health" style={{ left: `${props.hudLayout.bossHealth.x}%`, top: `${props.hudLayout.bossHealth.y}%` }}><span>L’URA · {props.bossHealth.toFixed(1)}%{!phaseFour && props.p3Round < 2 && props.bossHealth <= 3 ? <em className="boss-health-shield"> ◈ VEIL PROTECTION</em> : null}</span><div className="boss-health-track"><i style={{ width: `${props.bossHealth}%` }} /></div><small>{phaseFour ? 'L’URA falls steadily over the 88-second phase' : !phaseFour && props.p3Round < 2 && props.bossHealth <= 3 ? 'Damage and points continue · protection ends with P3 sequence two' : 'The veil shudders with every step.'}</small></div>{props.mainCastRemaining > 0 && <div className="player-castbar main-cast" style={{ left: `${props.hudLayout.castbar.x}%`, top: `${props.hudLayout.castbar.y}%` }}><i className="main-cast-fill" style={{ animationDuration: `${MAIN_ABILITY_CAST_SECONDS / Math.max(.01, props.gameSpeed)}s`, animationPlayState: props.paused ? 'paused' : 'running' }} /><b>MAIN ABILITY · {props.mainCastRemaining.toFixed(1)}s</b></div>}</>
         <div className="controls"><span className="controls-copy">{keyLabel(props.keyBindings.forward)}/{keyLabel(props.keyBindings.left)}/{keyLabel(props.keyBindings.backward)}/{keyLabel(props.keyBindings.right)} move · {keyLabel(props.keyBindings.jump)} jump · {keyLabel(props.keyBindings.pause)} pause · left-drag look · right-drag view + face · wheel zoom · Zoom {zoomDisplay.toFixed(1)} yd · {phaseOne ? p1?.detail : phaseFour ? props.event === 'p4-countdown' ? 'Movement unlocks after the countdown and raid knockup.' : props.event === 'p4-transition' ? 'The 21-second Heaven & Hell clock is running; adds begin when the raid lands.' : p4SplinterActive ? 'Three players alternate left, right, left with Starsplinter; Heaven & Hell remains on its global timer.' : p4RelocationProgress(props.p4Cycle, props.eventTime) !== null ? 'Move with the yellow protection zone and leave the consumed quarter behind.' : props.p4Cycle >= 5 ? 'No safe quarter remains. Hold until Lura falls.' : 'Stack safely; Heaven & Hell resolves every 21 seconds.' : p3 ? p3.detail : p2 ? p2.detail : countdown ? `Wait for the timer at ${props.startSlotName}` : positioning ? props.difficulty === 'easy' || props.difficulty === 'test' ? `Follow the teal guide to Spot ${props.assignment + 1}` : `Find Spot ${props.assignment + 1}; its ring appears only when close` : finalRecovery ? 'Two seconds to recover the final crystal before the Phase 2 center jump' : props.role === 'carrier' ? `${keyLabel(props.keyBindings.crystal)} drops the crystal anywhere · move away · pick up in time` : props.cycle === 6 ? 'Final set: all 20 players marked' : 'Dodge the ten marked Starsplinters'}</span><BuildIndicator inGame /></div>
       </div>
     </div>

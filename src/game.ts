@@ -1028,15 +1028,17 @@ export function p2ReturningOrbPositions(age: number, resolvedCycle: number, orbi
 }
 export const PRE_P4_BOSS_HEALTH_BUDGET = 105
 
-export function shouldTriggerP3EarlyClear(event: string, playerDamage: number): boolean {
+export function shouldTriggerP3EarlyClear(event: string, playerDamage: number, p3Round: number): boolean {
   return event.startsWith('p3-')
     && event !== 'p3-countdown'
     && event !== 'p3-sector-move'
+    && p3Round >= 2
     && playerDamage >= PRE_P4_BOSS_HEALTH_BUDGET
 }
-export function preP4BossHealth(playerDamage: number): number {
+export function preP4BossHealth(playerDamage: number, protectedUntilP3SequenceTwo = false): number {
   const damage = Math.max(0, Math.min(PRE_P4_BOSS_HEALTH_BUDGET, playerDamage))
-  return 100 * (1 - damage / PRE_P4_BOSS_HEALTH_BUDGET)
+  const health = 100 * (1 - damage / PRE_P4_BOSS_HEALTH_BUDGET)
+  return protectedUntilP3SequenceTwo ? Math.max(3, health) : health
 }
 export function p4StartingBossState(): { health: number; playerDamage: number } {
   return { health: 100, playerDamage: 0 }

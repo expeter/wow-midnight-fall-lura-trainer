@@ -37,6 +37,15 @@ change before implementation.
 
 - Results identify the played difficulty and whether the selected position had
   crystal duty.
+- L’ura uses one shared damage pool from Phase 1 through the end of Phase 3.
+  Before Phase 3 sequence two, Veil Protection clamps displayed health at 3%
+  while casts, damage, and points continue accumulating. Protection ends only
+  after the first Phase 3 sector relocation, allowing a qualified early clear
+  to transition from a reachable position.
+- Phase 4 starts with an independent refreshed health pool. Clearing during
+  Phase 3 and killing early during Phase 4 award separate achievements.
+- Verified Main ability telemetry is not truncated to a fixed cast count. The
+  API accepts at most one completed cast per simulated encounter second.
 - Flawless means zero recorded mistakes.
 - Potion, shield, and main ability use are listed in the completion details;
   potion and shield are permanent phase-refilling actions rather than options.

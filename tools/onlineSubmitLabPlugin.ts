@@ -20,7 +20,7 @@ button{cursor:pointer;background:#1b3a44;border-color:#73e0c1;font-weight:700}pr
 <label>Duration (seconds)<input name="duration" type="number" min="60" max="3600" value="300"></label>
 <label>Mistake penalty<input name="penalty" type="number" min="0" max="200" value="0"></label>
 <label>Recovery passes (0–5)<input name="recovery" type="number" min="0" max="5" value="5"></label>
-<label>Main Ability casts (0–200)<input name="casts" type="number" min="0" max="200" value="20"></label>
+<label>Main Ability casts (max one/second)<input name="casts" type="number" min="0" max="3600" value="20"></label>
 <label>Continuous penalty<input name="continuous" type="number" min="0" max="1000" value="0"></label>
 <label>Calculated score<input name="score" readonly></label>
 <div class="checks wide">

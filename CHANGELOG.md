@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- CR-160: Clamp the shared P1–P3 boss pool at 3% behind visible Veil
+  Protection until Phase 3 sequence two, while continuing to count damage,
+  casts, and points; retain Phase 4's independent refreshed pool.
+- CR-159: Remove the 200-cast result truncation and validate completed Main
+  ability casts against simulated attempt duration instead.
 - CR-158: Show a spinner and explicit Battle.net redirect status immediately
   after the login action is clicked.
 - BUG-107: Canonicalize the localhost submission lab to `127.0.0.1` so the

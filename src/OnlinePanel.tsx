@@ -22,7 +22,7 @@ const LOCAL_FIXTURES: LeaderboardRow[] = [
   { rank: 3, displayName: 'Anonymous', character: null, realm: null, region: null, guild: null, score: 1325, durationMs: 301800, trainerVersion: '0.3.0' },
 ]
 
-export function OnlineStandingSummary({ session }: { session: OnlineSession }) {
+export function OnlineStandingSummary({ session, onManage }: { session: OnlineSession; onManage: () => void }) {
   const standings = session.standings ?? []
   const best = (difficulty: 'normal' | 'hard') => standings
     .filter(row => row.difficulty === difficulty)
@@ -32,12 +32,15 @@ export function OnlineStandingSummary({ session }: { session: OnlineSession }) {
     <div>
       <strong>Online standings</strong>
       {!session.authenticated
-        ? <small>Optional · sign in below to post verified runs</small>
-        : <small>
+        ? <small>Optional · connect a Battle.net character</small>
+        : <><small>
+          Signed in{session.selectedCharacter ? ` · ${session.selectedCharacter.name}—${session.selectedCharacter.realmSlug}` : ' · choose a character'}
+        </small><small>
           Normal {best('normal') ? `#${best('normal')!.position}` : '—'}
           {' · '}Hard {best('hard') ? `#${best('hard')!.position}` : '—'}
-        </small>}
+        </small></>}
     </div>
+    <button className="online-summary-action" onClick={onManage}>{session.authenticated ? 'Manage profile' : 'Login'}</button>
   </aside>
 }
 
@@ -70,8 +73,20 @@ export default function OnlinePanel({ onSession }: { onSession: (session: Online
           loadCharacters(),
           loadOnlineAchievements(),
         ])
-        setCharacters(Array.isArray(loaded.rows) ? loaded.rows : [])
+        const rows = Array.isArray(loaded.rows) ? loaded.rows : []
+        const selected = rows.find(character => character.selected)
+        setCharacters(rows)
         setOnlineAchievements(Array.isArray(achievements.rows) ? achievements.rows : [])
+        const decorated = selected ? {
+          ...next,
+          selectedCharacter: {
+            name: selected.name,
+            realmSlug: selected.realmSlug,
+            region: selected.region,
+          },
+        } : next
+        setSession(decorated)
+        onSession(decorated)
         setStatus('')
       } else setStatus('Login is optional. Anonymous play remains fully available.')
     } catch {
@@ -110,10 +125,11 @@ export default function OnlinePanel({ onSession }: { onSession: (session: Online
       </select>
       <a className="button-link" href={battleNetLoginUrl(loginRegion)}>Login with Battle.net</a>
     </div> : <div className="online-account">
-      <label>Verified character
+      <label>Verified character <small>Selection saves automatically.</small>
         <select value={characters.find(character => character.selected)?.id ?? ''} onChange={async event => {
           await selectCharacter(Number(event.target.value), csrf)
           await refreshSession()
+          setStatus('Character selected and saved.')
         }}>
           <option value="">Choose a character</option>
           {characters.map(character => <option key={character.id} value={character.id}>
@@ -138,7 +154,7 @@ export default function OnlinePanel({ onSession }: { onSession: (session: Online
       <div className="online-account-actions">
         <button className="secondary" onClick={() => void refreshCharacters(csrf).then(result => {
           window.location.assign(result.authorizationUrl)
-        }).catch(() => setStatus('Could not refresh characters.'))}>Refresh characters</button>
+        }).catch(() => setStatus('Could not refresh characters.'))}>Re-import Battle.net characters</button>
         <button onClick={() => void updatePrivacy(csrf, {
           identityMode,
           alias,
@@ -146,8 +162,8 @@ export default function OnlinePanel({ onSession }: { onSession: (session: Online
         }).then(() => {
           setStatus('Privacy settings saved.')
           return refreshSession()
-        }).catch(() => setStatus('Could not save privacy settings.'))}>Save privacy</button>
-        <button className="secondary" onClick={() => void logoutOnline(csrf).then(refreshSession)}>Log out</button>
+        }).catch(() => setStatus('Could not save privacy settings.'))}>Save public profile settings</button>
+        <button className="secondary" onClick={() => void logoutOnline(csrf).then(refreshSession)}>Log out of online profile</button>
         <button className="danger" onClick={() => {
           if (window.confirm('Permanently delete all online L’ura Trainer data?')) {
             void deleteOnlineData(csrf).then(refreshSession)

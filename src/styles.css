@@ -22,6 +22,19 @@
 .setup-jump-nav span { margin-right: 10px; font: 10px 'DM Mono', monospace; text-transform: uppercase; letter-spacing: .08em; }
 .setup-jump-nav a { padding: 2px 9px; border-left: 1px solid rgba(53,67,97,.72); color: #9baac4; font-size: 12px; text-decoration: underline; text-decoration-color: rgba(115,224,193,.35); text-underline-offset: 3px; }
 .setup-jump-nav a:hover, .setup-jump-nav a:focus-visible { color: #c9fff1; text-decoration-color: #73e0c1; outline: none; }
+.setup-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 18px 0 8px;
+  padding: 7px;
+  border: 1px solid rgba(64,79,112,.75);
+  border-radius: 13px;
+  background: rgba(9,14,27,.72);
+}
+.setup-tabs button { min-height: 46px; margin: 0; background: transparent; color: #9ba8c2; }
+.setup-tabs button.selected { color: #d9fff5; background: rgba(55,151,132,.22); border-color: #73e0c1; }
+.setup-tab-panel[hidden] { display: none; }
 .position-map { position: relative; width: min(100%, 952px); aspect-ratio: 16 / 9; margin: 0 0 24px; border: 1px solid #354361; border-radius: 12px; background-size: 140%; background-position: center; overflow: hidden; }
 .position-map::before, .position-map::after { content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); aspect-ratio: 1; border: 2px solid rgba(190,185,232,.78); border-radius: 50%; pointer-events: none; }
 .position-map::before { width: 36.7%; }
@@ -1119,10 +1132,20 @@
   border-radius: 12px;
   background: rgba(9,16,28,.72);
 }
+.online-standing-summary > div { min-width: 0; flex: 1 1 auto; }
 .online-standing-summary > span { color: #73e0c1; font-size: 22px; }
 .online-standing-summary strong, .online-standing-summary small { display: block; }
 .online-standing-summary strong { color: #d8fff4; font: 700 14px 'DM Mono', monospace; }
 .online-standing-summary small { margin-top: 3px; color: #9eabc1; font-size: 13px; }
+.online-summary-action {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 8px 11px;
+  border-color: rgba(115,224,193,.45);
+  background: rgba(115,224,193,.1);
+  color: #c9fff1;
+  font-size: 13px;
+}
 .online-panel > header,
 .online-account-actions,
 .online-login,
@@ -1176,6 +1199,7 @@
 }
 @media (max-width: 700px) {
   .setup-overview { grid-template-columns: 1fr; }
+  .setup-tabs { grid-template-columns: 1fr; }
   .online-account { grid-template-columns: 1fr; }
   .leaderboard-rows li { flex-direction: column; gap: .2rem; }
 }

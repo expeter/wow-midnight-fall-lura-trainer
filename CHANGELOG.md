@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- CR-150: Replace the long setup scroll with Practice, Raid plan, and Online
+  tabs; surface login and the selected character near the top, explicitly
+  confirm automatic character selection saves, and clarify profile actions.
 - CR-149: Remove GitHub-hosted API backup artifacts and their repository
   certificate; retain VPS-local rotation until separate storage is provided.
 - FR-057: Rebalance the setup page around practice settings and present online

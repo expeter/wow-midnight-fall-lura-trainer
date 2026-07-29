@@ -11,6 +11,7 @@ test('publishes the trainer favicon', async ({ page, request }) => {
 
 test('keeps optional login and public leaderboards usable without the API', async ({ page }) => {
   await page.goto('/')
+  await page.getByRole('button', { name: 'Online profile & leaderboard' }).click()
   const panel = page.getByRole('region', { name: 'Top 10' })
   await expect(panel).toBeVisible()
   await expect(panel.getByText(/Local play still works|Anonymous play remains fully available/)).toBeVisible()
@@ -31,20 +32,22 @@ test('keeps optional login and public leaderboards usable without the API', asyn
   expect(box!.x + box!.width).toBeLessThanOrEqual(await page.evaluate(() => innerWidth))
 })
 
-test('places practice configuration before the quieter Top 10 and moves player identity into assignment', async ({ page }) => {
+test('keeps practice first while exposing Online and Raid plan as shallow tabs', async ({ page }) => {
   await page.goto('/')
   const practice = page.getByRole('heading', { name: 'Practice configuration' })
-  const leaderboard = page.getByRole('heading', { name: 'Top 10' })
   const assignment = page.getByRole('group', { name: 'Selected assignment' })
   const difficulty = page.getByRole('group', { name: 'Difficulty & movement' })
-  const [practiceBox, leaderboardBox] = await Promise.all([practice.boundingBox(), leaderboard.boundingBox()])
-  expect(practiceBox).not.toBeNull()
-  expect(leaderboardBox).not.toBeNull()
-  expect(leaderboardBox!.y).toBeGreaterThan(practiceBox!.y)
+  await expect(practice).toBeVisible()
   await expect(assignment.getByLabel('Your player name')).toBeVisible()
   await expect(difficulty.getByLabel('Your player name')).toHaveCount(0)
+  const tabs = page.getByRole('navigation', { name: 'Setup sections' })
+  await expect(tabs.getByRole('button')).toHaveCount(3)
+  await tabs.getByRole('button', { name: 'Online profile & leaderboard' }).click()
+  await expect(page.getByRole('heading', { name: 'Top 10' })).toBeVisible()
   await page.getByRole('region', { name: 'Top 10' }).getByRole('button', { name: 'View full leaderboard' }).click()
   await expect(page.getByRole('heading', { name: 'Full leaderboard' })).toBeVisible()
+  await tabs.getByRole('button', { name: 'Raid plan' }).click()
+  await expect(page.getByRole('heading', { name: 'Layouts and sharing' })).toBeVisible()
 })
 
 test('raidlead menu exposes system voice selection and preview', async ({ page }) => {
@@ -78,13 +81,14 @@ test('raid sharing spans the setup width between HUD settings and raid planning'
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.goto('/')
   const hud = page.getByLabel('Phase 2 HUD layout preview')
+  const hudBounds = await hud.boundingBox()
+  await page.getByRole('button', { name: 'Raid plan', exact: true }).click()
   const sharing = page.getByRole('group', { name: 'Raid-plan sharing' })
   const firstPlan = page.getByLabel('Intermission position map')
-  const [hudBounds, sharingBounds, planBounds] = await Promise.all([hud.boundingBox(), sharing.boundingBox(), firstPlan.boundingBox()])
+  const [sharingBounds, planBounds] = await Promise.all([sharing.boundingBox(), firstPlan.boundingBox()])
   expect(hudBounds).not.toBeNull()
   expect(sharingBounds).not.toBeNull()
   expect(planBounds).not.toBeNull()
-  expect(sharingBounds!.y).toBeGreaterThan(hudBounds!.y + hudBounds!.height)
   expect(planBounds!.y).toBeGreaterThan(sharingBounds!.y + sharingBounds!.height)
   expect(sharingBounds!.width).toBeCloseTo(planBounds!.width, 0)
   await expect(page.getByText('INTERMISSION RAID PLAN')).toBeVisible()
@@ -120,14 +124,12 @@ test('game settings use one compact three-card row on desktop', async ({ page })
 test('setup topics use one clear heading hierarchy in document order', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.goto('/')
-  const headings = [
+  const practiceHeadings = [
     page.getByRole('heading', { name: 'Practice configuration' }),
     page.getByRole('heading', { name: 'Keyboard & mouse controls' }),
     page.getByRole('heading', { name: 'HUD positions' }),
-    page.getByRole('heading', { name: 'Layouts and sharing' }),
-    page.getByRole('heading', { name: 'Opening positions' }),
   ]
-  const bounds = await Promise.all(headings.map(heading => heading.boundingBox()))
+  const bounds = await Promise.all(practiceHeadings.map(heading => heading.boundingBox()))
   expect(bounds.every(Boolean)).toBe(true)
   for (let index = 1; index < bounds.length; index += 1) {
     expect(bounds[index]!.y).toBeGreaterThan(bounds[index - 1]!.y)
@@ -139,8 +141,6 @@ test('setup topics use one clear heading hierarchy in document order', async ({ 
   const headingContentPairs = [
     [page.getByRole('heading', { name: 'Practice configuration' }).locator('..'), page.getByRole('group', { name: 'Difficulty & movement' })],
     [page.getByRole('heading', { name: 'Keyboard & mouse controls' }).locator('..'), page.getByRole('group', { name: 'Input bindings' })],
-    [page.getByRole('heading', { name: 'Layouts and sharing' }).locator('..'), page.getByRole('group', { name: 'Raid-plan sharing' })],
-    [page.getByRole('heading', { name: 'Opening positions' }).locator('..'), page.getByLabel('Intermission position map')],
   ]
   for (const [heading, content] of headingContentPairs) {
     const [headingBounds, contentBounds] = await Promise.all([heading.boundingBox(), content.boundingBox()])
@@ -151,9 +151,10 @@ test('setup topics use one clear heading hierarchy in document order', async ({ 
   }
 
   const jumpNav = page.getByRole('navigation', { name: 'Setup sections' })
-  await expect(jumpNav.getByRole('link')).toHaveCount(4)
+  await expect(jumpNav.getByRole('button')).toHaveCount(3)
   await page.evaluate(() => history.replaceState(null, '', '#raidplan=preserve-this-hash'))
-  await jumpNav.getByRole('link', { name: 'Raid plan' }).click()
+  await jumpNav.getByRole('button', { name: 'Raid plan' }).click()
   await expect(page).toHaveURL(/#raidplan=preserve-this-hash$/)
-  await expect(page.getByRole('heading', { name: 'Layouts and sharing' })).toBeInViewport()
+  await expect(page.getByRole('heading', { name: 'Layouts and sharing' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Opening positions' })).toBeVisible()
 })

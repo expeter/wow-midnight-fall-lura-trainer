@@ -19,6 +19,11 @@ export interface OnlineSession {
     durationMs: number
     position: number
   }>
+  selectedCharacter?: {
+    name: string
+    realmSlug: string
+    region: 'eu' | 'us'
+  }
 }
 
 export interface OnlineCharacter {

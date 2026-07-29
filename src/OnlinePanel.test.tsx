@@ -46,7 +46,7 @@ describe('optional online profile', () => {
   })
 
   it('shows current Normal and Hard positions beside the local achievement summary', () => {
-    render(<OnlineStandingSummary session={{
+    render(<OnlineStandingSummary onManage={() => undefined} session={{
       authenticated: true,
       standings: [
         { difficulty: 'normal', duty: 'crystal', position: 8, score: 1100, durationMs: 300_000 },
@@ -110,17 +110,18 @@ describe('optional online profile', () => {
     }))
     const user = userEvent.setup()
     render(<OnlinePanel onSession={() => undefined} />)
-    const character = await screen.findByLabelText('Verified character')
+    const character = await screen.findByLabelText(/Verified character/)
     await user.selectOptions(character, '7')
     await waitFor(() => expect(requests.some(request => (
       request.url.endsWith('/v1/me/character')
       && request.method === 'PUT'
       && request.body.includes('"characterId":7')
     ))).toBe(true))
+    expect(screen.getByText('Character selected and saved.')).toBeInTheDocument()
     await user.selectOptions(screen.getByLabelText('Public identity'), 'alias')
     await user.type(screen.getByLabelText('Public trainer alias'), 'Runner')
     await user.click(screen.getByLabelText('Show cached guild'))
-    await user.click(screen.getByRole('button', { name: 'Save privacy' }))
+    await user.click(screen.getByRole('button', { name: 'Save public profile settings' }))
     await waitFor(() => expect(requests.some(request => (
       request.url.endsWith('/v1/me/privacy')
       && request.body.includes('"identityMode":"alias"')

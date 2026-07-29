@@ -16,6 +16,7 @@ test('exposes the released Phase 1 encounter and begins its assigned interrupts'
   await page.goto('/')
 
   await page.getByRole('button', { name: 'P1', exact: true }).click()
+  await page.getByRole('button', { name: 'Raid plan' }).click()
   await expect(page.getByLabel('Phase 1 position map')).toBeVisible()
   await expect(page.getByLabel('Phase 1 crystal assignments')).toBeVisible()
   const plannedBoss = await page.evaluate(() => JSON.parse(localStorage.getItem('lura-p1-boss-position') || 'null') as { x: number; y: number })
@@ -143,6 +144,7 @@ test('a shared hash plan drives every live phase and survives a clean reload', a
     await page.getByRole('button', { name: 'Exit' }).click()
   }
 
+  await page.getByRole('button', { name: 'Practice settings' }).click()
   await page.getByRole('button', { name: 'easy' }).click()
   await enterAndInspect('Intermission')
   await enterAndInspect('P2')
@@ -150,6 +152,7 @@ test('a shared hash plan drives every live phase and survives a clean reload', a
   await enterAndInspect('P4')
 
   await page.goto('/')
+  await page.getByRole('button', { name: 'Raid plan' }).click()
   expect(await page.getByRole('button', { name: 'Move P3 player 15' }).evaluate(element => parseFloat((element as HTMLElement).style.left))).toBeGreaterThan(50)
 })
 

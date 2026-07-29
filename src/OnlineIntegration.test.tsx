@@ -1,11 +1,41 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from './App'
 
-afterEach(() => vi.restoreAllMocks())
+afterEach(() => {
+  cleanup()
+  history.replaceState(null, '', '/')
+  vi.restoreAllMocks()
+})
 
 describe('online attempt integration', () => {
+  it('shows the public wipe feed with a Raider.IO character link', async () => {
+    history.replaceState(null, '', '/?wipe-feed-test=1')
+    vi.stubGlobal('fetch', vi.fn(async input => {
+      const url = String(input)
+      if (url.includes('/v1/wipes')) return Response.json({ rows: [{
+        id: 1,
+        character: 'Lurana',
+        realm: 'silvermoon',
+        region: 'eu',
+        phase: 'Phase 3',
+        difficulty: 'normal',
+        reason: 'Touched a Stars beam',
+        trainerVersion: '0.3.0',
+        occurredAt: '2026-07-29T18:00:00.000Z',
+      }] })
+      if (url.endsWith('/v1/me')) return Response.json({ authenticated: false }, { status: 401 })
+      if (url.includes('/v1/leaderboards')) return Response.json({ rows: [] })
+      if (url.endsWith('/version.json')) return new Response('', { status: 404 })
+      throw new Error(`unexpected ${url}`)
+    }))
+    render(<App />)
+    const link = await screen.findByRole('link', { name: 'Lurana—silvermoon' })
+    expect(link).toHaveAttribute('href', 'https://raider.io/characters/eu/silvermoon/Lurana')
+    expect(screen.getByText(/wiped on: Phase 3 · normal/i)).toBeInTheDocument()
+  })
+
   it('issues a character-bound attempt before an eligible full Normal run', async () => {
     const requests: Array<{ url: string; body: string }> = []
     vi.stubGlobal('fetch', vi.fn(async (input, init) => {
@@ -34,6 +64,7 @@ describe('online attempt integration', () => {
       }] })
       if (url.endsWith('/v1/me/achievements')) return Response.json({ rows: [] })
       if (url.includes('/v1/leaderboards')) return Response.json({ rows: [] })
+      if (url.includes('/v1/wipes')) return Response.json({ rows: [] })
       if (url.endsWith('/v1/attempts')) return Response.json({
         attemptId: 'attempt-id',
         nonce: 'attempt-nonce',

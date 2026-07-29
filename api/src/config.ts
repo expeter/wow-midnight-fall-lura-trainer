@@ -47,7 +47,7 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): ApiCon
       .map(origin => origin.trim())
       .filter(Boolean)
       .map(origin => requiredUrl(origin, 'LOCAL_ORIGINS')),
-    currentTrainerVersion: environment.TRAINER_CURRENT_VERSION ?? '0.3.0',
+    currentTrainerVersion: environment.TRAINER_CURRENT_VERSION ?? '0.4.0',
     battleNetClientId,
     battleNetClientSecret,
     battleNetCallbackUrl: requiredAbsoluteUrl(

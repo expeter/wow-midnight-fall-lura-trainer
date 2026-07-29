@@ -1101,6 +1101,21 @@ export function starsplinterHitsPoint(
     )) < .12,
   ).some(Boolean)
 }
+export function safestStarsplinterRotation(origin: Point, obstacles: Point[], protectedPoints: Point[] = []): number {
+  let best = 0
+  let bestScore = Infinity
+  for (let step = 0; step < 12; step += 1) {
+    const rotation = step * Math.PI / 36
+    const protectedHits = protectedPoints.filter(point => starsplinterHitsPoint(point, origin, rotation)).length
+    const obstacleHits = obstacles.filter(point => distance(point, origin) > 9 && starsplinterHitsPoint(point, origin, rotation)).length
+    const score = protectedHits * 1000 + obstacleHits
+    if (score < bestScore) {
+      best = rotation
+      bestScore = score
+    }
+  }
+  return best
+}
 export function starsplinterHitsCrystalCarrier(
   npcPositions: Point[],
   crystalAssignments: number[],

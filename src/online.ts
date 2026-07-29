@@ -75,6 +75,18 @@ export interface OnlineAchievement {
   realmSlug: string
 }
 
+export interface WipeFeedRow {
+  id: number
+  character: string
+  realm: string
+  region: 'eu' | 'us'
+  phase: string
+  difficulty: 'normal' | 'hard'
+  reason: string
+  trainerVersion: string
+  occurredAt: string
+}
+
 async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`${ONLINE_API_ORIGIN}${path}`, {
     ...init,
@@ -172,6 +184,21 @@ export function loadAchievementHall(search = '', limit = 10): Promise<{
   const query = new URLSearchParams({ limit: String(limit) })
   if (search.trim()) query.set('q', search.trim())
   return api(`/v1/achievement-hall?${query}`)
+}
+
+export function loadWipeFeed(limit = 20): Promise<{ rows: WipeFeedRow[] }> {
+  return api(`/v1/wipes?limit=${limit}`)
+}
+
+export function recordOnlineWipe(
+  csrfToken: string,
+  input: { phase: string; difficulty: 'normal' | 'hard'; reason: string; trainerVersion: string },
+) {
+  return api<{ recorded: boolean; id?: number; occurredAt?: string }>('/v1/wipes', {
+    method: 'POST',
+    headers: { 'x-csrf-token': csrfToken },
+    body: JSON.stringify(input),
+  })
 }
 
 export async function configurationFingerprint(value: unknown): Promise<string> {

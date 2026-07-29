@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+## 0.4.0 · 2026-07-29
+
+- FR-059: Add a permanent privacy-aware public wipe feed backed by the API,
+  refreshed every five seconds on the front page with timestamps and
+  Raider.IO character links.
+- BUG-108: Restore immediate visual confirmation on the raid-plan Save action.
+- BUG-109: Keep Phase 2 player coordinates unchanged when crystal duty changes.
+- BUG-110: Make NPC Starsplinters prioritize avoiding the player's dropped
+  crystal and prevent one crystal impact from resolving twice.
+- CR-161: Show recent release notes directly in the new-version prompt, retain
+  the full changelog link, and adopt automatic SemVer/changelog release upkeep.
+- FR-027 is complete; off-VPS backup replication is user-managed outside the
+  project.
+
 - CR-160: Clamp the shared P1–P3 boss pool at 3% behind visible Veil
   Protection until Phase 3 sequence two, while continuing to count damage,
   casts, and points; retain Phase 4's independent refreshed pool.

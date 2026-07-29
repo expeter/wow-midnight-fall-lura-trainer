@@ -8,7 +8,7 @@ original chat history. It complements the detailed ticket log in
 
 ## Current release boundary
 
-- The package version is `0.3.0`.
+- The package version is `0.4.0`.
 - Intermission and Phases 2–4 are production features.
 - Phase 1 is released in production. The host feature flag remains explicit,
   but no longer hides P1 outside localhost.
@@ -131,6 +131,12 @@ See [`audio-cues.md`](audio-cues.md) and
 - Make focused commits after verified bug, change, or feature work. The user
   normally pushes; do not push unless asked.
 - Preserve unrelated dirty-worktree changes and user-provided assets.
+- For every release, choose the SemVer bump from the dominant change
+  (patch for fixes, minor for backward-compatible features, major for breaking
+  changes), update `CHANGELOG.md`, and publish the matching version without
+  waiting for the user to name it. If achievement scoring, eligibility, or
+  canonical points change, flag that before release so the user can decide
+  whether the leaderboard needs a new season.
 
 ## Validation and CI
 

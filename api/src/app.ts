@@ -110,6 +110,24 @@ export function createApp(
         const row = database.prepare('SELECT 1 AS ok').get()
         return json({ status: row?.ok === 1 ? 'ok' : 'degraded' }, row?.ok === 1 ? 200 : 503, corsHeaders)
       }
+      if (request.method === 'GET' && url.pathname === '/v1/wipes') {
+        const limit = integerParameter(url, 'limit', 20, 100)
+        if (limit === null) return json({ error: 'invalid_limit' }, 400, corsHeaders)
+        const rows = database.prepare(`
+          SELECT w.id, c.name AS character, c.realm_slug AS realm,
+            c.region, w.phase, w.difficulty, w.reason,
+            w.trainer_version AS trainerVersion, w.occurred_at AS occurredAt
+          FROM wipe_events w
+          JOIN privacy_settings p ON p.account_id = w.account_id
+          JOIN accounts a ON a.id = w.account_id
+          JOIN characters c ON c.id = w.character_id
+          WHERE p.identity_mode = 'character'
+            AND a.selected_character_id = w.character_id
+          ORDER BY w.occurred_at DESC, w.id DESC
+          LIMIT ?
+        `).all(limit)
+        return json({ rows }, 200, corsHeaders)
+      }
       if (request.method === 'GET' && url.pathname === '/v1/auth/battlenet/start') {
         if (rateLimited(request, 'auth-start', 10, 10 * 60_000)) {
           return json({ error: 'rate_limited' }, 429, { ...corsHeaders, 'retry-after': '600' })
@@ -278,11 +296,60 @@ export function createApp(
           dependencies.now().toISOString(),
           session.accountId,
         )
+        if (input.identityMode !== 'character') {
+          database.prepare('DELETE FROM wipe_events WHERE account_id = ?').run(session.accountId)
+        }
         return json({
           identityMode: input.identityMode,
           alias: alias || null,
           showGuild: input.identityMode === 'anonymous' ? false : input.showGuild,
         }, 200, corsHeaders)
+      }
+      if (request.method === 'POST' && url.pathname === '/v1/wipes') {
+        if (rateLimited(request, 'wipe-create', 30, 60_000)) {
+          return json({ error: 'rate_limited' }, 429, { ...corsHeaders, 'retry-after': '60' })
+        }
+        if (!origin || !allowedOrigins.has(origin)) return json({ error: 'origin_not_allowed' }, 403, corsHeaders)
+        const session = authenticate(database, config, dependencies, request)
+        if (!session) return json({ error: 'not_authenticated' }, 401, corsHeaders)
+        const csrf = request.headers.get('x-csrf-token')
+        if (!csrf || !safeEqual(csrf, session.csrfToken)) return json({ error: 'invalid_csrf' }, 403, corsHeaders)
+        let input: { phase?: unknown; difficulty?: unknown; reason?: unknown; trainerVersion?: unknown }
+        try {
+          input = await request.json() as typeof input
+        } catch {
+          return json({ error: 'invalid_body' }, 400, corsHeaders)
+        }
+        const phase = typeof input.phase === 'string' ? input.phase.trim() : ''
+        const reason = typeof input.reason === 'string' ? input.reason.trim() : ''
+        const trainerVersion = typeof input.trainerVersion === 'string' ? input.trainerVersion.trim() : ''
+        if (!phase || phase.length > 40) return json({ error: 'invalid_phase' }, 400, corsHeaders)
+        if (!reason || reason.length > 160) return json({ error: 'invalid_reason' }, 400, corsHeaders)
+        if (input.difficulty !== 'normal' && input.difficulty !== 'hard') {
+          return json({ error: 'invalid_difficulty' }, 400, corsHeaders)
+        }
+        if (!trainerVersion || trainerVersion.length > 40) return json({ error: 'invalid_version' }, 400, corsHeaders)
+        const publicCharacter = database.prepare(`
+          SELECT a.selected_character_id AS characterId
+          FROM accounts a JOIN privacy_settings p ON p.account_id = a.id
+          WHERE a.id = ? AND p.identity_mode = 'character'
+        `).get(session.accountId) as { characterId: number | null } | undefined
+        if (!publicCharacter?.characterId) return json({ recorded: false }, 200, corsHeaders)
+        const occurredAt = dependencies.now().toISOString()
+        const inserted = database.prepare(`
+          INSERT INTO wipe_events (
+            account_id, character_id, phase, difficulty, reason, trainer_version, occurred_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          session.accountId,
+          publicCharacter.characterId,
+          phase,
+          input.difficulty,
+          reason,
+          trainerVersion,
+          occurredAt,
+        )
+        return json({ recorded: true, id: Number(inserted.lastInsertRowid), occurredAt }, 201, corsHeaders)
       }
       if (request.method === 'DELETE' && url.pathname === '/v1/me') {
         if (rateLimited(request, 'account-delete', 5, 60 * 60_000)) {

@@ -481,6 +481,74 @@ describe('Lura API foundation', () => {
     }
   })
 
+  it('records and lists only selected-character public wipes, then deletes them on privacy opt-out', async () => {
+    const accountId = insertResult(database, {
+      region: 'eu', account: 'wipe-feed', character: 'Wiper', realm: 'blackrock',
+      mode: 'character', score: 900, duration: 100_000,
+      acceptedAt: '2026-07-28T00:00:00.000Z',
+    })
+    const character = database.prepare(
+      'SELECT id FROM characters WHERE account_id = ?',
+    ).get(accountId) as { id: number }
+    database.prepare('UPDATE accounts SET selected_character_id = ? WHERE id = ?')
+      .run(character.id, accountId)
+    const session = insertSession(database, accountId)
+    const app = createApp(database, config, {
+      now: () => new Date('2026-07-28T12:00:00.000Z'),
+      randomToken: () => 'unused',
+      fetch: globalThis.fetch,
+    })
+    const recorded = await app.handle(new Request('http://api.test/v1/wipes', {
+      method: 'POST',
+      headers: {
+        cookie: session.cookie,
+        origin: config.trainerOrigin,
+        'content-type': 'application/json',
+        'x-csrf-token': session.csrf,
+      },
+      body: JSON.stringify({
+        phase: 'Phase 3',
+        difficulty: 'normal',
+        reason: 'Touched a Stars beam',
+        trainerVersion: '0.3.0',
+      }),
+    }))
+    assert.equal(recorded.status, 201)
+    const feed = await app.handle(new Request('http://api.test/v1/wipes?limit=20'))
+    assert.deepEqual(
+      (await feed.json() as { rows: Array<Record<string, unknown>> }).rows.map(row => ({
+        character: row.character,
+        realm: row.realm,
+        region: row.region,
+        phase: row.phase,
+        difficulty: row.difficulty,
+        occurredAt: row.occurredAt,
+      })),
+      [{
+        character: 'Wiper',
+        realm: 'blackrock',
+        region: 'eu',
+        phase: 'Phase 3',
+        difficulty: 'normal',
+        occurredAt: '2026-07-28T12:00:00.000Z',
+      }],
+    )
+    const privacy = await app.handle(new Request('http://api.test/v1/me/privacy', {
+      method: 'PUT',
+      headers: {
+        cookie: session.cookie,
+        origin: config.trainerOrigin,
+        'content-type': 'application/json',
+        'x-csrf-token': session.csrf,
+      },
+      body: JSON.stringify({ identityMode: 'anonymous', alias: '', showGuild: false }),
+    }))
+    assert.equal(privacy.status, 200)
+    assert.equal(database.prepare('SELECT COUNT(*) AS count FROM wipe_events').get()!.count, 0)
+    const hidden = await app.handle(new Request('http://api.test/v1/wipes'))
+    assert.deepEqual((await hidden.json() as { rows: unknown[] }).rows, [])
+  })
+
   it('issues one-use attempts and publishes only server-recomputed results', async () => {
     const accountId = insertResult(database, {
       region: 'eu', account: 'online', character: 'Verified', realm: 'silvermoon',

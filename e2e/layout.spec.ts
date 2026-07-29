@@ -153,3 +153,22 @@ test('setup tabs preserve the raid-plan hash and expose one section at a time', 
   await expect(page.getByRole('heading', { name: 'Layouts and sharing' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Opening positions' })).toBeVisible()
 })
+
+test('raid-plan save confirms visibly and P2 crystal changes preserve positions', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('navigation', { name: 'Setup sections' }).getByRole('button', { name: 'Raid plan' }).click()
+
+  const positionsBefore = await page.evaluate(() => ({
+    soak: localStorage.getItem('lura-p2-player-positions'),
+    spread: localStorage.getItem('lura-p2-spread-positions'),
+  }))
+  await page.getByLabel('Phase 2 crystal 1').selectOption('0')
+  await page.getByRole('button', { name: 'Save layout' }).click()
+
+  await expect(page.getByRole('button', { name: '✓ Layout saved' })).toBeVisible()
+  await expect(page.getByRole('status')).toHaveText('Layout saved')
+  await expect.poll(() => page.evaluate(() => ({
+    soak: localStorage.getItem('lura-p2-player-positions'),
+    spread: localStorage.getItem('lura-p2-spread-positions'),
+  }))).toEqual(positionsBefore)
+})

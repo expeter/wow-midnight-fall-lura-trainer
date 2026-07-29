@@ -5,7 +5,7 @@ import { p3ProtectionBubbleCenter } from './game'
 import type { Point } from './game'
 import { P3_LIGHT_RADIUS, p3SpreadPosition, p4NpcSplinterMovementAge, p4NpcSplinterOutwardSeconds, p4RenderedNpcSplinterHitsPlayer, p4RenderedNpcSplinterOrigin, p4TankConeHitsBox, p4TankKillsBox, P4_TANK_KILL_RADIUS } from './game'
 import { isP3RaidMemberVisible, p3ActiveCrystalAssignments } from './game'
-import { bossDamageScoreBonus, isActiveP3RuneDuty, isInsideP3Pool, p4BossHealthWithPlayerDamage, p4PlayerSplinterHitsNpc, p4StartingBossState, P1_STAR_LENGTH, preP4BossHealth, shouldApplyP3NpcDisplacement, shouldHoldP3RunePartner, shouldSuppressRepeatedWipe, shouldTriggerP3EarlyClear, starsplinterHitsCrystalCarrier, starsplinterHitsPoint } from './game'
+import { bossDamageScoreBonus, isActiveP3RuneDuty, isInsideP3Pool, p4BossHealthWithPlayerDamage, p4PlayerSplinterHitsNpc, p4StartingBossState, P1_STAR_LENGTH, preP4BossHealth, safestStarsplinterRotation, shouldApplyP3NpcDisplacement, shouldHoldP3RunePartner, shouldSuppressRepeatedWipe, shouldTriggerP3EarlyClear, starsplinterHitsCrystalCarrier, starsplinterHitsPoint } from './game'
 import { p4UnsafePenaltyTicks, P4_SAFE_ZONE_HEALTH_DRAIN_PER_SECOND, P4_SAFE_ZONE_PENALTY_PER_SECOND } from './game'
 
 describe('Intermission game rules', () => {
@@ -38,6 +38,12 @@ describe('Intermission game rules', () => {
         y: origin.y + Math.sin(offBeamAngle) * 24,
       }, origin, rotation)).toBe(false)
     }
+  })
+  it('prioritizes avoiding a dropped player crystal when choosing an NPC Starsplinter rotation', () => {
+    const origin = { x: 100, y: 100 }
+    const crystal = { x: 130, y: 100 }
+    const rotation = safestStarsplinterRotation(origin, [crystal], [crystal])
+    expect(starsplinterHitsPoint(crystal, origin, rotation)).toBe(false)
   })
   it('counts player centers near the visible P3 Soak rim as occupants', () => {
     const pool = { x: 100, y: 100 }

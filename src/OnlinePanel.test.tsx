@@ -28,7 +28,6 @@ describe('optional online profile', () => {
       throw new Error(`unexpected ${url}`)
     }))
     const view = render(<OnlinePanel view="leaderboard" onSession={() => undefined} />)
-    expect(await screen.findByText(/Anonymous play remains fully available/)).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Login with Battle.net' })).not.toBeInTheDocument()
     expect(await screen.findByText('1200 pts · 300.0s')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Top 10 leaderboard' })).toBeInTheDocument()
@@ -71,8 +70,11 @@ describe('optional online profile', () => {
       'href',
       'https://raider.io/characters/eu/silvermoon/Aegis',
     )
-    expect(character.closest('ol')?.querySelectorAll('a')).toHaveLength(1)
     expect(character.closest('ol')).toHaveTextContent('Voidrunner')
+    expect(character.closest('ol')?.querySelectorAll('li')).toHaveLength(10)
+    expect(screen.getByLabelText('Your leaderboard position')).toHaveTextContent('65. Your localhost test position')
+    await userEvent.click(screen.getByRole('button', { name: 'View full leaderboard' }))
+    await waitFor(() => expect(screen.getByRole('list').querySelectorAll('li')).toHaveLength(100))
   })
 
   it('selects an owned character and saves explicit public privacy', async () => {
@@ -136,7 +138,7 @@ describe('optional online profile', () => {
     ))).toBe(true))
     view.rerender(<OnlinePanel view="leaderboard" onSession={() => undefined} />)
     const leaderboardPanel = view.container.querySelector('section')!
-    expect(within(leaderboardPanel).getByText('Verified public rankings')).toBeInTheDocument()
+    expect(within(leaderboardPanel).getByText('Verified rankings')).toBeInTheDocument()
     expect(within(leaderboardPanel).getByText(/Searches public character names/)).toBeInTheDocument()
     expect(within(leaderboardPanel).queryByLabelText(/Active character/)).not.toBeInTheDocument()
     expect(within(leaderboardPanel).getByLabelText('Your leaderboard position')).toHaveTextContent('18. Your verified position')

@@ -14,7 +14,6 @@ test('keeps optional login and public leaderboards usable without the API', asyn
   await page.getByRole('button', { name: 'Leaderboard', exact: true }).click()
   const panel = page.getByRole('region', { name: 'Top 10 leaderboard' })
   await expect(panel).toBeVisible()
-  await expect(panel.getByText(/Local play still works|Anonymous play remains fully available/)).toBeVisible()
   await expect(panel.getByRole('link', { name: 'Login with Battle.net' })).toHaveCount(0)
   await expect(panel.getByRole('button', { name: 'Normal · Crystal' })).toBeVisible()
   await expect(panel.getByRole('button', { name: 'Hard · Crystal' })).toBeVisible()

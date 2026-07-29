@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- CR-154: Simplify the rankings-only leaderboard and populate empty or
+  unavailable localhost categories with 100 deterministic preview players,
+  including a test position at rank 65 beneath the first ten.
 - CR-153: Split setup into six one-active-section tabs, keep character choice
   and a compact current-category Top 10 in Game settings, and make Leaderboard
   a rankings-only view with four primary categories and the user's rank below

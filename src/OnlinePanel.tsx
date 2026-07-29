@@ -16,11 +16,25 @@ import {
   type OnlineSession,
 } from './online'
 
-const LOCAL_FIXTURES: LeaderboardRow[] = [
-  { rank: 1, displayName: 'Aegis', character: 'Aegis', realm: 'silvermoon', region: 'eu', guild: 'I Asgard I', score: 1460, durationMs: 287400, trainerVersion: '0.3.0' },
-  { rank: 2, displayName: 'Voidrunner', character: null, realm: null, region: null, guild: null, score: 1390, durationMs: 294100, trainerVersion: '0.3.0' },
-  { rank: 3, displayName: 'Anonymous', character: null, realm: null, region: null, guild: null, score: 1325, durationMs: 301800, trainerVersion: '0.3.0' },
-]
+const LOCAL_NAMES = ['Aegis', 'Voidrunner', 'Starweaver', 'Nightbloom', 'Dawnshield', 'Riftwalker', 'Moonstrike', 'Emberward', 'Silversong', 'Astralyn']
+const LOCAL_REALMS = ['silvermoon', 'blackrock', 'draenor', 'tarren-mill', 'twisting-nether']
+const LOCAL_GUILDS = ['I Asgard I', 'Midnight Crew', 'Nocturne', 'Crystal Clear', 'Last Pull']
+const LOCAL_FIXTURES: LeaderboardRow[] = Array.from({ length: 100 }, (_, index) => {
+  const rank = index + 1
+  const baseName = LOCAL_NAMES[index % LOCAL_NAMES.length]
+  const displayName = rank === 65 ? 'Your localhost character' : rank <= 2 ? baseName : `${baseName}${String(rank).padStart(2, '0')}`
+  return {
+    rank,
+    displayName,
+    character: rank % 4 === 0 ? null : displayName,
+    realm: rank % 4 === 0 ? null : LOCAL_REALMS[index % LOCAL_REALMS.length],
+    region: rank % 4 === 0 ? null : 'eu',
+    guild: rank % 5 === 0 ? null : LOCAL_GUILDS[index % LOCAL_GUILDS.length],
+    score: 1605 - rank * 6,
+    durationMs: 270000 + rank * 1250,
+    trainerVersion: '0.3.0',
+  }
+})
 
 export function OnlineStandingSummary({ session, onManage }: { session: OnlineSession; onManage: () => void }) {
   const standings = session.standings ?? []
@@ -125,17 +139,28 @@ export default function OnlinePanel({
   useEffect(() => { if (requestedDuty) setDuty(requestedDuty) }, [requestedDuty])
 
   const csrf = session.csrfToken ?? ''
+  const localhostPreview = ['localhost', '127.0.0.1'].includes(window.location.hostname)
   const ownStanding = session.standings?.find(row => row.difficulty === difficulty && row.duty === duty)
-  const displayedRows = rows.length || !leaderboardLoaded || !['localhost', '127.0.0.1'].includes(window.location.hostname)
-    ? rows
-    : LOCAL_FIXTURES
+    ?? (localhostPreview ? {
+      difficulty,
+      duty,
+      position: 65,
+      score: LOCAL_FIXTURES[64].score,
+      durationMs: LOCAL_FIXTURES[64].durationMs,
+    } : undefined)
+  const sourceRows = localhostPreview && (!leaderboardLoaded || rows.length === 0) ? LOCAL_FIXTURES : rows
+  const normalizedSearch = search.trim().toLocaleLowerCase()
+  const filteredRows = normalizedSearch && sourceRows === LOCAL_FIXTURES
+    ? sourceRows.filter(row => [row.displayName, row.character, row.realm, row.guild].some(value => value?.toLocaleLowerCase().includes(normalizedSearch)))
+    : sourceRows
+  const displayedRows = showFullLeaderboard ? filteredRows : filteredRows.slice(0, 10)
   const selectedCharacter = characters.find(character => character.selected)
   return <section className={`online-panel ${compact ? 'compact' : ''}`} aria-labelledby="online-title">
     <header>
-      <div><p className="eyebrow">Optional online profile</p><h2 id="online-title">{view === 'profile' ? 'My characters' : showFullLeaderboard ? 'Full leaderboard' : 'Top 10 leaderboard'}</h2></div>
-      <a href={`${import.meta.env.BASE_URL}privacy.html`}>Privacy</a>
+      <div><p className="eyebrow">{view === 'profile' ? 'Optional online profile' : 'Verified rankings'}</p><h2 id="online-title">{view === 'profile' ? 'My characters' : showFullLeaderboard ? 'Full leaderboard' : 'Top 10 leaderboard'}</h2></div>
+      {view === 'profile' && <a href={`${import.meta.env.BASE_URL}privacy.html`}>Privacy</a>}
     </header>
-    <p role="status">{status}</p>
+    {view === 'profile' && <p role="status">{status}</p>}
     {view === 'profile' && session.authenticated ? <div className="online-account">
       <div className="online-explainer">
         <strong>Choose who represents your verified runs</strong>
@@ -207,10 +232,6 @@ export default function OnlinePanel({
         <a className="button-link" href={battleNetLoginUrl(loginRegion)}>Login with Battle.net</a>
       </div>
     </div> : <div className={`online-leaderboard ${compact ? 'compact' : ''}`}>
-      <div className="online-explainer">
-        <strong>Verified public rankings</strong>
-        <p>Each row is one player’s best server-verified result for the selected difficulty and duty. Rank is ordered by score, then completion time.</p>
-      </div>
       {compact ? <p className="compact-leaderboard-filter">{difficulty === 'hard' ? 'Hard' : 'Normal'} · {duty === 'crystal' ? 'Crystal carrier' : 'Non-crystal'} · Top 10</p> : <div className="leaderboard-categories" aria-label="Leaderboard categories">
         {([
           ['normal', 'crystal', 'Normal · Crystal'],
@@ -235,7 +256,7 @@ export default function OnlinePanel({
       </ol> : <p>No matching verified results yet.</p>}
       {ownStanding && <div className="leaderboard-own-position" aria-label="Your leaderboard position">
         <span aria-hidden="true">…</span>
-        <p><b>{ownStanding.position}. Your verified position</b><span>{ownStanding.score} pts · {(ownStanding.durationMs / 1000).toFixed(1)}s</span></p>
+        <p><b>{ownStanding.position}. {localhostPreview && !session.authenticated ? 'Your localhost test position' : 'Your verified position'}</b><span>{ownStanding.score} pts · {(ownStanding.durationMs / 1000).toFixed(1)}s</span></p>
       </div>}
       {!compact && <div className="leaderboard-search">
         <label><span>Find a public ranking</span><small>Searches public character names, aliases, realms, and guilds—not your Battle.net character list.</small>

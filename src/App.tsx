@@ -73,7 +73,7 @@ type MusicTrackId = typeof MUSIC_TRACKS[number]['id']
 const DEFAULT_MUSIC_TRACK: MusicTrackId = 'criminal'
 const DEFAULT_MUSIC_VOLUME = .2
 const DEFAULT_ENCOUNTER_SOUND_VOLUME = .65
-const APP_VERSION = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : '0.4.0'
+const APP_VERSION = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : '0.4.1'
 const APP_BUILD_TIME = typeof __BUILD_TIME__ === 'string' ? __BUILD_TIME__ : new Date().toISOString()
 const APP_GIT_REVISION = typeof __GIT_REVISION__ === 'string' ? __GIT_REVISION__ : 'unknown'
 const PERSONAL_JUMP_SECONDS = .65
@@ -2458,14 +2458,16 @@ export default function App() {
     <CreatorCard />
     <header><p className="eyebrow">MIDNIGHT FALLS · MOVEMENT PRACTICE</p><h1>L’ura Trainer</h1><p className="lede">Choose your assigned player below. Its WoW class determines its body color; crystal duty is configured independently beneath each phase plan.</p></header>
     <div className="setup-overview"><AchievementBadgeSummary collection={achievementCollection} /><OnlineStandingSummary session={onlineSession} onManage={() => setSetupTab('profile')} onLogout={onlineSession.csrfToken ? () => { void logoutOnline(onlineSession.csrfToken!).then(() => setOnlineSession({ authenticated: false })) } : undefined} /></div>
-    <section className="wipe-feed" aria-label="Recent public wipes">
+    {wipeFeed.length > 0 && <section className="wipe-feed" aria-label="Recent public wipes">
       <header><div><p className="eyebrow">LIVE ACTIVITY</p><h2>Recent wipes</h2></div><span>Refreshes every 5s</span></header>
-      {wipeFeed.length ? <ol>{wipeFeed.map(row => <li key={row.id}>
+      <ol>{wipeFeed.map(row => <li key={row.id}>
         <time dateTime={row.occurredAt}>{new Date(row.occurredAt).toLocaleString()}</time>
-        <a href={`https://raider.io/characters/${row.region}/${row.realm}/${encodeURIComponent(row.character)}`} target="_blank" rel="noreferrer">{row.character}—{row.realm}</a>
+        {row.character && row.realm && row.region
+          ? <a href={`https://raider.io/characters/${row.region}/${row.realm}/${encodeURIComponent(row.character)}`} target="_blank" rel="noreferrer">{row.character}—{row.realm}</a>
+          : <strong>{row.displayName}</strong>}
         <span>wiped on: {row.phase} · {row.difficulty}</span>
-      </li>)}</ol> : <p>No public wipes recorded yet.</p>}
-    </section>
+      </li>)}</ol>
+    </section>}
     <div className="entry-choice"><span>Practice target</span>{FEATURE_FLAGS.phaseOne ? <button className={entryMode === 'arena0' ? 'selected' : ''} onClick={() => setEntryMode('arena0')}>P1</button> : <button className="coming-soon" aria-label="P1 — Coming soon" title="P1 is planned but not playable yet" disabled>P1 · Soon</button>}<button className={entryMode === 'arena1' ? 'selected' : ''} onClick={() => setEntryMode('arena1')}>Intermission</button><button className={entryMode === 'arena2' ? 'selected' : ''} onClick={() => setEntryMode('arena2')}>P2</button><button className={entryMode === 'arena3' ? 'selected' : ''} onClick={() => setEntryMode('arena3')}>P3</button><button className={entryMode === 'arena4' ? 'selected' : ''} onClick={() => setEntryMode('arena4')}>P4</button>{difficulty === 'test' && <button className="secondary preview-results" onClick={previewCompletionScreen}>Preview final screen</button>}<button aria-label={entryMode === 'arena0' ? 'Enter P1' : entryMode === 'arena1' ? 'Enter Arena 1 — Enter Intermission' : entryMode === 'arena2' ? 'Enter Arena 2 — Enter P2' : entryMode === 'arena3' ? 'Enter Arena 3 — Enter P3' : 'Enter Arena 4 — Enter P4'} className="start entry-start" onClick={start}>Enter {entryMode === 'arena0' ? 'P1' : entryMode === 'arena1' ? 'Intermission' : entryMode === 'arena2' ? 'P2' : entryMode === 'arena3' ? 'P3' : 'P4'}</button></div>
     <p className="current-run-summary" aria-label="Current practice configuration"><strong>Current:</strong> {difficulty[0].toUpperCase() + difficulty.slice(1)} · {entryCrystalAssignments.includes(assignment) ? 'Crystal carrier' : 'Non-crystal'} · {profiles[assignment].name || `Player ${assignment + 1}`} · Spot {assignment + 1}</p>
     <nav className="setup-tabs" aria-label="Setup sections">

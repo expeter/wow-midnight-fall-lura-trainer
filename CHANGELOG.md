@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.4.1 · 2026-07-29
+
+- CR-162: Hide an empty wipe feed and retain private-profile wipe activity
+  only as “Anonymous”, without exposing a character link or mutable raid-plan
+  position.
+
 ## 0.4.0 · 2026-07-29
 
 - FR-059: Add a permanent privacy-aware public wipe feed backed by the API,

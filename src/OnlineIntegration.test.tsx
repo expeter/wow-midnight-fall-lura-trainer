@@ -16,6 +16,7 @@ describe('online attempt integration', () => {
       const url = String(input)
       if (url.includes('/v1/wipes')) return Response.json({ rows: [{
         id: 1,
+        displayName: 'Lurana',
         character: 'Lurana',
         realm: 'silvermoon',
         region: 'eu',

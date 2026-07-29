@@ -77,9 +77,10 @@ export interface OnlineAchievement {
 
 export interface WipeFeedRow {
   id: number
-  character: string
-  realm: string
-  region: 'eu' | 'us'
+  displayName: string
+  character: string | null
+  realm: string | null
+  region: 'eu' | 'us' | null
   phase: string
   difficulty: 'normal' | 'hard'
   reason: string

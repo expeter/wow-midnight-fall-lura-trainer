@@ -114,15 +114,22 @@ export function createApp(
         const limit = integerParameter(url, 'limit', 20, 100)
         if (limit === null) return json({ error: 'invalid_limit' }, 400, corsHeaders)
         const rows = database.prepare(`
-          SELECT w.id, c.name AS character, c.realm_slug AS realm,
-            c.region, w.phase, w.difficulty, w.reason,
+          SELECT w.id,
+            CASE
+              WHEN p.identity_mode = 'character' THEN c.name
+              WHEN p.identity_mode = 'alias' THEN COALESCE(p.alias, 'Anonymous')
+              ELSE 'Anonymous'
+            END AS displayName,
+            CASE WHEN p.identity_mode = 'character' THEN c.name ELSE NULL END AS character,
+            CASE WHEN p.identity_mode = 'character' THEN c.realm_slug ELSE NULL END AS realm,
+            CASE WHEN p.identity_mode = 'character' THEN c.region ELSE NULL END AS region,
+            w.phase, w.difficulty, w.reason,
             w.trainer_version AS trainerVersion, w.occurred_at AS occurredAt
           FROM wipe_events w
           JOIN privacy_settings p ON p.account_id = w.account_id
           JOIN accounts a ON a.id = w.account_id
           JOIN characters c ON c.id = w.character_id
-          WHERE p.identity_mode = 'character'
-            AND a.selected_character_id = w.character_id
+          WHERE a.selected_character_id = w.character_id
           ORDER BY w.occurred_at DESC, w.id DESC
           LIMIT ?
         `).all(limit)
@@ -296,9 +303,6 @@ export function createApp(
           dependencies.now().toISOString(),
           session.accountId,
         )
-        if (input.identityMode !== 'character') {
-          database.prepare('DELETE FROM wipe_events WHERE account_id = ?').run(session.accountId)
-        }
         return json({
           identityMode: input.identityMode,
           alias: alias || null,
@@ -329,12 +333,12 @@ export function createApp(
           return json({ error: 'invalid_difficulty' }, 400, corsHeaders)
         }
         if (!trainerVersion || trainerVersion.length > 40) return json({ error: 'invalid_version' }, 400, corsHeaders)
-        const publicCharacter = database.prepare(`
+        const selectedCharacter = database.prepare(`
           SELECT a.selected_character_id AS characterId
-          FROM accounts a JOIN privacy_settings p ON p.account_id = a.id
-          WHERE a.id = ? AND p.identity_mode = 'character'
+          FROM accounts a
+          WHERE a.id = ?
         `).get(session.accountId) as { characterId: number | null } | undefined
-        if (!publicCharacter?.characterId) return json({ recorded: false }, 200, corsHeaders)
+        if (!selectedCharacter?.characterId) return json({ recorded: false }, 200, corsHeaders)
         const occurredAt = dependencies.now().toISOString()
         const inserted = database.prepare(`
           INSERT INTO wipe_events (
@@ -342,7 +346,7 @@ export function createApp(
           ) VALUES (?, ?, ?, ?, ?, ?, ?)
         `).run(
           session.accountId,
-          publicCharacter.characterId,
+          selectedCharacter.characterId,
           phase,
           input.difficulty,
           reason,

@@ -481,7 +481,7 @@ describe('Lura API foundation', () => {
     }
   })
 
-  it('records and lists only selected-character public wipes, then deletes them on privacy opt-out', async () => {
+  it('records selected-character wipes and anonymizes them on privacy opt-out', async () => {
     const accountId = insertResult(database, {
       region: 'eu', account: 'wipe-feed', character: 'Wiper', realm: 'blackrock',
       mode: 'character', score: 900, duration: 100_000,
@@ -517,6 +517,7 @@ describe('Lura API foundation', () => {
     const feed = await app.handle(new Request('http://api.test/v1/wipes?limit=20'))
     assert.deepEqual(
       (await feed.json() as { rows: Array<Record<string, unknown>> }).rows.map(row => ({
+        displayName: row.displayName,
         character: row.character,
         realm: row.realm,
         region: row.region,
@@ -525,6 +526,7 @@ describe('Lura API foundation', () => {
         occurredAt: row.occurredAt,
       })),
       [{
+        displayName: 'Wiper',
         character: 'Wiper',
         realm: 'blackrock',
         region: 'eu',
@@ -544,9 +546,17 @@ describe('Lura API foundation', () => {
       body: JSON.stringify({ identityMode: 'anonymous', alias: '', showGuild: false }),
     }))
     assert.equal(privacy.status, 200)
-    assert.equal(database.prepare('SELECT COUNT(*) AS count FROM wipe_events').get()!.count, 0)
-    const hidden = await app.handle(new Request('http://api.test/v1/wipes'))
-    assert.deepEqual((await hidden.json() as { rows: unknown[] }).rows, [])
+    assert.equal(database.prepare('SELECT COUNT(*) AS count FROM wipe_events').get()!.count, 1)
+    const anonymous = await app.handle(new Request('http://api.test/v1/wipes'))
+    assert.deepEqual(
+      (await anonymous.json() as { rows: Array<Record<string, unknown>> }).rows.map(row => ({
+        displayName: row.displayName,
+        character: row.character,
+        realm: row.realm,
+        region: row.region,
+      })),
+      [{ displayName: 'Anonymous', character: null, realm: null, region: null }],
+    )
   })
 
   it('issues one-use attempts and publishes only server-recomputed results', async () => {

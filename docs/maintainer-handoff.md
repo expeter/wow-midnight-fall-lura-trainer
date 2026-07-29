@@ -8,7 +8,7 @@ original chat history. It complements the detailed ticket log in
 
 ## Current release boundary
 
-- The package version is `0.4.0`.
+- The package version is `0.4.1`.
 - Intermission and Phases 2–4 are production features.
 - Phase 1 is released in production. The host feature flag remains explicit,
   but no longer hides P1 outside localhost.

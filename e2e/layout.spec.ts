@@ -11,18 +11,40 @@ test('publishes the trainer favicon', async ({ page, request }) => {
 
 test('keeps optional login and public leaderboards usable without the API', async ({ page }) => {
   await page.goto('/')
-  const panel = page.getByRole('region', { name: 'Leaderboards' })
+  const panel = page.getByRole('region', { name: 'Top 10' })
   await expect(panel).toBeVisible()
   await expect(panel.getByText(/Local play still works|Anonymous play remains fully available/)).toBeVisible()
-  await expect(panel.getByRole('link', { name: 'Europe' })).toHaveAttribute(
+  await expect(panel.getByRole('link', { name: 'Login with Battle.net' })).toHaveAttribute(
     'href',
     'http://127.0.0.1:8787/v1/auth/battlenet/start?region=eu',
   )
+  await panel.getByLabel('Battle.net region').selectOption('us')
+  await expect(panel.getByRole('link', { name: 'Login with Battle.net' })).toHaveAttribute(
+    'href',
+    'http://127.0.0.1:8787/v1/auth/battlenet/start?region=us',
+  )
   await expect(panel.getByRole('link', { name: 'Privacy' })).toHaveAttribute('href', '/privacy.html')
+  await expect(panel.getByRole('button', { name: 'View full leaderboard' })).toBeVisible()
   const box = await panel.boundingBox()
   expect(box).not.toBeNull()
   expect(box!.x).toBeGreaterThanOrEqual(0)
   expect(box!.x + box!.width).toBeLessThanOrEqual(await page.evaluate(() => innerWidth))
+})
+
+test('places practice configuration before the quieter Top 10 and moves player identity into assignment', async ({ page }) => {
+  await page.goto('/')
+  const practice = page.getByRole('heading', { name: 'Practice configuration' })
+  const leaderboard = page.getByRole('heading', { name: 'Top 10' })
+  const assignment = page.getByRole('group', { name: 'Selected assignment' })
+  const difficulty = page.getByRole('group', { name: 'Difficulty & movement' })
+  const [practiceBox, leaderboardBox] = await Promise.all([practice.boundingBox(), leaderboard.boundingBox()])
+  expect(practiceBox).not.toBeNull()
+  expect(leaderboardBox).not.toBeNull()
+  expect(leaderboardBox!.y).toBeGreaterThan(practiceBox!.y)
+  await expect(assignment.getByLabel('Your player name')).toBeVisible()
+  await expect(difficulty.getByLabel('Your player name')).toHaveCount(0)
+  await page.getByRole('region', { name: 'Top 10' }).getByRole('button', { name: 'View full leaderboard' }).click()
+  await expect(page.getByRole('heading', { name: 'Full leaderboard' })).toBeVisible()
 })
 
 test('raidlead menu exposes system voice selection and preview', async ({ page }) => {

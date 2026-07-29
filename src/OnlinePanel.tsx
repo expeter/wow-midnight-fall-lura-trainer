@@ -16,6 +16,31 @@ import {
   type OnlineSession,
 } from './online'
 
+const LOCAL_FIXTURES: LeaderboardRow[] = [
+  { rank: 1, displayName: 'Aegis', character: 'Aegis', realm: 'silvermoon', region: 'eu', guild: 'I Asgard I', score: 1460, durationMs: 287400, trainerVersion: '0.3.0' },
+  { rank: 2, displayName: 'Voidrunner', character: null, realm: null, region: null, guild: null, score: 1390, durationMs: 294100, trainerVersion: '0.3.0' },
+  { rank: 3, displayName: 'Anonymous', character: null, realm: null, region: null, guild: null, score: 1325, durationMs: 301800, trainerVersion: '0.3.0' },
+]
+
+export function OnlineStandingSummary({ session }: { session: OnlineSession }) {
+  const standings = session.standings ?? []
+  const best = (difficulty: 'normal' | 'hard') => standings
+    .filter(row => row.difficulty === difficulty)
+    .sort((left, right) => left.position - right.position)[0]
+  return <aside className="online-standing-summary" aria-label="Current online standings">
+    <span aria-hidden="true">⌁</span>
+    <div>
+      <strong>Online standings</strong>
+      {!session.authenticated
+        ? <small>Optional · sign in below to post verified runs</small>
+        : <small>
+          Normal {best('normal') ? `#${best('normal')!.position}` : '—'}
+          {' · '}Hard {best('hard') ? `#${best('hard')!.position}` : '—'}
+        </small>}
+    </div>
+  </aside>
+}
+
 export default function OnlinePanel({ onSession }: { onSession: (session: OnlineSession) => void }) {
   const [session, setSession] = useState<OnlineSession>({ authenticated: false })
   const [characters, setCharacters] = useState<OnlineCharacter[]>([])
@@ -24,6 +49,9 @@ export default function OnlinePanel({ onSession }: { onSession: (session: Online
   const [duty, setDuty] = useState<'crystal' | 'non-crystal'>('crystal')
   const [search, setSearch] = useState('')
   const [rows, setRows] = useState<LeaderboardRow[]>([])
+  const [leaderboardLoaded, setLeaderboardLoaded] = useState(false)
+  const [showFullLeaderboard, setShowFullLeaderboard] = useState(false)
+  const [loginRegion, setLoginRegion] = useState<'eu' | 'us'>('eu')
   const [status, setStatus] = useState('Loading online profile…')
   const [identityMode, setIdentityMode] = useState<'anonymous' | 'alias' | 'character'>('anonymous')
   const [alias, setAlias] = useState('')
@@ -53,27 +81,34 @@ export default function OnlinePanel({ onSession }: { onSession: (session: Online
 
   async function refreshLeaderboard() {
     try {
-      const loaded = await loadLeaderboard(difficulty, duty, search)
+      const loaded = await loadLeaderboard(difficulty, duty, search, showFullLeaderboard ? 100 : 10)
       setRows(Array.isArray(loaded.rows) ? loaded.rows : [])
+      setLeaderboardLoaded(true)
     } catch {
       setRows([])
+      setLeaderboardLoaded(false)
     }
   }
 
   useEffect(() => { void refreshSession() }, [])
-  useEffect(() => { void refreshLeaderboard() }, [difficulty, duty])
+  useEffect(() => { void refreshLeaderboard() }, [difficulty, duty, showFullLeaderboard])
 
   const csrf = session.csrfToken ?? ''
+  const displayedRows = rows.length || !leaderboardLoaded || !['localhost', '127.0.0.1'].includes(window.location.hostname)
+    ? rows
+    : LOCAL_FIXTURES
   return <section className="online-panel" aria-labelledby="online-title">
     <header>
-      <div><p className="eyebrow">Optional online profile</p><h2 id="online-title">Leaderboards</h2></div>
+      <div><p className="eyebrow">Optional online profile</p><h2 id="online-title">{showFullLeaderboard ? 'Full leaderboard' : 'Top 10'}</h2></div>
       <a href={`${import.meta.env.BASE_URL}privacy.html`}>Privacy</a>
     </header>
     <p role="status">{status}</p>
     {!session.authenticated ? <div className="online-login">
-      <span>Login with Battle.net to post verified results:</span>
-      <a className="button-link" href={battleNetLoginUrl('eu')}>Europe</a>
-      <a className="button-link secondary" href={battleNetLoginUrl('us')}>Americas</a>
+      <span>Post verified results:</span>
+      <select aria-label="Battle.net region" value={loginRegion} onChange={event => setLoginRegion(event.target.value as 'eu' | 'us')}>
+        <option value="eu">EU</option><option value="us">US</option>
+      </select>
+      <a className="button-link" href={battleNetLoginUrl(loginRegion)}>Login with Battle.net</a>
     </div> : <div className="online-account">
       <label>Verified character
         <select value={characters.find(character => character.selected)?.id ?? ''} onChange={async event => {
@@ -133,14 +168,21 @@ export default function OnlinePanel({ onSession }: { onSession: (session: Online
       <select aria-label="Leaderboard duty" value={duty} onChange={event => setDuty(event.target.value as 'crystal' | 'non-crystal')}>
         <option value="crystal">Crystal</option><option value="non-crystal">Non-crystal</option>
       </select>
-      <input aria-label="Search leaderboard" value={search} onChange={event => setSearch(event.target.value)} placeholder="Character, alias, realm, guild" />
-      <button className="secondary" onClick={() => void refreshLeaderboard()}>Search</button>
     </div>
-    {rows.length ? <ol className="leaderboard-rows">
-      {rows.map((row, index) => <li key={`${row.displayName}-${row.durationMs}-${index}`}>
-        <b>{index + 1}. {row.displayName}</b>
+    {displayedRows.length ? <ol className={`leaderboard-rows ${showFullLeaderboard ? 'full' : 'top-ten'}`}>
+      {displayedRows.map((row, index) => <li key={`${row.displayName}-${row.durationMs}-${index}`}>
+        <b>{row.rank ?? index + 1}. {row.character && row.region && row.realm
+          ? <a href={`https://raider.io/characters/${row.region}/${row.realm}/${row.character}`} target="_blank" rel="noreferrer">{row.displayName}</a>
+          : row.displayName}</b>
         <span>{row.guild ? `${row.guild} · ` : ''}{row.score} pts · {(row.durationMs / 1000).toFixed(1)}s</span>
       </li>)}
     </ol> : <p>No matching verified results yet.</p>}
+    <div className="leaderboard-search">
+      <input aria-label="Search leaderboard" value={search} onChange={event => setSearch(event.target.value)} placeholder="Character, alias, realm, guild" />
+      <button className="secondary" onClick={() => void refreshLeaderboard()}>Search</button>
+      <button className="secondary full-leaderboard-toggle" onClick={() => setShowFullLeaderboard(current => !current)}>
+        {showFullLeaderboard ? 'Back to Top 10' : 'View full leaderboard'}
+      </button>
+    </div>
   </section>
 }

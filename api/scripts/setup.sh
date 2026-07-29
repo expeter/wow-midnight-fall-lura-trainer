@@ -20,15 +20,8 @@ fi
 if ! id lura-api >/dev/null 2>&1; then
   useradd --system --home /var/lib/lura-api --shell /usr/sbin/nologin lura-api
 fi
-getent group lura-backup >/dev/null 2>&1 || groupadd --system lura-backup
-usermod -a -G lura-backup lura-api
-if id lura-deploy >/dev/null 2>&1; then
-  usermod -a -G lura-backup lura-deploy
-fi
-
 install -d -o lura-api -g lura-api -m 0750 /var/lib/lura-api
 install -d -o lura-api -g lura-api -m 0700 /var/backups/lura-api
-install -d -o root -g lura-backup -m 0750 /var/backups/lura-api-export
 install -d -o root -g root -m 0755 /opt/lura-api/releases
 install -d -o root -g root -m 0755 /etc/lura-api
 
@@ -42,7 +35,6 @@ PATH="/opt/lura-api/runtime/bin:${PATH}" npm ci --omit=dev
 install -o root -g root -m 0644 deploy/lura-api.service /etc/systemd/system/lura-api.service
 install -o root -g root -m 0644 deploy/lura-api-backup.service /etc/systemd/system/lura-api-backup.service
 install -o root -g root -m 0644 deploy/lura-api-backup.timer /etc/systemd/system/lura-api-backup.timer
-install -o root -g root -m 0644 deploy/backup-recipient.pem /etc/lura-api/backup-recipient.pem
 install -d -o root -g root -m 0755 /opt/lura-api/bin
 install -o root -g root -m 0755 scripts/activate-release.sh /opt/lura-api/bin/activate-release
 systemctl daemon-reload

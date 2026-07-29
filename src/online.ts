@@ -12,6 +12,13 @@ export interface OnlineSession {
     showGuild: number
     selectedCharacterId: number | null
   }
+  standings?: Array<{
+    difficulty: 'normal' | 'hard'
+    duty: 'crystal' | 'non-crystal'
+    score: number
+    durationMs: number
+    position: number
+  }>
 }
 
 export interface OnlineCharacter {
@@ -30,6 +37,7 @@ export interface LeaderboardRow {
   displayName: string
   character: string | null
   realm: string | null
+  region: 'eu' | 'us' | null
   guild: string | null
   score: number
   durationMs: number
@@ -126,10 +134,12 @@ export function loadLeaderboard(
   difficulty: 'normal' | 'hard',
   duty: 'crystal' | 'non-crystal',
   search = '',
+  limit = 10,
 ): Promise<{ rows: LeaderboardRow[] }> {
   const route = search.trim() ? '/v1/leaderboards/search' : '/v1/leaderboards'
   const query = new URLSearchParams({ difficulty, duty, version: 'current' })
   if (search.trim()) query.set('q', search.trim())
+  query.set('limit', String(limit))
   return api(`${route}?${query}`)
 }
 

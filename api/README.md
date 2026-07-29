@@ -61,11 +61,10 @@ of Git and screenshots.
      rollback drills have passed.
 7. **Backups**
    - `lura-api-backup.timer` runs `api/scripts/backup.sh` daily.
-   - The script creates a consistent local SQLite generation and encrypts an
-     export to `deploy/backup-recipient.pem`.
-   - `.github/workflows/api-backup.yml` copies only that encrypted export into
-     a rotating 30-day GitHub Actions artifact. Neither GitHub nor the VPS has
-     the private recovery key.
+   - The script creates consistent VPS-local SQLite generations with 14-day
+     rotation.
+   - Do not commit backup generations, recovery material, or a storage-specific
+     replication workflow. The user will provide the separate off-VPS storage.
    - Perform a restore test into a fresh temporary data directory before
      accepting real accounts.
 
@@ -128,8 +127,9 @@ Battle.net access tokens are used only during the callback and are not stored.
 For local development, `BNET_CLIENT_ID`/`BNET_SECRET` are accepted aliases for
 the production `BATTLE_NET_CLIENT_ID`/`BATTLE_NET_CLIENT_SECRET` names.
 The API recomputes accepted scores from bounded completion telemetry and rejects
-expired, replayed, mismatched, or tampered attempts. Character refresh and
-frontend integration remain the next FR-027 slices.
+expired, replayed, mismatched, or tampered attempts. Character refresh, trainer
+integration, current standings, and the privacy-aware leaderboard UI are
+implemented under `FR-027` and `FR-057`.
 
 ## Production paths
 
@@ -144,25 +144,14 @@ Never back up the live `.sqlite3` file with plain `cp` while WAL is active.
 `lura-api-backup.timer` runs the SQLite online-backup script daily with a
 randomized delay and catches up after downtime.
 
-## Restore an encrypted off-VPS backup
+## Restore a VPS-local backup
 
-The dedicated private recovery key is local-only:
-`~/.ssh/lura_api_backup_recovery.pem`. Back it up in your normal encrypted
-password-manager or offline-key procedure. It cannot be reconstructed from the
-repository, VPS, or GitHub artifact.
-
-Download one `lura-api-backup-*` artifact and run:
-
-```bash
-openssl cms -decrypt -binary -inform DER \
-  -in lura-<run-id>.sqlite3.p7m \
-  -recip api/deploy/backup-recipient.pem \
-  -inkey ~/.ssh/lura_api_backup_recovery.pem \
-  -out restored.sqlite3
-sqlite3 restored.sqlite3 'PRAGMA integrity_check;'
-```
-
-Restore only after `integrity_check` returns `ok`. Stop the API, preserve the
-current live database separately, install the verified restored file as
+Copy a selected generation from `/var/backups/lura-api` into a fresh temporary
+directory and run `sqlite3 restored.sqlite3 'PRAGMA integrity_check;'`. Restore
+only after it returns `ok`. Stop the API, preserve the current live database
+separately, install the verified restored file as
 `/var/lib/lura-api/lura.sqlite3` with owner `lura-api:lura-api` and mode
 `0600`, then start the service and verify `/health`.
+
+The separate off-VPS storage and restore procedure will be added when its
+destination is provided. It must remain outside Git.

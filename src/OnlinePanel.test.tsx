@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import OnlinePanel from './OnlinePanel'
+import OnlinePanel, { OnlineStandingSummary } from './OnlinePanel'
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -29,12 +29,48 @@ describe('optional online profile', () => {
     }))
     render(<OnlinePanel onSession={() => undefined} />)
     expect(await screen.findByText(/Anonymous play remains fully available/)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Europe' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Login with Battle.net' })).toHaveAttribute(
       'href',
       'http://127.0.0.1:8787/v1/auth/battlenet/start?region=eu',
     )
+    await userEvent.selectOptions(screen.getByLabelText('Battle.net region'), 'us')
+    expect(screen.getByRole('link', { name: 'Login with Battle.net' })).toHaveAttribute(
+      'href',
+      'http://127.0.0.1:8787/v1/auth/battlenet/start?region=us',
+    )
     expect(await screen.findByText('1200 pts · 300.0s')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Top 10' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'View full leaderboard' }))
+    expect(await screen.findByRole('heading', { name: 'Full leaderboard' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Privacy' })).toHaveAttribute('href', '/privacy.html')
+  })
+
+  it('shows current Normal and Hard positions beside the local achievement summary', () => {
+    render(<OnlineStandingSummary session={{
+      authenticated: true,
+      standings: [
+        { difficulty: 'normal', duty: 'crystal', position: 8, score: 1100, durationMs: 300_000 },
+        { difficulty: 'hard', duty: 'non-crystal', position: 3, score: 1300, durationMs: 290_000 },
+      ],
+    }} />)
+    expect(screen.getByLabelText('Current online standings')).toHaveTextContent('Normal #8 · Hard #3')
+  })
+
+  it('uses localhost fixtures only after a successful empty response and links verified characters', async () => {
+    vi.stubGlobal('fetch', vi.fn(async input => {
+      const url = String(input)
+      if (url.endsWith('/v1/me')) return json({ error: 'not_authenticated' }, 401)
+      if (url.includes('/v1/leaderboards')) return json({ rows: [] })
+      throw new Error(`unexpected ${url}`)
+    }))
+    render(<OnlinePanel onSession={() => undefined} />)
+    const character = await screen.findByRole('link', { name: 'Aegis' })
+    expect(character).toHaveAttribute(
+      'href',
+      'https://raider.io/characters/eu/silvermoon/Aegis',
+    )
+    expect(character.closest('ol')?.querySelectorAll('a')).toHaveLength(1)
+    expect(character.closest('ol')).toHaveTextContent('Voidrunner')
   })
 
   it('selects an owned character and saves explicit public privacy', async () => {

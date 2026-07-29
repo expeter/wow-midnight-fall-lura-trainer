@@ -2,32 +2,20 @@
 
 Branch: `handoff/leaderboard-api-fr057`
 
-This branch packages the in-progress optional Battle.net leaderboard work for
-continuation on another laptop. It deliberately leaves `FR-057` marked **In
-progress**: the requested start-page and Top 10 redesign has only its backend
-standings slice so far.
+This branch packages the optional Battle.net leaderboard work continued on the
+new laptop. `FR-057` is complete; the API handoff release is active on the VPS
+and the trainer changes remain local until the user requests a push.
 
 ## Security and files to transfer separately
 
-- `api/deploy/backup-recipient.pem` is a **public certificate**. It is safe and
-  intentional to commit. The VPS backup job uses it to encrypt SQLite exports.
-- The matching **private** recovery key is not in this repository. On the old
-  machine it is:
-  `/home/pschulz.guest/.ssh/lura_api_backup_recovery.pem`
-- Transfer that private key separately through an encrypted channel or password
-  manager, install it as `~/.ssh/lura_api_backup_recovery.pem`, and set mode
-  `0600`. Never add it to Git.
+- Backup generations, certificates, recovery keys, and storage-specific
+  replication workflows do not belong in Git.
+- `CR-149` retains only the VPS-local SQLite backup timer. The user will provide
+  the separate off-VPS storage destination and its secret handover.
 - The repository-root `.env` and `api/.env` are ignored. Recreate the local
   Battle.net and session settings on the new laptop rather than committing
   them.
 - VPS/GitHub deployment SSH keys also remain outside Git.
-
-The public certificate fingerprint currently documented for operator
-verification is:
-
-```text
-1A:1B:64:3A:A8:8A:E0:D4:9F:33:41:79:13:EC:78:7F:D8:41:D1:75:DF:D7:72:DD:F1:17:16:FB:07:7F:25:98
-```
 
 ## Implemented in the working branch
 
@@ -39,8 +27,7 @@ verification is:
   verified achievements.
 - Frontend API client, online attempt integration, privacy UI, and initial
   leaderboard/profile UI.
-- SQLite backup encryption and a workflow intended to copy only encrypted
-  generations off the VPS.
+- Consistent rotating VPS-local SQLite backups; off-VPS storage is pending.
 - `/v1/me` now computes the signed-in account's best current-version position
   in each Normal/Hard crystal-duty division. Public character leaderboard rows
   include their region only when character identity is public.
@@ -49,9 +36,9 @@ The first five items have focused tests in the branch. The last standings and
 region additions were started for `FR-057` and still need their complete
 frontend regression pass.
 
-## FR-057 remaining work
+## FR-057 completed work
 
-The accepted page structure is:
+The implemented page structure is:
 
 1. Header and compact achievement/current-standing summary.
 2. Practice target and Game settings.
@@ -60,7 +47,7 @@ The accepted page structure is:
 5. Search beneath the Top 10 and a link to a dedicated full leaderboard view.
 6. One `Login with Battle.net` button with a small EU/US region selector.
 
-Also:
+The completed follow-ups include:
 
 - Move `Your player name` out of `Difficulty & movement` and into selected
   assignment/player identity.
@@ -70,8 +57,8 @@ Also:
 - Link a public verified character to
   `https://raider.io/characters/{region}/{realm}/{character}`.
 - Keep anonymous and alias rows unlinked.
-- Update `OnlinePanel` tests, API privacy/region assertions, layout browser
-  coverage, and add coverage for the dedicated full leaderboard.
+- Updated `OnlinePanel` tests, API privacy/region assertions, layout browser
+  coverage, and coverage for the dedicated full leaderboard.
 
 Relevant files:
 
@@ -96,20 +83,12 @@ npm run build
 npm run test:e2e:local
 ```
 
-Before marking `FR-057` implemented, all four must pass and the focused tests
-must cover the requested hierarchy. Update `CHANGELOG.md` and
-`docs/README.md`, then make a normal descriptive commit (never a `yeet` commit
-message).
+`FR-057` was verified with the API suite, all 284 client tests, the production
+build, focused online regressions, and all 23 Playwright tests.
 
-After pushing, monitor both GitHub Pages and the API deployment. The encrypted
-backup path still needs one production restore drill:
-
-1. Install/activate the backup unit, public certificate, export directory, and
-   `lura-backup` group changes from this branch.
-2. Run the VPS backup service once.
-3. Copy only the encrypted `.p7m` generation off the VPS.
-4. Decrypt it locally with the separately transferred private key.
-5. Run `PRAGMA integrity_check;` and require `ok`.
-6. Trigger and verify the GitHub encrypted-backup workflow/artifact.
+After a future user-requested push, monitor GitHub Pages and the API deployment.
+The VPS-local backup service has run successfully. Complete the off-VPS restore
+drill after the user supplies the separate storage destination; do not add that
+backup data or its secrets to Git.
 
 Do not alter the existing Caddy blog configuration while finishing this work.

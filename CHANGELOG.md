@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- CR-149: Remove GitHub-hosted API backup artifacts and their repository
+  certificate; retain VPS-local rotation until separate storage is provided.
 - FR-057: Rebalance the setup page around practice settings and present online
   standings as a compact Top 10 with a separate full leaderboard view.
 - FR-027: Begin the optional highscore service with an isolated Node/SQLite

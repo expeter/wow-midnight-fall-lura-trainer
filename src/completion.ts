@@ -35,6 +35,39 @@ export function isFullSequenceCompletion(results: PhaseResult[]): boolean {
     results.length === required.length && results.every((result, index) => result.key === required[index]))
 }
 
+export function completionImageCardLayout(count: number, canvasWidth = 1200) {
+  const left = 70
+  const right = 70
+  const gap = 12
+  const safeCount = Math.max(1, count)
+  const width = (canvasWidth - left - right - gap * (safeCount - 1)) / safeCount
+  return Array.from({ length: count }, (_, index) => ({
+    x: left + index * (width + gap),
+    width,
+  }))
+}
+
+export function wrapTextByWidth(
+  text: string,
+  maximumWidth: number,
+  measure: (value: string) => number,
+): string[] {
+  const words = text.trim().split(/\s+/).filter(Boolean)
+  const lines: string[] = []
+  let line = ''
+  for (const word of words) {
+    const candidate = line ? `${line} ${word}` : word
+    if (line && measure(candidate) > maximumWidth) {
+      lines.push(line)
+      line = word
+    } else {
+      line = candidate
+    }
+  }
+  if (line) lines.push(line)
+  return lines
+}
+
 export interface Achievement {
   id: string
   label: string

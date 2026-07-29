@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildPhaseResult, completionAchievements, completionShareText, isFullSequenceCompletion, type PhaseResult } from './completion'
+import { buildPhaseResult, completionAchievements, completionImageCardLayout, completionShareText, isFullSequenceCompletion, wrapTextByWidth, type PhaseResult } from './completion'
 
 describe('completion card results', () => {
   it('scores each phase from its own 1000-point budget', () => {
@@ -39,6 +39,22 @@ describe('completion card results', () => {
     expect(text).toContain('1 mistake')
     expect(text).toContain('Attempt #7')
     expect(text).toContain('Played position: Assigned Mage — Spot 4')
+  })
+
+  it('keeps five phase cards and long completion text inside the copied image', () => {
+    const cards = completionImageCardLayout(5)
+    expect(cards).toHaveLength(5)
+    expect(cards[0].x).toBe(70)
+    expect(cards.at(-1)!.x + cards.at(-1)!.width).toBeCloseTo(1130)
+    expect(cards.every(card => card.width >= 200)).toBe(true)
+
+    const lines = wrapTextByWidth(
+      'OPTIONAL CHALLENGES · 9 recovery items used + Main ability used + 20% boss damage + 100 points · health responses 5/5',
+      520,
+      value => value.length * 10,
+    )
+    expect(lines.length).toBeGreaterThan(1)
+    expect(lines.every(line => line.length * 10 <= 520)).toBe(true)
   })
 
   it('differentiates mode, crystal duty, options, and superhuman flawless clears', () => {

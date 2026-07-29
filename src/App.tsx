@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
 import { bossBeamHitsPlayer, canPickupCrystal, canPickupCrystalDuringEvent, canRecoverFromWipe, crystalWipeReason, difficultySettings, distance, distanceToSegment, isOnAssignedP3Side, isP3ConsumedSectorLethal, isInSafeAnnulus, isP3ProtectionCrystalPlaced, isProtectedByP3Bubble, isProtectedByP3Light, moveRelativeToCamera, moveWithIncreasingPull, npcEntryPosition, OPENING_BOOST_SECONDS, orientedAssignments, p1PositioningWipeReason, p2NpcCrystalDrops, p2PhaseTransitionCountdown, p2PostBeamEvent, p2ReturningOrbPositions, P1_FINAL_RECOVERY_SECONDS, P1_STAR_LENGTH, P2_BEAM_SECONDS, P2_FETCH_SECONDS, P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS, P2_ORB_GLOW_LEAD_SECONDS, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_POSITIONING_SECONDS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p3ActiveCrystalAssignments, P3_APPROACH_SECONDS, p3ArchangelStackPosition, p3AssignmentForRound, p3BossPosition, p3FlightPosition, P3_FINAL_SECTOR_MOVE_SECONDS, P3_FLIGHT_SECONDS, p3LandingPlanIndex, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3LightHealthRate, p3MemoryResolved, p3PoolCenters, p3PoolSoakRate, p3ProtectionBubbleCenter, p3RuneDeadline, p3RuneEdges, p3RuneOrbs, p3RuneStepAt, p3SectorMovementSpeed, p3SideForPosition, p3StarsTiming, p3UnsafePenaltyTicks, p3WrongRuneContact, P3_LANDING_SOAK_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_MEMORY_STEP_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, P3_SAFE_ZONE_PENALTY_PER_SECOND, P3_SECTOR_MOVE_SECONDS, P3_SECTOR_SECONDS, p4BossHealth, p4EncounterBoxStates, p4FrontSoakerPosition, p4GroupPosition, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4SplinterStartSeconds, p4StackPosition, p4TankConeActive, p4TankConeHitsBox, p4TransitionStartPosition, P4_CYCLE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, P4_SPLINTER_INTERVAL_SECONDS, personalCircleHitsCrystal, personalCircleHitsPlayer, PLAYER_COLLISION_PENALTY, randomCrystalDropDuty, randomizeP3PoolLayout, roamingNpcPosition, safestStarsplinterRotation, setP3BossPlan, shouldShowP2OrbReturnCounter, starsplinterHitsPoint, translateSelectedPoints, walkTowards, WIPE_PENALTY, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type Role, type RuneSymbol } from './game'
-import { buildPhaseResult, completionShareText, isFullSequenceCompletion, type PhaseKey, type PhaseResult } from './completion'
+import { buildPhaseResult, completionImageCardLayout, completionShareText, isFullSequenceCompletion, wrapTextByWidth, type PhaseKey, type PhaseResult } from './completion'
 import { bossDamageScoreBonus, isInsideP3Pool, p4BossHealthWithPlayerDamage, p4RenderedNpcSplinterOrigin, p4StartingBossState, p4TankKillsBox, PRE_P4_BOSS_HEALTH_BUDGET, preP4BossHealth, shouldSuppressRepeatedWipe, shouldTriggerP3EarlyClear, starsplinterHitsCrystalCarrier } from './game'
 import { p4UnsafePenaltyTicks, P4_SAFE_ZONE_HEALTH_DRAIN_PER_SECOND, P4_SAFE_ZONE_PENALTY_PER_SECOND } from './game'
 import { p4TimedVoiceCues, timedVoiceDelaySeconds, timedVoiceSupported, ttsCuesForState, type P4VoiceClip } from './audio'
@@ -2379,17 +2379,17 @@ export default function App() {
   async function shareCompletionImage() {
     const canvas = document.createElement('canvas')
     canvas.width = 1200
-    canvas.height = 675
+    canvas.height = 760
     const context = canvas.getContext('2d')
     if (!context) { setCompletionCopyStatus('Image export is unavailable in this browser'); return }
-    const gradient = context.createLinearGradient(0, 0, 1200, 675)
+    const gradient = context.createLinearGradient(0, 0, 1200, 760)
     gradient.addColorStop(0, fullSequenceComplete ? '#202238' : '#15243a')
     gradient.addColorStop(1, '#080b16')
     context.fillStyle = gradient
-    context.fillRect(0, 0, 1200, 675)
+    context.fillRect(0, 0, 1200, 760)
     context.strokeStyle = fullSequenceComplete ? '#ffd978' : '#73e0c1'
     context.lineWidth = 3
-    context.strokeRect(28, 28, 1144, 619)
+    context.strokeRect(28, 28, 1144, 704)
     context.fillStyle = fullSequenceComplete ? '#ffd978' : '#73e0c1'
     context.font = '600 24px sans-serif'
     context.fillText(completionPreview ? 'RESULT SCREEN PREVIEW · NOT A COMPLETED RUN' : fullSequenceComplete ? `FULL RUN COMPLETE${achievements.length ? ' · ACHIEVEMENT UNLOCKED' : ''}` : 'L’URA PRACTICE COMPLETE', 70, 92)
@@ -2407,9 +2407,9 @@ export default function App() {
     context.fillText(`${Math.round(stats.score)} POINTS`, 72, 286)
     context.fillText(`${stats.time.toFixed(1)}s`, 340, 286)
     context.fillText(`${stats.hits} MISTAKE${stats.hits === 1 ? '' : 'S'}`, 530, 286)
-    const cardWidth = 248
+    const cards = completionImageCardLayout(phaseResults.length)
     phaseResults.forEach((result, index) => {
-      const x = 70 + index * 270
+      const { x, width: cardWidth } = cards[index]
       context.fillStyle = 'rgba(7, 11, 22, .7)'
       context.fillRect(x, 330, cardWidth, 150)
       context.strokeStyle = '#33415f'
@@ -2422,16 +2422,27 @@ export default function App() {
       context.font = '700 29px sans-serif'
       context.fillText(`${result.points} pts`, x + 18, 414)
       context.fillStyle = '#9ba8c2'
-      context.font = '500 18px sans-serif'
+      context.font = '500 15px sans-serif'
       context.fillText(`${result.time.toFixed(1)}s${result.recovery ? ` · Recovery ${result.recovery === 'passed' ? '+50' : '−50'}` : ''}`, x + 18, 452)
     })
     context.fillStyle = '#c7cfdf'
     context.font = '500 21px sans-serif'
-    context.fillText(`NEW ACHIEVEMENTS · ${achievements.map(achievement => achievement.label).join(' · ') || 'None this run'}`, 72, 525)
-    context.fillText(`OPTIONAL CHALLENGES · ${extrasSummary}`, 72, 558)
+    const achievementLines = wrapTextByWidth(
+      `NEW ACHIEVEMENTS · ${achievements.map(achievement => achievement.label).join(' · ') || 'None this run'}`,
+      1056,
+      value => context.measureText(value).width,
+    )
+    achievementLines.forEach((line, index) => context.fillText(line, 72, 525 + index * 27))
+    const extrasStart = 525 + achievementLines.length * 27 + 6
+    const extrasLines = wrapTextByWidth(
+      `OPTIONAL CHALLENGES · ${extrasSummary}`,
+      1056,
+      value => context.measureText(value).width,
+    )
+    extrasLines.forEach((line, index) => context.fillText(line, 72, extrasStart + index * 27))
     context.fillStyle = '#73819e'
     context.font = '500 18px sans-serif'
-    context.fillText(`${window.location.host}${window.location.pathname} · Client-side practice result`, 72, 603)
+    context.fillText(`${window.location.host}${window.location.pathname} · Client-side practice result`, 72, 700)
     const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'))
     if (!blob) { setCompletionCopyStatus('Could not create the result image'); return }
     try {

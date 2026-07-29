@@ -8,6 +8,11 @@
   obsolete trainer-version override. The API now owns and reports its release
   compatibility version, and deployment verification rejects a mismatched
   frontend/API release.
+- FR-060: Recover Pestivator's documented Normal/non-crystal result with one
+  administrative production backfill after BUG-111 prevented attempt issuance,
+  without adding a public bypass or awarding unverifiable achievements.
+- CR-163: Keep all five phase cards and wrapped completion details inside the
+  copied result image.
 
 ## 0.4.1 · 2026-07-29
 

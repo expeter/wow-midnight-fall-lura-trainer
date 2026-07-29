@@ -179,7 +179,7 @@ export default function AchievementCollection({ collection }: AchievementCollect
               return <article aria-label={`${achievement.label} · ${status}`} className={record ? 'earned' : achievement.available ? 'locked' : 'coming-soon'} key={achievement.key}>
                 <span className="achievement-icon" aria-hidden="true">{achievement.icon}</span>
                 <div>
-                  <div className="achievement-title"><h4>{achievement.label}</h4><span>{status}</span></div>
+                  <div className="achievement-title"><h4>{achievement.label}</h4><span>{achievement.tier} · {achievement.points} pts</span><span>{status}</span></div>
                   <p>{achievement.flavor}</p>
                   <small className="achievement-requirement"><b>How to earn</b>{achievement.requirement}</small>
                   {record && <small className="achievement-earned-at">{`First earned ${new Date(record.earnedAt).toLocaleString()}${record.playerName ? ` · ${record.playerName}` : ''}${record.attempt ? ` · Attempt #${record.attempt}` : ''}`}</small>}

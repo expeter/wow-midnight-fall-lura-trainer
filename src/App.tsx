@@ -1108,7 +1108,6 @@ export default function App() {
       && onlineSession.csrfToken
       && selectedCharacter
       && entryMode === 'arena0'
-      && (difficulty === 'normal' || difficulty === 'hard')
     ) {
       try {
         const buildId = APP_GIT_REVISION === 'unknown' ? `local-${APP_VERSION}` : APP_GIT_REVISION

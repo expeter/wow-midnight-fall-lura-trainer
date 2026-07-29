@@ -20,7 +20,7 @@ describe('achievement collection UI', () => {
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
   })
-  it('groups canonical earned, locked, and coming-soon badges', () => {
+  it('groups canonical earned and locked badges', () => {
     render(<AchievementCollection collection={collection} />)
     expect(screen.getByRole('heading', { name: 'L’ura’s movement ledger' })).toBeInTheDocument()
     for (const cluster of ['Foundations', 'Precision', 'Tools of the Trade', 'Feats of Movement']) {
@@ -30,12 +30,12 @@ describe('achievement collection UI', () => {
     expect(within(earned).getByText('Earned')).toBeInTheDocument()
     expect(within(earned).getByText(/First earned.*Pestivator.*Attempt #4/)).toBeInTheDocument()
     expect(screen.getAllByText('Locked').length).toBeGreaterThan(0)
-    expect(screen.getByText('Coming soon')).toBeInTheDocument()
+    expect(screen.queryByText('Coming soon')).not.toBeInTheDocument()
   })
 
   it('links the compact achievement summary to the ledger', () => {
     render(<AchievementBadgeSummary collection={collection} />)
-    expect(screen.getByRole('link', { name: 'Achievements 1 of 27 earned' })).toHaveAttribute('href', '#achievements')
+    expect(screen.getByRole('link', { name: 'Achievements 1 of 28 earned' })).toHaveAttribute('href', '#achievements')
   })
 
   it('shows newly earned achievements as compact live cards with title and flavor text', () => {

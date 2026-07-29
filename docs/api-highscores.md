@@ -16,6 +16,7 @@ Milestone 1 adds an optional service at `https://api.asgard.website` for:
 - accepting validated Normal and Hard results;
 - publishing searchable, versioned leaderboards;
 - associating server-confirmed achievements with an account and character;
+- publishing an account-wide lifetime Achievement Hall;
 - showing the selected character's current guild when privacy permits;
 - logout, visibility controls, and complete account deletion.
 
@@ -23,6 +24,19 @@ Reading public leaderboards does not require login. Login is required only to
 post a result, synchronize online achievements, or manage online data. A player
 who does not want online storage can avoid login and retain all current
 browser-local functionality.
+
+Test and Easy completions are accepted for verified achievement progress but
+are marked ineligible for run rankings. `GET /v1/achievement-hall` returns
+privacy-filtered lifetime totals, achievement counts, highest-value
+achievement metadata, and (when authenticated and public) the caller's own
+rank. The canonical catalogue uses 10/25/50/100/200-point tiers and records
+introduced season/version plus optional retirement version. Retirement does
+not remove previously earned points.
+
+For local verification without playing a full encounter, Vite development
+serves `/dev/online-submit`. It requires a real local login and selected
+character and calls the normal attempt APIs. It is implemented as a
+serve-only plugin and must remain absent from production output.
 
 Milestone 2 may add guild-wide achievement views, guild membership refresh,
 guild administration, and guild filters. Milestone 1 stores only enough guild
@@ -419,4 +433,3 @@ The trainer treats the API as optional:
   deletion behavior have automated coverage.
 - The API deployment workflow passes tests, preserves database files, deploys
   through the existing Caddy proxy, and verifies production health.
-

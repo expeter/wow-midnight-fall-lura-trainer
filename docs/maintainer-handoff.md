@@ -122,6 +122,11 @@ See [`audio-cues.md`](audio-cues.md) and
   explicitly permits committing these assets.
 - The localhost `/inbox` tool accepts pasted, dragged, or selected screenshots
   and stores an `INBOX-*` Markdown/image pair under [`inbox/`](../inbox/).
+- The localhost `/dev/online-submit` lab is served only by Vite development.
+  With a real login and selected character it submits editable synthetic
+  completion data through the normal attempt API, then refreshes the
+  Achievement Hall. Keep its route and identifying strings absent from
+  production output.
 - Do not interpret an inbox ID from chat without reading its Markdown and image.
 - Make focused commits after verified bug, change, or feature work. The user
   normally pushes; do not push unless asked.

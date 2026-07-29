@@ -49,6 +49,22 @@ export interface LeaderboardRow {
   trainerVersion: string
 }
 
+export interface AchievementHallRow {
+  rank: number
+  displayName: string
+  guild: string | null
+  totalPoints: number
+  achievementCount: number
+  highestAchievement: {
+    id: string
+    title: string
+    tier: string
+    points: number
+    firstEarnedAt: string
+    featOfStrength: boolean
+  }
+}
+
 export interface OnlineAchievement {
   achievementId: string
   trainerVersion: string
@@ -146,6 +162,16 @@ export function loadLeaderboard(
   if (search.trim()) query.set('q', search.trim())
   query.set('limit', String(limit))
   return api(`${route}?${query}`)
+}
+
+export function loadAchievementHall(search = '', limit = 10): Promise<{
+  rows: AchievementHallRow[]
+  own: AchievementHallRow | null
+  total: number
+}> {
+  const query = new URLSearchParams({ limit: String(limit) })
+  if (search.trim()) query.set('q', search.trim())
+  return api(`/v1/achievement-hall?${query}`)
 }
 
 export async function configurationFingerprint(value: unknown): Promise<string> {

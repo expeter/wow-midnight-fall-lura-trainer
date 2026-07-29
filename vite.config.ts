@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import { execFileSync } from 'node:child_process'
 import packageJson from './package.json' with { type: 'json' }
 import { feedbackInboxPlugin } from './tools/feedbackInboxPlugin'
+import { onlineSubmitLabPlugin } from './tools/onlineSubmitLabPlugin'
 
 const buildTime = new Date().toISOString()
 const gitRevision = (() => {
@@ -24,6 +25,7 @@ export default defineConfig({
   plugins: [
     react(),
     feedbackInboxPlugin(),
+    onlineSubmitLabPlugin(),
     {
       name: 'lura-version-manifest',
       configureServer(server) {

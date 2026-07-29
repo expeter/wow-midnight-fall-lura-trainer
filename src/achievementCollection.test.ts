@@ -223,10 +223,10 @@ describe('persistent achievement collection', () => {
     expect(parseAchievementCollection(serializeAchievementCollection(loaded))).toEqual(loaded)
   })
 
-  it('publishes 27 available canonical achievements and one P1 teaser', () => {
+  it('publishes all 28 canonical achievements', () => {
     const catalog = achievementCatalog()
-    expect(catalog.filter(achievement => achievement.available)).toHaveLength(27)
-    expect(catalog.find(achievement => achievement.id === 'flawless-p1')).toMatchObject({ available: false })
+    expect(catalog.filter(achievement => achievement.available)).toHaveLength(28)
+    expect(catalog.find(achievement => achievement.id === 'flawless-p1')).toMatchObject({ available: true })
     expect(new Set(catalog.map(achievement => achievement.id)).size).toBe(catalog.length)
   })
 })

@@ -97,8 +97,15 @@ change before implementation.
   proves identity but never proves gameplay legitimacy by itself.
 - Normal and Hard each have separate crystal and non-crystal leaderboards,
   sorted by points with duration and acceptance time as tie-breakers.
+- Test and Easy completions may earn server-verified achievements but never
+  enter run leaderboards or alter a player's Normal/Hard standing.
+- The Achievement Hall is account-wide and ranks public profiles by lifetime
+  canonical achievement points. It shows the highest-value achievement and
+  first-earned time; retired achievements retain their points. Catalogue
+  entries carry season metadata, while season-specific UI remains deferred.
 - Public identity is optional. Anonymous mode hides character, realm, and
-  guild; published character, alias, realm, and guild fields are searchable.
+  guild and excludes that account from public run and achievement rankings;
+  published character, alias, realm, and guild fields are searchable.
 - Results and verified achievements retain their exact trainer version/build
   so retired accomplishments can become future Feats of Strength.
 - Logout and complete deletion are separate actions. Complete deletion removes

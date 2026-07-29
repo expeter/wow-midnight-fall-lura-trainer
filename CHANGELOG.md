@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- FR-058: Add the account-wide Achievement Hall of Fame with canonical
+  weighted tiers, lifetime totals, highest-achievement timestamps, privacy
+  filtering, local preview data, and Top 10/full/search presentations.
+- CR-157: Add a Vite-development-only verified submission lab at
+  `/dev/online-submit`, backed by the real attempt APIs and excluded from
+  production builds.
 - CR-156: Make time outside the Phase 4 protected stack visibly drain health
   and deduct ten points for every full unsafe second.
 - CR-155: Polish leaderboard/profile controls, add distinct localhost

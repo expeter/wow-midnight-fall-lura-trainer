@@ -1,4 +1,5 @@
 import type { Achievement, AchievementSummary, PhaseKey, PhaseResult } from './completion'
+import { ACHIEVEMENT_BY_ID, type AchievementTier } from '../api/src/achievementCatalog.js'
 
 export const ACHIEVEMENT_STORAGE_KEY = 'lura-achievement-collection'
 
@@ -41,6 +42,8 @@ export interface AchievementDefinition extends Achievement {
   requirement: string
   icon: string
   available: boolean
+  tier: AchievementTier
+  points: number
 }
 
 export interface EarnedAchievement {
@@ -80,7 +83,7 @@ const DEFINITIONS: AchievementDefinition[] = [
   badge('not-a-scratch', 'Precision', 'Not a Scratch', 'Complete Normal without a wipe, penalty, or misplaced step.', 'Complete the full sequence on Normal with zero recorded mistakes.', '◇'),
   badge('crystal-clear-conscience', 'Precision', 'Crystal-Clear Conscience', 'Leave every carried and grounded crystal untouched by your mechanics.', 'Complete the full sequence without causing a crystal or crystal-carrier hit.', '⬡'),
   badge('rune-reader', 'Precision', 'Read the Room', 'Resolve every rune in order and leave no memory unfinished.', 'Complete Phase 3 without a wrong, missed, or out-of-order rune.', '⌘'),
-  badge('flawless-p1', 'Precision', 'Glaive Expectations', 'Complete Phase 1 without a single recorded mistake.', 'Phase 1 is coming soon.', '✧', false),
+  badge('flawless-p1', 'Precision', 'Glaive Expectations', 'Complete Phase 1 without a single recorded mistake.', 'Complete Phase 1 with zero recorded mistakes.', '✧'),
   badge('flawless-intermission', 'Precision', 'Between the Beams', 'Dance through the opening without giving the void an inch.', 'Complete Intermission with zero recorded mistakes.', '╱'),
   badge('flawless-p2', 'Precision', 'Perfectly Orb-ital', 'Every beam, circle, and returning orb exactly where it belongs.', 'Complete Phase 2 with zero recorded mistakes.', '◉'),
   badge('flawless-p3', 'Precision', 'Rune Without Error', 'Read the stars, finish the Soaks, and never lose the light.', 'Complete Phase 3 with zero recorded mistakes.', '✣'),
@@ -101,7 +104,8 @@ const DEFINITIONS: AchievementDefinition[] = [
 ]
 
 function badge(id: AchievementId, cluster: AchievementCluster, label: string, flavor: string, requirement: string, icon: string, available = true): AchievementDefinition {
-  return { id, key: id, cluster, label, detail: flavor, flavor, requirement, icon, available }
+  const scoring = ACHIEVEMENT_BY_ID.get(id)
+  return { id, key: id, cluster, label, detail: flavor, flavor, requirement, icon, available, tier: scoring?.tier ?? 'Common', points: scoring?.points ?? 10 }
 }
 
 export function achievementCatalog(): AchievementDefinition[] {

@@ -3,6 +3,7 @@ import {
   battleNetLoginUrl,
   deleteOnlineData,
   loadCharacters,
+  loadAchievementHall,
   loadLeaderboard,
   loadOnlineAchievements,
   loadOnlineSession,
@@ -11,6 +12,7 @@ import {
   selectCharacter,
   updatePrivacy,
   type LeaderboardRow,
+  type AchievementHallRow,
   type OnlineCharacter,
   type OnlineAchievement,
   type OnlineSession,
@@ -40,6 +42,28 @@ function localFixtures(difficulty: 'normal' | 'hard', duty: 'crystal' | 'non-cry
   }
   })
 }
+
+const LOCAL_HALL_FIXTURES: AchievementHallRow[] = Array.from({ length: 100 }, (_, index) => {
+  const rank = index + 1
+  const tiers = ['Legendary', 'Epic', 'Rare', 'Uncommon', 'Common']
+  const points = [200, 100, 50, 25, 10]
+  const tierIndex = Math.min(4, Math.floor(index / 20))
+  return {
+    rank,
+    displayName: rank === 65 ? 'Your localhost profile' : `${LOCAL_NAMES[(index + 2) % LOCAL_NAMES.length]}-HF${String(rank).padStart(2, '0')}`,
+    guild: rank % 5 ? LOCAL_GUILDS[(index + 1) % LOCAL_GUILDS.length] : null,
+    totalPoints: Math.max(10, 1675 - rank * 13),
+    achievementCount: Math.max(1, 29 - Math.floor(rank / 4)),
+    highestAchievement: {
+      id: `fixture-${rank}`,
+      title: rank <= 10 ? 'Beyond the Impossible' : rank <= 30 ? 'The Stars Can Wait' : 'Perfectly Orb-ital',
+      tier: tiers[tierIndex],
+      points: points[tierIndex],
+      firstEarnedAt: new Date(Date.UTC(2026, 6, 1) + rank * 86400000).toISOString(),
+      featOfStrength: rank % 17 === 0,
+    },
+  }
+})
 
 export function OnlineStandingSummary({ session, onManage, onLogout }: { session: OnlineSession; onManage: () => void; onLogout?: () => void }) {
   const standings = session.standings ?? []
@@ -90,6 +114,10 @@ export default function OnlinePanel({
   const [rows, setRows] = useState<LeaderboardRow[]>([])
   const [leaderboardLoaded, setLeaderboardLoaded] = useState(false)
   const [showFullLeaderboard, setShowFullLeaderboard] = useState(false)
+  const [leaderboardView, setLeaderboardView] = useState<'runs' | 'hall'>('runs')
+  const [hallRows, setHallRows] = useState<AchievementHallRow[]>([])
+  const [hallOwn, setHallOwn] = useState<AchievementHallRow | null>(null)
+  const [hallLoaded, setHallLoaded] = useState(false)
   const [loginRegion, setLoginRegion] = useState<'eu' | 'us'>('eu')
   const [status, setStatus] = useState('Loading online profile…')
   const [identityMode, setIdentityMode] = useState<'anonymous' | 'alias' | 'character'>('anonymous')
@@ -141,8 +169,22 @@ export default function OnlinePanel({
     }
   }
 
+  async function refreshHall() {
+    try {
+      const loaded = await loadAchievementHall(search, showFullLeaderboard ? 100 : 10)
+      setHallRows(Array.isArray(loaded.rows) ? loaded.rows : [])
+      setHallOwn(loaded.own ?? null)
+      setHallLoaded(true)
+    } catch {
+      setHallRows([])
+      setHallOwn(null)
+      setHallLoaded(false)
+    }
+  }
+
   useEffect(() => { void refreshSession() }, [])
   useEffect(() => { void refreshLeaderboard() }, [difficulty, duty, showFullLeaderboard])
+  useEffect(() => { if (leaderboardView === 'hall') void refreshHall() }, [leaderboardView, showFullLeaderboard])
   useEffect(() => { if (requestedDifficulty) setDifficulty(requestedDifficulty) }, [requestedDifficulty])
   useEffect(() => { if (requestedDuty) setDuty(requestedDuty) }, [requestedDuty])
 
@@ -166,7 +208,7 @@ export default function OnlinePanel({
   const selectedCharacter = characters.find(character => character.selected)
   return <section className={`online-panel ${compact ? 'compact' : ''}`} aria-labelledby="online-title">
     <header>
-      <div><p className="eyebrow">{view === 'profile' ? 'Optional online profile' : 'Verified rankings'}</p><h2 id="online-title">{view === 'profile' ? 'My characters' : showFullLeaderboard ? 'Full leaderboard' : 'Top 10 leaderboard'}</h2></div>
+      <div><p className="eyebrow">{view === 'profile' ? 'Optional online profile' : 'Verified rankings'}</p><h2 id="online-title">{view === 'profile' ? 'My characters' : leaderboardView === 'hall' ? 'Achievement Hall of Fame' : showFullLeaderboard ? 'Full leaderboard' : 'Top 10 leaderboard'}</h2></div>
       {view === 'profile' && <a className="online-privacy-link" href={`${import.meta.env.BASE_URL}privacy.html`}>Privacy policy</a>}
     </header>
     {view === 'profile' && <p role="status">{status}</p>}
@@ -241,6 +283,19 @@ export default function OnlinePanel({
         <a className="button-link" href={battleNetLoginUrl(loginRegion)}>Login with Battle.net</a>
       </div>
     </div> : <div className={`online-leaderboard ${compact ? 'compact' : ''}`}>
+      {!compact && <div className="leaderboard-view-switch" aria-label="Leaderboard type">
+        <button className={leaderboardView === 'runs' ? 'selected' : ''} aria-current={leaderboardView === 'runs' ? 'page' : undefined} onClick={() => setLeaderboardView('runs')}>Runs</button>
+        <button className={leaderboardView === 'hall' ? 'selected' : ''} aria-current={leaderboardView === 'hall' ? 'page' : undefined} onClick={() => setLeaderboardView('hall')}>Achievement Hall</button>
+      </div>}
+      {leaderboardView === 'hall' && !compact ? <AchievementHall
+        rows={localhostPreview && (!hallLoaded || hallRows.length === 0) ? LOCAL_HALL_FIXTURES : hallRows}
+        own={hallOwn ?? (localhostPreview ? LOCAL_HALL_FIXTURES[64] : null)}
+        full={showFullLeaderboard}
+        search={search}
+        onSearch={setSearch}
+        onRefresh={() => void refreshHall()}
+        onToggleFull={() => setShowFullLeaderboard(current => !current)}
+      /> : <>
       {compact ? <p className="compact-leaderboard-filter">{difficulty === 'hard' ? 'Hard' : 'Normal'} · {duty === 'crystal' ? 'Crystal carrier' : 'Non-crystal'} · Top 10</p> : <div className="leaderboard-categories" aria-label="Leaderboard categories">
         {([
           ['normal', 'crystal', 'Normal · Crystal'],
@@ -277,6 +332,43 @@ export default function OnlinePanel({
         </button>
       </div>}
       {compact && <button className="secondary full-leaderboard-toggle compact-leaderboard-link" onClick={onOpenLeaderboard}>Open full leaderboard</button>}
+      </>}
     </div>}
+  </section>
+}
+
+function AchievementHall({
+  rows,
+  own,
+  full,
+  search,
+  onSearch,
+  onRefresh,
+  onToggleFull,
+}: {
+  rows: AchievementHallRow[]
+  own: AchievementHallRow | null
+  full: boolean
+  search: string
+  onSearch: (value: string) => void
+  onRefresh: () => void
+  onToggleFull: () => void
+}) {
+  const displayed = full ? rows : rows.slice(0, 10)
+  return <section className="achievement-hall" aria-labelledby="achievement-hall-title">
+    <div className="hall-heading"><div><p className="eyebrow">LIFETIME ACHIEVEMENT POINTS</p><h3 id="achievement-hall-title">Hall of Fame</h3></div><p>Account-wide totals · retired Feats of Strength keep their points.</p></div>
+    <div className="leaderboard-columns" aria-hidden="true"><span>Rank and player</span><span>Highest achievement · total</span></div>
+    <ol className="leaderboard-rows hall-rows">
+      {displayed.map(row => <li key={`${row.rank}-${row.displayName}`}>
+        <b>{row.rank}. {row.displayName}{row.guild ? <small>{row.guild}</small> : null}</b>
+        <span><strong>{row.highestAchievement.title}</strong>{row.highestAchievement.featOfStrength ? ' · Feat of Strength' : ''}<small>{row.highestAchievement.tier} · first earned {new Date(row.highestAchievement.firstEarnedAt).toLocaleDateString()} · {row.totalPoints} pts</small></span>
+      </li>)}
+    </ol>
+    {own && <div className="leaderboard-own-position" aria-label="Your achievement Hall position"><span aria-hidden="true">…</span><p><b>{own.rank}. Your Hall of Fame position</b><span>{own.totalPoints} pts · {own.achievementCount} achievements</span></p></div>}
+    <div className="leaderboard-search">
+      <label><span>Find a Hall of Fame player</span><small>Searches public profile names and guilds.</small><input aria-label="Search achievement Hall" value={search} onChange={event => onSearch(event.target.value)} /></label>
+      <button className="secondary" onClick={onRefresh}>Search Hall</button>
+      <button className="secondary" onClick={onToggleFull}>{full ? 'Back to Top 10' : 'View full Hall'}</button>
+    </div>
   </section>
 }

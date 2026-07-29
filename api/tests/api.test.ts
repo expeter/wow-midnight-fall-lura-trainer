@@ -574,6 +574,77 @@ describe('Lura API foundation', () => {
     assert.ok(achievementRows.some(row => (
       row.achievementId === 'hard-score-flawless' && row.buildId === 'build-online'
     )))
+    const hall = await app.handle(new Request('http://api.test/v1/achievement-hall', {
+      headers: { cookie: session.cookie },
+    }))
+    assert.equal(hall.status, 200)
+    const hallBody = await hall.json() as {
+      rows: Array<{ displayName: string; totalPoints: number; highestAchievement: { points: number } }>
+      own: { rank: number; displayName: string }
+    }
+    assert.equal(hallBody.rows[0].displayName, 'Verified')
+    assert.ok(hallBody.rows[0].totalPoints >= 200)
+    assert.equal(hallBody.rows[0].highestAchievement.points, 100)
+    assert.deepEqual(hallBody.own, { ...hallBody.own, rank: 1, displayName: 'Verified' })
+  })
+
+  it('keeps verified Easy results out of run rankings while awarding Hall points', async () => {
+    const accountId = insertResult(database, {
+      region: 'eu', account: 'easy-hall', character: 'Learner', realm: 'silvermoon',
+      mode: 'character', score: 500, duration: 500_000,
+      acceptedAt: '2026-07-27T00:00:00.000Z',
+    })
+    const selected = database.prepare('SELECT id FROM characters WHERE account_id = ?').get(accountId) as { id: number }
+    database.prepare('UPDATE accounts SET selected_character_id = ? WHERE id = ?').run(selected.id, accountId)
+    const session = insertSession(database, accountId, 'easy-session')
+    const tokens = ['easy-attempt', 'easy-nonce']
+    const app = createApp(database, config, {
+      now: () => new Date('2026-07-28T12:00:00.000Z'),
+      randomToken: () => tokens.shift()!,
+      fetch: globalThis.fetch,
+    })
+    const headers = {
+      cookie: session.cookie,
+      origin: config.trainerOrigin,
+      'content-type': 'application/json',
+      'x-csrf-token': session.csrf,
+    }
+    const issued = await app.handle(new Request('http://api.test/v1/attempts', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        difficulty: 'easy', duty: 'non-crystal', entryMode: 'arena0', phaseScope: 'full',
+        trainerVersion: '0.3.0', buildId: 'easy-build', configurationFingerprint: 'easy-config',
+        optionalChallenges: [],
+      }),
+    }))
+    const attempt = await issued.json() as { attemptId: string; nonce: string }
+    const accepted = await app.handle(new Request(`http://api.test/v1/attempts/${attempt.attemptId}/complete`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        nonce: attempt.nonce,
+        durationMs: 300_000,
+        phaseResults: ['p1', 'intermission', 'p2', 'p3', 'p4'].map(key => ({
+          key, durationMs: 60_000, mistakes: 0, recovery: 'missed',
+        })),
+        mistakes: [],
+        actions: { recoveryPasses: 0, mainAbilityCasts: 0, continuousPenalty: 0 },
+        achievementInputs: {
+          wipeCount: 0, crystalFailures: 0, runeFailures: 0, pauseCycle: false,
+          earlyKill: false, p3EarlyClear: false,
+        },
+        submittedScore: 1000,
+        trainerVersion: '0.3.0',
+        buildId: 'easy-build',
+      }),
+    }))
+    assert.equal(accepted.status, 200)
+    assert.ok(((await accepted.json()) as { achievementIds: string[] }).achievementIds.includes('easy-does-it'))
+    const board = await app.handle(new Request('http://api.test/v1/leaderboards?difficulty=normal&duty=non-crystal'))
+    assert.equal((await board.json() as { rows: unknown[] }).rows.length, 0)
+    const hall = await app.handle(new Request('http://api.test/v1/achievement-hall'))
+    assert.equal((await hall.json() as { rows: Array<{ displayName: string }> }).rows[0].displayName, 'Learner')
   })
 
   it('requires a selected verified character before issuing an attempt', async () => {

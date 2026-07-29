@@ -2,6 +2,8 @@ import type { ApiConfig } from './config.js'
 import type { Database } from './database.js'
 import { listLeaderboard, type Difficulty, type Duty } from './leaderboards.js'
 import { completeAttempt, issueAttempt } from './attempts.js'
+import { ACHIEVEMENT_CATALOG } from './achievementCatalog.js'
+import { listAchievementHall } from './achievementHall.js'
 import {
   authenticate,
   clearedSessionCookie,
@@ -41,6 +43,23 @@ export function createApp(
   config: ApiConfig,
   dependencies: AuthDependencies = defaultAuthDependencies,
 ): App {
+  const upsertAchievement = database.prepare(`
+    INSERT INTO achievement_catalog (id, title, tier, points, season, introduced_version, retired_version)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT (id) DO UPDATE SET title = excluded.title, tier = excluded.tier,
+      points = excluded.points, season = excluded.season,
+      introduced_version = excluded.introduced_version,
+      retired_version = excluded.retired_version
+  `)
+  for (const achievement of ACHIEVEMENT_CATALOG) upsertAchievement.run(
+    achievement.id,
+    achievement.title,
+    achievement.tier,
+    achievement.points,
+    achievement.season,
+    achievement.introducedVersion,
+    achievement.retiredVersion,
+  )
   const allowedOrigins = new Set([config.trainerOrigin, ...config.localOrigins])
   const rateLimits = new Map<string, { count: number; resetsAt: number }>()
   function rateLimited(request: Request, bucket: string, limit: number, windowMs: number): boolean {
@@ -137,7 +156,7 @@ export function createApp(
                 ORDER BY score DESC, duration_ms ASC, accepted_at ASC
               ) AS position
             FROM results
-            WHERE trainer_version = ?
+            WHERE trainer_version = ? AND run_eligible = 1
           )
           SELECT difficulty, duty, score, durationMs, position
           FROM ranked WHERE accountId = ?
@@ -422,6 +441,23 @@ export function createApp(
           offset,
           rows,
         }, 200, corsHeaders)
+      }
+      if (request.method === 'GET' && url.pathname === '/v1/achievement-hall') {
+        if (rateLimited(request, 'achievement-hall', 120, 60_000)) {
+          return json({ error: 'rate_limited' }, 429, { ...corsHeaders, 'retry-after': '60' })
+        }
+        const limit = integerParameter(url, 'limit', 10, 100)
+        const offset = integerParameter(url, 'offset', 0, 10_000)
+        const search = url.searchParams.get('q')?.trim()
+        if (limit === null || offset === null) return json({ error: 'invalid_pagination' }, 400, corsHeaders)
+        if (search && (search.length < 2 || search.length > 80)) return json({ error: 'invalid_search' }, 400, corsHeaders)
+        const session = authenticate(database, config, dependencies, request)
+        return json(listAchievementHall(database, {
+          limit,
+          offset,
+          search,
+          ownAccountId: session?.accountId,
+        }), 200, corsHeaders)
       }
       return json({ error: 'not_found' }, 404, corsHeaders)
     },

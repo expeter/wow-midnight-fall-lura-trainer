@@ -75,6 +75,7 @@ export function listLeaderboard(database: Database, query: LeaderboardQuery): Pu
     JOIN characters c ON c.id = r.character_id
     JOIN privacy_settings p ON p.account_id = r.account_id
     WHERE r.difficulty = ? AND r.duty = ? AND r.trainer_version = ?
+      AND r.run_eligible = 1
       AND p.identity_mode != 'anonymous'
       ${search ? publicSearchClause : ''}
     ORDER BY r.score DESC, r.duration_ms ASC, r.accepted_at ASC

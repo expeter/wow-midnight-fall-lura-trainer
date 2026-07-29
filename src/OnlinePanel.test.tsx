@@ -83,6 +83,25 @@ describe('optional online profile', () => {
     await waitFor(() => expect(screen.getByRole('list').querySelectorAll('li')).toHaveLength(100))
   })
 
+  it('presents a distinct account-wide Achievement Hall with an own-position row', async () => {
+    vi.stubGlobal('fetch', vi.fn(async input => {
+      const url = String(input)
+      if (url.endsWith('/v1/me')) return json({ error: 'not_authenticated' }, 401)
+      if (url.includes('/v1/leaderboards')) return json({ rows: [] })
+      if (url.includes('/v1/achievement-hall')) return json({ rows: [], own: null, total: 0 })
+      throw new Error(`unexpected ${url}`)
+    }))
+    const view = render(<OnlinePanel view="leaderboard" onSession={() => undefined} />)
+    await userEvent.click(within(view.container).getByRole('button', { name: 'Achievement Hall' }))
+    expect(await within(view.container).findByRole('heading', { name: 'Achievement Hall of Fame' })).toBeInTheDocument()
+    expect(within(view.container).getByRole('heading', { name: 'Hall of Fame' })).toBeInTheDocument()
+    expect(within(view.container).getAllByText('Beyond the Impossible')).toHaveLength(10)
+    expect(within(view.container).getByLabelText('Your achievement Hall position')).toHaveTextContent('65. Your Hall of Fame position')
+    expect(within(view.container).getByRole('list').querySelectorAll('li')).toHaveLength(10)
+    await userEvent.click(within(view.container).getByRole('button', { name: 'View full Hall' }))
+    await waitFor(() => expect(within(view.container).getByRole('list').querySelectorAll('li')).toHaveLength(100))
+  })
+
   it('selects an owned character and saves explicit public privacy', async () => {
     const requests: Array<{ url: string; method: string; body: string }> = []
     vi.stubGlobal('fetch', vi.fn(async (input, init) => {

@@ -181,7 +181,6 @@ time of writing, the meaningful non-complete work is:
 
 - `CR-051`: deferred P3 second-sequence memory/Soak order swap.
 - `FR-022` and `FR-023`: playable P4 tank cone and random protection carrier.
-- `FR-027`: optional API-backed leaderboard/achievement verification.
 - `FR-038` and `FR-039`: post-v0.2.0 `Gnomkaiser` admin/live easter eggs.
 - `FR-048`–`FR-050`: P3 crystal recovery opening, P2-position-based push into
   P3, and the planned four-player P2 beam/orb assignment rework.

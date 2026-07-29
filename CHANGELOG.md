@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- CR-151: Increase L’ura's shared pre-Phase-4 health budget by 5% without
+  changing encounter mechanics, phase sequencing, or Phase 4 health.
 - CR-150: Replace the long setup scroll with Practice, Raid plan, and Online
   tabs; surface login and the selected character near the top, explicitly
   confirm automatic character selection saves, and clarify profile actions.

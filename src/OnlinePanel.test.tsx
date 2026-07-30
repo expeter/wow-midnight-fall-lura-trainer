@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import OnlinePanel, { BestRunsSummary, GlobalRankingSummary, OnlineStandingSummary } from './OnlinePanel'
+import OnlinePanel, { BestRunsSummary, GlobalRankingSummary, localhostGlobalRows, OnlineStandingSummary } from './OnlinePanel'
 import { localhostPublicPlayerProfile } from './online'
 
 afterEach(() => { cleanup(); vi.restoreAllMocks() })
@@ -11,6 +11,17 @@ function json(body: unknown, status = 200) {
 }
 
 describe('optional online profile', () => {
+  it('fills a partial localhost ranking without duplicating the real player', () => {
+    const real = {
+      rank: 1, profileId: 'real', displayName: 'Real Player', guild: 'Real Guild',
+      achievementPoints: 10, runPoints: 100, totalPoints: 110, crystalFlawless: false, hardClear: false,
+    }
+    const rows = localhostGlobalRows([real], 3)
+    expect(rows).toHaveLength(3)
+    expect(rows.map(row => row.rank)).toEqual([1, 2, 3])
+    expect(rows.filter(row => row.profileId === 'real')).toHaveLength(1)
+  })
+
   it('provides an informative localhost public-profile preview', () => {
     const profile = localhostPublicPlayerProfile('000000000000000000002001')
     expect(profile.displayName).toBe('Starweaver-G01')

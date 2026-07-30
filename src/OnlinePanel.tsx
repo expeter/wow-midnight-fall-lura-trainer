@@ -88,6 +88,21 @@ const LOCAL_GLOBAL_FIXTURES: GlobalRankingRow[] = Array.from({ length: 100 }, (_
   }
 })
 
+export function localhostGlobalRows(rows: GlobalRankingRow[], limit: number, search = ''): GlobalRankingRow[] {
+  const term = search.trim().toLocaleLowerCase()
+  const matches = (row: GlobalRankingRow) => !term || [row.displayName, row.guild].some(value => value?.toLocaleLowerCase().includes(term))
+  const visible = rows.filter(matches)
+  const used = new Set(visible.map(row => row.profileId))
+  for (const fixture of LOCAL_GLOBAL_FIXTURES) {
+    if (visible.length >= limit) break
+    if (!used.has(fixture.profileId) && matches(fixture)) {
+      visible.push(fixture)
+      used.add(fixture.profileId)
+    }
+  }
+  return visible.slice(0, limit).map((row, index) => ({ ...row, rank: index + 1 }))
+}
+
 export function OnlineStandingSummary({ session, onManage, onLogout }: { session: OnlineSession; onManage: () => void; onLogout?: () => void }) {
   return <aside className="online-standing-summary" aria-label="Current online standings">
     <span aria-hidden="true">⌁</span>
@@ -111,7 +126,7 @@ export function GlobalRankingSummary() {
   const [profileId, setProfileId] = useState<string | null>(null)
   useEffect(() => { void loadGlobalRanking(3).then(result => {
     const loaded = Array.isArray(result.rows) ? result.rows : []
-    setRows(loaded.length || !['localhost', '127.0.0.1'].includes(window.location.hostname) ? loaded : LOCAL_GLOBAL_FIXTURES)
+    setRows(['localhost', '127.0.0.1'].includes(window.location.hostname) ? localhostGlobalRows(loaded, 3) : loaded)
   }).catch(() => setRows(['localhost', '127.0.0.1'].includes(window.location.hostname) ? LOCAL_GLOBAL_FIXTURES : [])) }, [])
   if (rows === null || rows.length === 0) return null
   const podium = Array.from({ length: 3 }, (_, index) => rows[index] ?? null)
@@ -201,7 +216,6 @@ export default function OnlinePanel({
   const [leaderboardView, setLeaderboardView] = useState<'global' | 'runs' | 'hall'>('global')
   const [globalRows, setGlobalRows] = useState<GlobalRankingRow[]>([])
   const [globalOwn, setGlobalOwn] = useState<GlobalRankingRow | null>(null)
-  const [globalLoaded, setGlobalLoaded] = useState(false)
   const [hallRows, setHallRows] = useState<AchievementHallRow[]>([])
   const [hallOwn, setHallOwn] = useState<AchievementHallRow | null>(null)
   const [hallLoaded, setHallLoaded] = useState(false)
@@ -276,11 +290,9 @@ export default function OnlinePanel({
       const loaded = await loadGlobalRanking(10, search)
       setGlobalRows(Array.isArray(loaded.rows) ? loaded.rows : [])
       setGlobalOwn(loaded.own ?? null)
-      setGlobalLoaded(true)
     } catch {
       setGlobalRows([])
       setGlobalOwn(null)
-      setGlobalLoaded(false)
     }
   }
 
@@ -400,9 +412,7 @@ export default function OnlinePanel({
         <button className={leaderboardView === 'hall' ? 'selected' : ''} aria-current={leaderboardView === 'hall' ? 'page' : undefined} onClick={() => setLeaderboardView('hall')}>Achievement Hall</button>
       </div>}
       {leaderboardView === 'global' && !compact ? <GlobalLeaderboard
-        rows={localhostPreview && (!globalLoaded || globalRows.length === 0)
-          ? LOCAL_GLOBAL_FIXTURES.filter(row => !search.trim() || [row.displayName, row.guild].some(value => value?.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))).slice(0, 10)
-          : globalRows}
+        rows={localhostPreview ? localhostGlobalRows(globalRows, 10, search) : globalRows}
         own={globalOwn ?? (localhostPreview ? LOCAL_GLOBAL_FIXTURES[64] : null)}
         search={search}
         onSearch={setSearch}

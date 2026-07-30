@@ -5,6 +5,7 @@ import {
   configurationFingerprint,
   issueOnlineAttempt,
   loadLeaderboard,
+  newActivityRows,
   recentActivityRows,
 } from './online'
 
@@ -32,6 +33,8 @@ describe('online API client', () => {
       row('old', '2026-07-29T19:49:59.999Z'),
       row('future', '2026-07-29T20:00:00.001Z'),
     ], now).map(activity => activity.id)).toEqual(['recent'])
+    expect(newActivityRows([row('newest', '2026-07-29T19:59:00.000Z'), row('newer', '2026-07-29T19:58:00.000Z')], null)).toEqual([])
+    expect(newActivityRows([row('newest', '2026-07-29T19:59:00.000Z'), row('known', '2026-07-29T19:58:00.000Z')], new Set(['known'])).map(activity => activity.id)).toEqual(['newest'])
   })
   it('sends credentialed attempt issuance and completion requests with CSRF', async () => {
     const requests: Array<{ url: string; init: RequestInit }> = []

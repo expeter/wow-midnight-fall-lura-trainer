@@ -83,8 +83,8 @@ change before implementation.
 - Keyboard & mouse controls follow Game settings, followed by HUD placement.
 - HUD action buttons are an optional persisted display aid, off by default.
   When enabled, Main ability, Interrupt, Shield, Health potion, and Crystal drop
-  appear below the cast bar and invoke the same handlers and validity rules as
-  their keyboard bindings.
+  default below the cast bar, have their own draggable HUD anchor, and invoke
+  the same handlers and validity rules as their keyboard bindings.
 - Raid planning begins with its full-width save/load/share controls.
 - Every phase map retains its own visible heading, beginning with
   `INTERMISSION RAID PLAN`.
@@ -104,6 +104,10 @@ change before implementation.
 ## SPEC-011 · API-backed highscores and achievements
 
 - Anonymous play remains complete and does not require login.
+- The privacy-aware activity stream includes wipes, accepted full runs, and
+  newly earned achievements. Initial activity establishes a silent baseline;
+  only later unseen event IDs trigger the default-on, dismiss-free,
+  bottom-right fading message queue across trainer screens.
 - Posting online results requires Battle.net authentication, a verified
   selected WoW character, and a one-use server-issued attempt.
 - The server recomputes accepted scores from validated attempt inputs; OAuth

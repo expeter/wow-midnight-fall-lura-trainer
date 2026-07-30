@@ -40,6 +40,22 @@ describe('online attempt integration', () => {
         achievementTitle: 'Ready for Raid Night',
         trainerVersion: '0.3.0',
         occurredAt: new Date(Date.now() - 30_000).toISOString(),
+      }, {
+        id: 'completion:1',
+        type: 'completion',
+        displayName: 'Lurana',
+        character: 'Lurana',
+        realm: 'silvermoon',
+        region: 'eu',
+        phase: null,
+        difficulty: 'hard',
+        reason: null,
+        achievementTitle: null,
+        score: 1488,
+        durationMs: 382400,
+        duty: 'crystal',
+        trainerVersion: '0.3.0',
+        occurredAt: new Date(Date.now() - 15_000).toISOString(),
       }] })
       if (url.endsWith('/v1/me')) return Response.json({ authenticated: false }, { status: 401 })
       if (url.includes('/v1/leaderboards')) return Response.json({ rows: [] })
@@ -48,10 +64,11 @@ describe('online attempt integration', () => {
     }))
     render(<App />)
     const links = await screen.findAllByRole('link', { name: 'Lurana—silvermoon' })
-    expect(links).toHaveLength(2)
+    expect(links).toHaveLength(3)
     expect(links[0]).toHaveAttribute('href', 'https://raider.io/characters/eu/silvermoon/Lurana')
     expect(screen.getByText(/wiped on: Phase 3 · normal/i)).toHaveTextContent('Touched a Stars beam')
     expect(screen.getByText(/earned achievement:/i)).toHaveTextContent('Ready for Raid Night')
+    expect(screen.getByText(/completed full run:/i)).toHaveTextContent('hard · crystal · 1488 points · 382.4s')
   })
 
   it('issues a character-bound attempt before an eligible full Normal run', async () => {

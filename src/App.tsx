@@ -15,7 +15,7 @@ import { encounterSoundCuesForState, playEncounterSound } from './encounterSound
 import { approachHealthTarget, healthBand, healthChangeRate, randomHealthTarget, unusedRecoveryPenalty } from './healthRecovery'
 import { P1_BEAM_POSITION_SECONDS, P1_CRYSTAL_PICKUP_SECONDS, P1_DEFAULT_INTERRUPT_KEY, P1_GLAIVE_CONTACT_RADIUS, P1_GLAIVE_INITIAL_SPEED_MULTIPLIER, P1_GLAIVE_RETURN_SPEED_MULTIPLIER, P1_GLAIVE_TELEGRAPH_SECONDS, P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_INTERRUPT_CAST_COUNT, P1_INTERRUPT_CAST_SECONDS, P1_MEMORY_DELAY_SECONDS, P1_MEMORY_POSITION_SECONDS, P1_MEMORY_SWEEP_SECONDS, P1_OUTER_RADIUS, P1_PLAYER_INTERRUPT_WINDOW_SECONDS, P1_PULL_DELAY_SECONDS, P1_REACTIVE_SOAK_RADIUS, P1_REACTIVE_SOAK_SECONDS, P1_ROTATING_BEAM_ACTIVE_SECONDS, P1_ROTATING_BEAM_TELEGRAPH_SECONDS, P1_SEQUENCE_COUNT, p1AddGlaiveSet, p1AdvanceGlaiveSet, p1BeamHitResolution, p1BossEncounterPosition, p1ContinuousBeamTime, p1CrystalPickupSequence, p1CrystalSpawnPosition, p1CrystalTouchResolution, p1GlaiveContactStarted, p1GlaiveSet, p1HasCollectedCrystal, p1InterruptAssignment, p1InterruptState, p1IsInPlayableArena, p1MemoryOrder, p1MemoryPlayerVerdict, p1NpcInterruptSeconds, p1ReactiveSoaks, p1RotatingBeamHitsPoint, p1RotatingBeams, p1WrongCrystalDropExpired, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
 import OnlinePanel, { BestRunsSummary, GlobalRankingSummary, OnlineStandingSummary } from './OnlinePanel'
-import { canRecordOnlineWipe, completeOnlineAttempt, configurationFingerprint, issueOnlineAttempt, loadActivityFeed, loadOnlineSession, logoutOnline, recentActivityRows, recordOnlineWipe, type ActivityFeedRow, type OnlineSession } from './online'
+import { canRecordOnlineWipe, completeOnlineAttempt, configurationFingerprint, issueOnlineAttempt, loadActivityFeed, loadOnlineSession, logoutOnline, newActivityRows, recentActivityRows, recordOnlineWipe, type ActivityFeedRow, type OnlineSession } from './online'
 import './styles.css'
 
 type Screen = 'menu' | 'game' | 'results'
@@ -32,7 +32,7 @@ interface PhaseCrystalAssignments { p1: number[]; intermission: number[]; p2: nu
 interface RaidPlan { p1Positions: Assignment[]; p1BossPosition: Assignment; positions: Assignment[]; p2Positions: Assignment[]; p2SpreadPositions: Assignment[]; p3Positions: Assignment[]; p3BossPositions: Assignment[]; startSlots: Assignment[]; profiles: PlayerProfile[]; crystalAssignments: PhaseCrystalAssignments }
 interface VersionManifest { version: string; revision: string; builtAt: string }
 interface KeyBindings { forward: string; backward: string; left: string; right: string; turnLeft: string; turnRight: string; jump: string; crystal: string; interrupt: string; pause: string; healthPot: string; shield: string; mainAbility: string }
-type HudElement = 'mechanic' | 'beam' | 'crystal' | 'playerHealth' | 'bossHealth' | 'castbar'
+type HudElement = 'mechanic' | 'beam' | 'crystal' | 'playerHealth' | 'bossHealth' | 'castbar' | 'actions'
 type HudLayout = Record<HudElement, Point>
 
 const WORLD = { width: 960, height: 540, center: { x: 480, y: 270 }, innerRadius: 102, outerRadius: 169 }
@@ -177,6 +177,7 @@ const DEFAULT_HUD_LAYOUT: HudLayout = {
   playerHealth: { x: 21, y: 53 },
   bossHealth: { x: 79, y: 53 },
   castbar: { x: 50, y: 65 },
+  actions: { x: 50, y: 68 },
 }
 const KEY_BIND_LABELS: { action: keyof KeyBindings; label: string }[] = [
   { action: 'forward', label: 'Forward' }, { action: 'backward', label: 'Backward' },
@@ -219,7 +220,7 @@ function createTtsUtterance(text: string, gameSpeed: number, voice?: SpeechSynth
   return utterance
 }
 function loadHudLayout(): HudLayout {
-  const keys: HudElement[] = ['mechanic', 'beam', 'crystal', 'playerHealth', 'bossHealth', 'castbar']
+  const keys: HudElement[] = ['mechanic', 'beam', 'crystal', 'playerHealth', 'bossHealth', 'castbar', 'actions']
   try {
     const saved = JSON.parse(localStorage.getItem('lura-hud-layout') || 'null')
     if (saved) {
@@ -480,6 +481,16 @@ function loadInitialSharedRaidPlan(): RaidPlan | null {
   return plan
 }
 
+function LiveActivityToast({ row }: { row: ActivityFeedRow | undefined }) {
+  if (!row) return null
+  const message = row.type === 'achievement'
+    ? `earned ${row.achievementTitle}`
+    : row.type === 'completion'
+      ? `completed a ${row.difficulty} ${row.duty === 'crystal' ? 'crystal' : 'non-crystal'} full run · ${row.score} points · ${((row.durationMs ?? 0) / 1000).toFixed(1)}s`
+      : `wiped in ${row.phase} · ${row.reason}`
+  return <aside className={`live-activity-toast ${row.type}`} role="status" aria-live="polite"><span>LIVE ACTIVITY</span><strong>{row.displayName}</strong><p>{message}</p></aside>
+}
+
 export default function App() {
   const [screen, setScreen] = useState<Screen>('menu')
   const [difficulty, setDifficulty] = useState<Difficulty>('normal')
@@ -500,6 +511,7 @@ export default function App() {
   })
   const [hudLayout, setHudLayout] = useState(loadHudLayout)
   const [hudActionButtonsEnabled, setHudActionButtonsEnabled] = useState(() => loadBoolean('lura-hud-action-buttons-enabled', false))
+  const [liveActivityNotificationsEnabled, setLiveActivityNotificationsEnabled] = useState(() => loadBoolean('lura-live-activity-notifications-enabled', true))
   const [p1RunePanelOrientation, setP1RunePanelOrientation] = useState<P1RunePanelOrientation>(() =>
     localStorage.getItem('lura-p1-rune-panel-orientation') === 'positional' ? 'positional' : 'pentagram')
   const [combatProjectilesEnabled, setCombatProjectilesEnabled] = useState(() => loadBoolean('lura-combat-projectiles-enabled', true))
@@ -556,6 +568,8 @@ export default function App() {
   const [onlineAttempt, setOnlineAttempt] = useState<ActiveOnlineAttempt | null>(null)
   const [onlineResultStatus, setOnlineResultStatus] = useState('')
   const [activityFeed, setActivityFeed] = useState<ActivityFeedRow[]>([])
+  const [activityNotificationQueue, setActivityNotificationQueue] = useState<ActivityFeedRow[]>([])
+  const seenActivityIdsRef = useRef<Set<string> | null>(null)
   const onlineCompletionStartedRef = useRef('')
   const layoutSaveFeedbackTimerRef = useRef<number | null>(null)
   const [paused, setPaused] = useState(false)
@@ -717,6 +731,7 @@ export default function App() {
   useEffect(() => { localStorage.setItem('lura-game-speed', String(gameSpeed)) }, [gameSpeed])
   useEffect(() => { localStorage.setItem('lura-hud-layout', JSON.stringify(hudLayout)) }, [hudLayout])
   useEffect(() => { localStorage.setItem('lura-hud-action-buttons-enabled', String(hudActionButtonsEnabled)) }, [hudActionButtonsEnabled])
+  useEffect(() => { localStorage.setItem('lura-live-activity-notifications-enabled', String(liveActivityNotificationsEnabled)) }, [liveActivityNotificationsEnabled])
   useEffect(() => { localStorage.setItem('lura-p1-rune-panel-orientation', p1RunePanelOrientation) }, [p1RunePanelOrientation])
   useEffect(() => {
     localStorage.removeItem('lura-health-pot-enabled')
@@ -911,11 +926,21 @@ export default function App() {
     activeEncounterSoundsRef.current.clear()
   }, [])
   useEffect(() => {
-    if (screen !== 'menu' || (import.meta.env.MODE === 'test' && !new URLSearchParams(window.location.search).has('wipe-feed-test'))) return
+    if (import.meta.env.MODE === 'test' && !new URLSearchParams(window.location.search).has('wipe-feed-test')) return
     let active = true
     const refresh = () => {
       void loadActivityFeed(20)
-        .then(result => { if (active && Array.isArray(result.rows)) setActivityFeed(recentActivityRows(result.rows)) })
+        .then(result => {
+          if (!active || !Array.isArray(result.rows)) return
+          const recent = recentActivityRows(result.rows)
+          setActivityFeed(recent)
+          const nextIds = new Set(recent.map(row => row.id))
+          if (seenActivityIdsRef.current && liveActivityNotificationsEnabled) {
+            const newRows = newActivityRows(recent, seenActivityIdsRef.current)
+            if (newRows.length) setActivityNotificationQueue(current => [...current, ...newRows])
+          }
+          seenActivityIdsRef.current = nextIds
+        })
         .catch(() => undefined)
     }
     refresh()
@@ -924,7 +949,16 @@ export default function App() {
       active = false
       window.clearInterval(timer)
     }
-  }, [screen])
+  }, [liveActivityNotificationsEnabled])
+  useEffect(() => {
+    if (!liveActivityNotificationsEnabled) {
+      setActivityNotificationQueue(current => current.length ? [] : current)
+      return
+    }
+    if (!activityNotificationQueue.length) return
+    const timer = window.setTimeout(() => setActivityNotificationQueue(current => current.slice(1)), 4600)
+    return () => window.clearTimeout(timer)
+  }, [liveActivityNotificationsEnabled, activityNotificationQueue])
   useEffect(() => {
     if (screen !== 'menu') return
     void loadOnlineSession().then(setOnlineSession).catch(() => setOnlineSession({ authenticated: false }))
@@ -2475,6 +2509,7 @@ export default function App() {
   const p3Profiles = profiles.map((profile, index) => ({ ...profile, crystal: p3CrystalAssignments.includes(index) }))
 
   if (screen === 'menu') return <main className="shell setup-shell" id="setup-top">
+    <LiveActivityToast row={activityNotificationQueue[0]} />
     <BuildIndicator />
     <aside className="recruitment-banner">We are looking for German-speaking players for Season 2: <a href="https://raider.io/guilds/eu/blackrock/IAsgardI" target="_blank" rel="noreferrer">I Asgard I on Raider.IO</a></aside>
     <CreatorCard />
@@ -2489,7 +2524,9 @@ export default function App() {
           : <strong>{row.displayName}</strong>}
         <span>{row.type === 'achievement'
           ? <>earned achievement: <strong>{row.achievementTitle}</strong></>
-          : <>wiped on: {row.phase} · {row.difficulty} · <strong>{row.reason}</strong></>}</span>
+          : row.type === 'completion'
+            ? <>completed full run: {row.difficulty} · {row.duty} · <strong>{row.score} points · {((row.durationMs ?? 0) / 1000).toFixed(1)}s</strong></>
+            : <>wiped on: {row.phase} · {row.difficulty} · <strong>{row.reason}</strong></>}</span>
       </li>)}</ol>
     </section>}
     <div className="entry-choice"><span>Practice target</span>{FEATURE_FLAGS.phaseOne ? <button className={entryMode === 'arena0' ? 'selected' : ''} onClick={() => setEntryMode('arena0')}>P1</button> : <button className="coming-soon" aria-label="P1 — Coming soon" title="P1 is planned but not playable yet" disabled>P1 · Soon</button>}<button className={entryMode === 'arena1' ? 'selected' : ''} onClick={() => setEntryMode('arena1')}>Intermission</button><button className={entryMode === 'arena2' ? 'selected' : ''} onClick={() => setEntryMode('arena2')}>P2</button><button className={entryMode === 'arena3' ? 'selected' : ''} onClick={() => setEntryMode('arena3')}>P3</button><button className={entryMode === 'arena4' ? 'selected' : ''} onClick={() => setEntryMode('arena4')}>P4</button>{difficulty === 'test' && <button className="secondary preview-results" onClick={previewCompletionScreen}>Preview final screen</button>}<button aria-label={entryMode === 'arena0' ? 'Enter P1' : entryMode === 'arena1' ? 'Enter Arena 1 — Enter Intermission' : entryMode === 'arena2' ? 'Enter Arena 2 — Enter P2' : entryMode === 'arena3' ? 'Enter Arena 3 — Enter P3' : 'Enter Arena 4 — Enter P4'} className="start entry-start" onClick={start}>Enter {entryMode === 'arena0' ? 'P1' : entryMode === 'arena1' ? 'Intermission' : entryMode === 'arena2' ? 'P2' : entryMode === 'arena3' ? 'P3' : 'P4'}</button></div>
@@ -2526,7 +2563,7 @@ export default function App() {
     </section>
     <section className="setup-tab-panel" aria-label="HUD settings" hidden={setupTab !== 'hud'}>
     <div className="plan-heading" id="hud-settings"><p className="eyebrow">INTERFACE</p><h2>HUD positions</h2><p className="hint">Drag the mechanic counters, castbar, and player/boss health bars around the Phase 2 preview. Their positions are saved automatically.</p><a className="setup-back-to-top" href="#setup-top" aria-label="Back to top from HUD settings" onClick={event => scrollToSetupSection(event, 'setup-top')}>↑ Top</a></div>
-    <fieldset className="hud-display-settings"><legend>Phase 1 HUD</legend><label className="checkbox-control"><input aria-label="Show HUD action buttons" type="checkbox" checked={hudActionButtonsEnabled} onChange={event => setHudActionButtonsEnabled(event.target.checked)} /><span>Action buttons<span>Off by default · shows the existing keyboard actions below the cast bar.</span></span></label><label className="profile-control">P1 rune panel orientation<select aria-label="P1 rune panel orientation" value={p1RunePanelOrientation} onChange={event => setP1RunePanelOrientation(event.target.value as P1RunePanelOrientation)}><option value="pentagram">Raid pentagram · 5/1 top</option><option value="positional">Positional · 3 top</option></select></label><p className="hint">Choose how the five-rune memory reference is arranged in the lower HUD.</p></fieldset>
+    <fieldset className="hud-display-settings"><legend>Phase 1 HUD</legend><label className="checkbox-control"><input aria-label="Show HUD action buttons" type="checkbox" checked={hudActionButtonsEnabled} onChange={event => setHudActionButtonsEnabled(event.target.checked)} /><span>Action buttons<span>Off by default · shows the existing keyboard actions below the cast bar.</span></span></label><label className="checkbox-control"><input aria-label="Show live activity notifications" type="checkbox" checked={liveActivityNotificationsEnabled} onChange={event => setLiveActivityNotificationsEnabled(event.target.checked)} /><span>Live activity messages<span>On by default · briefly shows new public activity in the bottom-right corner.</span></span></label><label className="profile-control">P1 rune panel orientation<select aria-label="P1 rune panel orientation" value={p1RunePanelOrientation} onChange={event => setP1RunePanelOrientation(event.target.value as P1RunePanelOrientation)}><option value="pentagram">Raid pentagram · 5/1 top</option><option value="positional">Positional · 3 top</option></select></label><p className="hint">Choose how the five-rune memory reference is arranged in the lower HUD.</p></fieldset>
     <HudLayoutEditor layout={hudLayout} onChange={(counter, point) => setHudLayout(current => ({ ...current, [counter]: point }))} onReset={() => setHudLayout(structuredClone(DEFAULT_HUD_LAYOUT))} />
     </section>
     <section className="setup-tab-panel" aria-label="Raid plan" hidden={setupTab !== 'raidplan'}>
@@ -2555,6 +2592,7 @@ export default function App() {
     </section>
   </main>
   if (screen === 'results') return <main className="shell results">
+    <LiveActivityToast row={activityNotificationQueue[0]} />
     <BuildIndicator />
     <AchievementUnlockPopups achievements={achievementPopups} />
     <section className={`completion-card ${fullSequenceComplete ? 'achievement-unlocked' : ''} ${completionPreview ? 'result-preview' : ''}`}>
@@ -2668,7 +2706,7 @@ export default function App() {
   const mainCastRemaining = mainCastState.phase === 'casting'
     ? mainCastState.remaining
     : 0
-  const hudActionCallbacks = { onMainAbility: useMainAbility, onInterrupt: useInterrupt, onHealthPot: () => useRecovery('healthPot'), onShield: () => useRecovery('shield') }
+  const hudActionCallbacks = { activityNotification: activityNotificationQueue[0], onMainAbility: useMainAbility, onInterrupt: useInterrupt, onHealthPot: () => useRecovery('healthPot'), onShield: () => useRecovery('shield') }
   return <GameArena hudActionButtonsEnabled={hudActionButtonsEnabled} {...hudActionCallbacks} p1Sequence={p1Sequence} p1Seed={p1Seed} p1BossOpening={p1BossOpening} p1InterruptAssignment={p1InterruptAssignmentRef.current} p1InterruptCast={p1InterruptCast} p1InterruptPressed={p1InterruptPressed} p1RunePanelOrientation={p1RunePanelOrientation} p1MemoryOrder={p1MemoryOrderState} p1FailedMemoryRune={p1FailedMemoryRune} p1GlaiveSets={p1GlaiveSets} p1Soaks={p1Soaks} p1SoakResolved={p1SoakResolved} p1CrystalAssignments={p1CrystalAssignments} p1CrystalCollected={p1CrystalCollected} p1WrongCrystalHeld={p1WrongCrystalHeld} p1StolenCrystalSlot={p1StolenCrystalSlot} p1WrongCrystalDeadline={p1WrongCrystalDeadline} combatProjectilesEnabled={combatProjectilesEnabled} mainProjectileFiredAt={mainProjectileFiredAt} bossHealth={bossHealth} mainCastRemaining={mainCastRemaining} personalJumpProgress={personalJumpProgress} musicMuted={musicMuted} encounterSoundsEnabled={encounterSoundsEnabled} ttsAvailable={raidleadAvailable} ttsEnabled={ttsEnabled} softWipeNotice={softWipeNotice} crystalDutyNotice={crystalDutyNotice} hudLayout={hudLayout} positions={activePositions} intermissionPositions={phasePositions} p2SoakPositions={p2Positions} p2SpreadPositions={p2SpreadPositions} p3Positions={p3Positions} profiles={gameProfiles} raidStart={startSlots[startSlot]} movementSpeed={movementSpeed} movementBonus={movementBonus} gameSpeed={gameSpeed} p2Cycle={p2Cycle} p2Soaked={p2Soaked} p2OrbReturnAge={p2OrbReturnAge} onP2OrbitAngle={angle => { p2OrbitAngleRef.current = angle }} p3Round={p3Round} p3ArchangelDuty={activeCrystalAssignments.includes(assignment) ? p3ArchangelDuty : null} crystalSpent={crystalSpent} p4Cycle={p4Cycle} p4PatternSeed={p4PatternSeed} p3PoolHealth={p3PoolHealth} onP3PoolOccupancy={occupancy => { p3PoolOccupancyRef.current = occupancy }} onP3LightCenters={centers => { p3NpcLightCentersRef.current = centers }} onP3RuneContacts={runes => { p3RuneContactsRef.current = runes }} onNpcPositions={positions => { renderedNpcPositionsRef.current = positions }} onP4SplinterHit={reason => triggerWipe(reason)} p3RuneOrder={p3RuneOrder} p3RuneStep={p3RuneStep} p3ResolvedRunes={p3ResolvedRunes} health={health} healthPotUsed={healthPotUsed} shieldUsed={shieldUsed} keyBindings={keyBindings} crystalCarriers={activeCrystalCarriers} beamPattern={beamPattern} failureFlash={failureFlash} wipeReason={wipeReason} player={player} crystal={crystal} npcCrystals={npcCrystals} npcCarrier={npcCarrier} npcCrystalAge={npcCrystalAge} playerSplinterRotation={playerSplinterRotation} crystalAge={crystalAge} role={activeCrystalAssignments.includes(assignment) ? 'carrier' : 'non-carrier'} difficulty={difficulty} assignment={assignment} stats={stats} mistakes={mistakes} startSlotName={`S${startSlot + 1}`} paused={paused} event={event} eventTime={eventTime} beamAngles={beamAngles} npcSplinters={npcSplinters} cycle={cycle} setPaused={setPaused} setMusicMuted={setMusicMuted} setEncounterSoundsEnabled={setEncounterSoundsEnabled} setTtsEnabled={setTtsEnabled} onRetry={start} onExit={() => setScreen('menu')} onDrop={toggleCrystal} onCameraDirection={direction => { cameraForward.current = direction }} />
 }
 
@@ -2948,6 +2986,7 @@ function HudLayoutEditor({ layout, onChange, onReset }: { layout: HudLayout; onC
     { key: 'playerHealth', label: 'PLAYER HEALTH', value: '78%' },
     { key: 'bossHealth', label: 'L’URA', value: '99.5%' },
     { key: 'castbar', label: 'MAIN ABILITY', value: '0.6s' },
+    { key: 'actions', label: 'ACTION BUTTONS', value: 'F · NUM 2 · C' },
   ]
   return <section className="hud-layout-editor">
     <div className="hud-preview" aria-label="Phase 2 HUD layout preview" onPointerMove={move} onPointerUp={() => setDragging(null)} onPointerLeave={() => setDragging(null)}>
@@ -2958,7 +2997,7 @@ function HudLayoutEditor({ layout, onChange, onReset }: { layout: HudLayout; onC
   </section>
 }
 
-function GameArena(props: { hudActionButtonsEnabled: boolean; onMainAbility: () => void; onInterrupt: () => void; onHealthPot: () => void; onShield: () => void; p1Sequence: number; p1Seed: number; p1BossOpening: Point; p1InterruptAssignment: number; p1InterruptCast: number; p1InterruptPressed: boolean; p1RunePanelOrientation: P1RunePanelOrientation; p1MemoryOrder: P1Rune[]; p1FailedMemoryRune: P1Rune | null; p1GlaiveSets: P1GlaiveSet[]; p1Soaks: P1ReactiveSoak[]; p1SoakResolved: number[]; p1CrystalAssignments: number[]; p1CrystalCollected: boolean; p1WrongCrystalHeld: boolean; p1StolenCrystalSlot: number | null; p1WrongCrystalDeadline: number | null; combatProjectilesEnabled: boolean; mainProjectileFiredAt: number | null; bossHealth: number; mainCastRemaining: number; personalJumpProgress: number; musicMuted: boolean; encounterSoundsEnabled: boolean; ttsAvailable: boolean; ttsEnabled: boolean; softWipeNotice: string; crystalDutyNotice: string; hudLayout: HudLayout; positions: Assignment[]; intermissionPositions: Assignment[]; p2SoakPositions: Assignment[]; p2SpreadPositions: Assignment[]; p3Positions: Assignment[]; profiles: PlayerProfile[]; raidStart: Point; movementSpeed: number; movementBonus: boolean; gameSpeed: number; p2Cycle: number; p2Soaked: boolean; p2OrbReturnAge: number; onP2OrbitAngle: (angle: number) => void; p3Round: number; p3ArchangelDuty: 1 | 2 | null; crystalSpent: boolean; p4Cycle: number; p4PatternSeed: number; p3PoolHealth: number[]; onP3PoolOccupancy: (occupancy: number[]) => void; onP3LightCenters: (centers: Point[]) => void; onP3RuneContacts: (runes: RuneSymbol[]) => void; onNpcPositions: (positions: Point[]) => void; onP4SplinterHit: (reason: string) => void; p3RuneOrder: RuneSymbol[]; p3RuneStep: number; p3ResolvedRunes: RuneSymbol[]; health: number; healthPotUsed: boolean; shieldUsed: boolean; keyBindings: KeyBindings; crystalCarriers: number[]; beamPattern: 'line' | 'gap'; failureFlash: boolean; wipeReason: string; player: Point; crystal: Point | null; npcCrystals: Point[]; npcCarrier: number | null; npcCrystalAge: number; playerSplinterRotation: number; crystalAge: number; role: Role; difficulty: Difficulty; assignment: number; stats: GameStats; mistakes: Mistake[]; startSlotName: string; paused: boolean; event: EventKind; eventTime: number; beamAngles: number[]; npcSplinters: number[]; cycle: number; setPaused: (p: boolean) => void; setMusicMuted: (muted: boolean) => void; setEncounterSoundsEnabled: (enabled: boolean) => void; setTtsEnabled: (enabled: boolean) => void; onRetry: () => void; onExit: () => void; onDrop: () => void; onCameraDirection: (direction: Point) => void }) {
+function GameArena(props: { activityNotification: ActivityFeedRow | undefined; hudActionButtonsEnabled: boolean; onMainAbility: () => void; onInterrupt: () => void; onHealthPot: () => void; onShield: () => void; p1Sequence: number; p1Seed: number; p1BossOpening: Point; p1InterruptAssignment: number; p1InterruptCast: number; p1InterruptPressed: boolean; p1RunePanelOrientation: P1RunePanelOrientation; p1MemoryOrder: P1Rune[]; p1FailedMemoryRune: P1Rune | null; p1GlaiveSets: P1GlaiveSet[]; p1Soaks: P1ReactiveSoak[]; p1SoakResolved: number[]; p1CrystalAssignments: number[]; p1CrystalCollected: boolean; p1WrongCrystalHeld: boolean; p1StolenCrystalSlot: number | null; p1WrongCrystalDeadline: number | null; combatProjectilesEnabled: boolean; mainProjectileFiredAt: number | null; bossHealth: number; mainCastRemaining: number; personalJumpProgress: number; musicMuted: boolean; encounterSoundsEnabled: boolean; ttsAvailable: boolean; ttsEnabled: boolean; softWipeNotice: string; crystalDutyNotice: string; hudLayout: HudLayout; positions: Assignment[]; intermissionPositions: Assignment[]; p2SoakPositions: Assignment[]; p2SpreadPositions: Assignment[]; p3Positions: Assignment[]; profiles: PlayerProfile[]; raidStart: Point; movementSpeed: number; movementBonus: boolean; gameSpeed: number; p2Cycle: number; p2Soaked: boolean; p2OrbReturnAge: number; onP2OrbitAngle: (angle: number) => void; p3Round: number; p3ArchangelDuty: 1 | 2 | null; crystalSpent: boolean; p4Cycle: number; p4PatternSeed: number; p3PoolHealth: number[]; onP3PoolOccupancy: (occupancy: number[]) => void; onP3LightCenters: (centers: Point[]) => void; onP3RuneContacts: (runes: RuneSymbol[]) => void; onNpcPositions: (positions: Point[]) => void; onP4SplinterHit: (reason: string) => void; p3RuneOrder: RuneSymbol[]; p3RuneStep: number; p3ResolvedRunes: RuneSymbol[]; health: number; healthPotUsed: boolean; shieldUsed: boolean; keyBindings: KeyBindings; crystalCarriers: number[]; beamPattern: 'line' | 'gap'; failureFlash: boolean; wipeReason: string; player: Point; crystal: Point | null; npcCrystals: Point[]; npcCarrier: number | null; npcCrystalAge: number; playerSplinterRotation: number; crystalAge: number; role: Role; difficulty: Difficulty; assignment: number; stats: GameStats; mistakes: Mistake[]; startSlotName: string; paused: boolean; event: EventKind; eventTime: number; beamAngles: number[]; npcSplinters: number[]; cycle: number; setPaused: (p: boolean) => void; setMusicMuted: (muted: boolean) => void; setEncounterSoundsEnabled: (enabled: boolean) => void; setTtsEnabled: (enabled: boolean) => void; onRetry: () => void; onExit: () => void; onDrop: () => void; onCameraDirection: (direction: Point) => void }) {
   const [zoomDisplay, setZoomDisplay] = useState(16)
   const [wipeMinimized, setWipeMinimized] = useState(false)
   const [failureLogCopied, setFailureLogCopied] = useState(false)
@@ -3063,6 +3102,7 @@ function GameArena(props: { hudActionButtonsEnabled: boolean; onMainAbility: () 
     ? 'red'
     : p1InterruptState(props.p1InterruptAssignment, props.p1InterruptCast)
   return <main className="game-shell">
+    <LiveActivityToast row={props.activityNotification} />
     <div className="game-top">
       <p className="eyebrow game-phase-label">{phaseLabel} · {props.gameSpeed.toFixed(2)}×</p>
       <h1>{phaseTitle}</h1>
@@ -3197,7 +3237,7 @@ function GameArena(props: { hudActionButtonsEnabled: boolean; onMainAbility: () 
         <div className={`player-health health-${healthBand(props.health)}`} style={{ left: `${props.hudLayout.playerHealth.x}%`, top: `${props.hudLayout.playerHealth.y}%` }}><div className="health-abilities" aria-label="Recovery charges"><b className={props.healthPotUsed ? 'used' : ''} title={props.healthPotUsed ? 'Health potion used until next phase' : 'Health potion ready'}>🧪 <span>{keyLabel(props.keyBindings.healthPot)}</span></b><b className={props.shieldUsed ? 'used' : ''} title={props.shieldUsed ? 'Shield used until next phase' : 'Shield ready'}>🛡 <span>{keyLabel(props.keyBindings.shield)}</span></b></div><div className="health-track"><i style={{ width: `${props.health}%` }} /></div><span>{Math.round(props.health)}%</span></div>
         <><div className="boss-health" style={{ left: `${props.hudLayout.bossHealth.x}%`, top: `${props.hudLayout.bossHealth.y}%` }}><span>L’URA · {props.bossHealth.toFixed(1)}%{!phaseFour && props.p3Round < 2 && props.bossHealth <= 3 ? <em className="boss-health-shield"> ◈ VEIL PROTECTION</em> : null}</span><div className="boss-health-track"><i style={{ width: `${props.bossHealth}%` }} /></div><small>{phaseFour ? 'L’URA falls steadily over the 88-second phase' : !phaseFour && props.p3Round < 2 && props.bossHealth <= 3 ? 'Damage and points continue · protection ends with P3 sequence two' : 'The veil shudders with every step.'}</small></div>{props.mainCastRemaining > 0 && <div className="player-castbar main-cast" style={{ left: `${props.hudLayout.castbar.x}%`, top: `${props.hudLayout.castbar.y}%` }}><i className="main-cast-fill" style={{ animationDuration: `${MAIN_ABILITY_CAST_SECONDS / Math.max(.01, props.gameSpeed)}s`, animationPlayState: props.paused ? 'paused' : 'running' }} /><b>MAIN ABILITY · {props.mainCastRemaining.toFixed(1)}s</b></div>}</>
         <div className="controls"><span className="controls-copy">{keyLabel(props.keyBindings.forward)}/{keyLabel(props.keyBindings.left)}/{keyLabel(props.keyBindings.backward)}/{keyLabel(props.keyBindings.right)} move · {keyLabel(props.keyBindings.jump)} jump · {keyLabel(props.keyBindings.pause)} pause · left-drag look · right-drag view + face · wheel zoom · Zoom {zoomDisplay.toFixed(1)} yd · {phaseOne ? p1?.detail : phaseFour ? props.event === 'p4-countdown' ? 'Movement unlocks after the countdown and raid knockup.' : props.event === 'p4-transition' ? 'The 21-second Heaven & Hell clock is running; adds begin when the raid lands.' : p4SplinterActive ? 'Three players alternate left, right, left with Starsplinter; Heaven & Hell remains on its global timer.' : p4RelocationProgress(props.p4Cycle, props.eventTime) !== null ? 'Move with the yellow protection zone and leave the consumed quarter behind.' : props.p4Cycle >= 5 ? 'No safe quarter remains. Hold until Lura falls.' : 'Stack safely; Heaven & Hell resolves every 21 seconds.' : p3 ? p3.detail : p2 ? p2.detail : countdown ? `Wait for the timer at ${props.startSlotName}` : positioning ? props.difficulty === 'easy' || props.difficulty === 'test' ? `Follow the teal guide to Spot ${props.assignment + 1}` : `Find Spot ${props.assignment + 1}; its ring appears only when close` : finalRecovery ? 'Two seconds to recover the final crystal before the Phase 2 center jump' : props.role === 'carrier' ? `${keyLabel(props.keyBindings.crystal)} drops the crystal anywhere · move away · pick up in time` : props.cycle === 6 ? 'Final set: all 20 players marked' : 'Dodge the ten marked Starsplinters'}</span><BuildIndicator inGame /></div>
-        {props.hudActionButtonsEnabled && <div className="hud-action-buttons" aria-label="HUD action buttons" style={{ left: `${props.hudLayout.castbar.x}%`, top: `${props.hudLayout.castbar.y}%` }}><button type="button" onClick={props.onMainAbility} disabled={props.paused || !!props.wipeReason}>Main ability <kbd>{keyLabel(props.keyBindings.mainAbility)}</kbd></button><button type="button" onClick={props.onInterrupt} disabled={props.paused || !!props.wipeReason || props.event !== 'p1-interrupts'}>Interrupt <kbd>{keyLabel(props.keyBindings.interrupt)}</kbd></button><button type="button" onClick={props.onShield} disabled={props.paused || !!props.wipeReason || props.shieldUsed}>Shield <kbd>{keyLabel(props.keyBindings.shield)}</kbd></button><button type="button" onClick={props.onHealthPot} disabled={props.paused || !!props.wipeReason || props.healthPotUsed}>Health potion <kbd>{keyLabel(props.keyBindings.healthPot)}</kbd></button><button type="button" onClick={props.onDrop} disabled={props.paused || !!props.wipeReason || !!props.crystal || (phaseOne ? !props.p1CrystalCollected && !props.p1WrongCrystalHeld : props.role !== 'carrier' || props.crystalSpent)}>Crystal drop <kbd>{keyLabel(props.keyBindings.crystal)}</kbd></button></div>}
+        {props.hudActionButtonsEnabled && <div className="hud-action-buttons" aria-label="HUD action buttons" style={{ left: `${props.hudLayout.actions.x}%`, top: `${props.hudLayout.actions.y}%` }}><button type="button" onClick={props.onMainAbility} disabled={props.paused || !!props.wipeReason}>Main ability <kbd>{keyLabel(props.keyBindings.mainAbility)}</kbd></button><button type="button" onClick={props.onInterrupt} disabled={props.paused || !!props.wipeReason || props.event !== 'p1-interrupts'}>Interrupt <kbd>{keyLabel(props.keyBindings.interrupt)}</kbd></button><button type="button" onClick={props.onShield} disabled={props.paused || !!props.wipeReason || props.shieldUsed}>Shield <kbd>{keyLabel(props.keyBindings.shield)}</kbd></button><button type="button" onClick={props.onHealthPot} disabled={props.paused || !!props.wipeReason || props.healthPotUsed}>Health potion <kbd>{keyLabel(props.keyBindings.healthPot)}</kbd></button><button type="button" onClick={props.onDrop} disabled={props.paused || !!props.wipeReason || !!props.crystal || (phaseOne ? !props.p1CrystalCollected && !props.p1WrongCrystalHeld : props.role !== 'carrier' || props.crystalSpent)}>Crystal drop <kbd>{keyLabel(props.keyBindings.crystal)}</kbd></button></div>}
       </div>
     </div>
   </main>

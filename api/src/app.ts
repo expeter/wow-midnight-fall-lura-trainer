@@ -124,6 +124,7 @@ export function createApp(
               w.account_id AS accountId, w.character_id AS characterId,
               w.phase, w.difficulty, w.reason,
               NULL AS achievementTitle,
+              NULL AS score, NULL AS durationMs, NULL AS duty,
               w.trainer_version AS trainerVersion, w.occurred_at AS occurredAt
             FROM wipe_events w
             UNION ALL
@@ -131,6 +132,7 @@ export function createApp(
               NULL AS accountId, NULL AS characterId,
               w.phase, w.difficulty, w.reason,
               NULL AS achievementTitle,
+              NULL AS score, NULL AS durationMs, NULL AS duty,
               w.trainer_version AS trainerVersion, w.occurred_at AS occurredAt
             FROM anonymous_wipe_events w
             UNION ALL
@@ -138,9 +140,19 @@ export function createApp(
               e.account_id AS accountId, e.character_id AS characterId,
               NULL AS phase, NULL AS difficulty, NULL AS reason,
               c.title AS achievementTitle,
+              NULL AS score, NULL AS durationMs, NULL AS duty,
               e.trainer_version AS trainerVersion, e.occurred_at AS occurredAt
             FROM achievement_events e
             JOIN achievement_catalog c ON c.id = e.achievement_id
+            UNION ALL
+            SELECT 'completion' AS type, 'completion:' || r.id AS id,
+              r.account_id AS accountId, r.character_id AS characterId,
+              NULL AS phase, r.difficulty, NULL AS reason,
+              NULL AS achievementTitle,
+              r.score, r.duration_ms AS durationMs, r.duty,
+              r.trainer_version AS trainerVersion, r.accepted_at AS occurredAt
+            FROM results r
+            WHERE r.run_eligible = 1
           )
           SELECT activity.id, activity.type,
             CASE
@@ -152,7 +164,8 @@ export function createApp(
             CASE WHEN p.identity_mode = 'character' THEN c.realm_slug ELSE NULL END AS realm,
             CASE WHEN p.identity_mode = 'character' THEN c.region ELSE NULL END AS region,
             activity.phase, activity.difficulty, activity.reason,
-            activity.achievementTitle, activity.trainerVersion, activity.occurredAt
+            activity.achievementTitle, activity.score, activity.durationMs,
+            activity.duty, activity.trainerVersion, activity.occurredAt
           FROM activity
           LEFT JOIN privacy_settings p ON p.account_id = activity.accountId
           LEFT JOIN accounts a ON a.id = activity.accountId
@@ -161,7 +174,7 @@ export function createApp(
           ORDER BY activity.occurredAt DESC, activity.id DESC
           LIMIT ?
         `).all(limit)
-        return json({ rows }, 200, corsHeaders)
+        return json({ rows: url.pathname === '/v1/wipes' ? rows.filter(row => row.type === 'wipe') : rows }, 200, corsHeaders)
       }
       if (request.method === 'GET' && url.pathname === '/v1/auth/battlenet/start') {
         if (rateLimited(request, 'auth-start', 10, 10 * 60_000)) {

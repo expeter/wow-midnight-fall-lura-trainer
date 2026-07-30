@@ -774,9 +774,10 @@ describe('Lura API foundation', () => {
     assert.equal(acceptedBody.score, 2020)
     assert.ok(acceptedBody.achievementIds.includes('hard-score-flawless'))
     const activity = await app.handle(new Request('http://api.test/v1/activity?limit=100'))
-    const achievementActivity = (await activity.json() as {
-      rows: Array<{ type: string; displayName: string; achievementTitle: string; occurredAt: string }>
-    }).rows.filter(row => row.type === 'achievement')
+    const activityRows = (await activity.json() as {
+      rows: Array<{ type: string; displayName: string; achievementTitle: string; occurredAt: string; score: number | null; durationMs: number | null; duty: string | null }>
+    }).rows
+    const achievementActivity = activityRows.filter(row => row.type === 'achievement')
     assert.ok(achievementActivity.some(row => (
       row.displayName === 'Verified'
       && row.achievementTitle === 'The Midnight Shift'
@@ -785,6 +786,18 @@ describe('Lura API foundation', () => {
     assert.equal(
       database.prepare('SELECT COUNT(*) AS count FROM achievement_events').get()!.count,
       achievementActivity.length,
+    )
+    assert.deepEqual(
+      activityRows.find(row => row.type === 'completion'),
+      {
+        ...activityRows.find(row => row.type === 'completion'),
+        type: 'completion',
+        displayName: 'Verified',
+        score: 2020,
+        durationMs: 300_000,
+        duty: 'crystal',
+        occurredAt: '2026-07-28T12:00:00.000Z',
+      },
     )
     const duplicate = await app.handle(new Request(
       `http://api.test/v1/attempts/${attempt.attemptId}/complete`,

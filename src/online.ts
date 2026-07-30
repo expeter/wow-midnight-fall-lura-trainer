@@ -105,7 +105,7 @@ export interface OnlineAchievement {
 
 export interface ActivityFeedRow {
   id: string
-  type: 'wipe' | 'achievement'
+  type: 'wipe' | 'achievement' | 'completion'
   displayName: string
   character: string | null
   realm: string | null
@@ -114,6 +114,9 @@ export interface ActivityFeedRow {
   difficulty: 'normal' | 'hard' | null
   reason: string | null
   achievementTitle: string | null
+  score?: number | null
+  durationMs?: number | null
+  duty?: 'crystal' | 'non-crystal' | null
   trainerVersion: string
   occurredAt: string
 }
@@ -129,6 +132,11 @@ export function recentActivityRows(
     const occurredAt = Date.parse(row.occurredAt)
     return Number.isFinite(occurredAt) && occurredAt <= now && now - occurredAt <= windowMs
   })
+}
+
+export function newActivityRows(rows: ActivityFeedRow[], seenIds: Set<string> | null): ActivityFeedRow[] {
+  if (!seenIds) return []
+  return rows.filter(row => !seenIds.has(row.id)).reverse()
 }
 
 async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -240,8 +248,27 @@ export function loadPublicPlayerProfile(profileId: string): Promise<PublicPlayer
   return api(`/v1/profiles/${encodeURIComponent(profileId)}`)
 }
 
-export function loadActivityFeed(limit = 20): Promise<{ rows: ActivityFeedRow[] }> {
-  return api(`/v1/activity?limit=${limit}`)
+let localhostActivityPoll = 0
+function localhostActivityRows(): ActivityFeedRow[] {
+  localhostActivityPoll += 1
+  const now = Date.now()
+  const fixtures: ActivityFeedRow[] = [
+    { id: 'local:wipe', type: 'wipe', displayName: 'LocalLurana', character: null, realm: null, region: null, phase: 'Phase 3', difficulty: 'normal', reason: 'Touched a Stars beam', achievementTitle: null, score: null, durationMs: null, duty: null, trainerVersion: 'local', occurredAt: new Date(now - 12_000).toISOString() },
+    { id: 'local:completion', type: 'completion', displayName: 'PracticeHero', character: null, realm: null, region: null, phase: null, difficulty: 'hard', reason: null, achievementTitle: null, score: 1488, durationMs: 382_400, duty: 'crystal', trainerVersion: 'local', occurredAt: new Date(now - 4_000).toISOString() },
+    { id: 'local:achievement', type: 'achievement', displayName: 'Runeweaver', character: null, realm: null, region: null, phase: null, difficulty: null, reason: null, achievementTitle: 'Ready for Raid Night', score: null, durationMs: null, duty: null, trainerVersion: 'local', occurredAt: new Date(now - 1_000).toISOString() },
+  ]
+  return fixtures.slice(0, Math.min(fixtures.length, localhostActivityPoll))
+}
+
+export async function loadActivityFeed(limit = 20): Promise<{ rows: ActivityFeedRow[] }> {
+  const localhostPreview = import.meta.env.MODE !== 'test' && ['localhost', '127.0.0.1'].includes(window.location.hostname)
+  try {
+    const result = await api<{ rows: ActivityFeedRow[] }>(`/v1/activity?limit=${limit}`)
+    return localhostPreview ? { rows: [...localhostActivityRows(), ...result.rows].slice(0, limit) } : result
+  } catch (error) {
+    if (localhostPreview) return { rows: localhostActivityRows().slice(0, limit) }
+    throw error
+  }
 }
 
 export function canRecordOnlineWipe(

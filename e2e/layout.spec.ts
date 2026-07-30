@@ -89,7 +89,7 @@ test('orders game start, global Top 3, and player summaries before setup section
   await page.getByRole('button', { name: 'View standings' }).click()
   await expect(page.getByRole('heading', { name: 'Global leaderboard' })).toBeVisible()
   const globalPlayers = page.locator('.global-leaderboard-rows .global-player')
-  await expect(globalPlayers.first().locator('small')).toBeVisible()
+  await expect(page.locator('.global-leaderboard-rows .standard-guild').first()).toBeVisible()
   const playerLefts = await globalPlayers.locator('.profile-name-button').evaluateAll(buttons => buttons.map(button => Math.round(button.getBoundingClientRect().left)))
   expect(new Set(playerLefts).size).toBe(1)
   await page.getByRole('button', { name: 'Runs' }).click()
@@ -103,6 +103,14 @@ test('orders game start, global Top 3, and player summaries before setup section
   await expect(page.getByRole('region', { name: 'Top 10 leaderboard' }).getByRole('button', { name: 'View full leaderboard' })).toHaveCount(0)
   await tabs.getByRole('button', { name: 'Raid plan' }).click()
   await expect(page.getByRole('heading', { name: 'Layouts and sharing' })).toBeVisible()
+})
+
+test('opens the in-page Profile achievements from the shell summary', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: /Open personal achievements/ }).click()
+  await expect(page.getByRole('button', { name: 'Profile' })).toHaveAttribute('aria-current', 'page')
+  await expect(page.locator('#personal-achievements')).toBeVisible()
+  await expect(page.getByRole('dialog', { name: 'Personal achievements' })).toHaveCount(0)
 })
 
 test('raidlead menu exposes system voice selection and preview', async ({ page }) => {

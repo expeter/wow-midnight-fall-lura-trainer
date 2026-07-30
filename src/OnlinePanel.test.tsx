@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import OnlinePanel, { BestRunsSummary, GlobalRankingSummary, localhostGlobalRows, OnlineStandingSummary } from './OnlinePanel'
+import OnlinePanel, { BestRunsSummary, GlobalRankingSummary, localhostGlobalRows, OnlineStandingSummary, shouldShowGlobalPodium } from './OnlinePanel'
 import { localhostPublicPlayerProfile } from './online'
 
 afterEach(() => { cleanup(); vi.restoreAllMocks() })
@@ -11,6 +11,12 @@ function json(body: unknown, status = 200) {
 }
 
 describe('optional online profile', () => {
+  it('shows the Global podium only when all three player slots exist', () => {
+    expect(shouldShowGlobalPodium([])).toBe(false)
+    expect(shouldShowGlobalPodium(localhostGlobalRows([], 2))).toBe(false)
+    expect(shouldShowGlobalPodium(localhostGlobalRows([], 3))).toBe(true)
+  })
+
   it('fills a partial localhost ranking without duplicating the real player', () => {
     const real = {
       rank: 1, profileId: 'real', displayName: 'Real Player', guild: 'Real Guild',
@@ -20,6 +26,11 @@ describe('optional online profile', () => {
     expect(rows).toHaveLength(3)
     expect(rows.map(row => row.rank)).toEqual([1, 2, 3])
     expect(rows.filter(row => row.profileId === 'real')).toHaveLength(1)
+  })
+  it('includes a non-public anonymous entry in the localhost podium preview', () => {
+    const rows = localhostGlobalRows([], 3)
+    expect(rows[2]).toMatchObject({ displayName: 'Anonymous', guild: null })
+    expect(rows[2].profileId).toMatch(/^anonymous:/)
   })
 
   it('provides an informative localhost public-profile preview', () => {
@@ -54,7 +65,7 @@ describe('optional online profile', () => {
     }))
     const view = render(<OnlinePanel view="leaderboard" onSession={() => undefined} />)
     const player = await within(view.container).findByText('Aligned Player')
-    expect(player.closest('.global-player')).toHaveTextContent('Aligned Guild')
+    expect(player.closest('li')?.querySelector('.standard-guild')).toHaveTextContent('Aligned Guild')
     expect(player).toHaveClass('profile-name-button')
   })
   it('shows all four personal board positions and the global position', () => {
@@ -145,7 +156,7 @@ describe('optional online profile', () => {
     const character = await screen.findByRole('button', { name: 'Nightbloom-HC01' }, { timeout: 3000 })
     expect(character.closest('ol')).toHaveTextContent('Dawnshield-HC02')
     expect(character.closest('ol')?.querySelectorAll('li')).toHaveLength(10)
-    expect(screen.getByLabelText('Your leaderboard position')).toHaveTextContent('65. Your localhost test position')
+    expect(screen.getByLabelText('Your leaderboard position')).toHaveTextContent('65.Your localhost character')
     await userEvent.click(screen.getByRole('button', { name: 'Normal · Non-crystal' }))
     expect(await screen.findByRole('button', { name: 'Riftwalker-NN01' })).toBeInTheDocument()
     expect(document.querySelector('.leaderboard-rows')?.querySelectorAll('li')).toHaveLength(10)
@@ -164,8 +175,8 @@ describe('optional online profile', () => {
     expect(await within(view.container).findByRole('heading', { name: 'Achievement Hall of Fame' })).toBeInTheDocument()
     expect(within(view.container).getByRole('heading', { name: 'Hall of Fame' })).toBeInTheDocument()
     expect(within(view.container).queryByText('Beyond the Impossible')).not.toBeInTheDocument()
-    expect(within(view.container).getAllByText(/pts$/)).toHaveLength(10)
-    expect(within(view.container).getByLabelText('Your achievement Hall position')).toHaveTextContent('65. Your Hall of Fame position')
+    expect(within(view.container).getAllByText(/pts$/)).toHaveLength(11)
+    expect(within(view.container).getByLabelText('Your achievement Hall position')).toHaveTextContent('65.Your localhost profile')
     expect(within(view.container).getByRole('list').querySelectorAll('li')).toHaveLength(10)
     expect(within(view.container).queryByRole('button', { name: 'View full Hall' })).not.toBeInTheDocument()
   })
@@ -221,13 +232,13 @@ describe('optional online profile', () => {
     expect(screen.getByText('Character selected and saved.')).toBeInTheDocument()
     await user.selectOptions(within(panel).getByLabelText(/Leaderboard name/), 'alias')
     await user.type(within(panel).getByLabelText('Public trainer alias'), 'Runner')
-    await user.click(within(panel).getByLabelText(/Show my guild on leaderboard rows/))
+    expect(within(panel).queryByLabelText(/Show my guild on leaderboard rows/)).not.toBeInTheDocument()
     await user.click(within(panel).getByRole('button', { name: 'Save leaderboard visibility' }))
     await waitFor(() => expect(requests.some(request => (
       request.url.endsWith('/v1/me/privacy')
       && request.body.includes('"identityMode":"alias"')
       && request.body.includes('"alias":"Runner"')
-      && request.body.includes('"showGuild":true')
+      && request.body.includes('"showGuild":false')
     ))).toBe(true))
     view.rerender(<OnlinePanel view="leaderboard" onSession={() => undefined} />)
     const leaderboardPanel = view.container.querySelector('section')!
@@ -235,6 +246,9 @@ describe('optional online profile', () => {
     await user.click(within(leaderboardPanel).getByRole('button', { name: 'Runs' }))
     expect(within(leaderboardPanel).getByText(/Searches public character names/)).toBeInTheDocument()
     expect(within(leaderboardPanel).queryByLabelText(/Active character/)).not.toBeInTheDocument()
-    expect(within(leaderboardPanel).getByLabelText('Your leaderboard position')).toHaveTextContent('18. Your verified position')
+    const ownPosition = within(leaderboardPanel).getByLabelText('Your leaderboard position')
+    expect(within(ownPosition).getByText('18.')).toBeInTheDocument()
+    expect(within(ownPosition).getByText('Your verified position')).toBeInTheDocument()
+    expect(within(ownPosition).getByText('1110 pts')).toBeInTheDocument()
   })
 })

@@ -32,15 +32,16 @@ function localFixtures(difficulty: 'normal' | 'hard', duty: 'crystal' | 'non-cry
   return Array.from({ length: 100 }, (_, index) => {
   const rank = index + 1
   const baseName = LOCAL_NAMES[(index + categoryOffset) % LOCAL_NAMES.length]
-  const displayName = rank === 65 ? `Your localhost character · ${categoryCode}` : `${baseName}-${categoryCode}${String(rank).padStart(2, '0')}`
+  const anonymous = rank % 6 === 0
+  const displayName = anonymous ? 'Anonymous' : rank === 65 ? `Your localhost character · ${categoryCode}` : `${baseName}-${categoryCode}${String(rank).padStart(2, '0')}`
   return {
     rank,
-    profileId: rank.toString(16).padStart(24, '0'),
+    profileId: anonymous ? `anonymous:run:${categoryCode}:${rank}` : rank.toString(16).padStart(24, '0'),
     displayName,
-    character: rank % 4 === 0 ? null : displayName,
-    realm: rank % 4 === 0 ? null : LOCAL_REALMS[(index + categoryOffset) % LOCAL_REALMS.length],
-    region: rank % 4 === 0 ? null : 'eu',
-    guild: rank % 5 === 0 ? null : LOCAL_GUILDS[(index + categoryOffset) % LOCAL_GUILDS.length],
+    character: anonymous || rank % 4 === 0 ? null : displayName,
+    realm: anonymous || rank % 4 === 0 ? null : LOCAL_REALMS[(index + categoryOffset) % LOCAL_REALMS.length],
+    region: anonymous || rank % 4 === 0 ? null : 'eu',
+    guild: anonymous || rank % 5 === 0 ? null : LOCAL_GUILDS[(index + categoryOffset) % LOCAL_GUILDS.length],
     score: topScore - rank * (difficulty === 'hard' ? 7 : 6) - (duty === 'non-crystal' ? 18 : 0),
     durationMs: 265000 + categoryOffset * 2100 + rank * (difficulty === 'hard' ? 1400 : 1250),
     trainerVersion: '0.3.0',
@@ -73,13 +74,14 @@ const LOCAL_HALL_FIXTURES: AchievementHallRow[] = Array.from({ length: 100 }, (_
 
 const LOCAL_GLOBAL_FIXTURES: GlobalRankingRow[] = Array.from({ length: 100 }, (_, index) => {
   const rank = index + 1
+  const anonymous = rank % 3 === 0
   const achievementPoints = Math.max(50, 725 - index * 7)
   const runPoints = 6370 - index * 31
   return {
     rank,
-    profileId: (rank + 2000).toString(16).padStart(24, '0'),
-    displayName: `${LOCAL_NAMES[(index + 2) % LOCAL_NAMES.length]}-G${String(rank).padStart(2, '0')}`,
-    guild: rank % 5 ? LOCAL_GUILDS[index % LOCAL_GUILDS.length] : null,
+    profileId: anonymous ? `anonymous:global:${rank}` : (rank + 2000).toString(16).padStart(24, '0'),
+    displayName: anonymous ? 'Anonymous' : `${LOCAL_NAMES[(index + 2) % LOCAL_NAMES.length]}-G${String(rank).padStart(2, '0')}`,
+    guild: anonymous ? null : rank % 5 ? LOCAL_GUILDS[index % LOCAL_GUILDS.length] : null,
     achievementPoints,
     runPoints,
     totalPoints: achievementPoints + runPoints,
@@ -103,8 +105,16 @@ export function localhostGlobalRows(rows: GlobalRankingRow[], limit: number, sea
   return visible.slice(0, limit).map((row, index) => ({ ...row, rank: index + 1 }))
 }
 
+export function shouldShowGlobalPodium(rows: GlobalRankingRow[]): boolean {
+  return rows.length >= 3
+}
+
+function anonymousPreviewProfile(profileId?: string): boolean {
+  return Boolean(profileId?.startsWith('anonymous:'))
+}
+
 export function OnlineStandingSummary({ session, onManage, onLogout }: { session: OnlineSession; onManage: () => void; onLogout?: () => void }) {
-  return <aside className="online-standing-summary" aria-label="Current online standings">
+  return <aside className={`online-standing-summary${session.authenticated ? ' authenticated' : ''}`} aria-label="Current online standings">
     <span aria-hidden="true">⌁</span>
     <div>
       <strong>{session.authenticated ? 'Online profile' : 'Online ranking'}</strong>
@@ -128,12 +138,14 @@ export function GlobalRankingSummary() {
     const loaded = Array.isArray(result.rows) ? result.rows : []
     setRows(['localhost', '127.0.0.1'].includes(window.location.hostname) ? localhostGlobalRows(loaded, 3) : loaded)
   }).catch(() => setRows(['localhost', '127.0.0.1'].includes(window.location.hostname) ? LOCAL_GLOBAL_FIXTURES : [])) }, [])
-  if (rows === null || rows.length === 0) return null
+  if (rows === null || !shouldShowGlobalPodium(rows)) return null
   const podium = Array.from({ length: 3 }, (_, index) => rows[index] ?? null)
   return <aside className="global-ranking-summary" aria-label="Global player ranking">
     <div><p className="eyebrow">GLOBAL RANKING</p><strong>Achievements + All Runs</strong></div>
     <ol>{podium.map((row, index) => <li key={row?.profileId ?? `empty-${index}`} className={row ? '' : 'empty'}>{row
-      ? <button className="podium-card" onClick={() => setProfileId(row.profileId)}><b>{row.displayName}</b>{row.guild && <small>{row.guild}</small>}<span>{row.totalPoints}</span><i aria-hidden="true">{['🏆', '🥈', '🥉'][index]}</i></button>
+      ? anonymousPreviewProfile(row.profileId)
+        ? <span className="podium-card anonymous"><b>Private profile</b><small>Identity hidden</small><span>{row.totalPoints}</span><i aria-hidden="true">{['🏆', '🥈', '🥉'][index]}</i></span>
+        : <button className="podium-card" onClick={() => setProfileId(row.profileId)}><b>{row.displayName}</b>{row.guild && <small>{row.guild}</small>}<span>{row.totalPoints}</span><i aria-hidden="true">{['🏆', '🥈', '🥉'][index]}</i></button>
       : <span aria-label={`Global rank ${index + 1} is empty`} />}</li>)}</ol>
     {profileId && <PublicProfileOverlay profileId={profileId} onClose={() => setProfileId(null)} />}
   </aside>
@@ -159,10 +171,11 @@ export function BestRunsSummary({ session, onOpen }: { session: OnlineSession; o
 
 function GlobalRankRow({ row, onOpenProfile }: { row: GlobalRankingRow; onOpenProfile: (profileId: string) => void }) {
   return <li>
-    <span className={`global-rank rank-${row.rank}`}>{row.rank <= 3 ? ['🏆', '🥈', '🥉'][row.rank - 1] : row.rank}</span>
-    <span className="global-player"><button className="profile-name-button" onClick={() => onOpenProfile(row.profileId)}>{row.displayName}</button>{row.guild && <small>{row.guild}</small>}</span>
+    <span className={`standard-rank global-rank rank-${row.rank}`}>{row.rank <= 3 ? ['🏆', '🥈', '🥉'][row.rank - 1] : `${row.rank}.`}</span>
+    <span className="global-player">{anonymousPreviewProfile(row.profileId) ? <strong>Anonymous</strong> : <button className="profile-name-button" onClick={() => onOpenProfile(row.profileId)}>{row.displayName}</button>}</span>
+    <span className="standard-guild">{row.guild ?? '—'}</span>
     <span className="player-credentials">{row.crystalFlawless && <i title="Flawless crystal run" aria-label="Flawless crystal run">◆</i>}{row.hardClear && <i title="Hard mode clear" aria-label="Hard mode clear">H</i>}</span>
-    <b>{row.totalPoints} pts</b>
+    <b className="standard-points">{row.totalPoints} pts</b>
   </li>
 }
 
@@ -175,11 +188,11 @@ function GlobalLeaderboard({ rows, own, search, onSearch, onRefresh, onOpenProfi
   onOpenProfile: (profileId: string) => void
 }) {
   return <section className="global-leaderboard" aria-label="Global leaderboard standings">
-    <div className="leaderboard-columns" aria-hidden="true"><span>Global rank and player</span><span>Credentials · points</span></div>
-    <ol className="global-leaderboard-rows">{rows.map(row => <GlobalRankRow key={row.profileId} row={row} onOpenProfile={onOpenProfile} />)}</ol>
+    <div className="leaderboard-columns standard-columns global-columns" aria-hidden="true"><span>Rank</span><span>Player</span><span>Guild</span><span>Credentials</span><span>Points</span></div>
+    <ol className="global-leaderboard-rows standard-leaderboard-rows">{rows.map(row => <GlobalRankRow key={row.profileId} row={row} onOpenProfile={onOpenProfile} />)}</ol>
     {own && own.rank > 10 && <div className="leaderboard-own-position global-own-position" aria-label="Your global position">
       <span aria-hidden="true">…</span>
-      <p><b>{own.rank}. <button className="profile-name-button" onClick={() => onOpenProfile(own.profileId)}>{own.displayName}</button></b><span>{own.totalPoints} pts</span></p>
+      <div className="standard-own-row"><b className="standard-rank">{own.rank}.</b><button className="profile-name-button" onClick={() => onOpenProfile(own.profileId)}>{own.displayName}</button><span className="standard-guild">{own.guild ?? '—'}</span><span className="player-credentials">{own.crystalFlawless && <i>◆</i>}{own.hardClear && <i>H</i>}</span><strong className="standard-points">{own.totalPoints} pts</strong></div>
     </div>}
     <div className="leaderboard-search">
       <label><span>Find a public ranking</span><small>Searches public player names and guilds.</small>
@@ -224,7 +237,6 @@ export default function OnlinePanel({
   const [status, setStatus] = useState('Loading online profile…')
   const [identityMode, setIdentityMode] = useState<'anonymous' | 'alias' | 'character'>('anonymous')
   const [alias, setAlias] = useState('')
-  const [showGuild, setShowGuild] = useState(false)
   const [profileId, setProfileId] = useState<string | null>(null)
 
   async function refreshSession() {
@@ -235,7 +247,6 @@ export default function OnlinePanel({
       if (next.authenticated) {
         setIdentityMode(next.privacy?.identityMode ?? 'anonymous')
         setAlias(next.privacy?.alias ?? '')
-        setShowGuild(Boolean(next.privacy?.showGuild))
         const [loaded, achievements] = await Promise.all([
           loadCharacters(),
           loadOnlineAchievements(),
@@ -354,10 +365,6 @@ export default function OnlinePanel({
       {identityMode === 'alias' && <label className="online-field">Public trainer alias
         <input maxLength={40} value={alias} onChange={event => setAlias(event.target.value)} />
       </label>}
-      <label className="online-guild-toggle">
-        <input type="checkbox" checked={showGuild} disabled={identityMode === 'anonymous'} onChange={event => setShowGuild(event.target.checked)} />
-        <span>Show my guild on leaderboard rows<small>Uses the guild recorded during the latest Battle.net character import.</small></span>
-      </label>
       <div className="online-account-actions">
         <button className="secondary" onClick={() => void refreshCharacters(csrf).then(result => {
           window.location.assign(result.authorizationUrl)
@@ -365,7 +372,7 @@ export default function OnlinePanel({
         <button onClick={() => void updatePrivacy(csrf, {
           identityMode,
           alias,
-          showGuild,
+          showGuild: identityMode === 'character',
         }).then(() => {
           setStatus('Privacy settings saved.')
           return refreshSession()
@@ -443,13 +450,13 @@ export default function OnlinePanel({
       {displayedRows.length ? <ol className="leaderboard-rows standard-leaderboard-rows top-ten">
         {displayedRows.map((row, index) => <li key={`${row.displayName}-${row.durationMs}-${index}`}>
           <b className="standard-rank">{row.rank ?? index + 1}.</b>
-          <button className="profile-name-button" onClick={() => setProfileId(row.profileId)}>{row.displayName}</button>
+          {anonymousPreviewProfile(row.profileId) ? <strong>Anonymous</strong> : <button className="profile-name-button" onClick={() => setProfileId(row.profileId)}>{row.displayName}</button>}
           <span className="standard-guild">{row.guild ?? '—'}</span><strong className="standard-points">{row.score} pts</strong><time>{(row.durationMs / 1000).toFixed(1)}s</time>
         </li>)}
       </ol> : <p>No matching verified results yet.</p>}
       {ownStanding && <div className="leaderboard-own-position" aria-label="Your leaderboard position">
         <span aria-hidden="true">…</span>
-        <p><b>{ownStanding.position}. {localhostPreview && !session.authenticated ? 'Your localhost test position' : 'Your verified position'}</b><span>{ownStanding.score} pts · {(ownStanding.durationMs / 1000).toFixed(1)}s</span></p>
+        <div className="standard-own-row"><b className="standard-rank">{ownStanding.position}.</b><strong>{localhostPreview && !session.authenticated ? 'Your localhost character' : session.selectedCharacter?.name ?? 'Your verified position'}</strong><span className="standard-guild">—</span><strong className="standard-points">{ownStanding.score} pts</strong><time>{(ownStanding.durationMs / 1000).toFixed(1)}s</time></div>
       </div>}
       {!compact && <div className="leaderboard-search">
         <label><span>Find a public ranking</span><small>Searches public character names, aliases, realms, and guilds—not your Battle.net character list.</small>
@@ -490,7 +497,7 @@ function AchievementHall({
         <span className="standard-guild">{row.guild ?? '—'}</span><strong className="standard-points">{row.totalPoints} pts</strong><time dateTime={row.highestAchievement.firstEarnedAt}>{new Date(row.highestAchievement.firstEarnedAt).toLocaleDateString()}</time>
       </li>)}
     </ol>
-    {own && <div className="leaderboard-own-position" aria-label="Your achievement Hall position"><span aria-hidden="true">…</span><p><b>{own.rank}. Your Hall of Fame position</b><span>{own.totalPoints} pts · {own.achievementCount} achievements</span></p></div>}
+    {own && <div className="leaderboard-own-position" aria-label="Your achievement Hall position"><span aria-hidden="true">…</span><div className="standard-own-row"><b className="standard-rank">{own.rank}.</b><button className="profile-name-button" onClick={() => onOpenProfile(own.profileId)}>{own.displayName}</button><span className="standard-guild">{own.guild ?? '—'}</span><strong className="standard-points">{own.totalPoints} pts</strong><time dateTime={own.highestAchievement.firstEarnedAt}>{new Date(own.highestAchievement.firstEarnedAt).toLocaleDateString()}</time></div></div>}
     <div className="leaderboard-search">
       <label><span>Find a Hall of Fame player</span><small>Searches public profile names and guilds.</small><input aria-label="Search achievement Hall" value={search} onChange={event => onSearch(event.target.value)} /></label>
       <button className="secondary" onClick={onRefresh}>Search Hall</button>

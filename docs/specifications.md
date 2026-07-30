@@ -129,6 +129,9 @@ change before implementation.
 - Public identity is optional. Anonymous mode hides character, realm, and
   guild and excludes that account from public run and achievement rankings;
   published character, alias, realm, and guild fields are searchable.
+- Guild visibility is not a separate privacy switch: character identity may
+  publish the imported guild, alias identity does not expose the linked guild,
+  and anonymous identity hides all identity/profile detail.
 - Public trainer profiles use opaque identifiers and resolve for visitors only
   while the account publishes a character or alias. An authenticated owner may
   inspect their own profile in anonymous mode without making it public. The
@@ -145,6 +148,9 @@ change before implementation.
 - Run boards and Achievement Hall use stable rank, player, guild, result-points,
   and time/date columns on desktop, with compact responsive stacking. Dates are
   secondary text and Hard run-board selection retains its red treatment.
+- Global uses the same five-column rhythm, and personal-position rows in all
+  three leaderboard views align to their list columns. Missing guild data is
+  shown as `—`; it is never inferred or fabricated.
 - The shell's podium labels its score model as “Achievements + All Runs” and
   displays the score legibly over subdued trophy art. The player-summary row
   gives the compact Achievement card one share and gives Best runs and Online

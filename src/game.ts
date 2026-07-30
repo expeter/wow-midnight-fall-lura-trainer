@@ -1366,6 +1366,10 @@ export function canRecoverFromWipe(difficulty: Difficulty, wipeCount: number, sc
   return difficulty === 'test' || difficulty !== 'hard' && wipeCount < 2 && score - penalty > 0
 }
 
+export function scoreExhaustionWipeReason(difficulty: Difficulty, score: number): string | null {
+  return difficulty === 'normal' && score <= 0 ? 'Points reached zero' : null
+}
+
 export function healthResponsesPerPhase(difficulty: Difficulty): number {
   return difficulty === 'normal' || difficulty === 'hard' ? 1 : 0
 }

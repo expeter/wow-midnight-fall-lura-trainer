@@ -4,10 +4,12 @@ import {
   deleteOnlineData,
   loadCharacters,
   loadAchievementHall,
+  loadGlobalRanking,
   loadLeaderboard,
   loadOnlineAchievements,
   loadOnlineSession,
   logoutOnline,
+  loadPublicPlayerProfile,
   refreshCharacters,
   selectCharacter,
   updatePrivacy,
@@ -16,6 +18,8 @@ import {
   type OnlineCharacter,
   type OnlineAchievement,
   type OnlineSession,
+  type PublicPlayerProfile,
+  type GlobalRankingRow,
 } from './online'
 
 const LOCAL_NAMES = ['Aegis', 'Voidrunner', 'Starweaver', 'Nightbloom', 'Dawnshield', 'Riftwalker', 'Moonstrike', 'Emberward', 'Silversong', 'Astralyn']
@@ -31,6 +35,7 @@ function localFixtures(difficulty: 'normal' | 'hard', duty: 'crystal' | 'non-cry
   const displayName = rank === 65 ? `Your localhost character · ${categoryCode}` : `${baseName}-${categoryCode}${String(rank).padStart(2, '0')}`
   return {
     rank,
+    profileId: rank.toString(16).padStart(24, '0'),
     displayName,
     character: rank % 4 === 0 ? null : displayName,
     realm: rank % 4 === 0 ? null : LOCAL_REALMS[(index + categoryOffset) % LOCAL_REALMS.length],
@@ -50,6 +55,7 @@ const LOCAL_HALL_FIXTURES: AchievementHallRow[] = Array.from({ length: 100 }, (_
   const tierIndex = Math.min(4, Math.floor(index / 20))
   return {
     rank,
+    profileId: (rank + 1000).toString(16).padStart(24, '0'),
     displayName: rank === 65 ? 'Your localhost profile' : `${LOCAL_NAMES[(index + 2) % LOCAL_NAMES.length]}-HF${String(rank).padStart(2, '0')}`,
     guild: rank % 5 ? LOCAL_GUILDS[(index + 1) % LOCAL_GUILDS.length] : null,
     totalPoints: Math.max(10, 1675 - rank * 13),
@@ -66,27 +72,34 @@ const LOCAL_HALL_FIXTURES: AchievementHallRow[] = Array.from({ length: 100 }, (_
 })
 
 export function OnlineStandingSummary({ session, onManage, onLogout }: { session: OnlineSession; onManage: () => void; onLogout?: () => void }) {
-  const standings = session.standings ?? []
-  const best = (difficulty: 'normal' | 'hard') => standings
-    .filter(row => row.difficulty === difficulty)
-    .sort((left, right) => left.position - right.position)[0]
   return <aside className="online-standing-summary" aria-label="Current online standings">
     <span aria-hidden="true">⌁</span>
     <div>
-      <strong>Online standings</strong>
+      <strong>{session.authenticated ? 'Online profile' : 'Online ranking'}</strong>
       {!session.authenticated
         ? <small>Optional · connect a Battle.net character</small>
         : <><small>
           Signed in{session.selectedCharacter ? ` · ${session.selectedCharacter.name}—${session.selectedCharacter.realmSlug}` : ' · choose a character'}
-        </small><small>
-          Normal {best('normal') ? `#${best('normal')!.position}` : '—'}
-          {' · '}Hard {best('hard') ? `#${best('hard')!.position}` : '—'}
-        </small></>}
+        </small><small>Global position {session.globalPosition ? `#${session.globalPosition}` : '—'}</small></>}
     </div>
     <div className="online-summary-actions">
       <button className="online-summary-action" onClick={onManage}>{session.authenticated ? 'Manage profile' : 'Login'}</button>
       {session.authenticated && onLogout && <button className="online-summary-logout" onClick={onLogout}>Log out</button>}
     </div>
+  </aside>
+}
+
+export function GlobalRankingSummary() {
+  const [rows, setRows] = useState<GlobalRankingRow[]>([])
+  const [profileId, setProfileId] = useState<string | null>(null)
+  useEffect(() => { void loadGlobalRanking(3).then(result => setRows(Array.isArray(result.rows) ? result.rows : [])).catch(() => setRows([])) }, [])
+  const podium = Array.from({ length: 3 }, (_, index) => rows[index] ?? null)
+  return <aside className="global-ranking-summary" aria-label="Global player ranking">
+    <div><p className="eyebrow">GLOBAL RANKING</p><strong>Achievement + best run points</strong></div>
+    <ol>{podium.map((row, index) => <li key={row?.profileId ?? `empty-${index}`} className={row ? '' : 'empty'}>{row
+      ? <button onClick={() => setProfileId(row.profileId)}><span>{row.totalPoints} global points</span><b>{index + 1}. {row.displayName}</b></button>
+      : <span aria-label={`Global rank ${index + 1} is empty`} />}</li>)}</ol>
+    {profileId && <PublicProfileOverlay profileId={profileId} onClose={() => setProfileId(null)} />}
   </aside>
 }
 
@@ -124,6 +137,7 @@ export default function OnlinePanel({
   const [identityMode, setIdentityMode] = useState<'anonymous' | 'alias' | 'character'>('anonymous')
   const [alias, setAlias] = useState('')
   const [showGuild, setShowGuild] = useState(false)
+  const [profileId, setProfileId] = useState<string | null>(null)
 
   async function refreshSession() {
     try {
@@ -207,7 +221,7 @@ export default function OnlinePanel({
     : sourceRows
   const displayedRows = showFullLeaderboard ? filteredRows : filteredRows.slice(0, 10)
   const selectedCharacter = characters.find(character => character.selected)
-  return <section className={`online-panel ${compact ? 'compact' : ''}`} aria-labelledby="online-title">
+  return <section className={`online-panel ${compact ? 'compact' : ''}${view === 'leaderboard' && difficulty === 'hard' ? ' hard-board' : ''}`} aria-labelledby="online-title">
     <header>
       <div><p className="eyebrow">{view === 'profile' ? 'Optional online profile' : 'Verified rankings'}</p><h2 id="online-title">{view === 'profile' ? 'My characters' : leaderboardView === 'hall' ? 'Achievement Hall of Fame' : showFullLeaderboard ? 'Full leaderboard' : 'Top 10 leaderboard'}</h2></div>
       {view === 'profile' && <a className="online-privacy-link" href={`${import.meta.env.BASE_URL}privacy.html`}>Privacy policy</a>}
@@ -304,6 +318,7 @@ export default function OnlinePanel({
         onSearch={setSearch}
         onRefresh={() => void refreshHall()}
         onToggleFull={() => setShowFullLeaderboard(current => !current)}
+        onOpenProfile={setProfileId}
       /> : <>
       {compact ? <p className="compact-leaderboard-filter">{difficulty === 'hard' ? 'Hard' : 'Normal'} · {duty === 'crystal' ? 'Crystal carrier' : 'Non-crystal'} · Top 10</p> : <div className="leaderboard-categories" aria-label="Leaderboard categories">
         {([
@@ -321,9 +336,7 @@ export default function OnlinePanel({
       <div className="leaderboard-columns" aria-hidden="true"><span>Rank and player</span><span>Guild · score · time</span></div>
       {displayedRows.length ? <ol className={`leaderboard-rows ${showFullLeaderboard ? 'full' : 'top-ten'}`}>
         {displayedRows.map((row, index) => <li key={`${row.displayName}-${row.durationMs}-${index}`}>
-          <b>{row.rank ?? index + 1}. {row.character && row.region && row.realm
-            ? <a href={`https://raider.io/characters/${row.region}/${row.realm}/${row.character}`} target="_blank" rel="noreferrer">{row.displayName}</a>
-            : row.displayName}</b>
+          <b>{row.rank ?? index + 1}. <button className="profile-name-button" onClick={() => setProfileId(row.profileId)}>{row.displayName}</button></b>
           <span>{row.guild ? `${row.guild} · ` : ''}{row.score} pts · {(row.durationMs / 1000).toFixed(1)}s</span>
         </li>)}
       </ol> : <p>No matching verified results yet.</p>}
@@ -342,6 +355,7 @@ export default function OnlinePanel({
       </div>}
       {compact && <button className="secondary full-leaderboard-toggle compact-leaderboard-link" onClick={onOpenLeaderboard}>Open full leaderboard</button>}
       </>}
+      {profileId && <PublicProfileOverlay profileId={profileId} onClose={() => setProfileId(null)} />}
     </div>}
   </section>
 }
@@ -354,6 +368,7 @@ function AchievementHall({
   onSearch,
   onRefresh,
   onToggleFull,
+  onOpenProfile,
 }: {
   rows: AchievementHallRow[]
   own: AchievementHallRow | null
@@ -362,6 +377,7 @@ function AchievementHall({
   onSearch: (value: string) => void
   onRefresh: () => void
   onToggleFull: () => void
+  onOpenProfile: (profileId: string) => void
 }) {
   const displayed = full ? rows : rows.slice(0, 10)
   return <section className="achievement-hall" aria-labelledby="achievement-hall-title">
@@ -369,7 +385,7 @@ function AchievementHall({
     <div className="leaderboard-columns" aria-hidden="true"><span>Rank and player</span><span>Highest achievement · total</span></div>
     <ol className="leaderboard-rows hall-rows">
       {displayed.map(row => <li key={`${row.rank}-${row.displayName}`}>
-        <b>{row.rank}. {row.displayName}{row.guild ? <small>{row.guild}</small> : null}</b>
+        <b>{row.rank}. <button className="profile-name-button" onClick={() => onOpenProfile(row.profileId)}>{row.displayName}</button>{row.guild ? <small>{row.guild}</small> : null}</b>
         <span><strong>{row.highestAchievement.title}</strong>{row.highestAchievement.featOfStrength ? ' · Feat of Strength' : ''}<small>{row.highestAchievement.tier} · first earned {new Date(row.highestAchievement.firstEarnedAt).toLocaleDateString()} · {row.totalPoints} pts</small></span>
       </li>)}
     </ol>
@@ -380,4 +396,27 @@ function AchievementHall({
       <button className="secondary" onClick={onToggleFull}>{full ? 'Back to Top 10' : 'View full Hall'}</button>
     </div>
   </section>
+}
+
+function PublicProfileOverlay({ profileId, onClose }: { profileId: string; onClose: () => void }) {
+  const [profile, setProfile] = useState<PublicPlayerProfile | null>(null)
+  const [failed, setFailed] = useState(false)
+  useEffect(() => {
+    setProfile(null)
+    setFailed(false)
+    void loadPublicPlayerProfile(profileId).then(setProfile).catch(() => setFailed(true))
+  }, [profileId])
+  return <div className="public-profile-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}>
+    <section className="public-profile-overlay" role="dialog" aria-modal="true" aria-labelledby="public-profile-title">
+      <button className="public-profile-close" aria-label="Close player profile" onClick={onClose}>×</button>
+      {failed ? <><p className="eyebrow">PRIVATE PROFILE</p><h2 id="public-profile-title">Profile unavailable</h2><p>This player is anonymous, no longer public, or the online service is unavailable.</p></> : !profile ? <p>Loading player profile…</p> : <>
+        <p className="eyebrow">PUBLIC TRAINER PROFILE</p><h2 id="public-profile-title">{profile.displayName}</h2>
+        <p>{profile.guild ?? 'No public guild'} · {profile.attempts} attempts · {profile.wipes} wipes</p>
+        {profile.character && profile.region && profile.realm && <a href={`https://raider.io/characters/${profile.region}/${profile.realm}/${profile.character}`} target="_blank" rel="noreferrer">Raider.IO profile ↗</a>}
+        {profile.global && <p><strong>Global #{profile.global.rank}</strong> · {profile.global.totalPoints} pts ({profile.global.achievementPoints} achievements + {profile.global.runPoints} runs)</p>}
+        <h3>Verified achievements · {profile.achievements.length}</h3>
+        {profile.achievements.length ? <ul className="public-profile-achievements">{profile.achievements.map(achievement => <li key={achievement.id}><b>{achievement.title}</b><span>{achievement.tier} · {achievement.points} pts · {new Date(achievement.firstEarnedAt).toLocaleDateString()}</span></li>)}</ul> : <p>No verified achievements yet.</p>}
+      </>}
+    </section>
+  </div>
 }

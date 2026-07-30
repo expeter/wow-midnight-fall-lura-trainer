@@ -15,6 +15,7 @@ interface LeaderboardQuery {
 
 interface RawLeaderboardRow {
   result_id: number
+  profile_id: string
   identity_mode: 'anonymous' | 'alias' | 'character'
   alias: string | null
   show_guild: number
@@ -31,6 +32,7 @@ interface RawLeaderboardRow {
 
 export interface PublicLeaderboardRow {
   id: number
+  profileId: string
   rank: number
   displayName: string
   character: string | null
@@ -63,6 +65,7 @@ export function listLeaderboard(database: Database, query: LeaderboardQuery): Pu
   const statement = database.prepare(`
     SELECT
       r.id AS result_id,
+      a.public_profile_id AS profile_id,
       p.identity_mode,
       p.alias,
       p.show_guild,
@@ -76,6 +79,7 @@ export function listLeaderboard(database: Database, query: LeaderboardQuery): Pu
       r.build_id,
       r.accepted_at
     FROM results r
+    JOIN accounts a ON a.id = r.account_id
     JOIN characters c ON c.id = r.character_id
     JOIN privacy_settings p ON p.account_id = r.account_id
     WHERE r.difficulty = ? AND r.duty = ? AND ${releaseClause}
@@ -101,6 +105,7 @@ export function listLeaderboard(database: Database, query: LeaderboardQuery): Pu
     const character = row.identity_mode === 'character'
     return {
       id: row.result_id,
+      profileId: row.profile_id,
       rank: query.offset + index + 1,
       displayName: anonymous
         ? 'Anonymous'

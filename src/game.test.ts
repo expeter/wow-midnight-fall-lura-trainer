@@ -7,6 +7,7 @@ import { P3_LIGHT_RADIUS, p3SpreadPosition, p4NpcSplinterMovementAge, p4NpcSplin
 import { isP3RaidMemberVisible, p3ActiveCrystalAssignments } from './game'
 import { bossDamageScoreBonus, isActiveP3RuneDuty, isInsideP3Pool, p4BossHealthWithPlayerDamage, p4PlayerSplinterHitsNpc, p4StartingBossState, P1_STAR_LENGTH, preP4BossHealth, safestStarsplinterRotation, shouldApplyP3NpcDisplacement, shouldHoldP3RunePartner, shouldSuppressRepeatedWipe, shouldTriggerP3EarlyClear, starsplinterHitsCrystalCarrier, starsplinterHitsPoint } from './game'
 import { p4UnsafePenaltyTicks, P4_SAFE_ZONE_HEALTH_DRAIN_PER_SECOND, P4_SAFE_ZONE_PENALTY_PER_SECOND } from './game'
+import { canPickupCrystalAlongPath, INTERMISSION_POSITIONING_SECONDS, shortestPathAroundCircle } from './game'
 
 describe('Intermission game rules', () => {
   it('creates six deterministic stars for a seed', () => { expect(seededStars(42)).toEqual(seededStars(42)); expect(seededStars(42)).toHaveLength(6) })
@@ -84,6 +85,32 @@ describe('Intermission game rules', () => {
   it('calculates the spawn facing directly toward the room center', () => { const center = { x: 480, y: 270 }; expect(angleToward({ x: 480, y: 500 }, center)).toBeCloseTo(-Math.PI / 2); expect(angleToward({ x: 700, y: 270 }, center)).toBeCloseTo(Math.PI) })
   it('allows movement against the early pull but overwhelms it at full force', () => { const bounds = { minX: 0, maxX: 1000, minY: 0, maxY: 1000 }; const start = { x: 600, y: 500 }; const center = { x: 500, y: 500 }; expect(moveWithIncreasingPull(start, new Set(['w']), 15, 1, { x: 1, y: 0 }, bounds, center, 0).x).toBeGreaterThan(start.x); expect(moveWithIncreasingPull(start, new Set(['w']), 15, 1, { x: 1, y: 0 }, bounds, center, 1).x).toBeLessThan(start.x) })
   it('requires the crystal to unlock and the player to move closer than simple model contact', () => { const crystal = { x: 100, y: 100 }; expect(canPickupCrystal({ x: 100, y: 100 }, crystal, .9)).toBe(false); expect(canPickupCrystal({ x: 104, y: 100 }, crystal, 2)).toBe(false); expect(canPickupCrystal({ x: 102.9, y: 100 }, crystal, 2)).toBe(true) })
+  it('recovers the sixth-pack crystal when position 12 crosses it between simulation samples', () => {
+    const crystal = { x: 474.1779563719862, y: 114.26358591657097 }
+    const before = { x: crystal.x, y: crystal.y - 4 }
+    const after = { x: crystal.x, y: crystal.y + 4 }
+    expect(canPickupCrystal(before, crystal, 2)).toBe(false)
+    expect(canPickupCrystal(after, crystal, 2)).toBe(false)
+    expect(canPickupCrystalAlongPath(before, after, crystal, .9)).toBe(false)
+    expect(canPickupCrystalAlongPath(before, after, crystal, 2)).toBe(true)
+  })
+  it('gives every maintained Intermission position a tight legal route around the middle void at default speed', () => {
+    const center = { x: 480, y: 270 }
+    const startSlot = { x: 240.0113889341025, y: 267.6619327081159 }
+    const position12 = { x: 635.7857418251841, y: 265.6954085502988 }
+    const worstP1Origin = { x: 379.1059874058998, y: 500.4066613180652 }
+    const worstHandoffTarget = { x: 524.3134723385762, y: 160.6367695735983 }
+    const defaultSpeed = 18
+    const travelBudget = (seconds: number) => defaultSpeed * (seconds + OPENING_BOOST_SECONDS * .4)
+    const directRoute = shortestPathAroundCircle(startSlot, position12, center, 105)
+    const handoffRoute = shortestPathAroundCircle(worstP1Origin, worstHandoffTarget, center, 105) + 18
+    expect(directRoute).toBeCloseTo(452.22, 1)
+    expect(handoffRoute).toBeCloseTo(457.89, 1)
+    expect(travelBudget(INTERMISSION_POSITIONING_SECONDS - 1)).toBeLessThan(directRoute)
+    expect(travelBudget(INTERMISSION_POSITIONING_SECONDS - 1)).toBeLessThan(handoffRoute)
+    expect(travelBudget(INTERMISSION_POSITIONING_SECONDS)).toBeGreaterThan(directRoute)
+    expect(travelBudget(INTERMISSION_POSITIONING_SECONDS)).toBeGreaterThan(handoffRoute)
+  })
   it('allows carried crystals to be recovered during Phase 1 and later recovery windows', () => {
     expect(canPickupCrystalDuringEvent('p1-crystals')).toBe(true)
     expect(canPickupCrystalDuringEvent('p1-beams')).toBe(true)

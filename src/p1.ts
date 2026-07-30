@@ -13,7 +13,7 @@ export const P1_CRYSTAL_COUNT = 3
 export const P1_CRYSTAL_PICKUP_SECONDS = 5
 export const P1_GLAIVE_COUNT = 5
 export const P1_GLAIVE_TELEGRAPH_SECONDS = 2
-export const P1_GLAIVE_LIFETIME_SECONDS = 60
+export const P1_GLAIVE_LIFETIME_SECONDS = 70
 export const P1_GLAIVE_REFLECTED_SPEED_MULTIPLIER = 1.1
 export const P1_GLAIVE_INITIAL_SPEED_MULTIPLIER = 4.5
 export const P1_GLAIVE_RETURN_SPEED_MULTIPLIER = 1.65
@@ -39,7 +39,7 @@ export const P1_ROTATING_BEAM_MAX_BOSS_ARC = Math.PI / 4
 export const P1_REACTIVE_SOAK_SECONDS = 2
 export const P1_REACTIVE_SOAK_RADIUS = 12
 export const P1_SEQUENCE_COUNT = 2
-export const P1_INTERMISSION_POSITION_SECONDS = 15
+export const P1_INTERMISSION_POSITION_SECONDS = 24
 export const P1_WIPE_PENALTY = 500
 export const P1_RUNES = ['T', 'X', 'O', 'V', '+'] as const
 

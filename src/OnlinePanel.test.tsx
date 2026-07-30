@@ -51,22 +51,23 @@ describe('optional online profile', () => {
     expect(screen.getByRole('link', { name: 'Privacy policy' })).toHaveAttribute('href', '/privacy.html')
   })
 
-  it('shows current Normal and Hard positions beside the local achievement summary', async () => {
+  it('shows the global position beside the compact profile actions', async () => {
     const onLogout = vi.fn()
     render(<OnlineStandingSummary onManage={() => undefined} onLogout={onLogout} session={{
       authenticated: true,
       csrfToken: 'csrf',
+      globalPosition: 4,
       standings: [
         { difficulty: 'normal', duty: 'crystal', position: 8, score: 1100, durationMs: 300_000 },
         { difficulty: 'hard', duty: 'non-crystal', position: 3, score: 1300, durationMs: 290_000 },
       ],
     }} />)
-    expect(screen.getByLabelText('Current online standings')).toHaveTextContent('Normal #8 · Hard #3')
+    expect(screen.getByLabelText('Current online standings')).toHaveTextContent('Global position #4')
     await userEvent.click(screen.getByRole('button', { name: 'Log out' }))
     expect(onLogout).toHaveBeenCalledOnce()
   })
 
-  it('uses localhost fixtures only after a successful empty response and links verified characters', async () => {
+  it('uses localhost fixtures only after a successful empty response and opens trainer profiles', async () => {
     vi.stubGlobal('fetch', vi.fn(async input => {
       const url = String(input)
       if (url.endsWith('/v1/me')) return json({ error: 'not_authenticated' }, 401)
@@ -74,16 +75,12 @@ describe('optional online profile', () => {
       throw new Error(`unexpected ${url}`)
     }))
     render(<OnlinePanel view="leaderboard" onSession={() => undefined} />)
-    const character = await screen.findByRole('link', { name: 'Nightbloom-HC01' })
-    expect(character).toHaveAttribute(
-      'href',
-      'https://raider.io/characters/eu/tarren-mill/Nightbloom-HC01',
-    )
+    const character = await screen.findByRole('button', { name: 'Nightbloom-HC01' })
     expect(character.closest('ol')).toHaveTextContent('Dawnshield-HC02')
     expect(character.closest('ol')?.querySelectorAll('li')).toHaveLength(10)
     expect(screen.getByLabelText('Your leaderboard position')).toHaveTextContent('65. Your localhost test position')
     await userEvent.click(screen.getByRole('button', { name: 'Normal · Non-crystal' }))
-    expect(await screen.findByRole('link', { name: 'Riftwalker-NN01' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Riftwalker-NN01' })).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'View full leaderboard' }))
     await waitFor(() => expect(screen.getByRole('list').querySelectorAll('li')).toHaveLength(100))
   })

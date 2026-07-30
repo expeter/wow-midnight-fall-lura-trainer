@@ -11,15 +11,19 @@ export function healthBand(health: number): HealthBand {
   return 'critical'
 }
 
-export function randomHealthTarget(random = Math.random): HealthTarget {
+export function randomHealthTarget(recoveryAvailable = true, random = Math.random): HealthTarget {
   const roll = random()
-  if (roll < .12) return { value: 18 + random() * 6, holdSeconds: 3 + random() * 2 }
+  if (recoveryAvailable && roll < .12) return { value: 18 + random() * 6, holdSeconds: 2 }
   if (roll < .82) return { value: 42 + random() * 32, holdSeconds: .4 + random() * .8 }
   return { value: 76 + random() * 12, holdSeconds: .4 + random() * .8 }
 }
 
-export function approachHealthTarget(current: number, target: number, deltaSeconds: number, rate = 24): number {
-  const step = Math.max(0, deltaSeconds) * rate
+export function healthChangeRate(current: number, target: number): number {
+  return target < current ? 48 : 24
+}
+
+export function approachHealthTarget(current: number, target: number, deltaSeconds: number): number {
+  const step = Math.max(0, deltaSeconds) * healthChangeRate(current, target)
   if (Math.abs(target - current) <= step) return target
   return Math.max(0, Math.min(100, current + Math.sign(target - current) * step))
 }

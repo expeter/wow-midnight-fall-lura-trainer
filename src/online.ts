@@ -4,6 +4,7 @@ export const ONLINE_API_ORIGIN = ['localhost', '127.0.0.1'].includes(window.loca
 
 export interface OnlineSession {
   authenticated: boolean
+  globalPosition?: number | null
   region?: 'eu' | 'us'
   csrfToken?: string
   privacy?: {
@@ -39,6 +40,7 @@ export interface OnlineCharacter {
 
 export interface LeaderboardRow {
   rank: number
+  profileId: string
   displayName: string
   character: string | null
   realm: string | null
@@ -51,6 +53,7 @@ export interface LeaderboardRow {
 
 export interface AchievementHallRow {
   rank: number
+  profileId: string
   displayName: string
   guild: string | null
   totalPoints: number
@@ -63,6 +66,29 @@ export interface AchievementHallRow {
     firstEarnedAt: string
     featOfStrength: boolean
   }
+}
+
+export interface GlobalRankingRow {
+  rank: number
+  profileId: string
+  displayName: string
+  guild: string | null
+  achievementPoints: number
+  runPoints: number
+  totalPoints: number
+}
+
+export interface PublicPlayerProfile {
+  profileId: string
+  displayName: string
+  character: string | null
+  realm: string | null
+  region: 'eu' | 'us' | null
+  guild: string | null
+  attempts: number
+  wipes: number
+  achievements: Array<{ id: string; title: string; tier: string; points: number; firstEarnedAt: string }>
+  global: GlobalRankingRow | null
 }
 
 export interface OnlineAchievement {
@@ -202,29 +228,32 @@ export function loadAchievementHall(search = '', limit = 10): Promise<{
   return api(`/v1/achievement-hall?${query}`)
 }
 
+export function loadGlobalRanking(limit = 10): Promise<{ rows: GlobalRankingRow[]; own: GlobalRankingRow | null; total: number }> {
+  return api(`/v1/global-ranking?limit=${limit}`)
+}
+
+export function loadPublicPlayerProfile(profileId: string): Promise<PublicPlayerProfile> {
+  return api(`/v1/profiles/${encodeURIComponent(profileId)}`)
+}
+
 export function loadActivityFeed(limit = 20): Promise<{ rows: ActivityFeedRow[] }> {
   return api(`/v1/activity?limit=${limit}`)
 }
 
 export function canRecordOnlineWipe(
-  session: Pick<OnlineSession, 'authenticated' | 'csrfToken' | 'privacy'>,
+  _session: Pick<OnlineSession, 'authenticated' | 'csrfToken' | 'privacy'>,
   difficulty: string,
-): session is OnlineSession & { csrfToken: string } {
-  return (
-    (difficulty === 'normal' || difficulty === 'hard')
-    && session.authenticated
-    && Boolean(session.csrfToken)
-    && Boolean(session.privacy?.selectedCharacterId)
-  )
+): boolean {
+  return difficulty === 'normal' || difficulty === 'hard'
 }
 
 export function recordOnlineWipe(
-  csrfToken: string,
+  csrfToken: string | undefined,
   input: { phase: string; difficulty: 'normal' | 'hard'; reason: string; trainerVersion: string },
 ) {
   return api<{ recorded: boolean; id?: number; occurredAt?: string }>('/v1/wipes', {
     method: 'POST',
-    headers: { 'x-csrf-token': csrfToken },
+    headers: csrfToken ? { 'x-csrf-token': csrfToken } : {},
     body: JSON.stringify(input),
   })
 }

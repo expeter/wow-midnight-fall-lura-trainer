@@ -187,6 +187,60 @@ describe('Lura API foundation', () => {
     assert.deepEqual(rows, [{ ...rows[0], displayName: 'Runner', character: null, guild: 'Milestone' }])
   })
 
+  it('ranks public profiles by achievement points plus the best score from each run board', async () => {
+    const accountId = insertResult(database, {
+      region: 'eu', account: 'global', character: 'Globalhero', realm: 'silvermoon',
+      guild: 'I Asgard I', mode: 'character', showGuild: true, score: 1500,
+      duration: 80_000, acceptedAt: '2026-07-28T00:02:00.000Z',
+    })
+    database.prepare(`
+      INSERT INTO achievement_catalog (id, title, tier, points, season, introduced_version)
+      VALUES ('global-achievement', 'Global Achievement', 'Rare', 50, 1, '0.3.0')
+    `).run()
+    database.prepare(`
+      INSERT INTO achievements (id, trainer_version, title) VALUES ('global-achievement', '0.3.0', 'Global Achievement')
+    `).run()
+    const account = database.prepare('SELECT public_profile_id AS profileId FROM accounts WHERE id = ?').get(accountId) as { profileId: string }
+    const character = database.prepare('SELECT id FROM characters WHERE account_id = ?').get(accountId) as { id: number }
+    database.prepare('UPDATE accounts SET selected_character_id = ? WHERE id = ?').run(character.id, accountId)
+    database.prepare(`
+      INSERT INTO account_achievements (account_id, character_id, achievement_id, trainer_version, build_id, source_attempt_id, first_earned_at)
+      VALUES (?, ?, 'global-achievement', '0.3.0', 'build-1', 'attempt-global', '2026-07-28T00:03:00.000Z')
+    `).run(accountId, character.id)
+    database.prepare(`
+      INSERT INTO wipe_events (account_id, character_id, phase, difficulty, reason, trainer_version, occurred_at)
+      VALUES (?, ?, 'Phase 1', 'hard', 'Test wipe', '0.3.0', '2026-07-28T00:04:00.000Z')
+    `).run(accountId, character.id)
+    const app = createApp(database, config)
+    const ranking = await app.handle(new Request('http://api.test/v1/global-ranking?limit=3'))
+    const rankingRows = (await ranking.json() as { rows: Array<{ profileId: string; achievementPoints: number; runPoints: number; totalPoints: number }> }).rows
+    assert.deepEqual(rankingRows[0], { ...rankingRows[0], profileId: account.profileId, achievementPoints: 50, runPoints: 1500, totalPoints: 1550 })
+    const profile = await app.handle(new Request(`http://api.test/v1/profiles/${account.profileId}`))
+    const body = await profile.json() as { displayName: string; attempts: number; wipes: number; achievements: unknown[] }
+    assert.equal(body.displayName, 'Globalhero')
+    assert.equal(body.attempts, 1)
+    assert.equal(body.wipes, 1)
+    assert.equal(body.achievements.length, 1)
+    database.prepare("UPDATE privacy_settings SET identity_mode = 'anonymous' WHERE account_id = ?").run(accountId)
+    assert.equal((await app.handle(new Request(`http://api.test/v1/profiles/${account.profileId}`))).status, 404)
+  })
+
+  it('publishes non-logged-in wipes only as generic anonymous activity', async () => {
+    const app = createApp(database, config)
+    const recorded = await app.handle(new Request('http://api.test/v1/wipes', {
+      method: 'POST',
+      headers: { origin: config.trainerOrigin, 'content-type': 'application/json' },
+      body: JSON.stringify({ phase: 'Intermission', difficulty: 'hard', reason: 'Hit by Starsplinter', trainerVersion: '0.5.1' }),
+    }))
+    assert.equal(recorded.status, 201)
+    const feed = await app.handle(new Request('http://api.test/v1/activity?limit=20'))
+    const rows = (await feed.json() as { rows: Array<{ displayName: string; character: null; realm: null; region: null }> }).rows
+    assert.equal(rows[0].displayName, 'Anonymous')
+    assert.equal(rows[0].character, null)
+    assert.equal(rows[0].realm, null)
+    assert.equal(rows[0].region, null)
+  })
+
   it('cascades complete account deletion through attempts and public results', () => {
     const accountId = insertResult(database, {
       region: 'eu', account: 'delete-me', character: 'Gone', realm: 'draenor',

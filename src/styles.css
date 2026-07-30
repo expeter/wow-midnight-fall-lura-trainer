@@ -1161,8 +1161,26 @@
   background: linear-gradient(135deg, rgba(35, 29, 72, .92), rgba(12, 14, 34, .96));
 }
 .online-panel.compact { padding: 1rem; }
-.setup-overview { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, .65fr); gap: 12px; align-items: stretch; }
+.online-panel.hard-board { border-color: rgba(255,83,104,.7); box-shadow: inset 0 0 0 1px rgba(255,83,104,.12); }
+.setup-overview { display: grid; grid-template-columns: minmax(260px, .7fr) minmax(480px, 1.6fr) minmax(320px, .9fr); gap: 18px; align-items: stretch; }
 .setup-overview .achievement-summary-link { margin: 0; }
+.setup-overview > * { min-height: 132px; }
+.setup-overview .achievement-summary-link { box-sizing: border-box; width: 100%; justify-content: center; border-radius: 12px; background: rgba(22,17,28,.76); cursor: pointer; }
+.global-ranking-summary ol { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 12px 0 0; padding: 0; list-style: none; }
+.global-ranking-summary li { min-width: 0; }
+.global-ranking-summary li > button, .global-ranking-summary li.empty > span { display: flex; min-height: 54px; width: 100%; box-sizing: border-box; flex-direction: column; justify-content: center; align-items: flex-start; gap: 3px; padding: 8px 10px; border: 1px solid rgba(255,211,105,.28); border-radius: 10px; background: rgba(255,211,105,.06); color: inherit; text-align: left; }
+.global-ranking-summary li > button { cursor: pointer; }
+.global-ranking-summary li > button:hover { border-color: rgba(255,211,105,.72); background: rgba(255,211,105,.12); }
+.global-ranking-summary li > button span { color: #ffd369; font-weight: 800; }
+.global-ranking-summary li > button b { overflow: hidden; width: 100%; text-overflow: ellipsis; white-space: nowrap; }
+.global-ranking-summary li.empty > span { border-color: transparent; background: transparent; }
+.achievement-overlay-card { width: min(1100px, calc(100vw - 40px)); max-height: calc(100vh - 40px); overflow: auto; }
+.achievement-overlay-card .achievement-collection { margin: 0; }
+.global-ranking-summary { display: grid; gap: 8px; padding: 12px 14px; border: 1px solid rgba(255,211,104,.3); border-radius: 12px; background: rgba(22,17,28,.76); }
+.global-ranking-summary p { margin: 0; color: #8f9cb3; font-size: 12px; }
+.global-ranking-summary > div strong { color: #ffe09a; font-size: 13px; }
+.global-ranking-summary ol { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 4px 0 0; padding: 0; list-style: none; }
+.global-ranking-summary li button { width: 100%; margin: 0; color: #dce5f5; font-size: 12px; }
 .online-standing-summary {
   display: flex;
   align-items: center;
@@ -1311,6 +1329,8 @@
 }
 .leaderboard-categories button { min-height: 58px; margin: 0; background: rgba(10,18,35,.7); color: #aebbd0; }
 .leaderboard-categories button.selected { border-color: #73e0c1; background: rgba(53,151,132,.22); color: #d9fff5; }
+.hard-board .leaderboard-categories button.selected { border-color: #ff5368; background: rgba(139,31,53,.28); color: #ffd6dc; }
+.hard-board .compact-leaderboard-filter { color: #ff8797; }
 .leaderboard-view-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; padding: 5px; border: 1px solid rgba(64,80,112,.65); border-radius: 11px; background: rgba(7,11,27,.5); }
 .leaderboard-view-switch button { min-height: 44px; margin: 0; background: transparent; color: #9daac3; }
 .leaderboard-view-switch button.selected { border-color: #73e0c1; background: rgba(53,151,132,.2); color: #d9fff5; }
@@ -1330,6 +1350,14 @@
   background: rgba(255,255,255,.055);
 }
 .leaderboard-rows a { color: #8ff0d3; text-decoration-color: rgba(143,240,211,.45); text-underline-offset: 3px; }
+.profile-name-button { margin: 0; padding: 0; border: 0; background: transparent; color: #8ff0d3; font: inherit; text-decoration: underline; text-decoration-color: rgba(143,240,211,.45); text-underline-offset: 3px; }
+.profile-name-button:hover { border: 0; background: transparent; color: #d8fff4; }
+.public-profile-backdrop { position: fixed; z-index: 1000; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(2,5,14,.78); }
+.public-profile-overlay { position: relative; width: min(680px, 100%); max-height: min(760px, 90vh); overflow: auto; padding: 24px; border: 1px solid rgba(115,224,193,.55); border-radius: 16px; background: linear-gradient(145deg, #161d34, #090d19); box-shadow: 0 24px 80px rgba(0,0,0,.55); }
+.public-profile-close { position: absolute; right: 12px; top: 10px; margin: 0; padding: 2px 9px; background: transparent; color: #cbd5e7; font-size: 24px; }
+.public-profile-achievements { display: grid; gap: 7px; padding: 0; list-style: none; }
+.public-profile-achievements li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 11px; border-radius: 8px; background: rgba(255,255,255,.05); }
+.public-profile-achievements span { color: #94a2bb; font-size: 12px; text-align: right; }
 .achievement-hall { display: grid; gap: 13px; }
 .hall-heading { display: flex; align-items: end; justify-content: space-between; gap: 16px; padding: 4px 2px; }
 .hall-heading h3 { margin: 2px 0 0; font-size: 24px; }

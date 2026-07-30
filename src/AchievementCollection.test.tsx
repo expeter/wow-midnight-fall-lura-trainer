@@ -33,9 +33,11 @@ describe('achievement collection UI', () => {
     expect(screen.queryByText('Coming soon')).not.toBeInTheDocument()
   })
 
-  it('links the compact achievement summary to the ledger', () => {
-    render(<AchievementBadgeSummary collection={collection} />)
-    expect(screen.getByRole('link', { name: 'Achievements 1 of 28 earned' })).toHaveAttribute('href', '#achievements')
+  it('opens personal achievements from the compact summary', async () => {
+    const onOpen = vi.fn()
+    render(<AchievementBadgeSummary collection={collection} onOpen={onOpen} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Open personal achievements, 1 of 28 earned' }))
+    expect(onOpen).toHaveBeenCalledOnce()
   })
 
   it('shows newly earned achievements as compact live cards with title and flavor text', () => {

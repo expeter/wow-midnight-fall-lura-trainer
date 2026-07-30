@@ -35,6 +35,11 @@ export function isFullSequenceCompletion(results: PhaseResult[]): boolean {
     results.length === required.length && results.every((result, index) => result.key === required[index]))
 }
 
+export function completionResultTitle(fullSequence: boolean, mistakes: number): string {
+  if (!fullSequence) return 'L’URA PRACTICE CLEAR'
+  return mistakes === 0 ? 'L’URA CONQUERED FLAWLESSLY' : 'L’URA CONQUERED'
+}
+
 export function completionImageCardLayout(count: number, canvasWidth = 1200) {
   const left = 70
   const right = 70

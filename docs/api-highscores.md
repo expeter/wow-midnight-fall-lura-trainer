@@ -203,7 +203,17 @@ The initial public endpoint shape is:
 ```text
 GET /v1/leaderboards?difficulty=hard&duty=crystal&version=current
 GET /v1/leaderboards/search?q=character-or-guild
+GET /v1/global-ranking?limit=10
+GET /v1/profiles/{opaque-public-profile-id}
 ```
+
+The global ranking totals each public account's canonical lifetime achievement
+points plus its single best current-season score from each of the four run
+boards. Public leaderboard, Hall, and global rows expose only an opaque profile
+identifier. The corresponding profile endpoint returns achievements,
+attempt/wipe counts, global points, and public Raider.IO identity only while
+the account's current visibility is alias or character; anonymous profiles
+return not found.
 
 ## Achievements
 

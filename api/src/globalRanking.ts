@@ -1,0 +1,86 @@
+import type { Database } from './database.js'
+
+export interface GlobalRankingRow {
+  rank: number
+  profileId: string
+  displayName: string
+  guild: string | null
+  achievementPoints: number
+  runPoints: number
+  totalPoints: number
+}
+
+interface RawGlobalRow extends Omit<GlobalRankingRow, 'rank' | 'totalPoints'> {
+  accountId: number
+}
+
+export function listGlobalRanking(database: Database, season: string, ownAccountId?: number): {
+  rows: GlobalRankingRow[]
+  own: GlobalRankingRow | null
+  total: number
+} {
+  const raw = database.prepare(`
+    WITH achievement_totals AS (
+      SELECT aa.account_id AS accountId, SUM(ac.points) AS achievementPoints
+      FROM (
+        SELECT account_id, achievement_id, MIN(first_earned_at) AS firstEarnedAt
+        FROM account_achievements GROUP BY account_id, achievement_id
+      ) aa
+      JOIN achievement_catalog ac ON ac.id = aa.achievement_id
+      GROUP BY aa.account_id
+    ), board_bests AS (
+      SELECT account_id AS accountId, difficulty, duty, MAX(score) AS bestScore
+      FROM results
+      WHERE run_eligible = 1 AND leaderboard_season = ?
+      GROUP BY account_id, difficulty, duty
+    ), run_totals AS (
+      SELECT accountId, SUM(bestScore) AS runPoints FROM board_bests GROUP BY accountId
+    )
+    SELECT a.id AS accountId, a.public_profile_id AS profileId,
+      CASE WHEN p.identity_mode = 'character' THEN c.name ELSE COALESCE(NULLIF(TRIM(p.alias), ''), 'Unnamed player') END AS displayName,
+      CASE WHEN p.show_guild = 1 THEN c.guild_name ELSE NULL END AS guild,
+      COALESCE(at.achievementPoints, 0) AS achievementPoints,
+      COALESCE(rt.runPoints, 0) AS runPoints
+    FROM accounts a
+    JOIN privacy_settings p ON p.account_id = a.id
+    LEFT JOIN characters c ON c.id = a.selected_character_id
+    LEFT JOIN achievement_totals at ON at.accountId = a.id
+    LEFT JOIN run_totals rt ON rt.accountId = a.id
+    WHERE p.identity_mode != 'anonymous'
+      AND (COALESCE(at.achievementPoints, 0) > 0 OR COALESCE(rt.runPoints, 0) > 0)
+  `).all(season) as unknown as RawGlobalRow[]
+  const ranked = raw.sort((left, right) =>
+    right.achievementPoints + right.runPoints - (left.achievementPoints + left.runPoints)
+    || right.runPoints - left.runPoints
+    || left.displayName.localeCompare(right.displayName))
+    .map((row, index) => ({ ...row, rank: index + 1, totalPoints: row.achievementPoints + row.runPoints }))
+  const publicRow = ({ accountId: _accountId, ...row }: typeof ranked[number]): GlobalRankingRow => row
+  const own = ownAccountId ? ranked.find(row => row.accountId === ownAccountId) : undefined
+  return { rows: ranked.map(publicRow), own: own ? publicRow(own) : null, total: ranked.length }
+}
+
+export function publicPlayerProfile(database: Database, profileId: string, season: string) {
+  const identity = database.prepare(`
+    SELECT a.id AS accountId, a.public_profile_id AS profileId, p.identity_mode AS identityMode,
+      CASE WHEN p.identity_mode = 'character' THEN c.name ELSE COALESCE(NULLIF(TRIM(p.alias), ''), 'Unnamed player') END AS displayName,
+      CASE WHEN p.identity_mode = 'character' THEN c.name ELSE NULL END AS character,
+      CASE WHEN p.identity_mode = 'character' THEN c.realm_slug ELSE NULL END AS realm,
+      CASE WHEN p.identity_mode = 'character' THEN c.region ELSE NULL END AS region,
+      CASE WHEN p.show_guild = 1 THEN c.guild_name ELSE NULL END AS guild
+    FROM accounts a JOIN privacy_settings p ON p.account_id = a.id
+    LEFT JOIN characters c ON c.id = a.selected_character_id
+    WHERE a.public_profile_id = ? AND p.identity_mode != 'anonymous'
+  `).get(profileId) as { accountId: number; profileId: string; identityMode: string; displayName: string; character: string | null; realm: string | null; region: string | null; guild: string | null } | undefined
+  if (!identity) return null
+  const achievements = database.prepare(`
+    SELECT aa.achievement_id AS id, ac.title, ac.tier, ac.points, MIN(aa.first_earned_at) AS firstEarnedAt
+    FROM account_achievements aa JOIN achievement_catalog ac ON ac.id = aa.achievement_id
+    WHERE aa.account_id = ? GROUP BY aa.achievement_id
+    ORDER BY ac.points DESC, firstEarnedAt ASC
+  `).all(identity.accountId)
+  const attempts = Number((database.prepare('SELECT COUNT(*) AS count FROM attempts WHERE account_id = ?').get(identity.accountId) as { count: number }).count)
+  const wipes = Number((database.prepare('SELECT COUNT(*) AS count FROM wipe_events WHERE account_id = ?').get(identity.accountId) as { count: number }).count)
+  const global = listGlobalRanking(database, season).rows.find(row => row.profileId === profileId) ?? null
+  const { accountId: _accountId, identityMode: _identityMode, ...publicIdentity } = identity
+  return { ...publicIdentity, achievements, attempts, wipes, global }
+}

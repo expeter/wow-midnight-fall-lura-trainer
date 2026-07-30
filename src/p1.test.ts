@@ -195,7 +195,7 @@ describe('P1 headless mechanics', () => {
     expect(reflectedSpeed.glaives[0].position.x).toBeCloseTo(11)
     expect(P1_INNER_RADIUS).toBe(102)
     expect(P1_OUTER_RADIUS).toBe(260)
-    expect(P1_GLAIVE_LIFETIME_SECONDS).toBe(60)
+    expect(P1_GLAIVE_LIFETIME_SECONDS).toBe(70)
     expect(P1_GLAIVE_INITIAL_SPEED_MULTIPLIER).toBe(4.5)
     expect(P1_GLAIVE_RETURN_SPEED_MULTIPLIER).toBe(1.65)
     expect(Math.hypot(set.glaives[0].position.x - set.origin.x, set.glaives[0].position.y - set.origin.y)).toBeCloseTo(13)
@@ -456,7 +456,8 @@ describe('P1 headless mechanics', () => {
     expect(p1BeamHitResolution(true)).toBe('reactive-soaks')
   })
 
-  it('runs exactly two sequences then allows fifteen seconds to reach Intermission assignments', () => {
+  it('runs exactly two sequences then allows twenty-four seconds to reach Intermission assignments', () => {
+    expect(P1_INTERMISSION_POSITION_SECONDS).toBe(24)
     expect(p1Progress(0, null, 0)).toEqual({ phase: 'sequence', sequence: 1, secondsRemaining: null })
     expect(p1Progress(1, null, 0)).toEqual({ phase: 'sequence', sequence: 2, secondsRemaining: null })
     expect(p1Progress(2, 100, 106)).toEqual({
@@ -464,6 +465,6 @@ describe('P1 headless mechanics', () => {
       sequence: 2,
       secondsRemaining: P1_INTERMISSION_POSITION_SECONDS - 6,
     })
-    expect(p1Progress(2, 100, 115)).toEqual({ phase: 'intermission', sequence: 2, secondsRemaining: 0 })
+    expect(p1Progress(2, 100, 124)).toEqual({ phase: 'intermission', sequence: 2, secondsRemaining: 0 })
   })
 })

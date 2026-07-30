@@ -2,6 +2,7 @@ import type { Database } from './database.js'
 
 export interface AchievementHallRow {
   rank: number
+  profileId: string
   displayName: string
   guild: string | null
   totalPoints: number
@@ -18,6 +19,7 @@ export interface AchievementHallRow {
 
 interface RawAward {
   accountId: number
+  profileId: string
   identityMode: 'alias' | 'character'
   alias: string | null
   showGuild: number
@@ -36,7 +38,7 @@ export function listAchievementHall(
   options: { limit: number; offset: number; search?: string; ownAccountId?: number },
 ): { rows: AchievementHallRow[]; own: AchievementHallRow | null; total: number } {
   const awards = database.prepare(`
-    SELECT p.account_id AS accountId, p.identity_mode AS identityMode, p.alias,
+    SELECT p.account_id AS accountId, account.public_profile_id AS profileId, p.identity_mode AS identityMode, p.alias,
       p.show_guild AS showGuild, c.name AS characterName, c.guild_name AS guildName,
       aa.achievement_id AS achievementId, ac.title, ac.tier, ac.points,
       ac.retired_version AS retiredVersion, MIN(aa.first_earned_at) AS firstEarnedAt
@@ -59,6 +61,7 @@ export function listAchievementHall(
     const highest = sorted[0]
     return {
       accountId,
+      profileId: first.profileId,
       displayName: first.identityMode === 'character'
         ? first.characterName ?? 'Unselected character'
         : first.alias?.trim() || 'Unnamed player',

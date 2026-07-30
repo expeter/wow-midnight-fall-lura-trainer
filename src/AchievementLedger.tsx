@@ -94,15 +94,15 @@ async function achievementLedgerImage(collection: AchievementCollectionData) {
   return new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'))
 }
 
-export function AchievementBadgeSummary({ collection }: AchievementCollectionProps) {
+export function AchievementBadgeSummary({ collection, onOpen }: AchievementCollectionProps & { onOpen?: () => void }) {
   const available = achievementCatalog().filter(achievement => achievement.available)
   const earnedKeys = new Set(collection.records.map(record => record.key))
   const earned = available.filter(achievement => earnedKeys.has(achievement.key)).length
-  return <a className="achievement-summary-link" href="#achievements" aria-label={`Achievements ${earned} of ${available.length} earned`}>
+  return <button type="button" className="achievement-summary-link" onClick={onOpen} aria-label={`Open personal achievements, ${earned} of ${available.length} earned`}>
     <span aria-hidden="true">★</span>
     <strong>{earned}/{available.length}</strong>
     <small>Achievements</small>
-  </a>
+  </button>
 }
 
 export function AchievementUnlockPopups({ achievements }: { achievements: AchievementDefinition[] }) {

@@ -93,8 +93,10 @@ phase-specific raid-plan persistence.
   so its spin remains readable from the play camera.
 - Glaives reflect from both the 260-yard outer wall and the 102-yard middle
   bubble, so they never pass through the protected center.
-- The active set continues through its memory game, then despawns when that
-  memory sweep ends. A later sequence launches a fresh set.
+- Each active set persists for 70 seconds after launch, regardless of later
+  mechanic or phase boundaries. Surviving discs remain visible and lethal
+  through the P1 handoff and early Intermission, where overlaps are intended.
+  A later sequence launches a fresh set without removing the earlier one.
 - Unassigned NPCs make short sidesteps out of approaching glaive lanes when
   that does not conflict with a crystal, memory, or rotating-beam duty.
 - Contact is a 500-point wipe. Leaving a disc and touching that same disc again
@@ -175,7 +177,7 @@ phase-specific raid-plan persistence.
 ## Sequence and transition
 
 - Simulate two complete sequences.
-- Afterwards, give the raid 15 seconds to reach the existing Intermission
+- Afterwards, give the raid 24 seconds to reach the existing Intermission
   assignments before that phase begins. L’ura disappears from her final
   outside stop and reappears directly in the center instead of visibly
   travelling across the collapsing room.

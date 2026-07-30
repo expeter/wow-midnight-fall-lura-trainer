@@ -115,6 +115,16 @@ change before implementation.
 - Public identity is optional. Anonymous mode hides character, realm, and
   guild and excludes that account from public run and achievement rankings;
   published character, alias, realm, and guild fields are searchable.
+- Public trainer profiles use opaque identifiers and exist only while the
+  account publishes a character or alias. They may show verified achievements,
+  attempt/wipe counts, global position, and a Raider.IO link for a published
+  character; anonymous accounts never resolve through this endpoint.
+- The global ranking adds canonical lifetime achievement points to the best
+  accepted score in each of the four current-season run divisions. It never
+  includes more than one run score per account and division.
+- A Normal/Hard wipe may appear in the activity feed as generic `Anonymous`
+  without login. Such an event contains no account, character, realm, guild,
+  or public-profile identifier and remains separately rate-limited.
 - Results and verified achievements retain their exact trainer version/build
   so retired accomplishments can become future Feats of Strength.
 - Logout and complete deletion are separate actions. Complete deletion removes

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { P4_SPLINTER_VOICE_LEAD_SECONDS, P4_TIMED_VOICE_LEAD_SECONDS, p4TimedVoiceCues, timedVoiceDelaySeconds, timedVoiceSupported, ttsCuesForState, type TtsCueState } from './audio'
 import { P1_FINAL_RECOVERY_SECONDS, P2_BEAM_SECONDS, P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PULL_SECONDS, P3_FINAL_SECTOR_MOVE_SECONDS, P3_MEMORY_START_SECONDS, P4_SPLINTER_DETONATION_SECONDS, P4_SPLINTER_INTERVAL_SECONDS, p4SplinterStartSeconds } from './game'
+import { P1_INTERMISSION_POSITION_SECONDS } from './p1'
 
 const base: TtsCueState = {
   event: 'countdown',
@@ -45,7 +46,7 @@ describe('raid-lead TTS cues', () => {
     expect(ttsCuesForState({ ...base, event: 'p1-crystals', eventTime: 4 }).map(cue => cue.text)).toContain('Glaives')
     expect(ttsCuesForState({ ...base, event: 'p1-memory-position', p1Sequence: 2 })).toContainEqual({ id: 'phase-one-2-memory', text: 'Memory game' })
     expect(ttsCuesForState({ ...base, event: 'p1-beam-telegraph' }).map(cue => cue.text)).toContain('Move beam')
-    expect(ttsCuesForState({ ...base, event: 'p1-transition', eventTime: 14 }).map(cue => cue.text)).toContain('Intermission')
+    expect(ttsCuesForState({ ...base, event: 'p1-transition', eventTime: P1_INTERMISSION_POSITION_SECONDS - 1 }).map(cue => cue.text)).toContain('Intermission')
   })
 
   it('announces each seamless phase transition exactly one second beforehand', () => {

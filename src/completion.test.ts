@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildPhaseResult, completionAchievements, completionImageCardLayout, completionShareText, isFullSequenceCompletion, wrapTextByWidth, type PhaseResult } from './completion'
+import { buildPhaseResult, completionAchievements, completionImageCardLayout, completionResultTitle, completionShareText, isFullSequenceCompletion, wrapTextByWidth, type PhaseResult } from './completion'
 
 describe('completion card results', () => {
   it('scores each phase from its own 1000-point budget', () => {
@@ -55,6 +55,12 @@ describe('completion card results', () => {
     )
     expect(lines.length).toBeGreaterThan(1)
     expect(lines.every(line => line.length * 10 <= 520)).toBe(true)
+  })
+
+  it('celebrates a zero-mistake full clear in the result and share-image title', () => {
+    expect(completionResultTitle(true, 0)).toBe('L’URA CONQUERED FLAWLESSLY')
+    expect(completionResultTitle(true, 1)).toBe('L’URA CONQUERED')
+    expect(completionResultTitle(false, 0)).toBe('L’URA PRACTICE CLEAR')
   })
 
   it('differentiates mode, crystal duty, options, and superhuman flawless clears', () => {

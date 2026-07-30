@@ -14,6 +14,7 @@ export const INTERMISSION_SEQUENCE = [
 export const WIPE_PENALTY = 500
 export const PLAYER_COLLISION_PENALTY = 50
 export const OPENING_BOOST_SECONDS = 5
+export const INTERMISSION_POSITIONING_SECONDS = 24
 export const P1_FINAL_RECOVERY_SECONDS = 2
 export const P2_PERSONAL_CIRCLE_INNER_RADIUS = 11.55
 export const P2_PERSONAL_CIRCLE_OUTER_RADIUS = 12.16
@@ -982,6 +983,20 @@ export function distanceToSegment(point: Point, start: Point, end: Point): numbe
   return distance(point, { x: start.x + dx * t, y: start.y + dy * t })
 }
 
+export function shortestPathAroundCircle(start: Point, end: Point, center: Point, avoidanceRadius: number): number {
+  if (distanceToSegment(center, start, end) >= avoidanceRadius) return distance(start, end)
+  const startRadius = distance(start, center)
+  const endRadius = distance(end, center)
+  if (startRadius <= avoidanceRadius || endRadius <= avoidanceRadius) return Infinity
+  const startAngle = Math.atan2(start.y - center.y, start.x - center.x)
+  const endAngle = Math.atan2(end.y - center.y, end.x - center.x)
+  const angleBetween = Math.abs(((endAngle - startAngle + Math.PI * 3) % (Math.PI * 2)) - Math.PI)
+  const tangentAngle = Math.acos(avoidanceRadius / startRadius) + Math.acos(avoidanceRadius / endRadius)
+  return Math.sqrt(startRadius ** 2 - avoidanceRadius ** 2)
+    + Math.sqrt(endRadius ** 2 - avoidanceRadius ** 2)
+    + avoidanceRadius * Math.max(0, angleBetween - tangentAngle)
+}
+
 export function seededStars(seed: number, count = 6): Star[] {
   let value = Math.abs(seed) || 1
   const random = () => { value = (value * 1664525 + 1013904223) % 4294967296; return value / 4294967296 }
@@ -1169,6 +1184,9 @@ export function npcEntryPosition(target: Point, startSlot: Point, index: number,
 }
 export function canPickupCrystal(player: Point, crystal: Point, groundAge: number, pickupRadius = 3): boolean {
   return groundAge >= 1 && distance(player, crystal) <= pickupRadius
+}
+export function canPickupCrystalAlongPath(previousPlayer: Point, player: Point, crystal: Point, groundAge: number, pickupRadius = 3): boolean {
+  return groundAge >= 1 && distanceToSegment(crystal, previousPlayer, player) <= pickupRadius
 }
 export function canPickupCrystalDuringEvent(event: string): boolean {
   return event !== 'p3-archangel'

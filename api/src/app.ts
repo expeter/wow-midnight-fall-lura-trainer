@@ -4,6 +4,7 @@ import { listLeaderboard, type Difficulty, type Duty } from './leaderboards.js'
 import { completeAttempt, issueAttempt } from './attempts.js'
 import { ACHIEVEMENT_CATALOG } from './achievementCatalog.js'
 import { listAchievementHall } from './achievementHall.js'
+import { listGlobalRanking, publicPlayerProfile } from './globalRanking.js'
 import {
   authenticate,
   clearedSessionCookie,
@@ -126,6 +127,13 @@ export function createApp(
               w.trainer_version AS trainerVersion, w.occurred_at AS occurredAt
             FROM wipe_events w
             UNION ALL
+            SELECT 'wipe' AS type, 'anonymous-wipe:' || w.id AS id,
+              NULL AS accountId, NULL AS characterId,
+              w.phase, w.difficulty, w.reason,
+              NULL AS achievementTitle,
+              w.trainer_version AS trainerVersion, w.occurred_at AS occurredAt
+            FROM anonymous_wipe_events w
+            UNION ALL
             SELECT 'achievement' AS type, 'achievement:' || e.id AS id,
               e.account_id AS accountId, e.character_id AS characterId,
               NULL AS phase, NULL AS difficulty, NULL AS reason,
@@ -146,10 +154,10 @@ export function createApp(
             activity.phase, activity.difficulty, activity.reason,
             activity.achievementTitle, activity.trainerVersion, activity.occurredAt
           FROM activity
-          JOIN privacy_settings p ON p.account_id = activity.accountId
-          JOIN accounts a ON a.id = activity.accountId
-          JOIN characters c ON c.id = activity.characterId
-          WHERE a.selected_character_id = activity.characterId
+          LEFT JOIN privacy_settings p ON p.account_id = activity.accountId
+          LEFT JOIN accounts a ON a.id = activity.accountId
+          LEFT JOIN characters c ON c.id = activity.characterId
+          WHERE activity.accountId IS NULL OR a.selected_character_id = activity.characterId
           ORDER BY activity.occurredAt DESC, activity.id DESC
           LIMIT ?
         `).all(limit)
@@ -227,12 +235,14 @@ export function createApp(
         const standings = [...new Map(
           rankedRows.map(row => [`${row.difficulty}:${row.duty}`, row]),
         ).values()]
+        const globalPosition = listGlobalRanking(database, config.currentLeaderboardSeason, session.accountId).own?.rank ?? null
         return json({
           authenticated: true,
           region: session.region,
           csrfToken: session.csrfToken,
           privacy: profile,
           standings,
+          globalPosition,
         }, 200, corsHeaders)
       }
       if (request.method === 'GET' && url.pathname === '/v1/me/characters') {
@@ -335,9 +345,10 @@ export function createApp(
         }
         if (!origin || !allowedOrigins.has(origin)) return json({ error: 'origin_not_allowed' }, 403, corsHeaders)
         const session = authenticate(database, config, dependencies, request)
-        if (!session) return json({ error: 'not_authenticated' }, 401, corsHeaders)
-        const csrf = request.headers.get('x-csrf-token')
-        if (!csrf || !safeEqual(csrf, session.csrfToken)) return json({ error: 'invalid_csrf' }, 403, corsHeaders)
+        if (session) {
+          const csrf = request.headers.get('x-csrf-token')
+          if (!csrf || !safeEqual(csrf, session.csrfToken)) return json({ error: 'invalid_csrf' }, 403, corsHeaders)
+        }
         let input: { phase?: unknown; difficulty?: unknown; reason?: unknown; trainerVersion?: unknown }
         try {
           input = await request.json() as typeof input
@@ -353,13 +364,19 @@ export function createApp(
           return json({ error: 'invalid_difficulty' }, 400, corsHeaders)
         }
         if (!trainerVersion || trainerVersion.length > 40) return json({ error: 'invalid_version' }, 400, corsHeaders)
-        const selectedCharacter = database.prepare(`
+        const selectedCharacter = session ? database.prepare(`
           SELECT a.selected_character_id AS characterId
           FROM accounts a
           WHERE a.id = ?
-        `).get(session.accountId) as { characterId: number | null } | undefined
-        if (!selectedCharacter?.characterId) return json({ recorded: false }, 200, corsHeaders)
+        `).get(session.accountId) as { characterId: number | null } | undefined : undefined
         const occurredAt = dependencies.now().toISOString()
+        if (!session || !selectedCharacter?.characterId) {
+          const inserted = database.prepare(`
+            INSERT INTO anonymous_wipe_events (phase, difficulty, reason, trainer_version, occurred_at)
+            VALUES (?, ?, ?, ?, ?)
+          `).run(phase, input.difficulty, reason, trainerVersion, occurredAt)
+          return json({ recorded: true, anonymous: true, id: Number(inserted.lastInsertRowid), occurredAt }, 201, corsHeaders)
+        }
         const inserted = database.prepare(`
           INSERT INTO wipe_events (
             account_id, character_id, phase, difficulty, reason, trainer_version, occurred_at
@@ -563,6 +580,24 @@ export function createApp(
           search,
           ownAccountId: session?.accountId,
         }), 200, corsHeaders)
+      }
+      if (request.method === 'GET' && url.pathname === '/v1/global-ranking') {
+        if (rateLimited(request, 'global-ranking', 120, 60_000)) {
+          return json({ error: 'rate_limited' }, 429, { ...corsHeaders, 'retry-after': '60' })
+        }
+        const limit = integerParameter(url, 'limit', 10, 100)
+        if (limit === null) return json({ error: 'invalid_pagination' }, 400, corsHeaders)
+        const session = authenticate(database, config, dependencies, request)
+        const ranking = listGlobalRanking(database, config.currentLeaderboardSeason, session?.accountId)
+        return json({ ...ranking, rows: ranking.rows.slice(0, limit) }, 200, corsHeaders)
+      }
+      const profileMatch = url.pathname.match(/^\/v1\/profiles\/([a-f0-9]{24})$/)
+      if (request.method === 'GET' && profileMatch) {
+        if (rateLimited(request, 'public-profile', 120, 60_000)) {
+          return json({ error: 'rate_limited' }, 429, { ...corsHeaders, 'retry-after': '60' })
+        }
+        const profile = publicPlayerProfile(database, profileMatch[1], config.currentLeaderboardSeason)
+        return profile ? json(profile, 200, corsHeaders) : json({ error: 'profile_not_found' }, 404, corsHeaders)
       }
       return json({ error: 'not_found' }, 404, corsHeaders)
     },

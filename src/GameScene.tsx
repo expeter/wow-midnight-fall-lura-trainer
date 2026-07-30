@@ -1579,6 +1579,12 @@ export default function GameScene(props: SceneProps) {
           })
         }
       }
+      if (!phaseOne) {
+        state.p1GlaiveSets.forEach(set => {
+          if (state.time < set.launchesAt || state.time > set.expiresAt) return
+          set.glaives.forEach(glaive => addFlyingSaucer(hazards, glaive.position, state.time * 18 + glaive.id * .8))
+        })
+      }
       if (state.event === 'beam') {
         state.beamAngles.forEach(angle => {
           addFlatBeam(hazards, WORLD.center, angle, 440, 24, 0xf04482, .78 * Math.max(0, fade))

@@ -91,6 +91,8 @@ describe('online API client', () => {
         showGuild: 0,
         selectedCharacterId: null,
       },
-    }, 'normal')).toBe(false)
+    }, 'normal')).toBe(true)
+    expect(canRecordOnlineWipe({ authenticated: false }, 'hard')).toBe(true)
+    expect(canRecordOnlineWipe({ authenticated: false }, 'easy')).toBe(false)
   })
 })

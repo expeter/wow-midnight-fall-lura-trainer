@@ -41,7 +41,7 @@ test('exposes the released Phase 1 encounter and begins its assigned interrupts'
   await expect(page.getByRole('progressbar', { name: /Dangerous cone cast/ })).toBeVisible()
 })
 
-test('despawns the first Phase 1 Heaven Glaive set before the second sequence launches', async ({ page }) => {
+test('keeps the first Phase 1 Heaven Glaive set while the second sequence launches', async ({ page }) => {
   test.setTimeout(90_000)
   await page.addInitScript(() => {
     localStorage.setItem('lura-game-speed', '2.5')
@@ -59,9 +59,9 @@ test('despawns the first Phase 1 Heaven Glaive set before the second sequence la
   await expect(page.locator('.p1-rune-grid strong.personal')).toHaveCount(1)
   await expect(arena).toHaveAttribute('data-event', 'p1-beam-position', { timeout: 40_000 })
   await expect(page.getByRole('heading', { name: 'Hold behind L’ura.' })).toBeVisible()
-  await expect(arena).toHaveAttribute('data-p1-glaive-sets', '0')
-  await expect(arena).toHaveAttribute('data-p1-glaive-set-ids', '2', { timeout: 55_000 })
   await expect(arena).toHaveAttribute('data-p1-glaive-sets', '1')
+  await expect(arena).toHaveAttribute('data-p1-glaive-set-ids', '1,2', { timeout: 55_000 })
+  await expect(arena).toHaveAttribute('data-p1-glaive-sets', '2')
   const firstTime = Number(await arena.getAttribute('data-event-time'))
   await page.waitForTimeout(500)
   const laterTime = Number(await arena.getAttribute('data-event-time'))

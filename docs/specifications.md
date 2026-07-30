@@ -175,6 +175,8 @@ privacy, deployment, and acceptance contract.
   18% per second outside both yellow pools and recovers at 4% per second while
   inside one. NPC occupancy can satisfy the raid Soak but never suppresses this
   personal positioning feedback.
+- Phase 3 Stars-orb beams are local links: two orbs more than 48 yards apart
+  never connect visually and never produce collision along that gap.
 
 ## SPEC-013 · Phase 2 center pull and crystals
 

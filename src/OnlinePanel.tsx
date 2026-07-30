@@ -145,7 +145,7 @@ export function BestRunsSummary({ session, onOpen }: { session: OnlineSession; o
 function GlobalRankRow({ row, onOpenProfile }: { row: GlobalRankingRow; onOpenProfile: (profileId: string) => void }) {
   return <li>
     <span className={`global-rank rank-${row.rank}`}>{row.rank <= 3 ? ['🏆', '🥈', '🥉'][row.rank - 1] : row.rank}</span>
-    <button className="profile-name-button" onClick={() => onOpenProfile(row.profileId)}>{row.displayName}</button>
+    <span className="global-player"><button className="profile-name-button" onClick={() => onOpenProfile(row.profileId)}>{row.displayName}</button>{row.guild && <small>{row.guild}</small>}</span>
     <span className="player-credentials">{row.crystalFlawless && <i title="Flawless crystal run" aria-label="Flawless crystal run">◆</i>}{row.hardClear && <i title="Hard mode clear" aria-label="Hard mode clear">H</i>}</span>
     <b>{row.totalPoints} pts</b>
   </li>

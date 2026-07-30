@@ -52,6 +52,7 @@ export const P3_STARS_TELEGRAPH_SECONDS = 4.5
 export const P3_STARS_INTERVAL_SECONDS = P3_STARS_TELEGRAPH_SECONDS + 3
 export const P3_RUNE_ORB_MIN_GAP = 18
 export const P3_RUNE_HALF_CLEARANCE = 10
+export const P3_RUNE_CONNECTION_DISTANCE = 48
 export const P3_MEMORY_PANEL_SECONDS = 20
 export const P3_MEMORY_START_SECONDS = 25
 export const P3_MEMORY_STEP_SECONDS = 5
@@ -966,7 +967,7 @@ export function p3RuneEdges(side: -1 | 1, center: Point, round: number, orbs: Po
     for (let to = from + 1; to < orbs.length; to++) {
       const length = distance(orbs[from], orbs[to])
       if (
-        length <= 72
+        length <= P3_RUNE_CONNECTION_DISTANCE
         && clearsPools(from, to)
         && orbs.every((point, index) => index === from || index === to || distanceToSegment(point, orbs[from], orbs[to]) >= 8)
       ) candidates.push({ from, to, length })

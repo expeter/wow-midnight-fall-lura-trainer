@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import OnlinePanel, { BestRunsSummary, GlobalRankingSummary, OnlineStandingSummary } from './OnlinePanel'
 
-afterEach(() => vi.restoreAllMocks())
+afterEach(() => { cleanup(); vi.restoreAllMocks() })
 
 function json(body: unknown, status = 200) {
   return Response.json(body, { status })
@@ -20,6 +20,21 @@ describe('optional online profile', () => {
     const podium = await screen.findByLabelText('Global player ranking')
     expect(within(podium).getAllByRole('listitem')).toHaveLength(3)
     for (const guild of ['Guild One', 'Guild Two', 'Guild Three']) expect(within(podium).getByText(guild)).toBeInTheDocument()
+  })
+  it('left-aligns the Global player column and shows its public guild', async () => {
+    vi.stubGlobal('fetch', vi.fn(async input => {
+      const url = String(input)
+      if (url.endsWith('/v1/me')) return json({ error: 'not_authenticated' }, 401)
+      if (url.includes('/v1/global-ranking')) return json({ rows: [{
+        rank: 1, profileId: 'aligned', displayName: 'Aligned Player', guild: 'Aligned Guild',
+        achievementPoints: 50, runPoints: 100, totalPoints: 150, crystalFlawless: false, hardClear: true,
+      }], own: null })
+      throw new Error(`unexpected ${url}`)
+    }))
+    const view = render(<OnlinePanel view="leaderboard" onSession={() => undefined} />)
+    const player = await within(view.container).findByText('Aligned Player')
+    expect(player.closest('.global-player')).toHaveTextContent('Aligned Guild')
+    expect(player).toHaveClass('profile-name-button')
   })
   it('shows all four personal board positions and the global position', () => {
     render(<BestRunsSummary session={{

@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+## 0.6.0 · 2026-07-30
+
+- FR-064: Add privacy-aware public player profiles, account attempt/wipe
+  counters, all four personal run-board positions, global ranking, and hidden
+  rank-one achievements worth 50 points per board plus the 200-point
+  four-board sweep. Keep leaderboard continuity in `season-1`.
+- BUG-116: Make Intermission crystal pickup follow the player's continuous
+  movement path and extend positioning to the measured 24-second legal-route
+  window around the middle void.
+- BUG-117/BUG-118: Label flawless clears correctly and publish anonymous
+  Normal/Hard wipes without exposing player identity.
+- BUG-121/BUG-122: Keep production podiums hidden when empty, populate
+  localhost preview rankings, and repair stale illegal saved Phase 1 plans
+  before they can spawn a player in the opening void.
+- CR-168/CR-169: Make health pressure react faster while preserving a
+  two-second recoverable red window, and extend Phase 1 glaives through the
+  Intermission handoff without suppressing overlaps.
+- CR-170–CR-175: Rework the setup hierarchy and leaderboard presentation around
+  a dedicated Global Top 3 banner, compact player summaries, Global Top 10 plus
+  own position and search, a simplified Achievement Hall, consistent visual
+  anchors, and slightly tighter top spacing.
+
 ## 0.5.1 · 2026-07-29
 
 - BUG-115: Decouple run-leaderboard seasons from trainer SemVer. Compatible

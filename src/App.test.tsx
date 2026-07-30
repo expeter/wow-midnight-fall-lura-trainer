@@ -152,7 +152,7 @@ describe('player menu', () => {
     expect(screen.getByLabelText(/raid position name/i)).toHaveValue('My saved setup')
     expect(vi.mocked(fetch).mock.calls.some(([input]) => String(input).includes('raidplans/asgard.txt'))).toBe(false)
   })
-  it('shows exactly one of the six setup sections while keeping a compact Top 10 under game settings', () => {
+  it('orders game start, global Top 3, and the player row before the setup sections', () => {
     render(<App />)
     const gameHeading = screen.getByRole('heading', { name: /practice configuration/i })
     const difficulty = screen.getByRole('group', { name: /difficulty & movement/i })
@@ -164,7 +164,9 @@ describe('player menu', () => {
     const setupNav = screen.getByRole('navigation', { name: /setup sections/i })
     expect(within(setupNav).getAllByRole('button')).toHaveLength(6)
     expect(screen.getByText('RAID PLANNING')).not.toBeVisible()
-    expect(screen.getByRole('heading', { name: 'Top 10 leaderboard' })).toBeVisible()
+    expect(screen.getByLabelText('Global player ranking')).toBeVisible()
+    expect(screen.getByLabelText('Best run standings')).toBeVisible()
+    expect(screen.queryByRole('heading', { name: 'Top 10 leaderboard' })).not.toBeInTheDocument()
     expect(screen.getByLabelText('Current practice configuration')).toHaveTextContent(/Normal · Non-crystal · Player 1 · Spot 1/)
     expect(gameHeading.parentElement).toHaveClass('plan-heading', 'setup-section-heading')
     expect(difficulty.parentElement).toHaveClass('setup-grid')
@@ -185,7 +187,7 @@ describe('player menu', () => {
     expect(screen.getByLabelText(/intermission position map/i)).toBeInTheDocument()
     expect(screen.getByText('GAME SETTINGS')).not.toBeVisible()
 
-    fireEvent.click(within(setupNav).getByRole('button', { name: 'Leaderboard' }))
+    fireEvent.click(screen.getByRole('button', { name: 'View standings' }))
     expect(screen.getByRole('heading', { name: 'Top 10 leaderboard' })).toBeInTheDocument()
     expect(screen.getByText('RAID PLANNING')).not.toBeVisible()
 

@@ -103,6 +103,14 @@ export function GlobalRankingSummary() {
   </aside>
 }
 
+export function BestRunsSummary({ onOpen }: { onOpen: () => void }) {
+  return <aside className="best-runs-summary" aria-label="Best run standings">
+    <span aria-hidden="true">◆</span>
+    <div><strong>Best runs</strong><small>Hard · crystal leaderboard</small></div>
+    <button type="button" onClick={onOpen}>View standings</button>
+  </aside>
+}
+
 export default function OnlinePanel({
   onSession,
   view = 'leaderboard',

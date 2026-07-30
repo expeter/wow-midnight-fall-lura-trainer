@@ -49,7 +49,7 @@ test('keeps all overview ranking cards inside the desktop page boundary', async 
   expect(onlineBox!.x + onlineBox!.width).toBeLessThanOrEqual(overviewBox!.x + overviewBox!.width + 1)
 })
 
-test('shows one of six setup sections and keeps the current Top 10 below game settings', async ({ page }) => {
+test('orders game start, global Top 3, and player summaries before setup sections', async ({ page }) => {
   await page.goto('/')
   const practice = page.getByRole('heading', { name: 'Practice configuration' })
   const assignment = page.getByRole('group', { name: 'Character to play' })
@@ -58,7 +58,14 @@ test('shows one of six setup sections and keeps the current Top 10 below game se
   await expect(assignment.getByLabel('Name used in practice')).toBeVisible()
   await expect(difficulty.getByLabel('Name used in practice')).toHaveCount(0)
   await expect(page.getByLabel('Current practice configuration')).toContainText('Normal · Non-crystal')
-  await expect(page.getByRole('heading', { name: 'Top 10 leaderboard' })).toBeVisible()
+  await expect(page.getByLabel('Global player ranking')).toBeVisible()
+  await expect(page.getByLabel('Best run standings')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Top 10 leaderboard' })).toHaveCount(0)
+  expect(await page.locator('.entry-choice, .global-ranking-summary, .setup-overview').evaluateAll(nodes => nodes.map(node => node.className))).toEqual([
+    'entry-choice',
+    'global-ranking-summary',
+    'setup-overview',
+  ])
   const tabs = page.getByRole('navigation', { name: 'Setup sections' })
   await expect(tabs.getByRole('button')).toHaveCount(6)
   await tabs.getByRole('button', { name: 'Keyboard settings' }).click()
@@ -66,7 +73,7 @@ test('shows one of six setup sections and keeps the current Top 10 below game se
   await expect(practice).toBeHidden()
   await tabs.getByRole('button', { name: 'HUD' }).click()
   await expect(page.getByRole('heading', { name: 'HUD positions' })).toBeVisible()
-  await tabs.getByRole('button', { name: 'Leaderboard' }).click()
+  await page.getByRole('button', { name: 'View standings' }).click()
   await expect(page.getByRole('heading', { name: 'Top 10 leaderboard' })).toBeVisible()
   await page.getByRole('region', { name: 'Top 10 leaderboard' }).getByRole('button', { name: 'View full leaderboard' }).click()
   await expect(page.getByRole('heading', { name: 'Full leaderboard' })).toBeVisible()

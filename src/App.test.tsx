@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
-import App from './App'
+import App, { failureAdvice } from './App'
 
 const asgardRaidPlanCode = btoa(encodeURIComponent(JSON.stringify({
   positions: Array.from({ length: 20 }, (_, index) => ({ x: 350 + index, y: 270 })),
@@ -30,6 +30,10 @@ function renderRaidPlan() {
 }
 
 describe('player menu', () => {
+  it('provides mechanic-specific advice for failure info controls', () => {
+    expect(failureAdvice('Outside the Phase 4 protected stack')).toContain('yellow protection circle')
+    expect(failureAdvice('Another player’s Starsplinter hit you')).toContain('six rays')
+  })
   beforeEach(() => {
     localStorage.clear()
     localStorage.setItem('lura-entry-mode', 'arena1')

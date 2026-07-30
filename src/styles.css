@@ -724,9 +724,11 @@
   letter-spacing: .1em;
 }
 .test-failure-log ol { padding: 0; margin: 5px 0 0; list-style: none; }
-.test-failure-log li { display: grid; grid-template-columns: 42px 1fr; gap: 6px; padding-top: 3px; font-size: 10px; line-height: 1.2; }
+.test-failure-log li { display: grid; grid-template-columns: 42px minmax(0, 1fr) 18px; gap: 6px; padding-top: 3px; font-size: 10px; line-height: 1.2; }
 .test-failure-log li time { color: #8190ad; font: 9px 'DM Mono', monospace; }
 .test-failure-log p { margin: 5px 0 0; color: #8190ad; font-size: 10px; }
+.test-failure-log .failure-help { display: grid; width: 17px; height: 17px; margin: -2px 0 0; padding: 0; place-items: center; border-color: rgba(255,156,171,.4); border-radius: 50%; background: rgba(38,12,20,.8); color: #ffd1d8; font: 700 10px Georgia, serif; }
+.test-failure-log .failure-advice { grid-column: 2 / -1; padding: 5px 7px; border-left: 2px solid rgba(255,156,171,.55); color: #c6cfdf; font-size: 10px; line-height: 1.35; }
 .failure-log-actions { display: flex; align-items: center; gap: 7px; }
 .failure-log-actions button {
   width: 23px;
@@ -1224,6 +1226,7 @@
 .global-ranking-summary li > button:hover { border-color: rgba(255,211,105,.72); background: rgba(255,211,105,.12); }
 .global-ranking-summary li > button span { color: #ffd369; font-weight: 800; }
 .global-ranking-summary li > button b { overflow: hidden; width: 100%; text-overflow: ellipsis; white-space: nowrap; }
+.global-ranking-summary li > button small { overflow: hidden; width: 100%; color: #91a0b8; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 .global-ranking-summary li > button.podium-card { position: relative; overflow: hidden; padding-right: 70px; }
 .global-ranking-summary .podium-card i { position: absolute; right: 12px; top: 50%; color: #ffd369; font-size: 48px; font-style: normal; line-height: 1; opacity: .24; transform: translateY(-50%); filter: saturate(.75); pointer-events: none; }
 .global-ranking-summary li.empty > span { border-color: transparent; background: transparent; }
@@ -1254,8 +1257,8 @@
 .best-runs-summary li { display: flex; min-width: 0; justify-content: space-between; gap: 6px; }
 .best-runs-summary li small { white-space: nowrap; }
 .best-runs-summary li b { min-width: 22px; color: #ff8798; font: 700 12px 'DM Mono', monospace; text-align: right; }
-.setup-overview .online-standing-summary { flex-wrap: wrap; }
-.setup-overview .online-summary-actions { margin-left: auto; }
+.setup-overview .online-standing-summary { display: grid; grid-template-columns: auto minmax(0, 1fr); align-content: center; }
+.setup-overview .online-summary-actions { grid-column: 1 / -1; display: flex; align-items: center; justify-content: flex-end; margin-left: 0; }
 .online-standing-summary > div { min-width: 0; flex: 1 1 auto; }
 .online-standing-summary > span { color: #73e0c1; font-size: 22px; }
 .online-standing-summary strong, .online-standing-summary small { display: block; }
@@ -1270,18 +1273,16 @@
   color: #c9fff1;
   font-size: 13px;
 }
-.online-summary-actions { display: grid; justify-items: stretch; gap: 3px; }
+.online-summary-actions { display: flex; align-items: center; gap: 8px; }
 .online-summary-logout {
   margin: 0;
-  padding: 2px 6px;
-  border: 0;
-  background: transparent;
-  color: #8f9cb3;
-  font-size: 12px;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  padding: 8px 11px;
+  border: 1px solid rgba(143,156,179,.3);
+  background: rgba(143,156,179,.06);
+  color: #aeb9cb;
+  font-size: 13px;
 }
-.online-summary-logout:hover { border: 0; background: transparent; color: #d9fff5; }
+.online-summary-logout:hover { border-color: rgba(115,224,193,.45); background: rgba(115,224,193,.08); color: #d9fff5; }
 .online-panel > header,
 .online-account-actions,
 .online-login,

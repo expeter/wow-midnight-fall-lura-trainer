@@ -4,6 +4,13 @@ import type { ApiConfig } from './config.js'
 import type { Database } from './database.js'
 
 const PHASES = ['p1', 'intermission', 'p2', 'p3', 'p4'] as const
+const ENTRY_PHASES: Record<string, readonly string[]> = {
+  arena0: PHASES,
+  arena1: ['intermission', 'p2', 'p3', 'p4'],
+  arena2: ['p2', 'p3', 'p4'],
+  arena3: ['p3', 'p4'],
+  arena4: ['p4'],
+}
 
 interface AttemptInput {
   difficulty?: unknown
@@ -46,8 +53,11 @@ export function issueAttempt(
   if (!['test', 'easy', 'normal', 'hard'].includes(String(input.difficulty))) throw new Error('invalid_difficulty')
   const verifiedDifficulty = String(input.difficulty)
   if (input.duty !== 'crystal' && input.duty !== 'non-crystal') throw new Error('invalid_duty')
-  if (input.entryMode !== 'arena0') throw new Error('invalid_entry_mode')
-  if (input.phaseScope !== 'full') throw new Error('invalid_phase_scope')
+  const entryMode = String(input.entryMode)
+  const expectedPhases = ENTRY_PHASES[entryMode]
+  if (!expectedPhases) throw new Error('invalid_entry_mode')
+  const phaseScope = String(input.phaseScope)
+  if (phaseScope !== (entryMode === 'arena0' ? 'full' : expectedPhases[0])) throw new Error('invalid_phase_scope')
   if (input.trainerVersion !== config.currentTrainerVersion) throw new Error('unsupported_trainer_version')
   const buildId = cleanString(input.buildId, 80)
   const fingerprint = cleanString(input.configurationFingerprint, 128)
@@ -83,8 +93,8 @@ export function issueAttempt(
     hash(nonce),
     verifiedDifficulty === 'test' || verifiedDifficulty === 'easy' ? 'normal' : verifiedDifficulty,
     input.duty,
-    input.entryMode,
-    input.phaseScope,
+    entryMode,
+    phaseScope,
     input.trainerVersion,
     buildId,
     JSON.stringify(configuration),
@@ -115,7 +125,7 @@ interface PhaseResult {
   recovery: 'passed' | 'missed'
 }
 
-function validatedCompletion(input: CompletionInput) {
+function validatedCompletion(input: CompletionInput, expectedPhases: readonly string[]) {
   const nonce = cleanString(input.nonce, 128)
   const trainerVersion = cleanString(input.trainerVersion, 30)
   const buildId = cleanString(input.buildId, 80)
@@ -123,18 +133,18 @@ function validatedCompletion(input: CompletionInput) {
   const submittedScore = Number(input.submittedScore)
   if (!nonce) throw new Error('invalid_nonce')
   if (!trainerVersion || !buildId) throw new Error('invalid_version')
-  if (!Number.isInteger(durationMs) || durationMs < 60_000 || durationMs > 3_600_000) {
+  if (!Number.isInteger(durationMs) || durationMs < 1_000 || durationMs > 3_600_000) {
     throw new Error('implausible_duration')
   }
   if (!Number.isInteger(submittedScore) || submittedScore < 0 || submittedScore > 10_000) {
     throw new Error('invalid_score')
   }
-  if (!Array.isArray(input.phaseResults) || input.phaseResults.length !== PHASES.length) {
+  if (!Array.isArray(input.phaseResults) || input.phaseResults.length !== expectedPhases.length) {
     throw new Error('invalid_phase_order')
   }
   const phases = input.phaseResults as PhaseResult[]
   if (phases.some((phase, index) => (
-    phase?.key !== PHASES[index]
+    phase?.key !== expectedPhases[index]
     || !Number.isInteger(phase.durationMs)
     || phase.durationMs < 1_000
     || !Number.isInteger(phase.mistakes)
@@ -169,7 +179,7 @@ function validatedCompletion(input: CompletionInput) {
   const mainAbilityCasts = Number(actions?.mainAbilityCasts)
   const continuousPenalty = Number(actions?.continuousPenalty)
   if (
-    !Number.isInteger(recoveryPasses) || recoveryPasses < 0 || recoveryPasses > PHASES.length
+    !Number.isInteger(recoveryPasses) || recoveryPasses < 0 || recoveryPasses > expectedPhases.length
     || recoveryPasses !== phases.filter(phase => phase.recovery === 'passed').length
     || !Number.isInteger(mainAbilityCasts) || mainAbilityCasts < 0
     || mainAbilityCasts > Math.floor(durationMs / 1_000)
@@ -324,11 +334,10 @@ export function completeAttempt(
   attemptId: string,
   input: CompletionInput,
 ) {
-  const completion = validatedCompletion(input)
   const attempt = database.prepare(`
     SELECT id, character_id AS characterId, difficulty,
       COALESCE(verified_difficulty, difficulty) AS verifiedDifficulty,
-      duty, trainer_version AS trainerVersion,
+      duty, entry_mode AS entryMode, phase_scope AS phaseScope, trainer_version AS trainerVersion,
       build_id AS buildId, leaderboard_season AS leaderboardSeason,
       nonce_hash AS nonceHash, expires_at AS expiresAt, consumed_at AS consumedAt
     FROM attempts WHERE id = ? AND account_id = ?
@@ -338,6 +347,8 @@ export function completeAttempt(
     difficulty: string
     verifiedDifficulty: string
     duty: string
+    entryMode: string
+    phaseScope: string
     trainerVersion: string
     buildId: string
     leaderboardSeason: string
@@ -346,6 +357,9 @@ export function completeAttempt(
     consumedAt: string | null
   } | undefined
   if (!attempt) throw new Error('attempt_not_found')
+  const expectedPhases = ENTRY_PHASES[attempt.entryMode]
+  if (!expectedPhases || attempt.phaseScope !== (attempt.entryMode === 'arena0' ? 'full' : expectedPhases[0])) throw new Error('invalid_phase_scope')
+  const completion = validatedCompletion(input, expectedPhases)
   if (attempt.consumedAt) throw new Error('attempt_already_used')
   if (attempt.expiresAt <= dependencies.now().toISOString()) throw new Error('attempt_expired')
   if (hash(completion.nonce) !== attempt.nonceHash) throw new Error('invalid_nonce')
@@ -401,7 +415,11 @@ export function completeAttempt(
       attempt.buildId,
       acceptedAt,
       attempt.verifiedDifficulty,
-      Number(attempt.verifiedDifficulty === 'normal' || attempt.verifiedDifficulty === 'hard'),
+      Number(
+        attempt.entryMode === 'arena0'
+        && completion.phases.length === PHASES.length
+        && (attempt.verifiedDifficulty === 'normal' || attempt.verifiedDifficulty === 'hard'),
+      ),
       attempt.leaderboardSeason,
     )
     achievementIds.push(...aggregateAchievementIds(database, accountId))

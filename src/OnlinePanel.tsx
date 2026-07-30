@@ -118,7 +118,7 @@ export function GlobalRankingSummary() {
   return <aside className="global-ranking-summary" aria-label="Global player ranking">
     <div><p className="eyebrow">GLOBAL RANKING</p><strong>Achievement + best run points</strong></div>
     <ol>{podium.map((row, index) => <li key={row?.profileId ?? `empty-${index}`} className={row ? '' : 'empty'}>{row
-      ? <button className="podium-card" onClick={() => setProfileId(row.profileId)}><span>{row.totalPoints} global points</span><b>{row.displayName}</b><i aria-hidden="true">{['🏆', '🥈', '🥉'][index]}</i></button>
+      ? <button className="podium-card" onClick={() => setProfileId(row.profileId)}><span>{row.totalPoints} global points</span><b>{row.displayName}</b>{row.guild && <small>{row.guild}</small>}<i aria-hidden="true">{['🏆', '🥈', '🥉'][index]}</i></button>
       : <span aria-label={`Global rank ${index + 1} is empty`} />}</li>)}</ol>
     {profileId && <PublicProfileOverlay profileId={profileId} onClose={() => setProfileId(null)} />}
   </aside>

@@ -192,6 +192,12 @@ export function p3LandingSoakPositions(index: number, center: Point, seed = 0): 
   const points = [first, second]
   return points.sort((a, b) => distance(b, landing) - distance(a, landing))
 }
+export function p3LandingSoakOccupied(soaks: Point[], player: Point, npcPositions: Point[], radius = P3_LANDING_SOAK_RADIUS): boolean {
+  return soaks.some(soak => [player, ...npcPositions].some(actor => distance(actor, soak) <= radius))
+}
+export function p3LandingHealthRate(inYellowPool: boolean): number {
+  return inYellowPool ? 4 : -18
+}
 export function p3LightHealthRate(protectedByLight: boolean): number {
   return protectedByLight ? 12 : -2
 }
@@ -602,6 +608,33 @@ export function p4SplinterHitsGroup(origin: Point, rotation: number, groupCenter
     const end = { x: origin.x + Math.cos(angle) * length, y: origin.y + Math.sin(angle) * length }
     return distanceToSegment(groupCenter, origin, end) <= groupRadius
   }).some(Boolean)
+}
+
+export interface P4SplinterHazard { origin: Point; rotation: number }
+export function p4TankAvoidSplinters(
+  current: Point,
+  desired: Point,
+  groupCenter: Point,
+  hazards: P4SplinterHazard[],
+): Point {
+  const isSafe = (candidate: Point) => hazards.every(hazard => !p4SplinterHitsGroup(hazard.origin, hazard.rotation, candidate, 3))
+  const protectedDesired = keepP4NpcInProtection(desired, groupCenter)
+  if (isSafe(protectedDesired)) return protectedDesired
+  const protectedCurrent = keepP4NpcInProtection(current, groupCenter)
+  if (isSafe(protectedCurrent)) return protectedCurrent
+  const radius = Math.min(P4_PROTECTION_RADIUS - 1, Math.max(4, distance(protectedCurrent, groupCenter)))
+  const startAngle = Math.atan2(protectedCurrent.y - groupCenter.y, protectedCurrent.x - groupCenter.x)
+  for (let step = 1; step <= 12; step += 1) {
+    for (const direction of [-1, 1]) {
+      const angle = startAngle + direction * step * Math.PI / 12
+      const candidate = {
+        x: groupCenter.x + Math.cos(angle) * radius,
+        y: groupCenter.y + Math.sin(angle) * radius,
+      }
+      if (isSafe(candidate)) return candidate
+    }
+  }
+  return groupCenter
 }
 
 export function p4NpcSplinterPosition(stack: Point, center: Point, ordinal: number, age: number, rotation: number): Point {
@@ -1017,6 +1050,9 @@ export function p2NpcCrystalDrops(center: Point, count: number, radius = 6): Poi
     return { x: center.x + Math.cos(angle) * radius, y: center.y + Math.sin(angle) * radius }
   })
 }
+export function p2CrystalTouchResolution(isAssignedCarrier: boolean): 'assigned' | 'wrong-recoverable' {
+  return isAssignedCarrier ? 'assigned' : 'wrong-recoverable'
+}
 export function p2PostBeamEvent(): 'p2-pull' {
   return 'p2-pull'
 }
@@ -1318,7 +1354,7 @@ export function moveWithIncreasingPull(position: Point, keys: Set<string>, speed
   const dy = center.y - moved.y
   const length = Math.hypot(dx, dy)
   if (length < .001) return center
-  const force = 2 + 80 * Math.pow(Math.max(0, Math.min(1, progress)), 3)
+  const force = 1 + 180 * Math.pow(Math.max(0, Math.min(1, progress)), 10)
   const pulled = Math.min(length, force * dt)
   return { x: moved.x + dx / length * pulled, y: moved.y + dy / length * pulled }
 }

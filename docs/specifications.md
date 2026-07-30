@@ -116,6 +116,9 @@ change before implementation.
   sorted by points with duration and acceptance time as tie-breakers.
 - Test and Easy completions may earn server-verified achievements but never
   enter run leaderboards or alter a player's Normal/Hard standing.
+- Direct phase practice may earn server-verified phase achievements and their
+  canonical Achievement Hall/global-ranking points. Only a complete sequential
+  run may enter one of the four run leaderboards.
 - The Achievement Hall is account-wide and ranks public profiles by lifetime
   canonical achievement points. It shows the highest-value achievement and
   first-earned time; retired achievements retain their points. Catalogue
@@ -162,3 +165,24 @@ change before implementation.
 
 See [`api-highscores.md`](api-highscores.md) for the complete API, storage,
 privacy, deployment, and acceptance contract.
+
+## SPEC-012 · Phase 3 landing Soaks
+
+- Either opening yellow landing pool counts as occupied by the controlled
+  player or a rendered NPC; the required resolution wipes only when neither
+  pool has an occupant.
+- During the landing window, the controlled player's health visibly drains at
+  18% per second outside both yellow pools and recovers at 4% per second while
+  inside one. NPC occupancy can satisfy the raid Soak but never suppresses this
+  personal positioning feedback.
+
+## SPEC-013 · Phase 2 center pull and crystals
+
+- The five-second center pull remains weak enough through most of its duration
+  for a non-carrier walking outward to hold outside the middle. Its final force
+  exceeds normal walking speed.
+- The transition preserves the controlled player's resolved position instead
+  of teleporting everyone to the exact center.
+- Touching another player's dropped Phase 2 crystal is recoverable like the
+  Phase 1 wrong-pickup rule: drop it within five seconds for NPC recovery or
+  wipe. An assigned crystal player treats a touched crystal as their own.

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import OnlinePanel, { BestRunsSummary, OnlineStandingSummary } from './OnlinePanel'
+import OnlinePanel, { BestRunsSummary, GlobalRankingSummary, OnlineStandingSummary } from './OnlinePanel'
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -10,6 +10,17 @@ function json(body: unknown, status = 200) {
 }
 
 describe('optional online profile', () => {
+  it('shows guild names in all three Global podium columns when available', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => json({ rows: [
+      { rank: 1, profileId: 'one', displayName: 'One', guild: 'Guild One', achievementPoints: 50, runPoints: 100, totalPoints: 150, crystalFlawless: false, hardClear: true },
+      { rank: 2, profileId: 'two', displayName: 'Two', guild: 'Guild Two', achievementPoints: 40, runPoints: 90, totalPoints: 130, crystalFlawless: true, hardClear: false },
+      { rank: 3, profileId: 'three', displayName: 'Three', guild: 'Guild Three', achievementPoints: 30, runPoints: 80, totalPoints: 110, crystalFlawless: false, hardClear: false },
+    ] })))
+    render(<GlobalRankingSummary />)
+    const podium = await screen.findByLabelText('Global player ranking')
+    expect(within(podium).getAllByRole('listitem')).toHaveLength(3)
+    for (const guild of ['Guild One', 'Guild Two', 'Guild Three']) expect(within(podium).getByText(guild)).toBeInTheDocument()
+  })
   it('shows all four personal board positions and the global position', () => {
     render(<BestRunsSummary session={{
       authenticated: true,

@@ -67,6 +67,10 @@ test('orders game start, global Top 3, and player summaries before setup section
   await expect(difficulty.getByLabel('Name used in practice')).toHaveCount(0)
   await expect(page.getByLabel('Current practice configuration')).toContainText('Normal · Non-crystal')
   await expect(page.getByLabel('Global player ranking')).toBeVisible()
+  const podium = page.getByLabel('Global player ranking').locator('ol')
+  await expect(podium.locator('li')).toHaveCount(3)
+  expect(await podium.evaluate(node => getComputedStyle(node).gridTemplateColumns.split(' ').length)).toBe(3)
+  expect(await podium.locator('button').evaluateAll(cards => cards.every(card => card.scrollWidth <= card.clientWidth))).toBe(true)
   await expect(page.getByLabel('Best run standings')).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Top 10 leaderboard' })).toHaveCount(0)
   expect(await page.locator('.entry-choice, .global-ranking-summary, .setup-overview').evaluateAll(nodes => nodes.map(node => node.className))).toEqual([

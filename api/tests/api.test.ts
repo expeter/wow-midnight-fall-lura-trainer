@@ -836,6 +836,65 @@ describe('Lura API foundation', () => {
     assert.deepEqual(hallBody.own, { ...hallBody.own, rank: 1, displayName: 'Verified' })
   })
 
+  it('awards Phase 4-only achievement points without admitting the partial run to a run board', async () => {
+    const accountId = insertResult(database, {
+      region: 'eu', account: 'p4-achievements', character: 'Quartermaster', realm: 'silvermoon',
+      mode: 'character', score: 500, duration: 500_000,
+      acceptedAt: '2026-07-27T00:00:00.000Z',
+    })
+    const selected = database.prepare('SELECT id FROM characters WHERE account_id = ?').get(accountId) as { id: number }
+    database.prepare('UPDATE accounts SET selected_character_id = ? WHERE id = ?').run(selected.id, accountId)
+    const session = insertSession(database, accountId, 'p4-session')
+    const tokens = ['p4-attempt', 'p4-nonce']
+    const app = createApp(database, config, {
+      now: () => new Date('2026-07-28T12:00:00.000Z'),
+      randomToken: () => tokens.shift()!,
+      fetch: globalThis.fetch,
+    })
+    const headers = {
+      cookie: session.cookie,
+      origin: config.trainerOrigin,
+      'content-type': 'application/json',
+      'x-csrf-token': session.csrf,
+    }
+    const issued = await app.handle(new Request('http://api.test/v1/attempts', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        difficulty: 'hard', duty: 'non-crystal', entryMode: 'arena4', phaseScope: 'p4',
+        trainerVersion: '0.3.0', buildId: 'p4-build', configurationFingerprint: 'p4-config',
+        optionalChallenges: [],
+      }),
+    }))
+    assert.equal(issued.status, 201)
+    const attempt = await issued.json() as { attemptId: string; nonce: string }
+    const accepted = await app.handle(new Request(`http://api.test/v1/attempts/${attempt.attemptId}/complete`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        nonce: attempt.nonce,
+        durationMs: 88_000,
+        phaseResults: [{ key: 'p4', durationMs: 88_000, mistakes: 0, recovery: 'missed' }],
+        mistakes: [],
+        actions: { recoveryPasses: 0, mainAbilityCasts: 0, continuousPenalty: 0 },
+        achievementInputs: {
+          wipeCount: 0, crystalFailures: 0, runeFailures: 0, pauseCycle: false,
+          earlyKill: false, p3EarlyClear: false,
+        },
+        submittedScore: 1000,
+        trainerVersion: '0.3.0',
+        buildId: 'p4-build',
+      }),
+    }))
+    assert.equal(accepted.status, 200)
+    assert.ok(((await accepted.json()) as { achievementIds: string[] }).achievementIds.includes('flawless-p4'))
+    const board = await app.handle(new Request('http://api.test/v1/leaderboards?difficulty=hard&duty=non-crystal'))
+    assert.equal((await board.json() as { rows: unknown[] }).rows.length, 0)
+    const hall = await app.handle(new Request('http://api.test/v1/achievement-hall'))
+    const hallRows = (await hall.json() as { rows: Array<{ displayName: string; totalPoints: number }> }).rows
+    assert.ok(hallRows.some(row => row.displayName === 'Quartermaster' && row.totalPoints >= 50))
+  })
+
   it('keeps verified Easy results out of run rankings while awarding Hall points', async () => {
     const accountId = insertResult(database, {
       region: 'eu', account: 'easy-hall', character: 'Learner', realm: 'silvermoon',

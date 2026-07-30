@@ -195,7 +195,7 @@ describe('P1 headless mechanics', () => {
     expect(reflectedSpeed.glaives[0].position.x).toBeCloseTo(11)
     expect(P1_INNER_RADIUS).toBe(102)
     expect(P1_OUTER_RADIUS).toBe(260)
-    expect(P1_GLAIVE_LIFETIME_SECONDS).toBe(70)
+    expect(P1_GLAIVE_LIFETIME_SECONDS).toBe(65)
     expect(P1_GLAIVE_INITIAL_SPEED_MULTIPLIER).toBe(4.5)
     expect(P1_GLAIVE_RETURN_SPEED_MULTIPLIER).toBe(1.65)
     expect(Math.hypot(set.glaives[0].position.x - set.origin.x, set.glaives[0].position.y - set.origin.y)).toBeCloseTo(13)

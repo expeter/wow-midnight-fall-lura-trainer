@@ -81,6 +81,10 @@ change before implementation.
   Optional combat actions in one desktop row; responsive layouts may stack
   these cards.
 - Keyboard & mouse controls follow Game settings, followed by HUD placement.
+- HUD action buttons are an optional persisted display aid, off by default.
+  When enabled, Main ability, Interrupt, Shield, Health potion, and Crystal drop
+  appear below the cast bar and invoke the same handlers and validity rules as
+  their keyboard bindings.
 - Raid planning begins with its full-width save/load/share controls.
 - Every phase map retains its own visible heading, beginning with
   `INTERMISSION RAID PLAN`.

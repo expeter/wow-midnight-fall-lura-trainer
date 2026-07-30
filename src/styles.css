@@ -381,6 +381,31 @@
   pointer-events: none;
 }
 .player-castbar.main-cast b { font-size: 9px; line-height: 17px; text-align: center; }
+.hud-action-buttons {
+  position: absolute;
+  z-index: 6;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 5px;
+  width: max-content;
+  max-width: min(680px, 92%);
+  transform: translate(-50%, 17px);
+}
+.hud-action-buttons button {
+  display: grid;
+  gap: 2px;
+  min-width: 92px;
+  padding: 6px 8px;
+  border-color: rgba(112, 202, 255, .5);
+  color: #e9f7ff;
+  background: rgba(12, 15, 30, .9);
+  font: 8px 'DM Mono', monospace;
+  line-height: 1.15;
+}
+.hud-action-buttons button:hover:not(:disabled) { border-color: #70caff; background: rgba(25, 47, 72, .95); }
+.hud-action-buttons button:disabled { opacity: .38; cursor: not-allowed; }
+.hud-action-buttons kbd { color: #70caff; font: 7px 'DM Mono', monospace; }
 .crystal-countdown { position: absolute; z-index: 4; left: 50%; top: 50px; transform: translateX(-50%); padding: 8px 18px; border: 1px solid rgba(255,220,72,.7); border-radius: 8px; color: #ffe95f; background: rgba(12,10,4,.82); text-align: center; pointer-events: none; font: 10px 'DM Mono', monospace; letter-spacing: .08em; }
 .crystal-countdown strong { display: block; margin-top: 2px; font-size: 30px; line-height: 1; }
 .crystal-countdown.wrong-p1-crystal { top: auto; bottom: 18%; color: #ff9e32; border-color: #ff714f; background: rgba(43, 14, 5, .9); }

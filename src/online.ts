@@ -247,8 +247,51 @@ export function loadGlobalRanking(limit = 10, search = ''): Promise<{ rows: Glob
   return api(`/v1/global-ranking?${query}`)
 }
 
+export function localhostPublicPlayerProfile(profileId: string): PublicPlayerProfile {
+  return {
+    profileId,
+    displayName: 'Starweaver-G01',
+    character: 'Starweaver',
+    realm: 'silvermoon',
+    region: 'eu',
+    guild: 'I Asgard I',
+    ownProfile: false,
+    attempts: 184,
+    fullRuns: 37,
+    wipes: 96,
+    achievements: [
+      { id: 'ready-for-raid-night', title: 'Ready for Raid Night', tier: 'Legendary', points: 200, firstEarnedAt: '2026-07-24T20:12:00.000Z' },
+      { id: 'four-boards-one-throne', title: 'Four Boards, One Throne', tier: 'Legendary', points: 200, firstEarnedAt: '2026-07-26T18:05:00.000Z' },
+      { id: 'always-be-casting', title: 'Always Be Casting', tier: 'Epic', points: 100, firstEarnedAt: '2026-07-23T19:42:00.000Z' },
+      { id: 'crystal-clear', title: 'Crystal Clear', tier: 'Rare', points: 50, firstEarnedAt: '2026-07-22T21:31:00.000Z' },
+      { id: 'mind-the-gap', title: 'Mind the Gap', tier: 'Rare', points: 50, firstEarnedAt: '2026-07-22T21:38:00.000Z' },
+      { id: 'no-splinters', title: 'No Splinters', tier: 'Rare', points: 50, firstEarnedAt: '2026-07-23T19:47:00.000Z' },
+    ],
+    global: {
+      rank: 1,
+      profileId,
+      displayName: 'Starweaver-G01',
+      guild: 'I Asgard I',
+      achievementPoints: 725,
+      runPoints: 6370,
+      totalPoints: 7095,
+      crystalFlawless: true,
+      hardClear: true,
+    },
+    boards: [
+      { difficulty: 'normal', duty: 'crystal', rank: 1 },
+      { difficulty: 'normal', duty: 'non-crystal', rank: 3 },
+      { difficulty: 'hard', duty: 'crystal', rank: 1 },
+      { difficulty: 'hard', duty: 'non-crystal', rank: 2 },
+    ],
+  }
+}
+
 export function loadPublicPlayerProfile(profileId: string): Promise<PublicPlayerProfile> {
-  return api(`/v1/profiles/${encodeURIComponent(profileId)}`)
+  return api<PublicPlayerProfile>(`/v1/profiles/${encodeURIComponent(profileId)}`).catch(error => {
+    if (['localhost', '127.0.0.1'].includes(window.location.hostname)) return localhostPublicPlayerProfile(profileId)
+    throw error
+  })
 }
 
 let localhostActivityPoll = 0

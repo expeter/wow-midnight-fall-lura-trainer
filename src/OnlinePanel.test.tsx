@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import OnlinePanel, { BestRunsSummary, GlobalRankingSummary, OnlineStandingSummary } from './OnlinePanel'
+import { localhostPublicPlayerProfile } from './online'
 
 afterEach(() => { cleanup(); vi.restoreAllMocks() })
 
@@ -10,6 +11,15 @@ function json(body: unknown, status = 200) {
 }
 
 describe('optional online profile', () => {
+  it('provides an informative localhost public-profile preview', () => {
+    const profile = localhostPublicPlayerProfile('000000000000000000002001')
+    expect(profile.displayName).toBe('Starweaver-G01')
+    expect(profile.global?.rank).toBe(1)
+    expect(profile.boards.map(board => board.rank)).toEqual([1, 3, 1, 2])
+    expect(profile.achievements).toHaveLength(6)
+    expect(profile.fullRuns).toBe(37)
+  })
+
   it('shows guild names in all three Global podium columns when available', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => json({ rows: [
       { rank: 1, profileId: 'one', displayName: 'One', guild: 'Guild One', achievementPoints: 50, runPoints: 100, totalPoints: 150, crystalFlawless: false, hardClear: true },

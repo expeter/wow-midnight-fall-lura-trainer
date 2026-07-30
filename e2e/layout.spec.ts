@@ -38,6 +38,17 @@ test('keeps optional login and public leaderboards usable without the API', asyn
   expect(box!.x + box!.width).toBeLessThanOrEqual(await page.evaluate(() => innerWidth))
 })
 
+test('keeps all overview ranking cards inside the desktop page boundary', async ({ page }) => {
+  await page.setViewportSize({ width: 2048, height: 816 })
+  await page.goto('/')
+  const overview = page.locator('.setup-overview')
+  const online = page.getByLabel('Current online standings')
+  const [overviewBox, onlineBox] = await Promise.all([overview.boundingBox(), online.boundingBox()])
+  expect(overviewBox).not.toBeNull()
+  expect(onlineBox).not.toBeNull()
+  expect(onlineBox!.x + onlineBox!.width).toBeLessThanOrEqual(overviewBox!.x + overviewBox!.width + 1)
+})
+
 test('shows one of six setup sections and keeps the current Top 10 below game settings', async ({ page }) => {
   await page.goto('/')
   const practice = page.getByRole('heading', { name: 'Practice configuration' })

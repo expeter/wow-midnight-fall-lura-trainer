@@ -87,8 +87,11 @@ export interface PublicPlayerProfile {
   realm: string | null
   region: 'eu' | 'us' | null
   guild: string | null
+  ownProfile: boolean
   attempts: number
+  fullRuns: number
   wipes: number
+  boards: Array<{ difficulty: string; duty: string; rank: number | null }>
   achievements: Array<{ id: string; title: string; tier: string; points: number; firstEarnedAt: string }>
   global: GlobalRankingRow | null
 }

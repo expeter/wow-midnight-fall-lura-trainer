@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
-import App, { failureAdvice } from './App'
+import App, { activityFeedRowClass, failureAdvice } from './App'
 
 const asgardRaidPlanCode = btoa(encodeURIComponent(JSON.stringify({
   positions: Array.from({ length: 20 }, (_, index) => ({ x: 350 + index, y: 270 })),
@@ -33,6 +33,14 @@ describe('player menu', () => {
   it('provides mechanic-specific advice for failure info controls', () => {
     expect(failureAdvice('Outside the Phase 4 protected stack')).toContain('yellow protection circle')
     expect(failureAdvice('Another player’s Starsplinter hit you')).toContain('six rays')
+    expect(failureAdvice('Missed assigned interrupt 3')).toContain('green two-second KICK window')
+    expect(failureAdvice('Interrupted cast 2 instead of assigned cast 3')).toContain('Red means wait')
+    expect(failureAdvice('Unmapped encounter failure')).not.toMatch(/prompt|message|read/i)
+  })
+  it('marks only newly arrived activity rows for the shell arrival animation', () => {
+    const newIds = new Set(['new'])
+    expect(activityFeedRowClass('new', newIds)).toBe('new-activity')
+    expect(activityFeedRowClass('known', newIds)).toBe('')
   })
   beforeEach(() => {
     localStorage.clear()
@@ -178,7 +186,7 @@ describe('player menu', () => {
     expect(assignment.parentElement).toBe(difficulty.parentElement)
     expect(combat.parentElement).toBe(difficulty.parentElement)
 
-    fireEvent.click(within(setupNav).getByRole('button', { name: 'Keyboard settings' }))
+    fireEvent.click(within(setupNav).getByRole('button', { name: 'Keys & Mouse' }))
     expect(screen.getByRole('heading', { name: /keyboard & mouse controls/i })).toBeVisible()
     expect(screen.getByText('GAME SETTINGS')).not.toBeVisible()
 
@@ -253,7 +261,7 @@ describe('player menu', () => {
   it('rebinds gameplay actions and always displays recovery charges above the health HUD', async () => { const user = userEvent.setup(); render(<App />); const forward = screen.getByLabelText(/forward keybind/i); fireEvent.keyDown(forward, { code: 'KeyI', key: 'i' }); expect(forward).toHaveValue('I'); await waitFor(() => expect(JSON.parse(localStorage.getItem('lura-keybindings') || '{}').forward).toBe('KeyI')); await user.click(screen.getByRole('button', { name: /enter arena/i })); expect(screen.getByText(/100%/i)).toBeInTheDocument(); const charges = screen.getByLabelText(/recovery charges/i); expect(charges).toHaveTextContent('Num Del'); expect(charges).toHaveTextContent('Num 7') })
   it('allows an Easy-mode recovery charge and greys it out after use', async () => { const user = userEvent.setup(); render(<App />); await user.click(screen.getByRole('button', { name: 'easy' })); await user.click(screen.getByRole('button', { name: /enter arena/i })); expect(screen.getByTitle('Health potion ready')).toBeInTheDocument(); fireEvent.keyDown(window, { code: 'NumpadDecimal' }); expect(screen.getByTitle('Health potion used until next phase')).toHaveClass('used'); expect(screen.getByTitle('Shield ready')).not.toHaveClass('used') })
   it('provides configurable Q/E keyboard turning and persists its speed', async () => { render(<App />); expect(screen.getByLabelText(/rotate left keybind/i)).toHaveValue('Q'); expect(screen.getByLabelText(/rotate right keybind/i)).toHaveValue('E'); expect(screen.getByLabelText(/keyboard rotation speed/i)).toHaveValue('150'); fireEvent.change(screen.getByLabelText(/keyboard rotation speed/i), { target: { value: '210' } }); await waitFor(() => expect(localStorage.getItem('lura-player-rotation-speed')).toBe('210')); const rotateLeft = screen.getByLabelText(/rotate left keybind/i); fireEvent.keyDown(rotateLeft, { code: 'KeyZ', key: 'z' }); expect(rotateLeft).toHaveValue('Z') })
-  it('moves mouse options into the aligned input settings and marks displaced duplicate bindings', () => { render(<App />); fireEvent.click(screen.getByRole('button', { name: 'Keyboard settings' })); const settings = screen.getByRole('group', { name: /input bindings/i }); expect(within(settings).getByLabelText(/invert camera horizontal/i)).toBeInTheDocument(); expect(within(settings).getByLabelText(/invert camera vertical/i)).toBeInTheDocument(); const forward = within(settings).getByLabelText(/forward keybind/i); const rotateLeft = within(settings).getByLabelText(/rotate left keybind/i); fireEvent.keyDown(rotateLeft, { code: 'KeyW', key: 'w' }); expect(rotateLeft).toHaveValue('W'); expect(forward).toHaveValue(''); expect(forward).toHaveAttribute('aria-invalid', 'true'); expect(forward).toHaveClass('missing-keybind') })
+  it('moves mouse options into the aligned input settings and marks displaced duplicate bindings', () => { render(<App />); fireEvent.click(screen.getByRole('button', { name: 'Keys & Mouse' })); const settings = screen.getByRole('group', { name: /input bindings/i }); expect(within(settings).getByLabelText(/invert camera horizontal/i)).toBeInTheDocument(); expect(within(settings).getByLabelText(/invert camera vertical/i)).toBeInTheDocument(); const forward = within(settings).getByLabelText(/forward keybind/i); const rotateLeft = within(settings).getByLabelText(/rotate left keybind/i); fireEvent.keyDown(rotateLeft, { code: 'KeyW', key: 'w' }); expect(rotateLeft).toHaveValue('W'); expect(forward).toHaveValue(''); expect(forward).toHaveAttribute('aria-invalid', 'true'); expect(forward).toHaveClass('missing-keybind') })
   it('persists and displays the global simulation speed', async () => { const user = userEvent.setup(); render(<App />); fireEvent.change(screen.getByLabelText(/global game speed/i), { target: { value: '2' } }); await waitFor(() => expect(localStorage.getItem('lura-game-speed')).toBe('2')); await user.click(screen.getByRole('button', { name: /enter arena/i })); expect(screen.getByText(/2\.00×/i)).toBeInTheDocument() })
   it('provides and saves separate twenty-player Phase 2 soak and spread assignments', async () => { const user = userEvent.setup(); renderRaidPlan(); expect(screen.getByLabelText(/phase 2 soak position map/i)).toBeInTheDocument(); expect(screen.getByLabelText(/phase 2 spread position map/i)).toBeInTheDocument(); expect(screen.getAllByRole('button', { name: /move p2 soak player/i })).toHaveLength(20); expect(screen.getAllByRole('button', { name: /move p2 spread player/i })).toHaveLength(20); await user.click(screen.getByRole('button', { name: /save layout/i })); expect(JSON.parse(localStorage.getItem('lura-p2-player-positions') || '[]')).toHaveLength(20); expect(JSON.parse(localStorage.getItem('lura-p2-spread-positions') || '[]')).toHaveLength(20) })
   it('provides, visibly confirms saving, and shares the Phase 3 players and movable bosses', async () => { const user = userEvent.setup(); renderRaidPlan(); expect(screen.getByLabelText(/phase 3 initial position map/i)).toBeInTheDocument(); expect(screen.getAllByRole('button', { name: /move p3 player/i })).toHaveLength(20); expect(screen.getAllByRole('button', { name: /move p3 .* boss/i })).toHaveLength(2); await user.click(screen.getByRole('button', { name: /save layout/i })); expect(screen.getByRole('button', { name: /layout saved/i })).toHaveClass('save-confirmed'); expect(screen.getByRole('status')).toHaveTextContent('Layout saved'); expect(JSON.parse(localStorage.getItem('lura-p3-player-positions') || '[]')).toHaveLength(20); expect(JSON.parse(localStorage.getItem('lura-p3-boss-positions') || '[]')).toHaveLength(2); await user.click(screen.getByRole('button', { name: /copy share link/i })); const link = (screen.getByLabelText(/raid plan share code/i) as HTMLInputElement).value; const payload = JSON.parse(decodeURIComponent(atob(link.split('#raidplan=')[1]))); expect(payload.p3Positions).toHaveLength(20); expect(payload.p3BossPositions).toHaveLength(2) })

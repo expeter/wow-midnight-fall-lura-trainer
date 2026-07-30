@@ -100,7 +100,7 @@ export function OnlineStandingSummary({ session, onManage, onLogout }: { session
         </small><small>Global position {session.globalPosition ? `#${session.globalPosition}` : '—'}</small></>}
     </div>
     <div className="online-summary-actions">
-      <button className="online-summary-action" onClick={onManage}>{session.authenticated ? 'Manage profile' : 'Login'}</button>
+      <button className="online-summary-action" onClick={onManage}>{session.authenticated ? 'Manage profile' : 'Connect Battle.net'}</button>
       {session.authenticated && onLogout && <button className="online-summary-logout" onClick={onLogout}>Log out</button>}
     </div>
   </aside>
@@ -116,9 +116,9 @@ export function GlobalRankingSummary() {
   if (rows === null || rows.length === 0) return null
   const podium = Array.from({ length: 3 }, (_, index) => rows[index] ?? null)
   return <aside className="global-ranking-summary" aria-label="Global player ranking">
-    <div><p className="eyebrow">GLOBAL RANKING</p><strong>Achievement + best run points</strong></div>
+    <div><p className="eyebrow">GLOBAL RANKING</p><strong>Achievements + All Runs</strong></div>
     <ol>{podium.map((row, index) => <li key={row?.profileId ?? `empty-${index}`} className={row ? '' : 'empty'}>{row
-      ? <button className="podium-card" onClick={() => setProfileId(row.profileId)}><span>{row.totalPoints} global points</span><b>{row.displayName}</b>{row.guild && <small>{row.guild}</small>}<i aria-hidden="true">{['🏆', '🥈', '🥉'][index]}</i></button>
+      ? <button className="podium-card" onClick={() => setProfileId(row.profileId)}><b>{row.displayName}</b>{row.guild && <small>{row.guild}</small>}<span>{row.totalPoints}</span><i aria-hidden="true">{['🏆', '🥈', '🥉'][index]}</i></button>
       : <span aria-label={`Global rank ${index + 1} is empty`} />}</li>)}</ol>
     {profileId && <PublicProfileOverlay profileId={profileId} onClose={() => setProfileId(null)} />}
   </aside>
@@ -429,11 +429,12 @@ export default function OnlinePanel({
           onClick={() => { setDifficulty(nextDifficulty); setDuty(nextDuty) }}
         >{label}</button>)}
       </div>}
-      <div className="leaderboard-columns" aria-hidden="true"><span>Rank and player</span><span>Guild · score · time</span></div>
-      {displayedRows.length ? <ol className="leaderboard-rows top-ten">
+      <div className="leaderboard-columns standard-columns" aria-hidden="true"><span>Rank</span><span>Player</span><span>Guild</span><span>Points</span><span>Time</span></div>
+      {displayedRows.length ? <ol className="leaderboard-rows standard-leaderboard-rows top-ten">
         {displayedRows.map((row, index) => <li key={`${row.displayName}-${row.durationMs}-${index}`}>
-          <b>{row.rank ?? index + 1}. <button className="profile-name-button" onClick={() => setProfileId(row.profileId)}>{row.displayName}</button></b>
-          <span>{row.guild ? `${row.guild} · ` : ''}{row.score} pts · {(row.durationMs / 1000).toFixed(1)}s</span>
+          <b className="standard-rank">{row.rank ?? index + 1}.</b>
+          <button className="profile-name-button" onClick={() => setProfileId(row.profileId)}>{row.displayName}</button>
+          <span className="standard-guild">{row.guild ?? '—'}</span><strong className="standard-points">{row.score} pts</strong><time>{(row.durationMs / 1000).toFixed(1)}s</time>
         </li>)}
       </ol> : <p>No matching verified results yet.</p>}
       {ownStanding && <div className="leaderboard-own-position" aria-label="Your leaderboard position">
@@ -471,11 +472,12 @@ function AchievementHall({
   const displayed = rows.slice(0, 10)
   return <section className="achievement-hall" aria-labelledby="achievement-hall-title">
     <div className="hall-heading"><div><p className="eyebrow">LIFETIME ACHIEVEMENT POINTS</p><h3 id="achievement-hall-title">Hall of Fame</h3></div><p>Account-wide totals · retired Feats of Strength keep their points.</p></div>
-    <div className="leaderboard-columns" aria-hidden="true"><span>Rank and player</span><span>Points · date</span></div>
-    <ol className="leaderboard-rows hall-rows">
+    <div className="leaderboard-columns standard-columns" aria-hidden="true"><span>Rank</span><span>Player</span><span>Guild</span><span>Points</span><span>Date</span></div>
+    <ol className="leaderboard-rows hall-rows standard-leaderboard-rows">
       {displayed.map(row => <li key={`${row.rank}-${row.displayName}`}>
-        <b>{row.rank}. <button className="profile-name-button" onClick={() => onOpenProfile(row.profileId)}>{row.displayName}</button>{row.guild ? <small>{row.guild}</small> : null}</b>
-        <span><strong>{row.totalPoints} pts</strong><small>{new Date(row.highestAchievement.firstEarnedAt).toLocaleDateString()}</small></span>
+        <b className="standard-rank">{row.rank}.</b>
+        <button className="profile-name-button" onClick={() => onOpenProfile(row.profileId)}>{row.displayName}</button>
+        <span className="standard-guild">{row.guild ?? '—'}</span><strong className="standard-points">{row.totalPoints} pts</strong><time dateTime={row.highestAchievement.firstEarnedAt}>{new Date(row.highestAchievement.firstEarnedAt).toLocaleDateString()}</time>
       </li>)}
     </ol>
     {own && <div className="leaderboard-own-position" aria-label="Your achievement Hall position"><span aria-hidden="true">…</span><p><b>{own.rank}. Your Hall of Fame position</b><span>{own.totalPoints} pts · {own.achievementCount} achievements</span></p></div>}
@@ -498,11 +500,19 @@ function PublicProfileOverlay({ profileId, onClose }: { profileId: string; onClo
     <section className="public-profile-overlay" role="dialog" aria-modal="true" aria-labelledby="public-profile-title">
       <button className="public-profile-close" aria-label="Close player profile" onClick={onClose}>×</button>
       {failed ? <><p className="eyebrow">PRIVATE PROFILE</p><h2 id="public-profile-title">Profile unavailable</h2><p>This player is anonymous, no longer public, or the online service is unavailable.</p></> : !profile ? <p>Loading player profile…</p> : <>
-        <p className="eyebrow">PUBLIC TRAINER PROFILE</p><h2 id="public-profile-title">{profile.displayName}</h2>
-        <p>{profile.guild ?? 'No public guild'} · {profile.attempts} attempts · {profile.wipes} wipes</p>
-        {profile.character && profile.region && profile.realm && <a href={`https://raider.io/characters/${profile.region}/${profile.realm}/${profile.character}`} target="_blank" rel="noreferrer">Raider.IO profile ↗</a>}
-        {profile.global && <p><strong>Global #{profile.global.rank}</strong> · {profile.global.totalPoints} pts ({profile.global.achievementPoints} achievements + {profile.global.runPoints} runs)</p>}
-        <h3>Verified achievements · {profile.achievements.length}</h3>
+        <p className="eyebrow">{profile.ownProfile ? 'YOUR TRAINER PROFILE' : 'PUBLIC TRAINER PROFILE'}</p><h2 id="public-profile-title">{profile.displayName}</h2>
+        <p className="public-profile-identity">{profile.guild ?? 'No public guild'}</p>
+        <div className="public-profile-metrics">
+          <span><small>Global rank</small><strong>{profile.global ? `#${profile.global.rank}` : '—'}</strong></span>
+          <span><small>Global points</small><strong>{profile.global?.totalPoints ?? 0}</strong></span>
+          <span><small>Achievements</small><strong>{profile.achievements.length}/28</strong></span>
+          <span><small>Full runs</small><strong>{profile.fullRuns}</strong></span>
+          <span><small>Attempts</small><strong>{profile.attempts}</strong></span>
+          <span><small>Wipes</small><strong>{profile.wipes}</strong></span>
+        </div>
+        <div className="public-profile-boards">{profile.boards.map(board => <span key={`${board.difficulty}:${board.duty}`}><small>{board.difficulty} · {board.duty}</small><strong>{board.rank ? `#${board.rank}` : '—'}</strong></span>)}</div>
+        {profile.character && profile.region && profile.realm && <a className="raiderio-profile-link" href={`https://raider.io/characters/${profile.region}/${profile.realm}/${profile.character}`} target="_blank" rel="noreferrer">View Raider.IO profile <span>↗</span></a>}
+        <h3>Verified achievements · {profile.achievements.length}/28</h3>
         {profile.achievements.length ? <ul className="public-profile-achievements">{profile.achievements.map(achievement => <li key={achievement.id}><b>{achievement.title}</b><span>{achievement.tier} · {achievement.points} pts · {new Date(achievement.firstEarnedAt).toLocaleDateString()}</span></li>)}</ul> : <p>No verified achievements yet.</p>}
       </>}
     </section>

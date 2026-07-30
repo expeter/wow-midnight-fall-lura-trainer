@@ -490,6 +490,9 @@ function LiveActivityToast({ row }: { row: ActivityFeedRow | undefined }) {
       : `wiped in ${row.phase} · ${row.reason}`
   return <aside className={`live-activity-toast ${row.type}`} role="status" aria-live="polite"><span>LIVE ACTIVITY</span><strong>{row.displayName}</strong><p>{message}</p></aside>
 }
+export function activityFeedRowClass(id: string, newIds: Set<string>): string {
+  return newIds.has(id) ? 'new-activity' : ''
+}
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('menu')
@@ -569,6 +572,7 @@ export default function App() {
   const [onlineResultStatus, setOnlineResultStatus] = useState('')
   const [activityFeed, setActivityFeed] = useState<ActivityFeedRow[]>([])
   const [activityNotificationQueue, setActivityNotificationQueue] = useState<ActivityFeedRow[]>([])
+  const [newActivityFeedIds, setNewActivityFeedIds] = useState<Set<string>>(new Set())
   const seenActivityIdsRef = useRef<Set<string> | null>(null)
   const onlineCompletionStartedRef = useRef('')
   const layoutSaveFeedbackTimerRef = useRef<number | null>(null)
@@ -935,9 +939,12 @@ export default function App() {
           const recent = recentActivityRows(result.rows)
           setActivityFeed(recent)
           const nextIds = new Set(recent.map(row => row.id))
-          if (seenActivityIdsRef.current && liveActivityNotificationsEnabled) {
+          if (seenActivityIdsRef.current) {
             const newRows = newActivityRows(recent, seenActivityIdsRef.current)
-            if (newRows.length) setActivityNotificationQueue(current => [...current, ...newRows])
+            if (newRows.length) {
+              setNewActivityFeedIds(new Set(newRows.map(row => row.id)))
+              if (liveActivityNotificationsEnabled) setActivityNotificationQueue(current => [...current, ...newRows])
+            }
           }
           seenActivityIdsRef.current = nextIds
         })
@@ -959,6 +966,11 @@ export default function App() {
     const timer = window.setTimeout(() => setActivityNotificationQueue(current => current.slice(1)), 4600)
     return () => window.clearTimeout(timer)
   }, [liveActivityNotificationsEnabled, activityNotificationQueue])
+  useEffect(() => {
+    if (!newActivityFeedIds.size) return
+    const timer = window.setTimeout(() => setNewActivityFeedIds(new Set()), 4600)
+    return () => window.clearTimeout(timer)
+  }, [newActivityFeedIds])
   useEffect(() => {
     if (screen !== 'menu') return
     void loadOnlineSession().then(setOnlineSession).catch(() => setOnlineSession({ authenticated: false }))
@@ -2529,7 +2541,7 @@ export default function App() {
     {achievementsOpen && <div className="profile-overlay" role="dialog" aria-modal="true" aria-label="Personal achievements"><div className="profile-overlay-card achievement-overlay-card"><button className="profile-overlay-close" type="button" onClick={() => setAchievementsOpen(false)} aria-label="Close personal achievements">×</button><AchievementCollection collection={achievementCollection} /></div></div>}
     {activityFeed.length > 0 && <section className="wipe-feed" aria-label="Recent public activity">
       <header><div><p className="eyebrow">LIVE ACTIVITY</p><h2>Recent activity</h2></div><span>Refreshes every 5s</span></header>
-      <ol>{activityFeed.map(row => <li key={row.id}>
+      <ol>{activityFeed.map(row => <li key={row.id} className={activityFeedRowClass(row.id, newActivityFeedIds)}>
         <time dateTime={row.occurredAt}>{new Date(row.occurredAt).toLocaleString()}</time>
         {row.character && row.realm && row.region
           ? <a href={`https://raider.io/characters/${row.region}/${row.realm}/${encodeURIComponent(row.character)}`} target="_blank" rel="noreferrer">{row.character}—{row.realm}</a>
@@ -2547,7 +2559,7 @@ export default function App() {
     <div className="setup-overview"><AchievementBadgeSummary collection={achievementCollection} onOpen={() => setAchievementsOpen(true)} /><BestRunsSummary session={onlineSession} onOpen={() => setSetupTab('leaderboard')} /><OnlineStandingSummary session={onlineSession} onManage={() => setSetupTab('profile')} onLogout={onlineSession.csrfToken ? () => { void logoutOnline(onlineSession.csrfToken!).then(() => setOnlineSession({ authenticated: false })) } : undefined} /></div>
     <nav className="setup-tabs" aria-label="Setup sections">
       <button className={setupTab === 'game' ? 'selected' : ''} aria-current={setupTab === 'game' ? 'page' : undefined} onClick={() => setSetupTab('game')}>Game settings</button>
-      <button className={setupTab === 'keyboard' ? 'selected' : ''} aria-current={setupTab === 'keyboard' ? 'page' : undefined} onClick={() => setSetupTab('keyboard')}>Keyboard settings</button>
+      <button className={setupTab === 'keyboard' ? 'selected' : ''} aria-current={setupTab === 'keyboard' ? 'page' : undefined} onClick={() => setSetupTab('keyboard')}>Keys &amp; Mouse</button>
       <button className={setupTab === 'hud' ? 'selected' : ''} aria-current={setupTab === 'hud' ? 'page' : undefined} onClick={() => setSetupTab('hud')}>HUD</button>
       <button className={setupTab === 'raidplan' ? 'selected' : ''} aria-current={setupTab === 'raidplan' ? 'page' : undefined} onClick={() => setSetupTab('raidplan')}>Raid plan</button>
       <button className={setupTab === 'leaderboard' ? 'selected' : ''} aria-current={setupTab === 'leaderboard' ? 'page' : undefined} onClick={() => setSetupTab('leaderboard')}>Leaderboard</button>
@@ -3010,15 +3022,25 @@ function HudLayoutEditor({ layout, onChange, onReset }: { layout: HudLayout; onC
 }
 
 export function failureAdvice(label: string): string {
-  if (/outside.*phase 3|yellow landing/i.test(label)) return 'Move into one of the active yellow safe areas before the health drain or soak resolves.'
-  if (/outside.*phase 4/i.test(label)) return 'Stay inside the moving yellow protection circle and rotate with the group.'
-  if (/starsplinter|splinter/i.test(label)) return 'Move your marked beam away from players and avoid the six rays from other marked players.'
-  if (/beam/i.test(label)) return 'Watch the beam telegraph and move through the safe gap before it becomes lethal.'
-  if (/crystal/i.test(label)) return 'Check your phase assignment, then pick up or drop the crystal within the mechanic window.'
-  if (/rune/i.test(label)) return 'Match your assigned rune and approach it only when its turn is shown.'
-  if (/wrong phase 3 side|void zone/i.test(label)) return 'Route around the center void and remain on your assigned side of the arena.'
-  if (/personal circle/i.test(label)) return 'Use the full spread window and keep your circle clear of every other player.'
-  return 'Review the active mechanic prompt and adjust your position before its timer reaches zero.'
+  if (/missed assigned interrupt/i.test(label)) return 'L’ura casts five times in order. Your KICK ORDER number is the cast you must stop: wait through the earlier casts, then press Interrupt during your assigned cast’s green two-second KICK window.'
+  if (/interrupted cast/i.test(label)) return 'Interrupt only the cast matching your KICK ORDER number. Red means wait, orange means your turn is next, and green means press Interrupt now.'
+  if (/heaven glaive/i.test(label)) return 'Track the roaming glaive discs after they launch from L’ura. Leave their travel lane and keep watching after each wall or center-bubble ricochet.'
+  if (/reactive phase 1 soak/i.test(label)) return 'Two yellow impact circles appear after the rotating beams. NPCs cover one; move into the other open yellow circle and remain there until it resolves.'
+  if (/cross-beam soak/i.test(label)) return 'Move onto your assigned cross position before the beam resolves. Crystal carriers drop only after the safe-to-drop point, so the beam destroys the orb without striking the crystal.'
+  if (/outside.*phase 3|yellow landing|phase 3 light/i.test(label)) return 'Stand inside an active yellow Phase 3 light. For landing Soaks, remain in one yellow circle until it is filled; afterward, rotate into the surviving lit sector before the old sector is consumed.'
+  if (/outside.*phase 4|heaven and hell/i.test(label)) return 'Stay inside the moving yellow protection circle in Phase 4. Follow its quarter-arena rotation and never remain in a sector after that quarter is consumed.'
+  if (/starsplinter|splinter/i.test(label)) return 'If marked, move your six-ray Starsplinter away from the group and crystal carriers. If unmarked, watch every marked player and stand between their six rays until detonation.'
+  if (/returning orb/i.test(label)) return 'After the cross beam, watch the struck outside orbs glow and return to the middle. Be clear of their path and recover any center crystal before they arrive.'
+  if (/boss beam|rotating beam|hit by a phase 1 rotating beam/i.test(label)) return 'Use the telegraphed ray directions to identify a gap, then cross into that gap before the beams activate. Keep moving with rotating beams instead of crossing an active ray.'
+  if (/personal circle/i.test(label)) return 'Use the full spread window to reach your assigned outer position. Keep the complete circle clear of players and every dropped crystal until it disappears.'
+  if (/wrong.*crystal|another player.*crystal|assigned phase 1 crystal/i.test(label)) return 'Pick up only the crystal assigned to your raid position. If you take another player’s crystal, drop it within five seconds and move away so its assigned NPC can recover it.'
+  if (/recover|fetched|fetch|expired/i.test(label) && /crystal/i.test(label)) return 'After the dangerous beam or circle resolves, walk directly over your dropped crystal before its recovery timer expires; do not leave it in another hazard.'
+  if (/crystal/i.test(label)) return 'Confirm whether your current phase assigns you a crystal. Drop it in the mechanic’s safe location and timing window, move clear, then walk over it again before the recovery deadline.'
+  if (/rune/i.test(label)) return 'Memorize the displayed rune order. Move onto your own assigned rune only when that symbol is the active step, then leave it clear for the remaining symbols.'
+  if (/wrong phase 3 side/i.test(label)) return 'During Phase 3 positioning, route around the center void to the same side as your assigned raid-plan position and arrive before the approach timer ends.'
+  if (/void zone|add from the middle/i.test(label)) return 'The center is lethal and cannot be crossed. Route around the middle void along the playable ring; keep clear of adds emerging from the center edge.'
+  if (/soak|big boom/i.test(label)) return 'Each active yellow Soak needs a player or NPC standing inside until its pool is fully depleted. Check every remaining yellow circle before Big Boom resolves.'
+  return 'Identify the highlighted danger or assignment, move to the required safe position before resolution, and remain there until the mechanic visibly completes.'
 }
 
 function GameArena(props: { activityNotification: ActivityFeedRow | undefined; hudActionButtonsEnabled: boolean; onMainAbility: () => void; onInterrupt: () => void; onHealthPot: () => void; onShield: () => void; p1Sequence: number; p1Seed: number; p1BossOpening: Point; p1InterruptAssignment: number; p1InterruptCast: number; p1InterruptPressed: boolean; p1RunePanelOrientation: P1RunePanelOrientation; p1MemoryOrder: P1Rune[]; p1FailedMemoryRune: P1Rune | null; p1GlaiveSets: P1GlaiveSet[]; p1Soaks: P1ReactiveSoak[]; p1SoakResolved: number[]; p1CrystalAssignments: number[]; p1CrystalCollected: boolean; p1WrongCrystalHeld: boolean; p1StolenCrystalSlot: number | null; p1WrongCrystalDeadline: number | null; combatProjectilesEnabled: boolean; mainProjectileFiredAt: number | null; bossHealth: number; mainCastRemaining: number; personalJumpProgress: number; musicMuted: boolean; encounterSoundsEnabled: boolean; ttsAvailable: boolean; ttsEnabled: boolean; softWipeNotice: string; crystalDutyNotice: string; hudLayout: HudLayout; positions: Assignment[]; intermissionPositions: Assignment[]; p2SoakPositions: Assignment[]; p2SpreadPositions: Assignment[]; p3Positions: Assignment[]; profiles: PlayerProfile[]; raidStart: Point; movementSpeed: number; movementBonus: boolean; gameSpeed: number; p2Cycle: number; p2Soaked: boolean; p2OrbReturnAge: number; onP2OrbitAngle: (angle: number) => void; p3Round: number; p3ArchangelDuty: 1 | 2 | null; crystalSpent: boolean; p4Cycle: number; p4PatternSeed: number; p3PoolHealth: number[]; onP3PoolOccupancy: (occupancy: number[]) => void; onP3LightCenters: (centers: Point[]) => void; onP3RuneContacts: (runes: RuneSymbol[]) => void; onNpcPositions: (positions: Point[]) => void; onP4SplinterHit: (reason: string) => void; p3RuneOrder: RuneSymbol[]; p3RuneStep: number; p3ResolvedRunes: RuneSymbol[]; health: number; healthPotUsed: boolean; shieldUsed: boolean; keyBindings: KeyBindings; crystalCarriers: number[]; beamPattern: 'line' | 'gap'; failureFlash: boolean; wipeReason: string; player: Point; crystal: Point | null; npcCrystals: Point[]; npcCarrier: number | null; npcCrystalAge: number; playerSplinterRotation: number; crystalAge: number; role: Role; difficulty: Difficulty; assignment: number; stats: GameStats; mistakes: Mistake[]; startSlotName: string; paused: boolean; event: EventKind; eventTime: number; beamAngles: number[]; npcSplinters: number[]; cycle: number; setPaused: (p: boolean) => void; setMusicMuted: (muted: boolean) => void; setEncounterSoundsEnabled: (enabled: boolean) => void; setTtsEnabled: (enabled: boolean) => void; onRetry: () => void; onExit: () => void; onDrop: () => void; onCameraDirection: (direction: Point) => void }) {
@@ -3252,7 +3274,7 @@ function GameArena(props: { activityNotification: ActivityFeedRow | undefined; h
                 : countdown
                   ? <>STARTING <strong>{Math.max(0, 3 - props.eventTime).toFixed(1)}s</strong></>
                   : positioning
-                    ? <>POSITIONING <strong>{Math.max(0, 10 - props.eventTime).toFixed(1)}s</strong></>
+                    ? <>POSITIONING <strong>{Math.max(0, INTERMISSION_POSITIONING_SECONDS - props.eventTime).toFixed(1)}s</strong></>
                     : finalRecovery
                       ? <>FINAL PICKUP <strong>{Math.max(0, 2 - props.eventTime).toFixed(1)}s</strong></>
                       : <>SPLINTER SET <strong>{props.cycle}/6</strong></>}

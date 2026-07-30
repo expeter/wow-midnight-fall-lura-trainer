@@ -611,7 +611,8 @@ export function createApp(
         if (rateLimited(request, 'public-profile', 120, 60_000)) {
           return json({ error: 'rate_limited' }, 429, { ...corsHeaders, 'retry-after': '60' })
         }
-        const profile = publicPlayerProfile(database, profileMatch[1], config.currentLeaderboardSeason)
+        const session = authenticate(database, config, dependencies, request)
+        const profile = publicPlayerProfile(database, profileMatch[1], config.currentLeaderboardSeason, session?.accountId)
         return profile ? json(profile, 200, corsHeaders) : json({ error: 'profile_not_found' }, 404, corsHeaders)
       }
       return json({ error: 'not_found' }, 404, corsHeaders)

@@ -265,6 +265,44 @@ test('Space jumps while actions are locked and P pauses', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Resume' })).toBeVisible()
 })
 
+test('live activity refresh does not stall direct Intermission after its countdown', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('lura-game-speed', '2.5'))
+  let activityPoll = 0
+  await page.route('**/v1/activity?*', async route => {
+    activityPoll += 1
+    const occurredAt = new Date().toISOString()
+    await route.fulfill({ json: { rows: activityPoll < 2 ? [] : [{
+      id: 'wipe:live-refresh',
+      type: 'wipe',
+      displayName: 'Anonymous',
+      character: null,
+      realm: null,
+      region: null,
+      phase: 'Intermission',
+      difficulty: 'normal',
+      reason: 'Live refresh test',
+      achievementTitle: null,
+      trainerVersion: '0.6.0',
+      occurredAt,
+    }] } })
+  })
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Intermission', exact: true }).click()
+  await page.getByRole('button', { name: 'test', exact: true }).click()
+  await page.getByRole('button', { name: /Enter Intermission/ }).click()
+  const arena = page.locator('.arena-wrap')
+  await expect(arena).toHaveAttribute('data-event', 'positioning', { timeout: 5_000 })
+  const positioningCounter = page.locator('.splinter-counter')
+  await expect(positioningCounter).toContainText('POSITIONING')
+  const displayedSeconds = Number((await positioningCounter.locator('strong').textContent())?.replace('s', ''))
+  expect(displayedSeconds).toBeGreaterThan(0)
+  expect(displayedSeconds).toBeLessThanOrEqual(24)
+  await expect(page.locator('.live-activity-toast')).toContainText('LIVE ACTIVITY', { timeout: 7_000 })
+  await expect(arena).toHaveAttribute('data-event', 'beam', { timeout: 12_000 })
+  expect(activityPoll).toBeGreaterThanOrEqual(2)
+  await expect(page.getByLabel('Test mode recent failures')).toContainText('would wipe')
+})
+
 test('Main ability visibly animates and completes only once when its bound key is hammered', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('lura-keybindings', JSON.stringify({

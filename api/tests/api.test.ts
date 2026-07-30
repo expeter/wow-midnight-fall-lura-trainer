@@ -84,7 +84,7 @@ function insertSession(database: Database, accountId: number, token = 'owned-ses
     createHmac('sha256', config.sessionSecret).update(token).digest('hex'),
     accountId,
     createHash('sha256').update(csrf).digest('hex'),
-    '2026-07-29T00:00:00.000Z',
+    '2099-07-29T00:00:00.000Z',
     '2026-07-28T00:00:00.000Z',
   )
   return { cookie: `lura_session=${token}`, csrf }
@@ -262,13 +262,19 @@ describe('Lura API foundation', () => {
     const searched = await app.handle(new Request('http://api.test/v1/global-ranking?limit=10&q=Asgard'))
     assert.deepEqual((await searched.json() as { rows: Array<{ profileId: string }> }).rows.map(row => row.profileId), [account.profileId])
     const profile = await app.handle(new Request(`http://api.test/v1/profiles/${account.profileId}`))
-    const body = await profile.json() as { displayName: string; attempts: number; wipes: number; achievements: unknown[] }
+    const body = await profile.json() as { displayName: string; attempts: number; fullRuns: number; wipes: number; achievements: unknown[]; boards: Array<{ rank: number | null }> }
     assert.equal(body.displayName, 'Globalhero')
     assert.equal(body.attempts, 1)
+    assert.equal(body.fullRuns, 1)
     assert.equal(body.wipes, 1)
     assert.equal(body.achievements.length, 1)
+    assert.equal(body.boards.find(board => board.rank !== null)?.rank, 1)
     database.prepare("UPDATE privacy_settings SET identity_mode = 'anonymous' WHERE account_id = ?").run(accountId)
     assert.equal((await app.handle(new Request(`http://api.test/v1/profiles/${account.profileId}`))).status, 404)
+    const session = insertSession(database, accountId)
+    const ownProfile = await app.handle(new Request(`http://api.test/v1/profiles/${account.profileId}`, { headers: { cookie: session.cookie } }))
+    assert.equal(ownProfile.status, 200)
+    assert.equal((await ownProfile.json() as { ownProfile: boolean }).ownProfile, true)
   })
 
   it('publishes non-logged-in wipes only as generic anonymous activity', async () => {

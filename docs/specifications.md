@@ -108,6 +108,9 @@ change before implementation.
   newly earned achievements. Initial activity establishes a silent baseline;
   only later unseen event IDs trigger the default-on, dismiss-free,
   bottom-right fading message queue across trainer screens.
+- On the start shell, those same genuinely new IDs briefly animate their
+  persistent Recent activity row as it arrives. This feed-row signal remains
+  active when the optional bottom-right message queue is disabled.
 - Posting online results requires Battle.net authentication, a verified
   selected WoW character, and a one-use server-issued attempt.
 - The server recomputes accepted scores from validated attempt inputs; OAuth
@@ -126,10 +129,12 @@ change before implementation.
 - Public identity is optional. Anonymous mode hides character, realm, and
   guild and excludes that account from public run and achievement rankings;
   published character, alias, realm, and guild fields are searchable.
-- Public trainer profiles use opaque identifiers and exist only while the
-  account publishes a character or alias. They may show verified achievements,
-  attempt/wipe counts, global position, and a Raider.IO link for a published
-  character; anonymous accounts never resolve through this endpoint.
+- Public trainer profiles use opaque identifiers and resolve for visitors only
+  while the account publishes a character or alias. An authenticated owner may
+  inspect their own profile in anonymous mode without making it public. The
+  profile summarizes achievement progress, attempts, full runs, wipes, global
+  position, all four board positions, and a styled Raider.IO action when a
+  published character provides the required identity fields.
 - The global ranking adds canonical lifetime achievement points to the best
   accepted score in each of the four current-season run divisions. It never
   includes more than one run score per account and division.
@@ -137,6 +142,13 @@ change before implementation.
   personal-position, and public name/guild search pattern as each run board.
   Runs and Achievement Hall are peer views; the four Normal/Hard duty selectors
   exist only within Runs. Full-list controls remain deferred until paging.
+- Run boards and Achievement Hall use stable rank, player, guild, result-points,
+  and time/date columns on desktop, with compact responsive stacking. Dates are
+  secondary text and Hard run-board selection retains its red treatment.
+- The shell's podium labels its score model as “Achievements + All Runs” and
+  displays the score legibly over subdued trophy art. The player-summary row
+  gives the compact Achievement card one share and gives Best runs and Online
+  ranking two shares each, keeping the latter two aligned and equally useful.
 - Achievement Hall rows show rank, linked public player name, optional guild,
   lifetime points, and earned date. The linked profile owns the detailed list
   of exact achievements instead of duplicating an arbitrary title per row.

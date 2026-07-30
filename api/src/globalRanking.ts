@@ -76,7 +76,7 @@ export function listGlobalRanking(database: Database, season: string, ownAccount
   return { rows: visible.map(publicRow), own: own ? publicRow(own) : null, total: visible.length }
 }
 
-export function publicPlayerProfile(database: Database, profileId: string, season: string) {
+export function publicPlayerProfile(database: Database, profileId: string, season: string, viewerAccountId?: number) {
   const identity = database.prepare(`
     SELECT a.id AS accountId, a.public_profile_id AS profileId, p.identity_mode AS identityMode,
       CASE WHEN p.identity_mode = 'character' THEN c.name ELSE COALESCE(NULLIF(TRIM(p.alias), ''), 'Unnamed player') END AS displayName,
@@ -86,8 +86,8 @@ export function publicPlayerProfile(database: Database, profileId: string, seaso
       CASE WHEN p.show_guild = 1 THEN c.guild_name ELSE NULL END AS guild
     FROM accounts a JOIN privacy_settings p ON p.account_id = a.id
     LEFT JOIN characters c ON c.id = a.selected_character_id
-    WHERE a.public_profile_id = ? AND p.identity_mode != 'anonymous'
-  `).get(profileId) as { accountId: number; profileId: string; identityMode: string; displayName: string; character: string | null; realm: string | null; region: string | null; guild: string | null } | undefined
+    WHERE a.public_profile_id = ? AND (p.identity_mode != 'anonymous' OR a.id = ?)
+  `).get(profileId, viewerAccountId ?? -1) as { accountId: number; profileId: string; identityMode: string; displayName: string; character: string | null; realm: string | null; region: string | null; guild: string | null } | undefined
   if (!identity) return null
   const achievements = database.prepare(`
     SELECT aa.achievement_id AS id, ac.title, ac.tier, ac.points, MIN(aa.first_earned_at) AS firstEarnedAt
@@ -96,8 +96,19 @@ export function publicPlayerProfile(database: Database, profileId: string, seaso
     ORDER BY ac.points DESC, firstEarnedAt ASC
   `).all(identity.accountId)
   const attempts = Number((database.prepare('SELECT COUNT(*) AS count FROM attempts WHERE account_id = ?').get(identity.accountId) as { count: number }).count)
+  const fullRuns = Number((database.prepare('SELECT COUNT(*) AS count FROM results WHERE account_id = ? AND run_eligible = 1 AND leaderboard_season = ?').get(identity.accountId, season) as { count: number }).count)
   const wipes = Number((database.prepare('SELECT COUNT(*) AS count FROM wipe_events WHERE account_id = ?').get(identity.accountId) as { count: number }).count)
   const global = listGlobalRanking(database, season).rows.find(row => row.profileId === profileId) ?? null
+  const boards = (['normal:crystal', 'normal:non-crystal', 'hard:crystal', 'hard:non-crystal'] as const).map(key => {
+    const [difficulty, duty] = key.split(':')
+    const row = database.prepare(`
+      SELECT rank FROM (
+        SELECT account_id, ROW_NUMBER() OVER (ORDER BY score DESC, duration_ms ASC, accepted_at ASC) AS rank
+        FROM results WHERE difficulty = ? AND duty = ? AND leaderboard_season = ? AND run_eligible = 1
+      ) WHERE account_id = ? ORDER BY rank LIMIT 1
+    `).get(difficulty, duty, season, identity.accountId) as { rank: number } | undefined
+    return { difficulty, duty, rank: row?.rank ?? null }
+  })
   const { accountId: _accountId, identityMode: _identityMode, ...publicIdentity } = identity
-  return { ...publicIdentity, achievements, attempts, wipes, global }
+  return { ...publicIdentity, ownProfile: identity.accountId === viewerAccountId, achievements, attempts, fullRuns, wipes, global, boards }
 }

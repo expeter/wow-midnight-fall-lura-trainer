@@ -81,7 +81,7 @@ describe('player menu', () => {
     expect(screen.getByLabelText(/phase 1 position map/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/phase 1 crystal assignments/i)).toBeInTheDocument()
   })
-  it('allows a Phase 1 assignment inside the visual middle bubble without silently clamping it', async () => {
+  it('refuses to save a Phase 1 assignment inside the central void', async () => {
     const user = userEvent.setup()
     renderRaidPlan()
     await user.click(screen.getByRole('button', { name: /^p1$/i }))
@@ -98,7 +98,8 @@ describe('player menu', () => {
     fireEvent.pointerMove(map, { pointerId: 2, clientX: 360, clientY: 460 })
     fireEvent.pointerUp(map, { pointerId: 2 })
     await user.click(screen.getByRole('button', { name: /save layout/i }))
-    expect(JSON.parse(localStorage.getItem('lura-p1-player-positions') || '[]')[0]).toEqual({ x: 480, y: 270 })
+    const saved = JSON.parse(localStorage.getItem('lura-p1-player-positions') || '[]')[0]
+    expect(Math.hypot(saved.x - 480, saved.y - 270)).toBeGreaterThanOrEqual(102)
     expect(JSON.parse(localStorage.getItem('lura-p1-boss-position') || 'null')).toEqual(expect.objectContaining({ x: expect.any(Number), y: expect.any(Number) }))
   })
   it('copies the build identifier and links GitHub, changelog, and issue filing', async () => { const user = userEvent.setup(); const writeText = vi.fn().mockResolvedValue(undefined); Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } }); render(<App />); const build = screen.getByLabelText(/build information/i); expect(build).toHaveTextContent(/v0\.5\.1 · (?:unknown|[0-9a-f]{7}) · \d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC/); fireEvent.click(screen.getByRole('button', { name: /v0\.5\.1.*copy/i })); await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringMatching(/^v0\.5\.1 · (?:unknown|[0-9a-f]{7}) · \d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC$/))); expect(screen.getByRole('link', { name: /^github/i })).toHaveAttribute('href', 'https://github.com/expeter/wow-midnight-fall-lura-trainer'); expect(screen.getByRole('link', { name: /changelog/i })).toHaveAttribute('href', 'https://github.com/expeter/wow-midnight-fall-lura-trainer/blob/main/CHANGELOG.md'); expect(screen.getByRole('link', { name: /file an issue/i })).toHaveAttribute('href', 'https://github.com/expeter/wow-midnight-fall-lura-trainer/issues/new/choose'); await user.click(screen.getByRole('button', { name: /enter arena/i })); expect(screen.getByLabelText(/build information/i)).toBeInTheDocument() })
@@ -152,7 +153,7 @@ describe('player menu', () => {
     expect(screen.getByLabelText(/raid position name/i)).toHaveValue('My saved setup')
     expect(vi.mocked(fetch).mock.calls.some(([input]) => String(input).includes('raidplans/asgard.txt'))).toBe(false)
   })
-  it('orders game start, global Top 3, and the player row before the setup sections', () => {
+  it('orders game start, global Top 3, and the player row before the setup sections', async () => {
     render(<App />)
     const gameHeading = screen.getByRole('heading', { name: /practice configuration/i })
     const difficulty = screen.getByRole('group', { name: /difficulty & movement/i })
@@ -164,7 +165,7 @@ describe('player menu', () => {
     const setupNav = screen.getByRole('navigation', { name: /setup sections/i })
     expect(within(setupNav).getAllByRole('button')).toHaveLength(6)
     expect(screen.getByText('RAID PLANNING')).not.toBeVisible()
-    expect(screen.getByLabelText('Global player ranking')).toBeVisible()
+    expect(await screen.findByLabelText('Global player ranking')).toBeVisible()
     expect(screen.getByLabelText('Best run standings')).toBeVisible()
     expect(screen.queryByRole('heading', { name: 'Top 10 leaderboard' })).not.toBeInTheDocument()
     expect(screen.getByLabelText('Current practice configuration')).toHaveTextContent(/Normal · Non-crystal · Player 1 · Spot 1/)
@@ -188,6 +189,8 @@ describe('player menu', () => {
     expect(screen.getByText('GAME SETTINGS')).not.toBeVisible()
 
     fireEvent.click(screen.getByRole('button', { name: 'View standings' }))
+    expect(screen.getByRole('heading', { name: 'Global leaderboard' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Runs' }))
     expect(screen.getByRole('heading', { name: 'Top 10 leaderboard' })).toBeInTheDocument()
     expect(screen.getByText('RAID PLANNING')).not.toBeVisible()
 

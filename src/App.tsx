@@ -8,6 +8,7 @@ import { p4TimedVoiceCues, timedVoiceDelaySeconds, timedVoiceSupported, ttsCuesF
 import AchievementCollection, { AchievementBadgeSummary, AchievementUnlockPopups } from './AchievementLedger'
 import { ACHIEVEMENT_STORAGE_KEY, collectibleAchievements, mergeEarnedAchievements, newlyEarnedAchievements, parseAchievementCollection, serializeAchievementCollection, type AchievementDefinition } from './achievementCollection'
 import { FEATURE_FLAGS } from './features'
+import { normalizeP1PlanAssignments } from './game'
 import GameScene from './GameScene'
 import { advanceMainAbilityCast, idleMainAbilityCast, mainAbilityElapsedSeconds, MAIN_ABILITY_CAST_SECONDS, requestMainAbilityCast, type MainAbilityCastState } from './mainAbility'
 import { encounterSoundCuesForState, playEncounterSound } from './encounterSounds'
@@ -144,6 +145,9 @@ const DEFAULT_P1_ASSIGNMENTS: Assignment[] = [
   { x: 371.7958515283843, y: 422.7600072780204 },
   { x: 417.06924802587685, y: 462.03441996074923 },
 ]
+function normalizeP1Assignments(points: Assignment[]): Assignment[] {
+  return normalizeP1PlanAssignments(points, DEFAULT_P1_ASSIGNMENTS, WORLD.center, P1_INNER_RADIUS, P1_OUTER_RADIUS)
+}
 const DEFAULT_P1_BOSS_POSITION: Assignment = { x: 378.84170305676855, y: 473.1239082969432 }
 const CLASS_OPTIONS: { value: PlayerClass; label: string; color: string }[] = [
   { value: 'mage', label: 'Mage', color: '#3fc7eb' },
@@ -287,7 +291,7 @@ function loadP2Positions(): Assignment[] {
 function loadP1Positions(): Assignment[] {
   try {
     const saved = JSON.parse(localStorage.getItem('lura-p1-player-positions') || 'null')
-    if (Array.isArray(saved) && saved.length === 20 && saved.every(point => Number.isFinite(point.x) && Number.isFinite(point.y))) return saved
+    if (Array.isArray(saved) && saved.length === 20 && saved.every(point => Number.isFinite(point.x) && Number.isFinite(point.y))) return normalizeP1Assignments(saved)
   } catch { /* use maintained guild fallback */ }
   return DEFAULT_P1_ASSIGNMENTS.map(point => ({ ...point }))
 }
@@ -383,7 +387,7 @@ function decodeRaidPlan(value: string): RaidPlan | null {
     if (!plan.positions.every((point: Point) => Number.isFinite(point.x) && Number.isFinite(point.y)) || !plan.startSlots.every((point: Point) => Number.isFinite(point.x) && Number.isFinite(point.y))) return null
     if (!plan.profiles.every((profile: PlayerProfile) => typeof profile.name === 'string' && typeof profile.crystal === 'boolean' && CLASS_OPTIONS.some(option => option.value === profile.playerClass))) return null
     const p2Positions = Array.isArray(plan.p2Positions) && plan.p2Positions.length === 20 && plan.p2Positions.every((point: Point) => Number.isFinite(point.x) && Number.isFinite(point.y)) ? plan.p2Positions : DEFAULT_P2_ASSIGNMENTS
-    const p1Positions = Array.isArray(plan.p1Positions) && plan.p1Positions.length === 20 && plan.p1Positions.every((point: Point) => Number.isFinite(point.x) && Number.isFinite(point.y)) ? plan.p1Positions : DEFAULT_P1_ASSIGNMENTS
+    const p1Positions = Array.isArray(plan.p1Positions) && plan.p1Positions.length === 20 && plan.p1Positions.every((point: Point) => Number.isFinite(point.x) && Number.isFinite(point.y)) ? normalizeP1Assignments(plan.p1Positions) : DEFAULT_P1_ASSIGNMENTS
     const p1BossPosition = Number.isFinite(plan.p1BossPosition?.x) && Number.isFinite(plan.p1BossPosition?.y)
       ? plan.p1BossPosition
       : DEFAULT_P1_BOSS_POSITION
@@ -402,7 +406,7 @@ function decodeRaidPlan(value: string): RaidPlan | null {
 }
 function normalizeRaidPlanForUse(plan: RaidPlan): RaidPlan {
   return {
-    p1Positions: plan.p1Positions.map(point => ({ ...point })),
+    p1Positions: normalizeP1Assignments(plan.p1Positions),
     p1BossPosition: { ...plan.p1BossPosition },
     positions: plan.positions.map(point => ({ ...point })),
     p2Positions: plan.p2Positions.map(clampToP2Arena),
@@ -2488,7 +2492,7 @@ export default function App() {
     <div className="entry-choice"><span>Practice target</span>{FEATURE_FLAGS.phaseOne ? <button className={entryMode === 'arena0' ? 'selected' : ''} onClick={() => setEntryMode('arena0')}>P1</button> : <button className="coming-soon" aria-label="P1 — Coming soon" title="P1 is planned but not playable yet" disabled>P1 · Soon</button>}<button className={entryMode === 'arena1' ? 'selected' : ''} onClick={() => setEntryMode('arena1')}>Intermission</button><button className={entryMode === 'arena2' ? 'selected' : ''} onClick={() => setEntryMode('arena2')}>P2</button><button className={entryMode === 'arena3' ? 'selected' : ''} onClick={() => setEntryMode('arena3')}>P3</button><button className={entryMode === 'arena4' ? 'selected' : ''} onClick={() => setEntryMode('arena4')}>P4</button>{difficulty === 'test' && <button className="secondary preview-results" onClick={previewCompletionScreen}>Preview final screen</button>}<button aria-label={entryMode === 'arena0' ? 'Enter P1' : entryMode === 'arena1' ? 'Enter Arena 1 — Enter Intermission' : entryMode === 'arena2' ? 'Enter Arena 2 — Enter P2' : entryMode === 'arena3' ? 'Enter Arena 3 — Enter P3' : 'Enter Arena 4 — Enter P4'} className="start entry-start" onClick={start}>Enter {entryMode === 'arena0' ? 'P1' : entryMode === 'arena1' ? 'Intermission' : entryMode === 'arena2' ? 'P2' : entryMode === 'arena3' ? 'P3' : 'P4'}</button></div>
     <p className="current-run-summary" aria-label="Current practice configuration"><strong>Current:</strong> {difficulty[0].toUpperCase() + difficulty.slice(1)} · {entryCrystalAssignments.includes(assignment) ? 'Crystal carrier' : 'Non-crystal'} · {profiles[assignment].name || `Player ${assignment + 1}`} · Spot {assignment + 1}</p>
     <GlobalRankingSummary />
-    <div className="setup-overview"><AchievementBadgeSummary collection={achievementCollection} onOpen={() => setAchievementsOpen(true)} /><BestRunsSummary onOpen={() => setSetupTab('leaderboard')} /><OnlineStandingSummary session={onlineSession} onManage={() => setSetupTab('profile')} onLogout={onlineSession.csrfToken ? () => { void logoutOnline(onlineSession.csrfToken!).then(() => setOnlineSession({ authenticated: false })) } : undefined} /></div>
+    <div className="setup-overview"><AchievementBadgeSummary collection={achievementCollection} onOpen={() => setAchievementsOpen(true)} /><BestRunsSummary session={onlineSession} onOpen={() => setSetupTab('leaderboard')} /><OnlineStandingSummary session={onlineSession} onManage={() => setSetupTab('profile')} onLogout={onlineSession.csrfToken ? () => { void logoutOnline(onlineSession.csrfToken!).then(() => setOnlineSession({ authenticated: false })) } : undefined} /></div>
     <nav className="setup-tabs" aria-label="Setup sections">
       <button className={setupTab === 'game' ? 'selected' : ''} aria-current={setupTab === 'game' ? 'page' : undefined} onClick={() => setSetupTab('game')}>Game settings</button>
       <button className={setupTab === 'keyboard' ? 'selected' : ''} aria-current={setupTab === 'keyboard' ? 'page' : undefined} onClick={() => setSetupTab('keyboard')}>Keyboard settings</button>
@@ -2525,7 +2529,7 @@ export default function App() {
     <section className="setup-tab-panel" aria-label="Raid plan" hidden={setupTab !== 'raidplan'}>
     <div className="plan-heading raid-planning-heading" id="raid-planning"><p className="eyebrow">RAID PLANNING</p><h2>Layouts and sharing</h2><p className="hint">Load a guild layout, exchange a complete plan, or configure each phase below.</p><a className="setup-back-to-top" href="#setup-top" aria-label="Back to top from Raid planning" onClick={event => scrollToSetupSection(event, 'setup-top')}>↑ Top</a></div>
     <fieldset className="raid-share-settings" aria-label="Raid-plan sharing"><legend>Raid-plan sharing</legend><p className="assignment">Save, load, or share the complete plan<span>Names, classes, Intermission/P2/P3 positions, crystal assignments, and start slots are included.</span></p><div className="editor-actions"><button className={layoutSaveConfirmed ? 'save-confirmed' : ''} onClick={savePositions}>{layoutSaveConfirmed ? '✓ Layout saved' : 'Save layout'}</button><button onClick={resetPositions}>Reset</button></div><button className="asgard-plan-link" type="button" onClick={loadAsgardRaidPlan}>Load I Asgard I raid plan<span>Bundled guild layout · loads here and saves to this browser</span></button><label className="profile-control">Share link or code<input aria-label="Raid plan share code" value={shareInput} onChange={event => setShareInput(event.target.value)} placeholder="Paste a shared plan here" /></label><div className="editor-actions"><button onClick={copyRaidPlan}>Copy share link</button><button onClick={applyRaidPlan}>Load shared plan</button></div>{shareStatus && <p className="share-status" role="status">{shareStatus}</p>}</fieldset>
-    {FEATURE_FLAGS.phaseOne && <><div className="plan-heading"><p className="eyebrow">PHASE 1 RAID PLAN</p><h2>Interrupt and crystal positions</h2><p className="hint">P1 uses the wider outer arena. Its rings are visual reminders only: every point and L’ura’s opening position remain assignable.</p></div><P2PositionMap phaseOne bossPosition={p1BossOpening} onBossChange={setP1BossOpening} mapLabel="Phase 1 position map" buttonLabel="P1" assignment={assignment} positions={p1Positions} profiles={profiles.map((profile, index) => ({ ...profile, crystal: p1CrystalAssignments.includes(index) }))} onChange={(index, point) => { setAssignment(index); setP1Positions(current => current.map((position, positionIndex) => positionIndex === index ? point : position)) }} /><CrystalAssignmentEditor phaseLabel="Phase 1" assignments={p1CrystalAssignments} profiles={profiles} onChange={(slot, playerIndex) => setP1CrystalAssignments(current => updateCrystalAssignmentSlot(current, slot, playerIndex))} /></>}
+    {FEATURE_FLAGS.phaseOne && <><div className="plan-heading"><p className="eyebrow">PHASE 1 RAID PLAN</p><h2>Interrupt and crystal positions</h2><p className="hint">P1 uses the wider outer arena. Player assignments must remain between the central void and outer wall; L’ura’s opening position remains freely assignable.</p></div><P2PositionMap phaseOne bossPosition={p1BossOpening} onBossChange={setP1BossOpening} mapLabel="Phase 1 position map" buttonLabel="P1" assignment={assignment} positions={p1Positions} profiles={profiles.map((profile, index) => ({ ...profile, crystal: p1CrystalAssignments.includes(index) }))} onChange={(index, point) => { setAssignment(index); setP1Positions(current => normalizeP1Assignments(current.map((position, positionIndex) => positionIndex === index ? point : position))) }} /><CrystalAssignmentEditor phaseLabel="Phase 1" assignments={p1CrystalAssignments} profiles={profiles} onChange={(slot, playerIndex) => setP1CrystalAssignments(current => updateCrystalAssignmentSlot(current, slot, playerIndex))} /></>}
     <div className="plan-heading"><p className="eyebrow">INTERMISSION RAID PLAN</p><h2>Opening positions</h2><p className="hint">Drag all 20 players into the playable ring and place the four start-slot orientation anchors.</p></div>
     <PositionMap assignment={assignment} positions={positions} startSlots={startSlots} profiles={intermissionProfiles} onPositionChange={(index, point) => { setAssignment(index); setPositions(current => current.map((position, positionIndex) => positionIndex === index ? point : position)) }} onStartSlotChange={(index, point) => setStartSlots(current => current.map((slot, slotIndex) => slotIndex === index ? clampStartSlot(point) : slot))} />
     <CrystalAssignmentEditor phaseLabel="Intermission" assignments={intermissionCrystalAssignments} profiles={profiles} onChange={(slot, playerIndex) => setIntermissionCrystalAssignments(current => updateCrystalAssignmentSlot(current, slot, playerIndex))} />

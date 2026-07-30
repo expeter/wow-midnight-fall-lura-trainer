@@ -71,6 +71,23 @@ const LOCAL_HALL_FIXTURES: AchievementHallRow[] = Array.from({ length: 100 }, (_
   }
 })
 
+const LOCAL_GLOBAL_FIXTURES: GlobalRankingRow[] = Array.from({ length: 100 }, (_, index) => {
+  const rank = index + 1
+  const achievementPoints = Math.max(50, 725 - index * 7)
+  const runPoints = 6370 - index * 31
+  return {
+    rank,
+    profileId: (rank + 2000).toString(16).padStart(24, '0'),
+    displayName: `${LOCAL_NAMES[(index + 2) % LOCAL_NAMES.length]}-G${String(rank).padStart(2, '0')}`,
+    guild: rank % 5 ? LOCAL_GUILDS[index % LOCAL_GUILDS.length] : null,
+    achievementPoints,
+    runPoints,
+    totalPoints: achievementPoints + runPoints,
+    crystalFlawless: rank % 3 !== 0,
+    hardClear: rank % 4 !== 0,
+  }
+})
+
 export function OnlineStandingSummary({ session, onManage, onLogout }: { session: OnlineSession; onManage: () => void; onLogout?: () => void }) {
   return <aside className="online-standing-summary" aria-label="Current online standings">
     <span aria-hidden="true">⌁</span>
@@ -90,25 +107,72 @@ export function OnlineStandingSummary({ session, onManage, onLogout }: { session
 }
 
 export function GlobalRankingSummary() {
-  const [rows, setRows] = useState<GlobalRankingRow[]>([])
+  const [rows, setRows] = useState<GlobalRankingRow[] | null>(null)
   const [profileId, setProfileId] = useState<string | null>(null)
-  useEffect(() => { void loadGlobalRanking(3).then(result => setRows(Array.isArray(result.rows) ? result.rows : [])).catch(() => setRows([])) }, [])
+  useEffect(() => { void loadGlobalRanking(3).then(result => {
+    const loaded = Array.isArray(result.rows) ? result.rows : []
+    setRows(loaded.length || !['localhost', '127.0.0.1'].includes(window.location.hostname) ? loaded : LOCAL_GLOBAL_FIXTURES)
+  }).catch(() => setRows(['localhost', '127.0.0.1'].includes(window.location.hostname) ? LOCAL_GLOBAL_FIXTURES : [])) }, [])
+  if (rows === null || rows.length === 0) return null
   const podium = Array.from({ length: 3 }, (_, index) => rows[index] ?? null)
   return <aside className="global-ranking-summary" aria-label="Global player ranking">
     <div><p className="eyebrow">GLOBAL RANKING</p><strong>Achievement + best run points</strong></div>
     <ol>{podium.map((row, index) => <li key={row?.profileId ?? `empty-${index}`} className={row ? '' : 'empty'}>{row
-      ? <button onClick={() => setProfileId(row.profileId)}><span>{row.totalPoints} global points</span><b>{index + 1}. {row.displayName}</b></button>
+      ? <button className="podium-card" onClick={() => setProfileId(row.profileId)}><span>{row.totalPoints} global points</span><b>{row.displayName}</b><i aria-hidden="true">{['🏆', '🥈', '🥉'][index]}</i></button>
       : <span aria-label={`Global rank ${index + 1} is empty`} />}</li>)}</ol>
     {profileId && <PublicProfileOverlay profileId={profileId} onClose={() => setProfileId(null)} />}
   </aside>
 }
 
-export function BestRunsSummary({ onOpen }: { onOpen: () => void }) {
+export function BestRunsSummary({ session, onOpen }: { session: OnlineSession; onOpen: () => void }) {
+  const boards = [
+    ['normal', 'crystal', 'Normal · crystal'],
+    ['normal', 'non-crystal', 'Normal · non-crystal'],
+    ['hard', 'crystal', 'Hard · crystal'],
+    ['hard', 'non-crystal', 'Hard · non-crystal'],
+  ] as const
   return <aside className="best-runs-summary" aria-label="Best run standings">
     <span aria-hidden="true">◆</span>
-    <div><strong>Best runs</strong><small>Hard · crystal leaderboard</small></div>
+    <div><strong>Best runs{session.globalPosition ? ` · Global #${session.globalPosition}` : ''}</strong></div>
     <button type="button" onClick={onOpen}>View standings</button>
+    <ul>{boards.map(([difficulty, duty, label]) => {
+      const standing = session.standings?.find(row => row.difficulty === difficulty && row.duty === duty)
+      return <li key={`${difficulty}:${duty}`}><small>{label}</small><b>{standing ? `#${standing.position}` : ''}</b></li>
+    })}</ul>
   </aside>
+}
+
+function GlobalRankRow({ row, onOpenProfile }: { row: GlobalRankingRow; onOpenProfile: (profileId: string) => void }) {
+  return <li>
+    <span className={`global-rank rank-${row.rank}`}>{row.rank <= 3 ? ['🏆', '🥈', '🥉'][row.rank - 1] : row.rank}</span>
+    <button className="profile-name-button" onClick={() => onOpenProfile(row.profileId)}>{row.displayName}</button>
+    <span className="player-credentials">{row.crystalFlawless && <i title="Flawless crystal run" aria-label="Flawless crystal run">◆</i>}{row.hardClear && <i title="Hard mode clear" aria-label="Hard mode clear">H</i>}</span>
+    <b>{row.totalPoints} pts</b>
+  </li>
+}
+
+function GlobalLeaderboard({ rows, own, search, onSearch, onRefresh, onOpenProfile }: {
+  rows: GlobalRankingRow[]
+  own: GlobalRankingRow | null
+  search: string
+  onSearch: (value: string) => void
+  onRefresh: () => void
+  onOpenProfile: (profileId: string) => void
+}) {
+  return <section className="global-leaderboard" aria-label="Global leaderboard standings">
+    <div className="leaderboard-columns" aria-hidden="true"><span>Global rank and player</span><span>Credentials · points</span></div>
+    <ol className="global-leaderboard-rows">{rows.map(row => <GlobalRankRow key={row.profileId} row={row} onOpenProfile={onOpenProfile} />)}</ol>
+    {own && own.rank > 10 && <div className="leaderboard-own-position global-own-position" aria-label="Your global position">
+      <span aria-hidden="true">…</span>
+      <p><b>{own.rank}. <button className="profile-name-button" onClick={() => onOpenProfile(own.profileId)}>{own.displayName}</button></b><span>{own.totalPoints} pts</span></p>
+    </div>}
+    <div className="leaderboard-search">
+      <label><span>Find a public ranking</span><small>Searches public player names and guilds.</small>
+        <input aria-label="Search global leaderboard" value={search} onChange={event => onSearch(event.target.value)} />
+      </label>
+      <button className="secondary" onClick={onRefresh}>Search rankings</button>
+    </div>
+  </section>
 }
 
 export default function OnlinePanel({
@@ -134,8 +198,10 @@ export default function OnlinePanel({
   const [search, setSearch] = useState('')
   const [rows, setRows] = useState<LeaderboardRow[]>([])
   const [leaderboardLoaded, setLeaderboardLoaded] = useState(false)
-  const [showFullLeaderboard, setShowFullLeaderboard] = useState(false)
-  const [leaderboardView, setLeaderboardView] = useState<'runs' | 'hall'>('runs')
+  const [leaderboardView, setLeaderboardView] = useState<'global' | 'runs' | 'hall'>('global')
+  const [globalRows, setGlobalRows] = useState<GlobalRankingRow[]>([])
+  const [globalOwn, setGlobalOwn] = useState<GlobalRankingRow | null>(null)
+  const [globalLoaded, setGlobalLoaded] = useState(false)
   const [hallRows, setHallRows] = useState<AchievementHallRow[]>([])
   const [hallOwn, setHallOwn] = useState<AchievementHallRow | null>(null)
   const [hallLoaded, setHallLoaded] = useState(false)
@@ -183,7 +249,7 @@ export default function OnlinePanel({
 
   async function refreshLeaderboard() {
     try {
-      const loaded = await loadLeaderboard(difficulty, duty, search, showFullLeaderboard ? 100 : 10)
+      const loaded = await loadLeaderboard(difficulty, duty, search, 10)
       setRows(Array.isArray(loaded.rows) ? loaded.rows : [])
       setLeaderboardLoaded(true)
     } catch {
@@ -194,7 +260,7 @@ export default function OnlinePanel({
 
   async function refreshHall() {
     try {
-      const loaded = await loadAchievementHall(search, showFullLeaderboard ? 100 : 10)
+      const loaded = await loadAchievementHall(search, 10)
       setHallRows(Array.isArray(loaded.rows) ? loaded.rows : [])
       setHallOwn(loaded.own ?? null)
       setHallLoaded(true)
@@ -205,9 +271,23 @@ export default function OnlinePanel({
     }
   }
 
+  async function refreshGlobal() {
+    try {
+      const loaded = await loadGlobalRanking(10, search)
+      setGlobalRows(Array.isArray(loaded.rows) ? loaded.rows : [])
+      setGlobalOwn(loaded.own ?? null)
+      setGlobalLoaded(true)
+    } catch {
+      setGlobalRows([])
+      setGlobalOwn(null)
+      setGlobalLoaded(false)
+    }
+  }
+
   useEffect(() => { void refreshSession() }, [])
-  useEffect(() => { void refreshLeaderboard() }, [difficulty, duty, showFullLeaderboard])
-  useEffect(() => { if (leaderboardView === 'hall') void refreshHall() }, [leaderboardView, showFullLeaderboard])
+  useEffect(() => { void refreshLeaderboard() }, [difficulty, duty])
+  useEffect(() => { if (leaderboardView === 'hall') void refreshHall() }, [leaderboardView])
+  useEffect(() => { if (leaderboardView === 'global') void refreshGlobal() }, [leaderboardView])
   useEffect(() => { if (requestedDifficulty) setDifficulty(requestedDifficulty) }, [requestedDifficulty])
   useEffect(() => { if (requestedDuty) setDuty(requestedDuty) }, [requestedDuty])
 
@@ -227,11 +307,11 @@ export default function OnlinePanel({
   const filteredRows = normalizedSearch && sourceRows === localRows
     ? sourceRows.filter(row => [row.displayName, row.character, row.realm, row.guild].some(value => value?.toLocaleLowerCase().includes(normalizedSearch)))
     : sourceRows
-  const displayedRows = showFullLeaderboard ? filteredRows : filteredRows.slice(0, 10)
+  const displayedRows = filteredRows.slice(0, 10)
   const selectedCharacter = characters.find(character => character.selected)
-  return <section className={`online-panel ${compact ? 'compact' : ''}${view === 'leaderboard' && difficulty === 'hard' ? ' hard-board' : ''}`} aria-labelledby="online-title">
+  return <section className={`online-panel ${compact ? 'compact' : ''}${view === 'leaderboard' && leaderboardView === 'runs' && difficulty === 'hard' ? ' hard-board' : ''}`} aria-labelledby="online-title">
     <header>
-      <div><p className="eyebrow">{view === 'profile' ? 'Optional online profile' : 'Verified rankings'}</p><h2 id="online-title">{view === 'profile' ? 'My characters' : leaderboardView === 'hall' ? 'Achievement Hall of Fame' : showFullLeaderboard ? 'Full leaderboard' : 'Top 10 leaderboard'}</h2></div>
+      <div><p className="eyebrow">{view === 'profile' ? 'Optional online profile' : 'Verified rankings'}</p><h2 id="online-title">{view === 'profile' ? 'My characters' : leaderboardView === 'global' ? 'Global leaderboard' : leaderboardView === 'hall' ? 'Achievement Hall of Fame' : 'Top 10 leaderboard'}</h2></div>
       {view === 'profile' && <a className="online-privacy-link" href={`${import.meta.env.BASE_URL}privacy.html`}>Privacy policy</a>}
     </header>
     {view === 'profile' && <p role="status">{status}</p>}
@@ -315,17 +395,25 @@ export default function OnlinePanel({
       </div>
     </div> : <div className={`online-leaderboard ${compact ? 'compact' : ''}`}>
       {!compact && <div className="leaderboard-view-switch" aria-label="Leaderboard type">
+        <button className={leaderboardView === 'global' ? 'selected' : ''} aria-current={leaderboardView === 'global' ? 'page' : undefined} onClick={() => setLeaderboardView('global')}>Global</button>
         <button className={leaderboardView === 'runs' ? 'selected' : ''} aria-current={leaderboardView === 'runs' ? 'page' : undefined} onClick={() => setLeaderboardView('runs')}>Runs</button>
         <button className={leaderboardView === 'hall' ? 'selected' : ''} aria-current={leaderboardView === 'hall' ? 'page' : undefined} onClick={() => setLeaderboardView('hall')}>Achievement Hall</button>
       </div>}
-      {leaderboardView === 'hall' && !compact ? <AchievementHall
+      {leaderboardView === 'global' && !compact ? <GlobalLeaderboard
+        rows={localhostPreview && (!globalLoaded || globalRows.length === 0)
+          ? LOCAL_GLOBAL_FIXTURES.filter(row => !search.trim() || [row.displayName, row.guild].some(value => value?.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))).slice(0, 10)
+          : globalRows}
+        own={globalOwn ?? (localhostPreview ? LOCAL_GLOBAL_FIXTURES[64] : null)}
+        search={search}
+        onSearch={setSearch}
+        onRefresh={() => void refreshGlobal()}
+        onOpenProfile={setProfileId}
+      /> : leaderboardView === 'hall' && !compact ? <AchievementHall
         rows={localhostPreview && (!hallLoaded || hallRows.length === 0) ? LOCAL_HALL_FIXTURES : hallRows}
         own={hallOwn ?? (localhostPreview ? LOCAL_HALL_FIXTURES[64] : null)}
-        full={showFullLeaderboard}
         search={search}
         onSearch={setSearch}
         onRefresh={() => void refreshHall()}
-        onToggleFull={() => setShowFullLeaderboard(current => !current)}
         onOpenProfile={setProfileId}
       /> : <>
       {compact ? <p className="compact-leaderboard-filter">{difficulty === 'hard' ? 'Hard' : 'Normal'} · {duty === 'crystal' ? 'Crystal carrier' : 'Non-crystal'} · Top 10</p> : <div className="leaderboard-categories" aria-label="Leaderboard categories">
@@ -342,7 +430,7 @@ export default function OnlinePanel({
         >{label}</button>)}
       </div>}
       <div className="leaderboard-columns" aria-hidden="true"><span>Rank and player</span><span>Guild · score · time</span></div>
-      {displayedRows.length ? <ol className={`leaderboard-rows ${showFullLeaderboard ? 'full' : 'top-ten'}`}>
+      {displayedRows.length ? <ol className="leaderboard-rows top-ten">
         {displayedRows.map((row, index) => <li key={`${row.displayName}-${row.durationMs}-${index}`}>
           <b>{row.rank ?? index + 1}. <button className="profile-name-button" onClick={() => setProfileId(row.profileId)}>{row.displayName}</button></b>
           <span>{row.guild ? `${row.guild} · ` : ''}{row.score} pts · {(row.durationMs / 1000).toFixed(1)}s</span>
@@ -357,9 +445,6 @@ export default function OnlinePanel({
           <input aria-label="Search public leaderboard" value={search} onChange={event => setSearch(event.target.value)} placeholder="Character, alias, realm, or guild" />
         </label>
         <button className="secondary" onClick={() => void refreshLeaderboard()}>Search rankings</button>
-        <button className="secondary full-leaderboard-toggle" onClick={() => setShowFullLeaderboard(current => !current)}>
-          {showFullLeaderboard ? 'Back to Top 10' : 'View full leaderboard'}
-        </button>
       </div>}
       {compact && <button className="secondary full-leaderboard-toggle compact-leaderboard-link" onClick={onOpenLeaderboard}>Open full leaderboard</button>}
       </>}
@@ -371,37 +456,32 @@ export default function OnlinePanel({
 function AchievementHall({
   rows,
   own,
-  full,
   search,
   onSearch,
   onRefresh,
-  onToggleFull,
   onOpenProfile,
 }: {
   rows: AchievementHallRow[]
   own: AchievementHallRow | null
-  full: boolean
   search: string
   onSearch: (value: string) => void
   onRefresh: () => void
-  onToggleFull: () => void
   onOpenProfile: (profileId: string) => void
 }) {
-  const displayed = full ? rows : rows.slice(0, 10)
+  const displayed = rows.slice(0, 10)
   return <section className="achievement-hall" aria-labelledby="achievement-hall-title">
     <div className="hall-heading"><div><p className="eyebrow">LIFETIME ACHIEVEMENT POINTS</p><h3 id="achievement-hall-title">Hall of Fame</h3></div><p>Account-wide totals · retired Feats of Strength keep their points.</p></div>
-    <div className="leaderboard-columns" aria-hidden="true"><span>Rank and player</span><span>Highest achievement · total</span></div>
+    <div className="leaderboard-columns" aria-hidden="true"><span>Rank and player</span><span>Points · date</span></div>
     <ol className="leaderboard-rows hall-rows">
       {displayed.map(row => <li key={`${row.rank}-${row.displayName}`}>
         <b>{row.rank}. <button className="profile-name-button" onClick={() => onOpenProfile(row.profileId)}>{row.displayName}</button>{row.guild ? <small>{row.guild}</small> : null}</b>
-        <span><strong>{row.highestAchievement.title}</strong>{row.highestAchievement.featOfStrength ? ' · Feat of Strength' : ''}<small>{row.highestAchievement.tier} · first earned {new Date(row.highestAchievement.firstEarnedAt).toLocaleDateString()} · {row.totalPoints} pts</small></span>
+        <span><strong>{row.totalPoints} pts</strong><small>{new Date(row.highestAchievement.firstEarnedAt).toLocaleDateString()}</small></span>
       </li>)}
     </ol>
     {own && <div className="leaderboard-own-position" aria-label="Your achievement Hall position"><span aria-hidden="true">…</span><p><b>{own.rank}. Your Hall of Fame position</b><span>{own.totalPoints} pts · {own.achievementCount} achievements</span></p></div>}
     <div className="leaderboard-search">
       <label><span>Find a Hall of Fame player</span><small>Searches public profile names and guilds.</small><input aria-label="Search achievement Hall" value={search} onChange={event => onSearch(event.target.value)} /></label>
       <button className="secondary" onClick={onRefresh}>Search Hall</button>
-      <button className="secondary" onClick={onToggleFull}>{full ? 'Back to Top 10' : 'View full Hall'}</button>
     </div>
   </section>
 }

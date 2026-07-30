@@ -1273,6 +1273,14 @@ export function p1PositioningWipeReason(point: Point, center: Point, innerRadius
     : 'Did not reach the Phase 1 playable ring before mechanics began'
 }
 
+export function normalizeP1PlanAssignments(candidate: Point[], maintained: Point[], center: Point, innerRadius: number, outerRadius: number): Point[] {
+  const legal = (point: Point) => Number.isFinite(point.x) && Number.isFinite(point.y)
+    && isInSafeAnnulus(point, center, innerRadius, outerRadius)
+  if (candidate.length !== maintained.length) return maintained.map(point => ({ ...point }))
+  if (candidate.filter(legal).length < Math.ceil(candidate.length * .75)) return maintained.map(point => ({ ...point }))
+  return candidate.map((point, index) => ({ ...(legal(point) ? point : maintained[index]) }))
+}
+
 export function movePlayer(position: Point, keys: Set<string>, speed: number, dt: number): Point {
   return moveInBounds(position, keys, speed, dt, { minX: 24, maxX: ARENA.width - 24, minY: 24, maxY: ARENA.height - 24 })
 }

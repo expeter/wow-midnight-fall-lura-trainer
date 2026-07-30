@@ -8,8 +8,18 @@ import { isP3RaidMemberVisible, p3ActiveCrystalAssignments } from './game'
 import { bossDamageScoreBonus, isActiveP3RuneDuty, isInsideP3Pool, p4BossHealthWithPlayerDamage, p4PlayerSplinterHitsNpc, p4StartingBossState, P1_STAR_LENGTH, preP4BossHealth, safestStarsplinterRotation, shouldApplyP3NpcDisplacement, shouldHoldP3RunePartner, shouldSuppressRepeatedWipe, shouldTriggerP3EarlyClear, starsplinterHitsCrystalCarrier, starsplinterHitsPoint } from './game'
 import { p4UnsafePenaltyTicks, P4_SAFE_ZONE_HEALTH_DRAIN_PER_SECOND, P4_SAFE_ZONE_PENALTY_PER_SECOND } from './game'
 import { canPickupCrystalAlongPath, INTERMISSION_POSITIONING_SECONDS, shortestPathAroundCircle } from './game'
+import { normalizeP1PlanAssignments } from './game'
 
 describe('Intermission game rules', () => {
+  it('restores legacy smaller-arena P1 coordinates and repairs isolated illegal slots', () => {
+    const center = { x: 100, y: 100 }
+    const maintained = Array.from({ length: 20 }, (_, index) => ({ x: 160 + index, y: 100 }))
+    const legacy = Array.from({ length: 20 }, (_, index) => ({ x: 100 + index % 3, y: 100 }))
+    expect(normalizeP1PlanAssignments(legacy, maintained, center, 50, 100)).toEqual(maintained)
+    const oneInvalid = maintained.map(point => ({ ...point }))
+    oneInvalid[12] = { ...center }
+    expect(normalizeP1PlanAssignments(oneInvalid, maintained, center, 50, 100)[12]).toEqual(maintained[12])
+  })
   it('creates six deterministic stars for a seed', () => { expect(seededStars(42)).toEqual(seededStars(42)); expect(seededStars(42)).toHaveLength(6) })
   it('moves with normalized WASD input and keeps the player in bounds', () => { const p = movePlayer({ x: 20, y: 20 }, new Set(['w', 'a']), 200, 1); expect(p.x).toBe(24); expect(p.y).toBe(24) })
   it('moves continuously in zoomed world coordinates without adding a camera offset', () => { const bounds = { minX: 30, maxX: 1070, minY: 30, maxY: 790 }; expect(moveInBounds({ x: 550, y: 410 }, new Set(['d']), 100, .5, bounds)).toEqual({ x: 600, y: 410 }); expect(moveInBounds({ x: 600, y: 410 }, new Set(), 100, .5, bounds)).toEqual({ x: 600, y: 410 }) })

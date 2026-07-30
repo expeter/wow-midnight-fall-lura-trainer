@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import OnlinePanel, { OnlineStandingSummary } from './OnlinePanel'
+import OnlinePanel, { BestRunsSummary, OnlineStandingSummary } from './OnlinePanel'
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -10,6 +10,21 @@ function json(body: unknown, status = 200) {
 }
 
 describe('optional online profile', () => {
+  it('shows all four personal board positions and the global position', () => {
+    render(<BestRunsSummary session={{
+      authenticated: true,
+      globalPosition: 7,
+      standings: [
+        { difficulty: 'normal', duty: 'crystal', score: 1500, durationMs: 1000, position: 1 },
+        { difficulty: 'hard', duty: 'non-crystal', score: 1400, durationMs: 1000, position: 4 },
+      ],
+    }} onOpen={() => undefined} />)
+    const card = screen.getByLabelText('Best run standings')
+    expect(card).toHaveTextContent('Best runs · Global #7')
+    for (const label of ['Normal · crystal', 'Normal · non-crystal', 'Hard · crystal', 'Hard · non-crystal']) expect(card).toHaveTextContent(label)
+    expect(card).toHaveTextContent('#1')
+    expect(card).toHaveTextContent('#4')
+  })
   it('keeps anonymous play available and loads the public leaderboard', async () => {
     vi.stubGlobal('fetch', vi.fn(async input => {
       const url = String(input)
@@ -29,10 +44,11 @@ describe('optional online profile', () => {
     }))
     const view = render(<OnlinePanel view="leaderboard" onSession={() => undefined} />)
     expect(screen.queryByRole('link', { name: 'Login with Battle.net' })).not.toBeInTheDocument()
-    expect(await screen.findByText('1200 pts · 300.0s')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Global leaderboard' })).toBeInTheDocument()
+    await userEvent.click(within(view.container).getByRole('button', { name: 'Runs' }))
+    expect(await within(view.container).findByText('1200 pts · 300.0s')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Top 10 leaderboard' })).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'View full leaderboard' }))
-    expect(await screen.findByRole('heading', { name: 'Full leaderboard' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'View full leaderboard' })).not.toBeInTheDocument()
     view.rerender(<OnlinePanel view="profile" onSession={() => undefined} />)
     expect(screen.getByRole('link', { name: 'Login with Battle.net' })).toHaveAttribute(
       'href',
@@ -75,14 +91,15 @@ describe('optional online profile', () => {
       throw new Error(`unexpected ${url}`)
     }))
     render(<OnlinePanel view="leaderboard" onSession={() => undefined} />)
-    const character = await screen.findByRole('button', { name: 'Nightbloom-HC01' })
+    const panel = document.body.lastElementChild as HTMLElement
+    await userEvent.click(within(panel).getByRole('button', { name: 'Runs' }))
+    const character = await screen.findByRole('button', { name: 'Nightbloom-HC01' }, { timeout: 3000 })
     expect(character.closest('ol')).toHaveTextContent('Dawnshield-HC02')
     expect(character.closest('ol')?.querySelectorAll('li')).toHaveLength(10)
     expect(screen.getByLabelText('Your leaderboard position')).toHaveTextContent('65. Your localhost test position')
     await userEvent.click(screen.getByRole('button', { name: 'Normal · Non-crystal' }))
     expect(await screen.findByRole('button', { name: 'Riftwalker-NN01' })).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'View full leaderboard' }))
-    await waitFor(() => expect(screen.getByRole('list').querySelectorAll('li')).toHaveLength(100))
+    expect(document.querySelector('.leaderboard-rows')?.querySelectorAll('li')).toHaveLength(10)
   })
 
   it('presents a distinct account-wide Achievement Hall with an own-position row', async () => {
@@ -97,11 +114,11 @@ describe('optional online profile', () => {
     await userEvent.click(within(view.container).getByRole('button', { name: 'Achievement Hall' }))
     expect(await within(view.container).findByRole('heading', { name: 'Achievement Hall of Fame' })).toBeInTheDocument()
     expect(within(view.container).getByRole('heading', { name: 'Hall of Fame' })).toBeInTheDocument()
-    expect(within(view.container).getAllByText('Beyond the Impossible')).toHaveLength(10)
+    expect(within(view.container).queryByText('Beyond the Impossible')).not.toBeInTheDocument()
+    expect(within(view.container).getAllByText(/pts$/)).toHaveLength(10)
     expect(within(view.container).getByLabelText('Your achievement Hall position')).toHaveTextContent('65. Your Hall of Fame position')
     expect(within(view.container).getByRole('list').querySelectorAll('li')).toHaveLength(10)
-    await userEvent.click(within(view.container).getByRole('button', { name: 'View full Hall' }))
-    await waitFor(() => expect(within(view.container).getByRole('list').querySelectorAll('li')).toHaveLength(100))
+    expect(within(view.container).queryByRole('button', { name: 'View full Hall' })).not.toBeInTheDocument()
   })
 
   it('selects an owned character and saves explicit public privacy', async () => {
@@ -166,6 +183,7 @@ describe('optional online profile', () => {
     view.rerender(<OnlinePanel view="leaderboard" onSession={() => undefined} />)
     const leaderboardPanel = view.container.querySelector('section')!
     expect(within(leaderboardPanel).getByText('Verified rankings')).toBeInTheDocument()
+    await user.click(within(leaderboardPanel).getByRole('button', { name: 'Runs' }))
     expect(within(leaderboardPanel).getByText(/Searches public character names/)).toBeInTheDocument()
     expect(within(leaderboardPanel).queryByLabelText(/Active character/)).not.toBeInTheDocument()
     expect(within(leaderboardPanel).getByLabelText('Your leaderboard position')).toHaveTextContent('18. Your verified position')

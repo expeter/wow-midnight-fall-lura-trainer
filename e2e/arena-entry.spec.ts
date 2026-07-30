@@ -41,6 +41,21 @@ test('exposes the released Phase 1 encounter and begins its assigned interrupts'
   await expect(page.getByRole('progressbar', { name: /Dangerous cone cast/ })).toBeVisible()
 })
 
+test('repairs legacy smaller-arena positions before a Hard Phase 1 countdown', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('lura-selected-position', '12')
+    localStorage.setItem('lura-p1-player-positions', JSON.stringify(Array.from({ length: 20 }, () => ({ x: 480, y: 270 }))))
+  })
+  await page.goto('/')
+  await page.getByRole('button', { name: 'hard', exact: true }).click()
+  await page.getByRole('button', { name: 'P1', exact: true }).click()
+  await page.getByRole('button', { name: /Enter P1/ }).click()
+  await expect(page.locator('.arena-wrap')).toHaveAttribute('data-event', 'p1-countdown')
+  await expect(page.getByText('Entered the Phase 1 void zone')).toHaveCount(0)
+  await page.waitForTimeout(1000)
+  await expect(page.getByText('Entered the Phase 1 void zone')).toHaveCount(0)
+})
+
 test('keeps the first Phase 1 Heaven Glaive set while the second sequence launches', async ({ page }) => {
   test.setTimeout(90_000)
   await page.addInitScript(() => {

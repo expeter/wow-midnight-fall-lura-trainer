@@ -586,9 +586,11 @@ export function createApp(
           return json({ error: 'rate_limited' }, 429, { ...corsHeaders, 'retry-after': '60' })
         }
         const limit = integerParameter(url, 'limit', 10, 100)
+        const search = url.searchParams.get('q')?.trim() ?? ''
         if (limit === null) return json({ error: 'invalid_pagination' }, 400, corsHeaders)
+        if (search && (search.length < 2 || search.length > 80)) return json({ error: 'invalid_search' }, 400, corsHeaders)
         const session = authenticate(database, config, dependencies, request)
-        const ranking = listGlobalRanking(database, config.currentLeaderboardSeason, session?.accountId)
+        const ranking = listGlobalRanking(database, config.currentLeaderboardSeason, session?.accountId, search)
         return json({ ...ranking, rows: ranking.rows.slice(0, limit) }, 200, corsHeaders)
       }
       const profileMatch = url.pathname.match(/^\/v1\/profiles\/([a-f0-9]{24})$/)

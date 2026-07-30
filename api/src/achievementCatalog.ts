@@ -39,6 +39,10 @@ export const ACHIEVEMENT_CATALOG: readonly CanonicalAchievement[] = [
   entry('never-caught-unprepared', 'Never Caught Unprepared', 'Rare', 50),
   entry('both-sides-of-crystal', 'Both Sides of the Crystal', 'Rare', 50),
   entry('phase-clears-50', 'One More Pull', 'Rare', 50),
+  entry('rank-one-normal-crystal', 'First Light, Crystal in Hand', 'Rare', 50),
+  entry('rank-one-normal-non-crystal', 'First Light, Hands Free', 'Rare', 50),
+  entry('rank-one-hard-crystal', 'Midnight’s Crystal Crown', 'Rare', 50),
+  entry('rank-one-hard-non-crystal', 'Midnight’s Unburdened Crown', 'Rare', 50),
   entry('not-a-scratch', 'Not a Scratch', 'Epic', 100),
   entry('hard-score-flawless', 'Eleven Hundred and Flawless', 'Epic', 100),
   entry('early-kill', 'Ahead of the Darkness', 'Epic', 100),
@@ -47,6 +51,7 @@ export const ACHIEVEMENT_CATALOG: readonly CanonicalAchievement[] = [
   entry('phase-clears-100', 'Can’t Get Enough', 'Epic', 100),
   entry('superhuman-both-duties', 'Superhuman: Refraction', 'Legendary', 200),
   entry('impossible-hard-streak', 'Beyond the Impossible', 'Legendary', 200),
+  entry('rank-one-all-boards', 'Four Boards, One Throne', 'Legendary', 200),
   entry('legacy-flawless', 'Legacy Flawless', 'Rare', 50, '0.3.1'),
 ] as const
 

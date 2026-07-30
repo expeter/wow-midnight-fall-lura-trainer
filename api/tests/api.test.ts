@@ -7,6 +7,7 @@ import { loadConfig, type ApiConfig } from '../src/config.js'
 import { applyMigrations, openDatabase, type Database } from '../src/database.js'
 import { isDatabaseBusyError } from '../src/http.js'
 import type { AuthDependencies } from '../src/auth.js'
+import { leaderboardAchievementIds } from '../src/attempts.js'
 
 const config: ApiConfig = {
   host: '127.0.0.1',
@@ -110,6 +111,43 @@ describe('Lura API foundation', () => {
     })
   })
 
+  it('awards hidden board crowns for each first place and the four-board sweep', () => {
+    const accountId = insertResult(database, {
+      region: 'eu', account: 'four-crowns', character: 'Crowned', realm: 'blackrock',
+      mode: 'character', score: 1800, duration: 80_000, acceptedAt: '2026-07-28T00:00:00.000Z',
+    })
+    const characterId = Number((database.prepare('SELECT id FROM characters WHERE account_id = ?').get(accountId) as { id: number }).id)
+    database.prepare("UPDATE attempts SET difficulty = 'normal', duty = 'crystal', verified_difficulty = 'normal' WHERE account_id = ?").run(accountId)
+    database.prepare("UPDATE results SET difficulty = 'normal', duty = 'crystal', verified_difficulty = 'normal' WHERE account_id = ?").run(accountId)
+    for (const [difficulty, duty, suffix] of [
+      ['normal', 'non-crystal', 'nn'], ['hard', 'crystal', 'hc'], ['hard', 'non-crystal', 'hn'],
+    ] as const) {
+      const attemptId = `attempt-four-crowns-${suffix}`
+      database.prepare(`
+        INSERT INTO attempts (
+          id, account_id, character_id, nonce_hash, difficulty, duty, entry_mode, phase_scope,
+          trainer_version, build_id, configuration_json, issued_at, expires_at, consumed_at,
+          verified_difficulty, leaderboard_season
+        ) VALUES (?, ?, ?, 'nonce', ?, ?, 'full', 'all', '0.3.0', 'build-1', '{}',
+          '2026-07-28T00:00:00.000Z', '2026-07-28T01:00:00.000Z', '2026-07-28T00:01:00.000Z', ?, 'season-1')
+      `).run(attemptId, accountId, characterId, difficulty, duty, difficulty)
+      database.prepare(`
+        INSERT INTO results (
+          attempt_id, account_id, character_id, difficulty, duty, score, duration_ms,
+          trainer_version, build_id, accepted_at, verified_difficulty, run_eligible, leaderboard_season
+        ) VALUES (?, ?, ?, ?, ?, 1800, 80000, '0.3.0', 'build-1',
+          '2026-07-28T00:01:00.000Z', ?, 1, 'season-1')
+      `).run(attemptId, accountId, characterId, difficulty, duty, difficulty)
+    }
+    assert.deepEqual(leaderboardAchievementIds(database, accountId, 'season-1').sort(), [
+      'rank-one-all-boards',
+      'rank-one-hard-crystal',
+      'rank-one-hard-non-crystal',
+      'rank-one-normal-crystal',
+      'rank-one-normal-non-crystal',
+    ])
+  })
+
   it('does not let a stale environment override pin attempt compatibility', () => {
     const releaseConfig = loadConfig({ TRAINER_CURRENT_VERSION: '0.3.0' })
     assert.equal(releaseConfig.currentTrainerVersion, '0.5.1')
@@ -211,10 +249,18 @@ describe('Lura API foundation', () => {
       INSERT INTO wipe_events (account_id, character_id, phase, difficulty, reason, trainer_version, occurred_at)
       VALUES (?, ?, 'Phase 1', 'hard', 'Test wipe', '0.3.0', '2026-07-28T00:04:00.000Z')
     `).run(accountId, character.id)
+    database.prepare(`
+      INSERT INTO attempt_summaries (
+        attempt_id, duration_ms, phase_results_json, mistakes_json, actions_json,
+        accepted_score, submitted_score, accepted_at
+      ) VALUES ('attempt-global', 80000, '[]', '[]', '{}', 1500, 1500, '2026-07-28T00:02:00.000Z')
+    `).run()
     const app = createApp(database, config)
     const ranking = await app.handle(new Request('http://api.test/v1/global-ranking?limit=3'))
-    const rankingRows = (await ranking.json() as { rows: Array<{ profileId: string; achievementPoints: number; runPoints: number; totalPoints: number }> }).rows
-    assert.deepEqual(rankingRows[0], { ...rankingRows[0], profileId: account.profileId, achievementPoints: 50, runPoints: 1500, totalPoints: 1550 })
+    const rankingRows = (await ranking.json() as { rows: Array<{ profileId: string; achievementPoints: number; runPoints: number; totalPoints: number; crystalFlawless: boolean; hardClear: boolean }> }).rows
+    assert.deepEqual(rankingRows[0], { ...rankingRows[0], profileId: account.profileId, achievementPoints: 50, runPoints: 1500, totalPoints: 1550, crystalFlawless: true, hardClear: true })
+    const searched = await app.handle(new Request('http://api.test/v1/global-ranking?limit=10&q=Asgard'))
+    assert.deepEqual((await searched.json() as { rows: Array<{ profileId: string }> }).rows.map(row => row.profileId), [account.profileId])
     const profile = await app.handle(new Request(`http://api.test/v1/profiles/${account.profileId}`))
     const body = await profile.json() as { displayName: string; attempts: number; wipes: number; achievements: unknown[] }
     assert.equal(body.displayName, 'Globalhero')

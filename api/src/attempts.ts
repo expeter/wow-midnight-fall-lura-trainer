@@ -291,6 +291,32 @@ function aggregateAchievementIds(database: Database, accountId: number): string[
   return ids
 }
 
+export function leaderboardAchievementIds(database: Database, accountId: number, season: string): string[] {
+  const leaders = database.prepare(`
+    WITH account_bests AS (
+      SELECT account_id AS accountId, difficulty, duty, score, duration_ms AS durationMs, accepted_at AS acceptedAt,
+        ROW_NUMBER() OVER (
+          PARTITION BY account_id, difficulty, duty
+          ORDER BY score DESC, duration_ms ASC, accepted_at ASC
+        ) AS accountRun
+      FROM results
+      WHERE run_eligible = 1 AND leaderboard_season = ?
+        AND difficulty IN ('normal', 'hard')
+    ), ranked AS (
+      SELECT accountId, difficulty, duty,
+        ROW_NUMBER() OVER (
+          PARTITION BY difficulty, duty
+          ORDER BY score DESC, durationMs ASC, acceptedAt ASC
+        ) AS boardRank
+      FROM account_bests WHERE accountRun = 1
+    )
+    SELECT difficulty, duty FROM ranked WHERE accountId = ? AND boardRank = 1
+  `).all(season, accountId) as Array<{ difficulty: 'normal' | 'hard'; duty: 'crystal' | 'non-crystal' }>
+  const ids = leaders.map(row => `rank-one-${row.difficulty}-${row.duty}`)
+  if (new Set(leaders.map(row => `${row.difficulty}:${row.duty}`)).size === 4) ids.push('rank-one-all-boards')
+  return ids
+}
+
 export function completeAttempt(
   database: Database,
   dependencies: AuthDependencies,
@@ -379,6 +405,7 @@ export function completeAttempt(
       attempt.leaderboardSeason,
     )
     achievementIds.push(...aggregateAchievementIds(database, accountId))
+    achievementIds.push(...leaderboardAchievementIds(database, accountId, attempt.leaderboardSeason))
     for (const achievementId of [...new Set(achievementIds)]) {
       database.prepare(`
         INSERT INTO achievements (id, trainer_version, title)

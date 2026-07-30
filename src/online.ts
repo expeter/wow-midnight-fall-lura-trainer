@@ -76,6 +76,8 @@ export interface GlobalRankingRow {
   achievementPoints: number
   runPoints: number
   totalPoints: number
+  crystalFlawless: boolean
+  hardClear: boolean
 }
 
 export interface PublicPlayerProfile {
@@ -228,8 +230,10 @@ export function loadAchievementHall(search = '', limit = 10): Promise<{
   return api(`/v1/achievement-hall?${query}`)
 }
 
-export function loadGlobalRanking(limit = 10): Promise<{ rows: GlobalRankingRow[]; own: GlobalRankingRow | null; total: number }> {
-  return api(`/v1/global-ranking?limit=${limit}`)
+export function loadGlobalRanking(limit = 10, search = ''): Promise<{ rows: GlobalRankingRow[]; own: GlobalRankingRow | null; total: number }> {
+  const query = new URLSearchParams({ limit: String(limit) })
+  if (search.trim()) query.set('q', search.trim())
+  return api(`/v1/global-ranking?${query}`)
 }
 
 export function loadPublicPlayerProfile(profileId: string): Promise<PublicPlayerProfile> {

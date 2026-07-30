@@ -8,13 +8,15 @@ export interface GlobalRankingRow {
   achievementPoints: number
   runPoints: number
   totalPoints: number
+  crystalFlawless: boolean
+  hardClear: boolean
 }
 
 interface RawGlobalRow extends Omit<GlobalRankingRow, 'rank' | 'totalPoints'> {
   accountId: number
 }
 
-export function listGlobalRanking(database: Database, season: string, ownAccountId?: number): {
+export function listGlobalRanking(database: Database, season: string, ownAccountId?: number, search = ''): {
   rows: GlobalRankingRow[]
   own: GlobalRankingRow | null
   total: number
@@ -35,28 +37,43 @@ export function listGlobalRanking(database: Database, season: string, ownAccount
       GROUP BY account_id, difficulty, duty
     ), run_totals AS (
       SELECT accountId, SUM(bestScore) AS runPoints FROM board_bests GROUP BY accountId
+    ), credentials AS (
+      SELECT r.account_id AS accountId,
+        MAX(CASE WHEN r.duty = 'crystal' AND s.mistakes_json = '[]' THEN 1 ELSE 0 END) AS crystalFlawless,
+        MAX(CASE WHEN COALESCE(r.verified_difficulty, r.difficulty) = 'hard' THEN 1 ELSE 0 END) AS hardClear
+      FROM results r JOIN attempt_summaries s ON s.attempt_id = r.attempt_id
+      WHERE r.run_eligible = 1 AND r.leaderboard_season = ?
+      GROUP BY r.account_id
     )
     SELECT a.id AS accountId, a.public_profile_id AS profileId,
       CASE WHEN p.identity_mode = 'character' THEN c.name ELSE COALESCE(NULLIF(TRIM(p.alias), ''), 'Unnamed player') END AS displayName,
       CASE WHEN p.show_guild = 1 THEN c.guild_name ELSE NULL END AS guild,
       COALESCE(at.achievementPoints, 0) AS achievementPoints,
-      COALESCE(rt.runPoints, 0) AS runPoints
+      COALESCE(rt.runPoints, 0) AS runPoints,
+      COALESCE(cr.crystalFlawless, 0) AS crystalFlawless,
+      COALESCE(cr.hardClear, 0) AS hardClear
     FROM accounts a
     JOIN privacy_settings p ON p.account_id = a.id
     LEFT JOIN characters c ON c.id = a.selected_character_id
     LEFT JOIN achievement_totals at ON at.accountId = a.id
     LEFT JOIN run_totals rt ON rt.accountId = a.id
+    LEFT JOIN credentials cr ON cr.accountId = a.id
     WHERE p.identity_mode != 'anonymous'
       AND (COALESCE(at.achievementPoints, 0) > 0 OR COALESCE(rt.runPoints, 0) > 0)
-  `).all(season) as unknown as RawGlobalRow[]
-  const ranked = raw.sort((left, right) =>
+  `).all(season, season) as unknown as Array<Omit<RawGlobalRow, 'crystalFlawless' | 'hardClear'> & { crystalFlawless: number; hardClear: number }>
+  const normalized = raw.map(row => ({ ...row, crystalFlawless: Boolean(row.crystalFlawless), hardClear: Boolean(row.hardClear) }))
+  const ranked = normalized.sort((left, right) =>
     right.achievementPoints + right.runPoints - (left.achievementPoints + left.runPoints)
     || right.runPoints - left.runPoints
     || left.displayName.localeCompare(right.displayName))
     .map((row, index) => ({ ...row, rank: index + 1, totalPoints: row.achievementPoints + row.runPoints }))
   const publicRow = ({ accountId: _accountId, ...row }: typeof ranked[number]): GlobalRankingRow => row
   const own = ownAccountId ? ranked.find(row => row.accountId === ownAccountId) : undefined
-  return { rows: ranked.map(publicRow), own: own ? publicRow(own) : null, total: ranked.length }
+  const needle = search.trim().toLocaleLowerCase()
+  const visible = needle
+    ? ranked.filter(row => row.displayName.toLocaleLowerCase().includes(needle) || row.guild?.toLocaleLowerCase().includes(needle))
+    : ranked
+  return { rows: visible.map(publicRow), own: own ? publicRow(own) : null, total: visible.length }
 }
 
 export function publicPlayerProfile(database: Database, profileId: string, season: string) {

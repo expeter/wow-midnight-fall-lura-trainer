@@ -215,6 +215,18 @@ attempt/wipe counts, global points, and public Raider.IO identity only while
 the account's current visibility is alias or character; anonymous profiles
 return not found.
 
+Global rows also return server-derived `crystalFlawless` and `hardClear`
+booleans. The client presents the endpoint as Top 10 plus the authenticated
+account's `own` row, matching the run-board standing pattern. An optional
+privacy-filtered `q` parameter searches published display names and guilds
+without changing each matching player's global rank.
+
+Rank-one board achievements are evaluated by the server after accepting a
+run. Each of the four board crowns is hidden until earned and worth 50 points;
+simultaneously leading all four boards awards the hidden 200-point Legendary
+`Four Boards, One Throne` achievement. Score, duration, then acceptance time
+are the board tie-breakers.
+
 ## Achievements
 
 Online achievement records are derived from accepted attempt data using the

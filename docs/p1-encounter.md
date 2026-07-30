@@ -75,6 +75,10 @@ phase-specific raid-plan persistence.
   the assigned NPC pickup.
 - Phase 1 movement is validated against its full 102–260 annulus and never
   falls through to the smaller Intermission boundary check.
+- Persisted, shared, and planner-edited player assignments are validated
+  against that annulus before use. Legacy smaller-arena formations restore the
+  maintained P1 formation, while isolated illegal slots restore their matching
+  maintained defaults so countdown cannot begin inside the void.
 
 ## Heaven Glaives
 

@@ -532,7 +532,7 @@ export function createApp(
           )
         } catch (error) {
           const known = new Set([
-            'invalid_nonce', 'invalid_version', 'implausible_duration',
+            'invalid_client_run_id', 'invalid_nonce', 'invalid_version', 'implausible_duration',
             'invalid_score', 'invalid_phase_order', 'invalid_phase_duration',
             'invalid_mistakes', 'mistake_count_mismatch', 'invalid_actions',
             'score_mismatch', 'invalid_achievement_inputs', 'attempt_not_found',
@@ -555,7 +555,7 @@ export function createApp(
           SELECT a.id, a.difficulty, a.duty, a.trainer_version AS trainerVersion,
             a.build_id AS buildId, a.issued_at AS issuedAt, a.expires_at AS expiresAt,
             a.consumed_at AS consumedAt, s.accepted_score AS score,
-            s.duration_ms AS durationMs
+            s.duration_ms AS durationMs, s.client_run_id AS clientRunId
           FROM attempts a LEFT JOIN attempt_summaries s ON s.attempt_id = a.id
           WHERE a.account_id = ? ORDER BY a.issued_at DESC LIMIT 100
         `).all(session.accountId)

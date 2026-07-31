@@ -581,6 +581,10 @@
 .phase-results small { margin-top: 3px; color: #8190ad; font: 10px 'DM Mono', monospace; }
 .completion-extras { display: flex; gap: 10px; margin: 16px 2px 0; color: #9aa7c0; font-size: 12px; }
 .completion-extras strong { color: #e7eaf2; }
+.completion-run-id { display: flex; align-items: center; gap: 7px; margin: 9px 2px 0; color: #65728d; font: 10px 'DM Mono', monospace; }
+.completion-run-id code { color: #7d89a1; font: inherit; }
+.completion-run-id button { width: auto; padding: 3px 6px; border-color: #29344b; color: #7d89a1; background: transparent; font-size: 9px; }
+.completion-run-id button:disabled { opacity: .45; cursor: wait; }
 .completion-actions { display: flex; align-items: center; gap: 13px; margin-top: 22px; }
 .copy-completion { padding: 12px 17px; color: #07121a; border-color: #73e0c1; background: #73e0c1; font-weight: 800; }
 .completion-actions .secondary { padding: 12px 17px; }

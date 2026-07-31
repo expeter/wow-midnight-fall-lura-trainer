@@ -53,6 +53,13 @@ change before implementation.
 - Flawless means zero recorded mistakes.
 - Potion, shield, and main ability use are listed in the completion details;
   potion and shield are permanent phase-refilling actions rather than options.
+- Phase cards present the cumulative score at the end of each phase as their
+  primary value. Their smaller `Phase contribution` value is that phase's
+  signed score change relative to the normal 1,000-point attempt baseline.
+  Browser cards, copied summaries, generated images, and Run-ID proof JSON use
+  the same derivation; direct-phase practice still starts at 1,000 and ends at
+  its authoritative final practice score. This is presentation only and does
+  not make the stored display-normalized phase values individually additive.
 - Result-card honors summarize the current completion. They are distinct from
   the canonical browser/API achievement catalogue and do not automatically
   create another permanent achievement.
@@ -62,6 +69,11 @@ change before implementation.
 - Canonical achievements use stable IDs and point tiers. Browser-local records
   retain immutable first-earned timestamps; online records are awarded only
   from accepted server attempts.
+- Every result card and copied result image carries a quiet browser-generated
+  `Run-ID`. It is the truncated SHA-256 checksum of versioned canonical JSON
+  containing the displayed run values and remains available without the API.
+  The exact proof JSON is copyable. This detects ordinary edits but is not an
+  unforgeable signature because the browser contains the public algorithm.
 
 ## SPEC-005 · Background audio
 
@@ -204,6 +216,10 @@ change before implementation.
   each accepted completion. It restores stable achievement IDs, earliest-earned
   metadata, phase-clear totals, duty coverage, and current Normal/Hard flawless
   streaks without changing award eligibility or leaderboard scoring.
+- Accepted completions include and retain the browser-generated `Run-ID` used
+  by the corresponding result card. Server acceptance remains a separate,
+  stronger status; storing a client checksum does not turn it into a server
+  signature or alter result validation.
 - The Achievement Hall is account-wide and ranks public profiles by lifetime
   canonical achievement points. It shows the highest-value achievement and
   first-earned time; retired achievements retain their points. Catalogue

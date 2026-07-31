@@ -9,6 +9,11 @@ export interface PhaseResult {
   mistakes?: number
 }
 
+export interface CompletionPhasePresentation extends PhaseResult {
+  contribution: number
+  cumulativePoints: number
+}
+
 export const PHASE_LABELS: Record<PhaseKey, string> = {
   p1: 'Phase 1',
   intermission: 'Intermission',
@@ -26,6 +31,19 @@ export function buildPhaseResult(key: PhaseKey, startScore: number, endScore: nu
     ...(recovery ? { recovery } : {}),
     ...(typeof mistakes === 'number' ? { mistakes: Math.max(0, Math.round(mistakes)) } : {}),
   }
+}
+
+export function completionPhasePresentation(results: PhaseResult[]): CompletionPhasePresentation[] {
+  let cumulativePoints = 1000
+  return results.map(result => {
+    const contribution = Math.round(result.points) - 1000
+    cumulativePoints += contribution
+    return { ...result, contribution, cumulativePoints }
+  })
+}
+
+export function signedPhaseContribution(contribution: number): string {
+  return `${contribution >= 0 ? '+' : '−'}${Math.abs(contribution)}`
 }
 
 export function isFullSequenceCompletion(results: PhaseResult[]): boolean {
@@ -139,7 +157,7 @@ interface ShareSummary {
 
 export function completionShareText(summary: ShareSummary): string {
   const heading = summary.fullSequence ? '🏆 L’URA MOVEMENT MASTER' : '✨ L’ura practice complete'
-  const phases = summary.results.map(result => `${result.label}: ${result.points} pts · ${result.time.toFixed(1)}s`)
+  const phases = completionPhasePresentation(summary.results).map(result => `${result.label}: ${result.cumulativePoints} pts · Phase contribution ${signedPhaseContribution(result.contribution)} · ${result.time.toFixed(1)}s`)
   return [
     heading,
     `${summary.playerName} · ${summary.playerClass} · ${summary.difficulty} · Attempt #${summary.attempt}`,

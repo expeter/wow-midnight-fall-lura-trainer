@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 0.9.0 · 2026-07-31
+
+- CR-225: Show cumulative end-of-phase scores on completion cards, copied
+  summaries, generated images, and Run-ID proof JSON, with each signed score
+  delta explicitly labelled `Phase contribution`. Scoring and leaderboard
+  comparability are unchanged.
+- FR-071: Add a quiet offline browser-generated `Run-ID` to result cards and
+  copied images. It checks versioned canonical result JSON with SHA-256, offers
+  the exact proof data for copying, and is stored with accepted API attempts
+  when online without claiming to be an unforgeable server signature.
+
 ## 0.8.0 · 2026-07-31
 
 - FR-070: Synchronize account-owned verified achievements and cumulative

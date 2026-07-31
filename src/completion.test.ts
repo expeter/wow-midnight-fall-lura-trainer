@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildPhaseResult, completionAchievements, completionImageCardLayout, completionResultTitle, completionShareText, isFullSequenceCompletion, wrapTextByWidth, type PhaseResult } from './completion'
+import { buildPhaseResult, completionAchievements, completionImageCardLayout, completionPhasePresentation, completionResultTitle, completionShareText, isFullSequenceCompletion, wrapTextByWidth, type PhaseResult } from './completion'
 
 describe('completion card results', () => {
   it('scores each phase from its own 1000-point budget', () => {
@@ -35,10 +35,53 @@ describe('completion card results', () => {
       results,
     })
     expect(text).toContain('L’ura practice complete')
-    expect(text).toContain('Phase 4: 950 pts · 55.0s')
+    expect(text).toContain('Phase 4: 950 pts · Phase contribution −50 · 55.0s')
     expect(text).toContain('1 mistake')
     expect(text).toContain('Attempt #7')
     expect(text).toContain('Played position: Assigned Mage — Spot 4')
+  })
+
+  it('presents phase results as cumulative scores with explicit contributions', () => {
+    const results: PhaseResult[] = [1342, 1180, 1329, 1117, 1202].map((points, index) => ({
+      key: (['p1', 'intermission', 'p2', 'p3', 'p4'] as const)[index],
+      label: ['Phase 1', 'Intermission', 'Phase 2', 'Phase 3', 'Phase 4'][index],
+      points,
+      time: 10,
+    }))
+
+    expect(completionPhasePresentation(results).map(result => ({
+      cumulative: result.cumulativePoints,
+      contribution: result.contribution,
+    }))).toEqual([
+      { cumulative: 1342, contribution: 342 },
+      { cumulative: 1522, contribution: 180 },
+      { cumulative: 1851, contribution: 329 },
+      { cumulative: 1968, contribution: 117 },
+      { cumulative: 2170, contribution: 202 },
+    ])
+    expect(completionShareText({
+      playerName: 'Pestivator',
+      playerClass: 'Mage',
+      difficulty: 'Normal',
+      totalScore: 2170,
+      totalTime: 50,
+      mistakes: 0,
+      attempt: 1,
+      extras: 'Standard movement mechanics',
+      fullSequence: true,
+      results,
+    })).toContain('Phase 4: 2170 pts · Phase contribution +202')
+  })
+
+  it('reduces cumulative score for a negative contribution and preserves direct practice baseline', () => {
+    const sequence = completionPhasePresentation([
+      { key: 'p1', label: 'Phase 1', points: 1100, time: 10 },
+      { key: 'intermission', label: 'Intermission', points: 925, time: 10 },
+    ])
+    expect(sequence.map(result => [result.cumulativePoints, result.contribution])).toEqual([[1100, 100], [1025, -75]])
+
+    const direct = completionPhasePresentation([{ key: 'p4', label: 'Phase 4', points: 950, time: 55 }])
+    expect(direct[0]).toMatchObject({ cumulativePoints: 950, contribution: -50 })
   })
 
   it('keeps five phase cards and long completion text inside the copied image', () => {

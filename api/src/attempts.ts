@@ -24,6 +24,7 @@ interface AttemptInput {
 }
 
 interface CompletionInput {
+  clientRunId?: unknown
   nonce?: unknown
   configurationFingerprint?: unknown
   optionalChallenges?: unknown
@@ -154,12 +155,16 @@ interface PhaseResult {
 }
 
 function validatedCompletion(input: CompletionInput, expectedPhases: readonly string[]) {
+  const clientRunId = cleanString(input.clientRunId, 40)
   const nonce = cleanString(input.nonce, 128)
   const configurationFingerprint = cleanString(input.configurationFingerprint, 128)
   const trainerVersion = cleanString(input.trainerVersion, 30)
   const buildId = cleanString(input.buildId, 80)
   const durationMs = Number(input.durationMs)
   const submittedScore = Number(input.submittedScore)
+  if (!clientRunId || !/^LURA1-(?:[0-9A-F]{4}-){4}[0-9A-F]{4}$/.test(clientRunId)) {
+    throw new Error('invalid_client_run_id')
+  }
   if (!nonce) throw new Error('invalid_nonce')
   if (!configurationFingerprint) throw new Error('invalid_configuration')
   if (
@@ -257,6 +262,7 @@ function validatedCompletion(input: CompletionInput, expectedPhases: readonly st
     || typeof achievementInputs.p4ProtectionTankRole !== 'undefined' && typeof achievementInputs.p4ProtectionTankRole !== 'boolean'
   ) throw new Error('invalid_achievement_inputs')
   return {
+    clientRunId,
     nonce,
     configuration: {
       fingerprint: configurationFingerprint,
@@ -460,6 +466,7 @@ export function completeAttempt(
       SELECT accepted_score AS score, accepted_at AS acceptedAt,
         idempotency_key_hash AS idempotencyKeyHash,
         completion_hash AS completionHash,
+        client_run_id AS clientRunId,
         achievement_ids_json AS achievementIdsJson
       FROM attempt_summaries WHERE attempt_id = ?
     `).get(attemptId) as {
@@ -467,6 +474,7 @@ export function completeAttempt(
       acceptedAt: string
       idempotencyKeyHash: string | null
       completionHash: string | null
+      clientRunId: string
       achievementIdsJson: string
     } | undefined
     if (summary?.idempotencyKeyHash === idempotencyKeyHash) {
@@ -475,6 +483,7 @@ export function completeAttempt(
         accepted: true,
         score: summary.score,
         acceptedAt: summary.acceptedAt,
+        clientRunId: summary.clientRunId,
         achievementIds: JSON.parse(summary.achievementIdsJson) as string[],
       }
     }
@@ -516,8 +525,8 @@ export function completeAttempt(
       INSERT INTO attempt_summaries (
         attempt_id, duration_ms, phase_results_json, mistakes_json, actions_json,
         accepted_score, submitted_score, accepted_at, idempotency_key_hash,
-        completion_hash, achievement_ids_json
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '[]')
+        completion_hash, client_run_id, achievement_ids_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '[]')
     `).run(
       attemptId,
       completion.durationMs,
@@ -529,6 +538,7 @@ export function completeAttempt(
       acceptedAt,
       idempotencyKeyHash,
       completionHash,
+      completion.clientRunId,
     )
     database.prepare(`
       INSERT INTO results (
@@ -607,6 +617,7 @@ export function completeAttempt(
     accepted: true,
     score: completion.acceptedScore,
     acceptedAt,
+    clientRunId: completion.clientRunId,
     achievementIds: awardedAchievementIds,
   }
 }

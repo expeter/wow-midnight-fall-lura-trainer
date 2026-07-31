@@ -159,6 +159,7 @@ unavailable.
 - phase results and mistake events;
 - action usage and achievement inputs;
 - final client-reported score;
+- the browser-generated `Run-ID` printed on the result card/image;
 - the trainer version/build identifier.
 
 The request includes an `Idempotency-Key` header. The server validates
@@ -168,6 +169,12 @@ recomputes the published score from accepted inputs instead of trusting the
 client's total. An identical retry with the same key returns the original
 accepted response; a changed payload or different key cannot consume the
 attempt again. Invalid completions never enter the leaderboard.
+
+The API stores and echoes the submitted `Run-ID` with an accepted attempt so
+the browser card and server record can be correlated when online. The ID is a
+client-side SHA-256 checksum over canonical result JSON, not an authentication
+secret or server signature; local and preview results can generate one without
+contacting the API.
 
 This is deliberate anti-tampering, not a claim of cheat-proof execution. A
 fully modified browser can still fabricate plausible events. Stronger

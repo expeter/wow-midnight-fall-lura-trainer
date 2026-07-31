@@ -6,9 +6,10 @@ in [`specifications.md`](specifications.md).
 
 ## Current release boundary
 
-- Latest tagged and deployed release line: `v0.8.0`.
-- `v0.8.0` restores account-owned verified achievements and cumulative progress
-  across browsers while keeping controlled-player Phase 2 beam duty and the
+- Release candidate: `v0.9.0`; deployed release remains `v0.8.0` until the
+  frontend/API production checks complete.
+- `v0.9.0` adds offline result Run-IDs and cumulative completion-phase
+  presentation while keeping controlled-player Phase 2 beam duty and the
   two-tank encounter roles in localhost preview.
 - Current leaderboard season: `season-1`. No milestone or SemVer bump changes
   it automatically.
@@ -33,6 +34,9 @@ shell never silently mistakes an expired server session for a valid login.
 
 This patch retains `season-1`: it repairs attribution and version acceptance
 without changing encounter scoring or ranking order.
+
+- `CR-226` — publish v0.9.0 with synchronized frontend/API compatibility and
+  verify production leaderboard continuity while retaining `season-1`.
 
 ## M1 · Encounter completion
 

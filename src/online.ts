@@ -379,7 +379,7 @@ export function completeOnlineAttempt(
   attemptId: string,
   input: object,
 ) {
-  return api<{ accepted: true; score: number; achievementIds: string[] }>(
+  return api<{ accepted: true; score: number; clientRunId: string; achievementIds: string[] }>(
     `/v1/attempts/${encodeURIComponent(attemptId)}/complete`,
     {
       method: 'POST',

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
 import { CRYSTAL_GROUND_EXPLOSION_SECONDS, isCommittedP3ProtectionCrystal } from './game'
 import { bossBeamHitsPlayer, canPickupCrystalDuringEvent, canRecoverFromWipe, crystalWipeReason, difficultySettings, distance, distanceToSegment, isOnAssignedP3Side, isP3ConsumedSectorLethal, isInSafeAnnulus, isP3ProtectionCrystalPlaced, isProtectedByP3Bubble, isProtectedByP3Light, moveRelativeToCamera, moveWithIncreasingPull, npcEntryPosition, OPENING_BOOST_SECONDS, orientedAssignments, p1PositioningWipeReason, p2BeamHitsAssignedOrb, p2BeamPlayers, p2BeamTargetOrbIndices, p2NpcCrystalDrops, p2OrbPosition, p2PhaseTransitionCountdown, p2PostBeamEvent, p2ReturningOrbPositions, P1_FINAL_RECOVERY_SECONDS, P1_STAR_LENGTH, P2_BEAM_SECONDS, P2_FETCH_SECONDS, P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS, P2_ORBIT_SPEED, P2_ORB_GLOW_LEAD_SECONDS, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_POSITIONING_SECONDS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p3ActiveCrystalAssignments, P3_APPROACH_SECONDS, p3ArchangelStackPosition, p3AssignmentForRound, p3BossPosition, p3FlightPosition, P3_FINAL_SECTOR_MOVE_SECONDS, P3_FLIGHT_SECONDS, p3LandingPlanIndex, p3LandingPosition, p3LandingHealthRate, p3LandingSoakOccupied, p3LandingSoakPositions, p3LightCenters, p3LightHealthRate, p3MemoryResolved, p3PoolCenters, p3PoolSoakRate, p3ProtectionBubbleCenter, p3RuneDeadline, p3RuneEdges, p3RuneOrbs, p3RuneStepAt, p3SectorMovementSpeed, p3SideForPosition, p3StarsTiming, p3UnsafePenaltyTicks, p3WrongRuneContact, P3_LANDING_SOAK_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_MEMORY_STEP_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, P3_SAFE_ZONE_PENALTY_PER_SECOND, P3_SECTOR_MOVE_SECONDS, P3_SECTOR_SECONDS, p4BossHealth, p4EncounterBoxStates, p4FrontSoakerPosition, p4GroupPosition, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4SplinterStartSeconds, p4StackPosition, p4TankConeActive, p4TankConeHitsBox, p4TransitionStartPosition, P4_CYCLE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, P4_SPLINTER_INTERVAL_SECONDS, P4_TANK_CONE_DURATION_SECONDS, P4_TANK_CONE_INTERVAL_SECONDS, personalCircleHitsCrystal, personalCircleHitsPlayer, PLAYER_COLLISION_PENALTY, randomCrystalDropDuty, randomizeP3PoolLayout, roamingNpcPosition, safestStarsplinterRotation, scoreExhaustionWipeReason, setP3BossPlan, shouldCheckIntermissionVoid, shouldShowP2OrbReturnCounter, starsplinterHitsPoint, translateSelectedPoints, walkTowards, WIPE_PENALTY, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type Role, type RuneSymbol } from './game'
-import { buildPhaseResult, completionImageCardLayout, completionResultTitle, completionShareText, isFullSequenceCompletion, wrapTextByWidth, type PhaseKey, type PhaseResult } from './completion'
+import { buildPhaseResult, completionImageCardLayout, completionPhasePresentation, completionResultTitle, completionShareText, isFullSequenceCompletion, signedPhaseContribution, wrapTextByWidth, type PhaseKey, type PhaseResult } from './completion'
 import { bossDamageScoreBonus, isInsideP3Pool, p4BossHealthWithPlayerDamage, p4NpcOrdinalForProfile, p4NpcProfileIndices, p4NpcSplinterActorOrdinals, p4ProtectionCenter, p4RenderedNpcSplinterOrigin, p4StartingBossState, p4TankKillsBox, PRE_P4_BOSS_HEALTH_BUDGET, preP4BossHealth, shouldSuppressRepeatedWipe, shouldTriggerP3EarlyClear, starsplinterHitsCrystalCarrier } from './game'
 import { p4UnsafePenaltyTicks, P4_SAFE_ZONE_HEALTH_DRAIN_PER_SECOND, P4_SAFE_ZONE_PENALTY_PER_SECOND } from './game'
 import { canPickupCrystalAlongPath, INTERMISSION_POSITIONING_SECONDS } from './game'
@@ -18,6 +18,7 @@ import { P1_BEAM_POSITION_SECONDS, P1_CRYSTAL_PICKUP_SECONDS, P1_DEFAULT_INTERRU
 import { advanceTankMechanic, createTankMechanicState, prepareTankDefensive, requestTankTaunt, tankMechanicActiveForEvent, type TankIndex, type TankMechanicEvent, type TankMechanicState } from './tank'
 import OnlinePanel, { BestRunsSummary, GlobalRankingSummary, OnlineStandingSummary, PublicProfileOverlay } from './OnlinePanel'
 import { canRecordOnlineWipe, completeOnlineAttempt, configurationFingerprint, issueOnlineAttempt, loadActivityFeed, loadOnlineAchievements, loadOnlineSession, logoutOnline, newActivityRows, recentActivityRows, recordOnlineWipe, type ActivityFeedRow, type OnlineSession, type RunAttributionMode } from './online'
+import { resultProofClaim, resultProofFromJson, serializeResultProof, serializeResultProofBundle, type ResultProof } from './resultProof'
 import './styles.css'
 
 type Screen = 'menu' | 'game' | 'results'
@@ -596,6 +597,7 @@ export default function App() {
   const [phaseResults, setPhaseResults] = useState<PhaseResult[]>([])
   const [completionCopyStatus, setCompletionCopyStatus] = useState('')
   const [completionPreview, setCompletionPreview] = useState(false)
+  const [completionProof, setCompletionProof] = useState<ResultProof | null>(null)
   const [localAchievementCollection, setLocalAchievementCollection] = useState<AchievementCollectionData>(() => {
     const collection = parseAchievementCollection(localStorage.getItem(ACHIEVEMENT_STORAGE_KEY))
     const { verifiedProgress: _verifiedProgress, ...localCollection } = collection
@@ -607,6 +609,7 @@ export default function App() {
   const [accountAchievementCollection, setAccountAchievementCollection] = useState(emptyCollection)
   const achievementCollection = mergeAchievementCollections(localAchievementCollection, accountAchievementCollection)
   const [achievementPopups, setAchievementPopups] = useState<AchievementDefinition[]>([])
+  const [resultAchievements, setResultAchievements] = useState<AchievementDefinition[]>([])
   const [attemptNumber, setAttemptNumber] = useState(() => Math.max(0, Number(localStorage.getItem('lura-attempt-count')) || 0))
   const [onlineSession, setOnlineSession] = useState<OnlineSession>({ authenticated: false })
   const [achievementSyncRevision, setAchievementSyncRevision] = useState(0)
@@ -1209,6 +1212,8 @@ export default function App() {
   }
   const initializeAttempt = (preserveScore = false) => {
     setCompletionPreview(false)
+    setCompletionProof(null)
+    setResultAchievements([])
     p1WrongCrystalHeldRef.current = false
     p1WrongCrystalPickedAtRef.current = -Infinity
     p1StolenCrystalSlotRef.current = null
@@ -1360,8 +1365,8 @@ export default function App() {
       { key: 'p1', label: 'Phase 1', points: 990, time: 64.8 },
       { key: 'intermission', label: 'Intermission', points: 980, time: 58.4 },
       { key: 'p2', label: 'Phase 2', points: 950, time: 76.2 },
-      { key: 'p3', label: 'Phase 3', points: 920, time: 130.1 },
-      { key: 'p4', label: 'Phase 4', points: 900, time: 92 },
+      { key: 'p3', label: 'Phase 3', points: 1020, time: 130.1 },
+      { key: 'p4', label: 'Phase 4', points: 910, time: 92 },
     ]
     const previewStats: GameStats = { score: 850, hits: 3, crystalDropped: false, time: 421.5 }
     const previewMistakes: Mistake[] = [
@@ -1376,6 +1381,8 @@ export default function App() {
     setMistakes(previewMistakes)
     setAttemptNumber(current => Math.max(1, current))
     setCompletionCopyStatus('')
+    setCompletionProof(null)
+    setResultAchievements([])
     setCompletionPreview(true)
     setScreen('results')
   }
@@ -2551,6 +2558,7 @@ export default function App() {
     if (reason) triggerWipe(reason, 0)
   }, [screen, difficulty, stats.score])
   const fullSequenceComplete = isFullSequenceCompletion(phaseResults)
+  const completionPhases = completionPhasePresentation(phaseResults)
   const resultProfile = profiles[assignment]
   const effectivePlayerName = playerNameSource === 'profile' && onlineSession.selectedCharacter
     ? onlineSession.selectedCharacter.name
@@ -2602,11 +2610,43 @@ export default function App() {
   }
   const collectibleAwards = collectibleAchievements(achievementSummary, achievementCollection, attemptNumber)
   const newCollectibleAwards = newlyEarnedAchievements(collectibleAwards, achievementCollection)
-  const achievements = newCollectibleAwards
+  const achievements = resultAchievements.length ? resultAchievements : newCollectibleAwards
   const collectibleAwardSignature = newCollectibleAwards.map(achievement => achievement.key).join('|')
+  const completionProofJson = serializeResultProof(resultProofClaim({
+    preview: completionPreview,
+    trainerVersion: APP_VERSION,
+    buildId: APP_GIT_REVISION,
+    playerName: effectivePlayerName,
+    playedPosition: playedPositionLabel,
+    playerClass: resultClass,
+    difficulty,
+    duty: resultCrystalPlayer ? 'crystal' : 'non-crystal',
+    attempt: attemptNumber,
+    fullSequence: fullSequenceComplete,
+    totalScore: stats.score,
+    totalTime: stats.time,
+    mistakes: stats.hits,
+    extras: extrasSummary,
+    phases: completionPhases,
+    achievements,
+  }))
+  useEffect(() => {
+    if (screen !== 'results') {
+      setCompletionProof(null)
+      return
+    }
+    let active = true
+    void resultProofFromJson(completionProofJson).then(proof => {
+      if (active) setCompletionProof(proof)
+    })
+    return () => { active = false }
+  }, [screen, completionProofJson])
   useEffect(() => {
     if (screen !== 'results' || completionPreview) return
-    if (newCollectibleAwards.length) setAchievementPopups(newCollectibleAwards)
+    if (newCollectibleAwards.length) {
+      setAchievementPopups(newCollectibleAwards)
+      setResultAchievements(current => current.length ? current : newCollectibleAwards)
+    }
     setLocalAchievementCollection(current => {
       const updated = mergeEarnedAchievements(current, collectibleAwards, new Date().toISOString(), {
         attempt: attemptNumber,
@@ -2635,7 +2675,8 @@ export default function App() {
     const scoreBeforeContinuousPenalty = 1000 - penaltyTotal + recoveryPasses * 50 + casts + Math.floor(casts / 20) * 50
     const continuousPenalty = Math.max(0, Math.min(1000, scoreBeforeContinuousPenalty - Math.round(stats.score)))
     setOnlineResultStatus('Submitting verified result…')
-    void completeOnlineAttempt(onlineSession.csrfToken, onlineAttempt.attemptId, {
+    void resultProofFromJson(completionProofJson).then(proof => completeOnlineAttempt(onlineSession.csrfToken, onlineAttempt.attemptId, {
+      clientRunId: proof.code,
       nonce: onlineAttempt.nonce,
       configurationFingerprint: onlineAttempt.configurationFingerprint,
       optionalChallenges: onlineAttempt.optionalChallenges,
@@ -2671,19 +2712,20 @@ export default function App() {
       submittedScore: Math.round(stats.score),
       trainerVersion: APP_VERSION,
       buildId: onlineAttempt.buildId,
-    }).then(result => {
-      setOnlineResultStatus(`Verified online result posted · ${result.score} points`)
+    })).then(result => {
+      setOnlineResultStatus(`Verified online result posted · ${result.score} points · ${result.clientRunId}`)
       setOnlineAttempt(null)
       setAchievementSyncRevision(current => current + 1)
     }).catch(() => {
       setOnlineResultStatus('Online verification rejected this result. The local result is unchanged.')
     })
-  }, [screen, completionPreview, onlineAttempt?.attemptId])
+  }, [screen, completionPreview, onlineAttempt?.attemptId, completionProofJson])
   const primaryAchievement = achievements.find(achievement => achievement.id === 'superhuman-both-duties')
     ?? achievements.find(achievement => achievement.id === 'hard-score-flawless')
     ?? achievements.find(achievement => achievement.id === 'not-a-scratch')
     ?? achievements[0]
   async function copyCompletion() {
+    const proof = completionProof ?? await resultProofFromJson(completionProofJson)
     const text = `${completionPreview ? 'PREVIEW DATA — NOT A COMPLETED RUN\n' : ''}${completionShareText({
       playerName: effectivePlayerName,
       playedPosition: playedPositionLabel,
@@ -2697,7 +2739,7 @@ export default function App() {
       fullSequence: fullSequenceComplete,
       results: phaseResults,
       achievements,
-    })}\n${window.location.origin}${window.location.pathname}`
+    })}\nRun-ID: ${proof.code}\nProof JSON: ${proof.json}\n${window.location.origin}${window.location.pathname}`
     try {
       await navigator.clipboard.writeText(text)
       setCompletionCopyStatus('Completion copied — ready for Discord')
@@ -2705,7 +2747,17 @@ export default function App() {
       setCompletionCopyStatus('Clipboard access was blocked')
     }
   }
+  async function copyCompletionProof() {
+    const proof = completionProof ?? await resultProofFromJson(completionProofJson)
+    try {
+      await navigator.clipboard.writeText(serializeResultProofBundle(proof))
+      setCompletionCopyStatus('Run proof JSON copied')
+    } catch {
+      setCompletionCopyStatus('Clipboard access was blocked')
+    }
+  }
   async function shareCompletionImage() {
+    const proof = completionProof ?? await resultProofFromJson(completionProofJson)
     const canvas = document.createElement('canvas')
     canvas.width = 1200
     canvas.height = 760
@@ -2740,7 +2792,7 @@ export default function App() {
     context.fillText(`${stats.time.toFixed(1)}s`, 340, 286)
     context.fillText(`${stats.hits} MISTAKE${stats.hits === 1 ? '' : 'S'}`, 530, 286)
     const cards = completionImageCardLayout(phaseResults.length)
-    phaseResults.forEach((result, index) => {
+    completionPhases.forEach((result, index) => {
       const { x, width: cardWidth } = cards[index]
       context.fillStyle = 'rgba(7, 11, 22, .7)'
       context.fillRect(x, 330, cardWidth, 150)
@@ -2752,10 +2804,11 @@ export default function App() {
       context.fillText(result.label, x + 18, 370)
       context.fillStyle = '#73e0c1'
       context.font = '700 29px sans-serif'
-      context.fillText(`${result.points} pts`, x + 18, 414)
+      context.fillText(`${result.cumulativePoints} pts`, x + 18, 414)
       context.fillStyle = '#9ba8c2'
       context.font = '500 15px sans-serif'
-      context.fillText(`${result.time.toFixed(1)}s${result.recovery ? ` · Recovery ${result.recovery === 'passed' ? '+50' : '−50'}` : ''}`, x + 18, 452)
+      context.fillText(`Phase contribution ${signedPhaseContribution(result.contribution)}`, x + 18, 444)
+      context.fillText(`${result.time.toFixed(1)}s${result.recovery ? ` · Recovery ${result.recovery === 'passed' ? '+50' : '−50'}` : ''}`, x + 18, 466)
     })
     context.fillStyle = '#c7cfdf'
     context.font = '500 21px sans-serif'
@@ -2773,8 +2826,10 @@ export default function App() {
     )
     extrasLines.forEach((line, index) => context.fillText(line, 72, extrasStart + index * 27))
     context.fillStyle = '#73819e'
+    context.font = '500 16px monospace'
+    context.fillText(`Run-ID: ${proof.code}`, 72, 676)
     context.font = '500 18px sans-serif'
-    context.fillText(`${window.location.host}${window.location.pathname} · Client-side practice result`, 72, 700)
+    context.fillText(`${window.location.host}${window.location.pathname} · Client checksum`, 72, 706)
     const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'))
     if (!blob) { setCompletionCopyStatus('Could not create the result image'); return }
     try {
@@ -2906,14 +2961,19 @@ export default function App() {
         <div><strong>{stats.hits}</strong><span>Mistakes · Attempt #{attemptNumber}</span></div>
       </div>
       <div className="phase-results" aria-label="Phase results">
-        {phaseResults.map((result, index) => <article key={result.key}>
+        {completionPhases.map((result, index) => <article key={result.key}>
           <span>{String(index + 1).padStart(2, '0')}</span>
           <h2>{result.label}</h2>
-          <strong>{result.points} pts</strong>
+          <strong>{result.cumulativePoints} pts</strong>
+          <small>Phase contribution {signedPhaseContribution(result.contribution)}</small>
           <small>{result.time.toFixed(1)}s{result.recovery ? ` · Recovery ${result.recovery === 'passed' ? '+50' : '−50'}` : ''}</small>
         </article>)}
       </div>
       <p className="completion-extras"><strong>Optional challenges</strong>{extrasSummary}</p>
+      <p className="completion-run-id" title="Browser-generated checksum of the displayed result values. It helps detect ordinary screenshot edits but is not a server signature.">
+        Run-ID: <code>{completionProof?.code ?? 'Generating…'}</code>
+        <button type="button" onClick={copyCompletionProof} disabled={!completionProof}>Copy proof</button>
+      </p>
       {onlineResultStatus && <p className="online-result-status" role="status">{onlineResultStatus}</p>}
       <div className="completion-actions">
         <button className="copy-completion" onClick={shareCompletionImage}>Copy result image</button>

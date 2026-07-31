@@ -233,7 +233,7 @@ describe('Lura API foundation', () => {
 
   it('does not let a stale environment override pin attempt compatibility', () => {
     const releaseConfig = loadConfig({ TRAINER_CURRENT_VERSION: '0.3.0' })
-    assert.equal(releaseConfig.currentTrainerVersion, '0.8.0')
+    assert.equal(releaseConfig.currentTrainerVersion, '0.9.0')
     assert.equal(releaseConfig.currentLeaderboardSeason, 'season-1')
   })
 
@@ -1032,6 +1032,7 @@ describe('Lura API foundation', () => {
     assert.deepEqual(attempt, { ...attempt, attemptId: 'online-attempt', nonce: 'online-nonce' })
 
     const completion = {
+      clientRunId: 'LURA1-0001-0002-0003-0004-0005',
       nonce: attempt.nonce,
       configurationFingerprint: 'raid-plan-sha256',
       optionalChallenges: ['main-ability', 'recovery'],
@@ -1154,9 +1155,16 @@ describe('Lura API foundation', () => {
       accepted: true
       score: number
       acceptedAt: string
+      clientRunId: string
       achievementIds: string[]
     }
     assert.equal(acceptedBody.score, 2020)
+    assert.equal(acceptedBody.clientRunId, completion.clientRunId)
+    assert.equal(
+      database.prepare('SELECT client_run_id AS clientRunId FROM attempt_summaries WHERE attempt_id = ?')
+        .get(attempt.attemptId)!.clientRunId,
+      completion.clientRunId,
+    )
     assert.ok(acceptedBody.achievementIds.includes('hard-score-flawless'))
     const activity = await app.handle(new Request('http://api.test/v1/activity?limit=100'))
     const activityRows = (await activity.json() as {
@@ -1279,6 +1287,7 @@ describe('Lura API foundation', () => {
       method: 'POST',
       headers: { ...headers, 'idempotency-key': attempt.attemptId },
       body: JSON.stringify({
+        clientRunId: 'LURA1-1001-1002-1003-1004-1005',
         nonce: attempt.nonce,
         configurationFingerprint: 'p4-config',
         optionalChallenges: [],
@@ -1413,6 +1422,7 @@ describe('Lura API foundation', () => {
       method: 'POST',
       headers: { ...headers, 'idempotency-key': attempt.attemptId },
       body: JSON.stringify({
+        clientRunId: 'LURA1-2001-2002-2003-2004-2005',
         nonce: attempt.nonce,
         configurationFingerprint: 'easy-config',
         optionalChallenges: [],

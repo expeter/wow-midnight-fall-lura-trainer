@@ -48,10 +48,12 @@ describe('online attempt integration', () => {
     const user = userEvent.setup()
     render(<App />)
 
-    await user.click(await screen.findByRole('button', { name: 'Open personal achievements, 1 of 32 earned' }))
+    await waitFor(() => {
+      expect(localStorage.getItem(achievementAccountStorageKey(syncKey))).toContain('always-be-casting')
+    }, { timeout: 5_000 })
+    await user.click(screen.getByRole('button', { name: 'Open personal achievements, 1 of 32 earned' }))
     expect(await screen.findByText(/First earned.*Lurana.*Server verified/)).toBeVisible()
     expect(screen.getByText('37 of 50 phase clears')).toBeVisible()
-    expect(localStorage.getItem(achievementAccountStorageKey(syncKey))).toContain('always-be-casting')
     expect(localStorage.getItem('lura-achievement-collection')).toBeNull()
   })
 

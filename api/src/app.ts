@@ -1,6 +1,6 @@
 import type { ApiConfig } from './config.js'
 import type { Database } from './database.js'
-import { listLeaderboard, type Difficulty, type Duty } from './leaderboards.js'
+import { accountLeaderboardStandings, listLeaderboard, type Difficulty, type Duty } from './leaderboards.js'
 import { completeAttempt, issueAttempt } from './attempts.js'
 import { ACHIEVEMENT_CATALOG } from './achievementCatalog.js'
 import { listAchievementHall } from './achievementHall.js'
@@ -224,30 +224,11 @@ export function createApp(
           FROM privacy_settings p JOIN accounts a ON a.id = p.account_id
           WHERE p.account_id = ?
         `).get(session.accountId)
-        const rankedRows = database.prepare(`
-          WITH ranked AS (
-            SELECT account_id AS accountId, difficulty, duty, score,
-              duration_ms AS durationMs,
-              ROW_NUMBER() OVER (
-                PARTITION BY difficulty, duty
-                ORDER BY score DESC, duration_ms ASC, accepted_at ASC
-              ) AS position
-            FROM results
-            WHERE trainer_version = ? AND run_eligible = 1
-          )
-          SELECT difficulty, duty, score, durationMs, position
-          FROM ranked WHERE accountId = ?
-          ORDER BY difficulty, duty, position
-        `).all(config.currentTrainerVersion, session.accountId) as Array<{
-          difficulty: string
-          duty: string
-          score: number
-          durationMs: number
-          position: number
-        }>
-        const standings = [...new Map(
-          rankedRows.map(row => [`${row.difficulty}:${row.duty}`, row]),
-        ).values()]
+        const standings = accountLeaderboardStandings(
+          database,
+          config.currentLeaderboardSeason,
+          session.accountId,
+        )
         const globalPosition = listGlobalRanking(database, config.currentLeaderboardSeason, session.accountId).own?.rank ?? null
         return json({
           authenticated: true,
@@ -425,6 +406,9 @@ export function createApp(
         return json({ deleted: true }, 200, { ...corsHeaders, 'set-cookie': clearedSessionCookie() })
       }
       if (request.method === 'POST' && url.pathname === '/v1/attempts') {
+        if (rateLimited(request, 'attempt-issue', 10, 60_000)) {
+          return json({ error: 'rate_limited' }, 429, { ...corsHeaders, 'retry-after': '60' })
+        }
         if (!origin || !allowedOrigins.has(origin)) return json({ error: 'origin_not_allowed' }, 403, corsHeaders)
         const session = authenticate(database, config, dependencies, request)
         if (!session) return json({ error: 'not_authenticated' }, 401, corsHeaders)
@@ -461,6 +445,7 @@ export function createApp(
         if (!session) return json({ error: 'not_authenticated' }, 401, corsHeaders)
         const csrf = request.headers.get('x-csrf-token')
         if (!csrf || !safeEqual(csrf, session.csrfToken)) return json({ error: 'invalid_csrf' }, 403, corsHeaders)
+        const idempotencyKey = request.headers.get('idempotency-key') ?? ''
         let input: unknown
         try {
           input = await request.json()
@@ -469,7 +454,14 @@ export function createApp(
         }
         try {
           return json(
-            completeAttempt(database, dependencies, session.accountId, decodeURIComponent(completionMatch[1]), input as never),
+            completeAttempt(
+              database,
+              dependencies,
+              session.accountId,
+              decodeURIComponent(completionMatch[1]),
+              idempotencyKey,
+              input as never,
+            ),
             200,
             corsHeaders,
           )
@@ -480,9 +472,12 @@ export function createApp(
             'invalid_mistakes', 'mistake_count_mismatch', 'invalid_actions',
             'score_mismatch', 'invalid_achievement_inputs', 'attempt_not_found',
             'attempt_already_used', 'attempt_expired', 'attempt_version_mismatch',
+            'invalid_configuration', 'invalid_optional_challenges',
+            'attempt_configuration_mismatch', 'invalid_idempotency_key',
+            'idempotency_conflict',
           ])
           if (error instanceof Error && known.has(error.message)) {
-            const conflict = error.message === 'attempt_already_used'
+            const conflict = error.message === 'attempt_already_used' || error.message === 'idempotency_conflict'
             return json({ error: error.message }, conflict ? 409 : 400, corsHeaders)
           }
           throw error

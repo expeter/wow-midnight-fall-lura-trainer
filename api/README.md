@@ -138,6 +138,12 @@ integration, current standings, the Achievement Hall, Global ranking, public
 profiles, and the privacy-aware activity UI are implemented under `FR-027` and
 the later online feature tickets recorded in `docs/README.md`.
 
+Attempt completion is bound to the issued configuration and requires an
+idempotency key; identical retries return the stored accepted response.
+Current-season run boards and profiles publish one best result per account.
+Canonical achievements, including rank-one crowns, are stored once per account
+so their Hall points cannot be earned repeatedly.
+
 ## Production paths
 
 - Environment: `/etc/lura-api/env`

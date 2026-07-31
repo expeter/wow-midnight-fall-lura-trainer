@@ -192,8 +192,8 @@ status in the request log.
 
 - M1 is the immediate encounter-completion milestone: `FR-050`, `FR-049`,
   `FR-048`, `CR-051`, `FR-022`, and `FR-023`.
-- M2 is the ranking/achievement integrity gate discovered during `SPEC-015`:
-  `BUG-136`–`BUG-143`.
+- M2, the ranking/achievement integrity gate discovered during `SPEC-015`, is
+  complete under `BUG-136`–`BUG-143` and `SPEC-016`.
 - M3 contains developer tooling: `FR-051` and localhost-only `FR-038`.
 - M4 contains later flavor: live `FR-039` and `FR-066`.
 
@@ -201,6 +201,7 @@ Before starting a ticket, confirm whether newer inbox reports or user
 clarifications supersede its wording. `CR-051` still needs the exact
 second-sequence overlap timing before implementation.
 
-M1 and M2 can affect mechanics, scoring, achievement totals, or public
-positions. Remind the user before their release and retain `season-1` unless
-the user explicitly authorizes a new leaderboard season.
+M1 can affect mechanics, scoring, achievement totals, or public positions. The
+completed M2 repairs also change visible ranking behavior and lifetime-point
+deduplication. Remind the user before their release and retain `season-1`
+unless the user explicitly authorizes a new leaderboard season.

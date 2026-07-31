@@ -90,6 +90,25 @@ describe('canonical achievement rules', () => {
     expect(direct).not.toContain('flawless-p2')
   })
 
+  it('awards the missing local Phase 1 flawless badge for direct practice', () => {
+    const direct = ids({
+      ...normalFlawless,
+      fullSequence: false,
+      phaseResults: [{
+        key: 'p1',
+        label: 'Phase 1',
+        points: 1000,
+        time: 60,
+        mistakes: 0,
+        recovery: 'passed',
+      }],
+      allPhaseRecovery: false,
+    })
+    expect(direct).toContain('one-phase-wonder')
+    expect(direct).toContain('flawless-p1')
+    expect(direct).not.toContain('flawless-intermission')
+  })
+
   it('separates first recovery use from every-phase recovery mastery', () => {
     const firstUse = ids({
       ...normalFlawless,

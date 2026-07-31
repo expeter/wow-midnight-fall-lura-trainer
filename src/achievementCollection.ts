@@ -140,6 +140,7 @@ export function currentRunAchievements(summary: AchievementSummary): Achievement
   if (summary.fullSequence && difficulty === 'normal' && summary.mistakes === 0) ids.push('not-a-scratch')
   if (summary.fullSequence && (summary.crystalFailures ?? 0) === 0) ids.push('crystal-clear-conscience')
   if (includesP3 && (summary.runeFailures ?? 0) === 0) ids.push('rune-reader')
+  if (phaseFlawless(results, 'p1')) ids.push('flawless-p1')
   if (phaseFlawless(results, 'intermission')) ids.push('flawless-intermission')
   if (phaseFlawless(results, 'p2')) ids.push('flawless-p2')
   if (phaseFlawless(results, 'p3')) ids.push('flawless-p3')

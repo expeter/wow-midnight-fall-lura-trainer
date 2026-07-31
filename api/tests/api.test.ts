@@ -7,7 +7,7 @@ import { loadConfig, type ApiConfig } from '../src/config.js'
 import { applyMigrations, openDatabase, type Database } from '../src/database.js'
 import { isDatabaseBusyError } from '../src/http.js'
 import type { AuthDependencies } from '../src/auth.js'
-import { leaderboardAchievementIds } from '../src/attempts.js'
+import { aggregateAchievementIds, leaderboardAchievementIds } from '../src/attempts.js'
 
 const config: ApiConfig = {
   host: '127.0.0.1',
@@ -88,6 +88,38 @@ function insertSession(database: Database, accountId: number, token = 'owned-ses
     '2026-07-28T00:00:00.000Z',
   )
   return { cookie: `lura_session=${token}`, csrf }
+}
+
+function insertAdditionalResult(
+  database: Database,
+  accountId: number,
+  suffix: string,
+  score: number,
+  duration: number,
+  acceptedAt: string,
+  trainerVersion = '0.3.0',
+  season = 'season-1',
+) {
+  const character = database.prepare('SELECT id FROM characters WHERE account_id = ? LIMIT 1')
+    .get(accountId) as { id: number }
+  const attemptId = `attempt-${suffix}`
+  database.prepare(`
+    INSERT INTO attempts (
+      id, account_id, character_id, nonce_hash, difficulty, duty, entry_mode,
+      phase_scope, trainer_version, build_id, configuration_json, issued_at,
+      expires_at, consumed_at, verified_difficulty, leaderboard_season
+    ) VALUES (?, ?, ?, 'nonce', 'hard', 'crystal', 'arena0', 'full', ?, 'build-1',
+      '{}', '2026-07-28T00:00:00.000Z', '2026-07-28T01:00:00.000Z', ?,
+      'hard', ?)
+  `).run(attemptId, accountId, character.id, trainerVersion, acceptedAt, season)
+  database.prepare(`
+    INSERT INTO results (
+      attempt_id, account_id, character_id, difficulty, duty, score,
+      duration_ms, trainer_version, build_id, accepted_at, verified_difficulty,
+      run_eligible, leaderboard_season
+    ) VALUES (?, ?, ?, 'hard', 'crystal', ?, ?, ?, 'build-1', ?, 'hard', 1, ?)
+  `).run(attemptId, accountId, character.id, score, duration, trainerVersion, acceptedAt, season)
+  return attemptId
 }
 
 describe('Lura API foundation', () => {
@@ -202,6 +234,100 @@ describe('Lura API foundation', () => {
     )
   })
 
+  it('publishes one best run per account and preserves board rank while searching', async () => {
+    const alpha = insertResult(database, {
+      region: 'eu', account: 'best-alpha', character: 'Alpha', realm: 'silvermoon',
+      mode: 'character', score: 1200, duration: 90_000,
+      acceptedAt: '2026-07-28T00:01:00.000Z',
+    })
+    insertAdditionalResult(
+      database,
+      alpha,
+      'best-alpha-lower',
+      1100,
+      80_000,
+      '2026-07-28T00:02:00.000Z',
+    )
+    insertResult(database, {
+      region: 'us', account: 'best-beta', character: 'Beta', realm: 'illidan',
+      mode: 'character', score: 1150, duration: 85_000,
+      acceptedAt: '2026-07-28T00:03:00.000Z',
+    })
+    const app = createApp(database, config)
+    const board = await app.handle(new Request(
+      'http://api.test/v1/leaderboards?difficulty=hard&duty=crystal',
+    ))
+    const boardRows = (await board.json() as {
+      rows: Array<{ displayName: string; score: number; rank: number }>
+    }).rows
+    assert.deepEqual(
+      boardRows.map(row => [row.displayName, row.score, row.rank]),
+      [['Alpha', 1200, 1], ['Beta', 1150, 2]],
+    )
+    const search = await app.handle(new Request(
+      'http://api.test/v1/leaderboards/search?difficulty=hard&duty=crystal&q=Beta',
+    ))
+    assert.deepEqual(
+      (await search.json() as { rows: Array<{ displayName: string; rank: number }> }).rows
+        .map(row => [row.displayName, row.rank]),
+      [['Beta', 2]],
+    )
+  })
+
+  it('uses the current season consistently for personal and public profile standings', async () => {
+    const alpha = insertResult(database, {
+      region: 'eu', account: 'season-alpha', character: 'Seasonalpha', realm: 'silvermoon',
+      mode: 'character', score: 1200, duration: 90_000,
+      acceptedAt: '2026-07-28T00:01:00.000Z',
+    })
+    const beta = insertResult(database, {
+      region: 'us', account: 'season-beta', character: 'Seasonbeta', realm: 'illidan',
+      mode: 'character', score: 1100, duration: 85_000,
+      acceptedAt: '2026-07-28T00:02:00.000Z',
+    })
+    insertAdditionalResult(
+      database,
+      beta,
+      'season-beta-prior-version',
+      1300,
+      80_000,
+      '2026-07-28T00:03:00.000Z',
+      '0.2.9',
+      'season-1',
+    )
+    insertAdditionalResult(
+      database,
+      alpha,
+      'season-alpha-future-season',
+      2000,
+      70_000,
+      '2026-07-28T00:04:00.000Z',
+      '0.3.0',
+      'season-2',
+    )
+    const betaCharacter = database.prepare('SELECT id FROM characters WHERE account_id = ?')
+      .get(beta) as { id: number }
+    database.prepare('UPDATE accounts SET selected_character_id = ? WHERE id = ?')
+      .run(betaCharacter.id, beta)
+    const profileId = (database.prepare('SELECT public_profile_id AS profileId FROM accounts WHERE id = ?')
+      .get(beta) as { profileId: string }).profileId
+    const session = insertSession(database, beta, 'season-beta-session')
+    const app = createApp(database, config)
+    const me = await app.handle(new Request('http://api.test/v1/me', {
+      headers: { cookie: session.cookie },
+    }))
+    assert.deepEqual(
+      (await me.json() as { standings: Array<{ score: number; position: number }> }).standings
+        .map(row => [row.score, row.position]),
+      [[1300, 1]],
+    )
+    const profile = await app.handle(new Request(`http://api.test/v1/profiles/${profileId}`))
+    const profileBoard = (await profile.json() as {
+      boards: Array<{ difficulty: string; duty: string; rank: number | null }>
+    }).boards.find(row => row.difficulty === 'hard' && row.duty === 'crystal')
+    assert.equal(profileBoard?.rank, 1)
+  })
+
   it('searches only fields made public by privacy settings', async () => {
     insertResult(database, {
       region: 'eu', account: '1', character: 'Hiddenhero', realm: 'secret-realm',
@@ -221,8 +347,12 @@ describe('Lura API foundation', () => {
       'http://api.test/v1/leaderboards/search?difficulty=hard&duty=crystal&q=Milestone',
     ))
     assert.deepEqual((await hidden.json() as { rows: unknown[] }).rows, [])
-    const rows = (await visible.json() as { rows: Array<{ displayName: string; character: null; guild: string }> }).rows
-    assert.deepEqual(rows, [{ ...rows[0], displayName: 'Runner', character: null, guild: 'Milestone' }])
+    assert.deepEqual((await visible.json() as { rows: unknown[] }).rows, [])
+    const alias = await app.handle(new Request(
+      'http://api.test/v1/leaderboards/search?difficulty=hard&duty=crystal&q=Runner',
+    ))
+    const rows = (await alias.json() as { rows: Array<{ displayName: string; character: null; guild: null }> }).rows
+    assert.deepEqual(rows, [{ ...rows[0], displayName: 'Runner', character: null, guild: null }])
   })
 
   it('ranks public profiles by achievement points plus the best score from each run board', async () => {
@@ -269,6 +399,16 @@ describe('Lura API foundation', () => {
     assert.equal(body.wipes, 1)
     assert.equal(body.achievements.length, 1)
     assert.equal(body.boards.find(board => board.rank !== null)?.rank, 1)
+    database.prepare(`
+      UPDATE privacy_settings SET identity_mode = 'alias', alias = 'Global alias', show_guild = 1
+      WHERE account_id = ?
+    `).run(accountId)
+    const aliasRanking = await app.handle(new Request('http://api.test/v1/global-ranking?limit=3'))
+    assert.equal((await aliasRanking.json() as { rows: Array<{ guild: string | null }> }).rows[0].guild, null)
+    const aliasHall = await app.handle(new Request('http://api.test/v1/achievement-hall'))
+    assert.equal((await aliasHall.json() as { rows: Array<{ guild: string | null }> }).rows[0].guild, null)
+    const aliasProfile = await app.handle(new Request(`http://api.test/v1/profiles/${account.profileId}`))
+    assert.equal((await aliasProfile.json() as { guild: string | null }).guild, null)
     database.prepare("UPDATE privacy_settings SET identity_mode = 'anonymous' WHERE account_id = ?").run(accountId)
     assert.equal((await app.handle(new Request(`http://api.test/v1/profiles/${account.profileId}`))).status, 404)
     const session = insertSession(database, accountId)
@@ -481,6 +621,66 @@ describe('Lura API foundation', () => {
     assert.equal(response.headers.get('retry-after'), '600')
   })
 
+  it('rate limits repeated attempt issuance by forwarded client address', async () => {
+    const accountId = insertResult(database, {
+      region: 'eu', account: 'attempt-rate-limit', character: 'Limiter', realm: 'silvermoon',
+      mode: 'character', score: 500, duration: 500_000,
+      acceptedAt: '2026-07-27T00:00:00.000Z',
+    })
+    const selected = database.prepare('SELECT id FROM characters WHERE account_id = ?')
+      .get(accountId) as { id: number }
+    database.prepare('UPDATE accounts SET selected_character_id = ? WHERE id = ?')
+      .run(selected.id, accountId)
+    const session = insertSession(database, accountId, 'attempt-rate-session')
+    const app = createApp(database, config, {
+      now: () => new Date('2026-07-28T12:00:00.000Z'),
+      randomToken: () => randomUUID(),
+      fetch: globalThis.fetch,
+    })
+    const headers = {
+      cookie: session.cookie,
+      origin: config.trainerOrigin,
+      'content-type': 'application/json',
+      'x-csrf-token': session.csrf,
+      'x-forwarded-for': '192.0.2.9',
+    }
+    let response!: Response
+    for (let index = 0; index < 10; index += 1) {
+      response = await app.handle(new Request('http://api.test/v1/attempts', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          difficulty: 'hard',
+          duty: 'non-crystal',
+          entryMode: 'arena4',
+          phaseScope: 'p4',
+          trainerVersion: '0.3.0',
+          buildId: 'rate-build',
+          configurationFingerprint: 'rate-config',
+          optionalChallenges: [],
+        }),
+      }))
+      assert.equal(response.status, 201)
+    }
+    response = await app.handle(new Request('http://api.test/v1/attempts', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        difficulty: 'hard',
+        duty: 'non-crystal',
+        entryMode: 'arena4',
+        phaseScope: 'p4',
+        trainerVersion: '0.3.0',
+        buildId: 'rate-build',
+        configurationFingerprint: 'rate-config',
+        optionalChallenges: [],
+      }),
+    }))
+    assert.equal(response.status, 429)
+    assert.deepEqual(await response.json(), { error: 'rate_limited' })
+    assert.equal(response.headers.get('retry-after'), '60')
+  })
+
   it('prevents selecting another account character', async () => {
     const ownerId = insertResult(database, {
       region: 'eu', account: 'owner', character: 'Owner', realm: 'draenor',
@@ -548,9 +748,7 @@ describe('Lura API foundation', () => {
     const meBody = await me.json() as {
       standings: Array<{ difficulty: string; duty: string; position: number; score: number }>
     }
-    assert.deepEqual(meBody.standings, [{
-      difficulty: 'hard', duty: 'crystal', score: 1000, durationMs: 90_000, position: 1,
-    }])
+    assert.deepEqual(meBody.standings, [])
     const hiddenRows = await app.handle(new Request(
       'http://api.test/v1/leaderboards?difficulty=hard&duty=crystal',
     ))
@@ -577,7 +775,7 @@ describe('Lura API foundation', () => {
     assert.deepEqual(
       (await publicRows.json() as { rows: Array<{ displayName: string; guild: string }> }).rows
         .map(row => [row.displayName, row.guild]),
-      [['Runner', 'Secret Guild']],
+      [['Runner', null]],
     )
 
     const unconfirmed = await app.handle(new Request('http://api.test/v1/me', {
@@ -728,6 +926,8 @@ describe('Lura API foundation', () => {
 
     const completion = {
       nonce: attempt.nonce,
+      configurationFingerprint: 'raid-plan-sha256',
+      optionalChallenges: ['main-ability', 'recovery'],
       durationMs: 300_000,
       phaseResults: ['p1', 'intermission', 'p2', 'p3', 'p4'].map(key => ({
         key, durationMs: 60_000, mistakes: 0, recovery: 'passed',
@@ -748,7 +948,11 @@ describe('Lura API foundation', () => {
     }
     const tampered = await app.handle(new Request(
       `http://api.test/v1/attempts/${attempt.attemptId}/complete`,
-      { method: 'POST', headers, body: JSON.stringify({ ...completion, submittedScore: 2000 }) },
+      {
+        method: 'POST',
+        headers: { ...headers, 'idempotency-key': attempt.attemptId },
+        body: JSON.stringify({ ...completion, submittedScore: 2000 }),
+      },
     ))
     assert.equal(tampered.status, 400)
     assert.deepEqual(await tampered.json(), { error: 'score_mismatch' })
@@ -761,7 +965,7 @@ describe('Lura API foundation', () => {
       `http://api.test/v1/attempts/${attempt.attemptId}/complete`,
       {
         method: 'POST',
-        headers,
+        headers: { ...headers, 'idempotency-key': attempt.attemptId },
         body: JSON.stringify({
           ...completion,
           actions: { ...completion.actions, mainAbilityCasts: 301 },
@@ -771,12 +975,37 @@ describe('Lura API foundation', () => {
     assert.equal(impossibleCastRate.status, 400)
     assert.deepEqual(await impossibleCastRate.json(), { error: 'invalid_actions' })
 
+    const mismatchedConfiguration = await app.handle(new Request(
+      `http://api.test/v1/attempts/${attempt.attemptId}/complete`,
+      {
+        method: 'POST',
+        headers: { ...headers, 'idempotency-key': attempt.attemptId },
+        body: JSON.stringify({ ...completion, configurationFingerprint: 'other-plan' }),
+      },
+    ))
+    assert.equal(mismatchedConfiguration.status, 400)
+    assert.deepEqual(await mismatchedConfiguration.json(), { error: 'attempt_configuration_mismatch' })
+    assert.equal(
+      database.prepare('SELECT consumed_at AS consumedAt FROM attempts WHERE id = ?')
+        .get(attempt.attemptId)!.consumedAt,
+      null,
+    )
+
     const accepted = await app.handle(new Request(
       `http://api.test/v1/attempts/${attempt.attemptId}/complete`,
-      { method: 'POST', headers, body: JSON.stringify(completion) },
+      {
+        method: 'POST',
+        headers: { ...headers, 'idempotency-key': attempt.attemptId },
+        body: JSON.stringify(completion),
+      },
     ))
     assert.equal(accepted.status, 200)
-    const acceptedBody = await accepted.json() as { score: number; achievementIds: string[] }
+    const acceptedBody = await accepted.json() as {
+      accepted: true
+      score: number
+      acceptedAt: string
+      achievementIds: string[]
+    }
     assert.equal(acceptedBody.score, 2020)
     assert.ok(acceptedBody.achievementIds.includes('hard-score-flawless'))
     const activity = await app.handle(new Request('http://api.test/v1/activity?limit=100'))
@@ -807,10 +1036,24 @@ describe('Lura API foundation', () => {
     )
     const duplicate = await app.handle(new Request(
       `http://api.test/v1/attempts/${attempt.attemptId}/complete`,
-      { method: 'POST', headers, body: JSON.stringify(completion) },
+      {
+        method: 'POST',
+        headers: { ...headers, 'idempotency-key': attempt.attemptId },
+        body: JSON.stringify(completion),
+      },
     ))
-    assert.equal(duplicate.status, 409)
-    assert.deepEqual(await duplicate.json(), { error: 'attempt_already_used' })
+    assert.equal(duplicate.status, 200)
+    assert.deepEqual(await duplicate.json(), acceptedBody)
+    const conflictingRetry = await app.handle(new Request(
+      `http://api.test/v1/attempts/${attempt.attemptId}/complete`,
+      {
+        method: 'POST',
+        headers: { ...headers, 'idempotency-key': attempt.attemptId },
+        body: JSON.stringify({ ...completion, submittedScore: 2000 }),
+      },
+    ))
+    assert.equal(conflictingRetry.status, 409)
+    assert.deepEqual(await conflictingRetry.json(), { error: 'idempotency_conflict' })
 
     const board = await app.handle(new Request(
       'http://api.test/v1/leaderboards?difficulty=hard&duty=crystal',
@@ -876,9 +1119,11 @@ describe('Lura API foundation', () => {
     const attempt = await issued.json() as { attemptId: string; nonce: string }
     const accepted = await app.handle(new Request(`http://api.test/v1/attempts/${attempt.attemptId}/complete`, {
       method: 'POST',
-      headers,
+      headers: { ...headers, 'idempotency-key': attempt.attemptId },
       body: JSON.stringify({
         nonce: attempt.nonce,
+        configurationFingerprint: 'p4-config',
+        optionalChallenges: [],
         durationMs: 88_000,
         phaseResults: [{ key: 'p4', durationMs: 88_000, mistakes: 0, recovery: 'missed' }],
         mistakes: [],
@@ -893,12 +1138,81 @@ describe('Lura API foundation', () => {
       }),
     }))
     assert.equal(accepted.status, 200)
-    assert.ok(((await accepted.json()) as { achievementIds: string[] }).achievementIds.includes('flawless-p4'))
+    const achievementIds = ((await accepted.json()) as { achievementIds: string[] }).achievementIds
+    assert.ok(achievementIds.includes('one-phase-wonder'))
+    assert.ok(achievementIds.includes('flawless-p4'))
+    assert.ok(!achievementIds.includes('midnight-shift'))
+    assert.ok(!achievementIds.includes('hard-score-flawless'))
+    assert.ok(!achievementIds.includes('crystal-clear-conscience'))
     const board = await app.handle(new Request('http://api.test/v1/leaderboards?difficulty=hard&duty=non-crystal'))
     assert.equal((await board.json() as { rows: unknown[] }).rows.length, 0)
     const hall = await app.handle(new Request('http://api.test/v1/achievement-hall'))
     const hallRows = (await hall.json() as { rows: Array<{ displayName: string; totalPoints: number }> }).rows
     assert.ok(hallRows.some(row => row.displayName === 'Quartermaster' && row.totalPoints >= 50))
+  })
+
+  it('counts actual direct-phase clears without admitting them to full-run aggregate feats', () => {
+    const accountId = insertResult(database, {
+      region: 'eu', account: 'direct-aggregate', character: 'Specialist', realm: 'silvermoon',
+      mode: 'character', score: 1000, duration: 88_000,
+      acceptedAt: '2026-07-28T00:00:00.000Z',
+    })
+    const firstAttempt = 'attempt-direct-aggregate'
+    database.prepare('UPDATE results SET run_eligible = 0 WHERE attempt_id = ?').run(firstAttempt)
+    const secondAttempt = insertAdditionalResult(
+      database,
+      accountId,
+      'direct-aggregate-second',
+      1000,
+      88_000,
+      '2026-07-28T00:01:00.000Z',
+    )
+    database.prepare('UPDATE results SET run_eligible = 0 WHERE attempt_id = ?').run(secondAttempt)
+    for (const attemptId of [firstAttempt, secondAttempt]) {
+      database.prepare(`
+        INSERT INTO attempt_summaries (
+          attempt_id, duration_ms, phase_results_json, mistakes_json, actions_json,
+          accepted_score, submitted_score, accepted_at
+        ) VALUES (?, 88000, ?, '[]', ?, 1000, 1000, '2026-07-28T00:01:00.000Z')
+      `).run(
+        attemptId,
+        JSON.stringify([{ key: 'p4', durationMs: 88_000, mistakes: 0, recovery: 'passed' }]),
+        JSON.stringify({ recoveryPasses: 1, mainAbilityCasts: 1, continuousPenalty: 0 }),
+      )
+    }
+    assert.deepEqual(aggregateAchievementIds(database, accountId), [])
+  })
+
+  it('stores each canonical achievement only once per account across builds', () => {
+    const accountId = insertResult(database, {
+      region: 'eu', account: 'achievement-once', character: 'First', realm: 'silvermoon',
+      mode: 'character', score: 1000, duration: 88_000,
+      acceptedAt: '2026-07-28T00:00:00.000Z',
+    })
+    const characterId = Number((database.prepare(
+      'SELECT id FROM characters WHERE account_id = ?',
+    ).get(accountId) as { id: number }).id)
+    for (const version of ['0.3.0', '0.4.0']) {
+      database.prepare(`
+        INSERT OR REPLACE INTO achievements (
+          id, trainer_version, title, currently_obtainable
+        ) VALUES ('rank-one-hard-crystal', ?, 'Crown', 1)
+      `).run(version)
+      database.prepare(`
+        INSERT OR IGNORE INTO account_achievements (
+          account_id, character_id, achievement_id, trainer_version, build_id,
+          source_attempt_id, first_earned_at
+        ) VALUES (?, ?, 'rank-one-hard-crystal', ?, ?, 'attempt-achievement-once',
+          '2026-07-28T00:00:00.000Z')
+      `).run(accountId, characterId, version, `build-${version}`)
+    }
+    assert.equal(
+      database.prepare(`
+        SELECT COUNT(*) AS count FROM account_achievements
+        WHERE account_id = ? AND achievement_id = 'rank-one-hard-crystal'
+      `).get(accountId)!.count,
+      1,
+    )
   })
 
   it('keeps verified Easy results out of run rankings while awarding Hall points', async () => {
@@ -934,9 +1248,11 @@ describe('Lura API foundation', () => {
     const attempt = await issued.json() as { attemptId: string; nonce: string }
     const accepted = await app.handle(new Request(`http://api.test/v1/attempts/${attempt.attemptId}/complete`, {
       method: 'POST',
-      headers,
+      headers: { ...headers, 'idempotency-key': attempt.attemptId },
       body: JSON.stringify({
         nonce: attempt.nonce,
+        configurationFingerprint: 'easy-config',
+        optionalChallenges: [],
         durationMs: 300_000,
         phaseResults: ['p1', 'intermission', 'p2', 'p3', 'p4'].map(key => ({
           key, durationMs: 60_000, mistakes: 0, recovery: 'missed',

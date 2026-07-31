@@ -52,6 +52,7 @@ describe('online API client', () => {
     expect(requests.every(request => request.init.credentials === 'include')).toBe(true)
     expect(new Headers(requests[0].init.headers).get('x-csrf-token')).toBe('csrf-token')
     expect(requests[1].url).toMatch(/\/v1\/attempts\/attempt\/complete$/)
+    expect(new Headers(requests[1].init.headers).get('idempotency-key')).toBe('attempt')
   })
 
   it('keeps EU and US together by querying one public board division', async () => {

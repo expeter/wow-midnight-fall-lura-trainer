@@ -154,17 +154,20 @@ unavailable.
 `POST /v1/attempts/{id}/complete` submits:
 
 - the nonce;
+- the issued raid-plan/configuration fingerprint and optional-challenge set;
 - monotonic elapsed duration;
 - phase results and mistake events;
 - action usage and achievement inputs;
 - final client-reported score;
 - the trainer version/build identifier.
 
-The server validates ownership, expiry, one-use state, configuration equality,
+The request includes an `Idempotency-Key` header. The server validates
+ownership, expiry, one-use state, configuration equality,
 plausible duration, phase order, allowed event counts, and score inputs. It
 recomputes the published score from accepted inputs instead of trusting the
-client's total. Invalid or duplicate completions are rejected and never enter
-the leaderboard.
+client's total. An identical retry with the same key returns the original
+accepted response; a changed payload or different key cannot consume the
+attempt again. Invalid completions never enter the leaderboard.
 
 This is deliberate anti-tampering, not a claim of cheat-proof execution. A
 fully modified browser can still fabricate plausible events. Stronger
@@ -202,6 +205,10 @@ Each run board contains at most one row per account: that account's best result
 for the selected difficulty, duty, and release scope. Rank uses score
 descending, duration ascending, then acceptance time ascending. Filtering and
 search never renumber an entry away from its authoritative board rank.
+
+Authenticated personal standings and public profiles use this same
+current-season, one-best-result calculation. Changing trainer SemVer alone
+does not split or reset the current board.
 
 Leaderboard search covers only public fields permitted by the identity mode:
 published alias, published character name, realm, and visible guild. Search is
@@ -248,6 +255,11 @@ stores:
 - first-earned trainer version/build;
 - source attempt ID;
 - whether the achievement remains normally obtainable in the current version.
+
+A stable achievement ID can be earned only once per account, even from another
+character, build, or later qualifying run. In particular, each rank-one crown
+and its canonical points are permanent once earned and cannot be farmed by
+repeatedly retaking a board.
 
 Browser-local achievements remain available without login. Milestone 1 may
 offer an explicit synchronization action, but must not treat an arbitrary local
@@ -322,7 +334,8 @@ GET    /v1/me/achievements
 
 Mutating cookie-authenticated routes require CSRF protection in addition to
 origin checks. Authentication, attempt issuance/completion, search, and
-deletion endpoints are rate-limited.
+deletion endpoints are rate-limited. Attempt issuance accepts at most ten
+requests per client address in a rolling minute.
 
 ## SQLite storage
 
@@ -472,22 +485,11 @@ The trainer treats the API as optional:
 - The API deployment workflow passes tests, preserves database files, deploys
   through the existing Caddy proxy, and verifies production health.
 
-## Known implementation gaps
+## Ranking integrity baseline
 
-The following are tracked defects against this contract and must be resolved
-before the next ranking-affecting release:
-
-- `BUG-136`: run boards must deduplicate to one best result per account.
-- `BUG-137`: run-board search must preserve authoritative ranks.
-- `BUG-138`: direct practice must contribute only its actual phase clears and
-  must not advance full-run flawless streaks.
-- `BUG-139`: completion must validate the issued configuration and support an
-  identical idempotent retry.
-- `BUG-140`: attempt issuance needs its documented bounded rate limit.
-- `BUG-141`: alias identity must never expose the linked character's guild.
-- `BUG-142`: public, personal, and profile positions must use one current-season
-  scope after a trainer SemVer change.
-
-These corrections may change visible ranking or achievement totals. They do
-not authorize a leaderboard-season change; `SPEC-014` still requires the
-user's explicit decision.
+`BUG-136`–`BUG-142` and `SPEC-016` established the verified baseline: one best
+run per account and board, authoritative search ranks, current-season standings
+across every surface, full-run-only streaks, configuration-bound idempotent
+completion, bounded issuance, alias-safe guild privacy, and account-deduplicated
+achievement points. These repairs retain `season-1`; only the user can
+authorize a future leaderboard-season change under `SPEC-014`.

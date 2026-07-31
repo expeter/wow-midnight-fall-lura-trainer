@@ -65,7 +65,7 @@ export function listAchievementHall(
       displayName: first.identityMode === 'character'
         ? first.characterName ?? 'Unselected character'
         : first.alias?.trim() || 'Unnamed player',
-      guild: first.showGuild ? first.guildName : null,
+      guild: first.identityMode === 'character' && first.showGuild ? first.guildName : null,
       totalPoints: accountAwards.reduce((sum, award) => sum + award.points, 0),
       achievementCount: accountAwards.length,
       highestAchievement: {

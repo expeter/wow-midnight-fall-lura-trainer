@@ -25,6 +25,8 @@ interface AttemptInput {
 
 interface CompletionInput {
   nonce?: unknown
+  configurationFingerprint?: unknown
+  optionalChallenges?: unknown
   durationMs?: unknown
   phaseResults?: unknown
   mistakes?: unknown
@@ -127,11 +129,17 @@ interface PhaseResult {
 
 function validatedCompletion(input: CompletionInput, expectedPhases: readonly string[]) {
   const nonce = cleanString(input.nonce, 128)
+  const configurationFingerprint = cleanString(input.configurationFingerprint, 128)
   const trainerVersion = cleanString(input.trainerVersion, 30)
   const buildId = cleanString(input.buildId, 80)
   const durationMs = Number(input.durationMs)
   const submittedScore = Number(input.submittedScore)
   if (!nonce) throw new Error('invalid_nonce')
+  if (!configurationFingerprint) throw new Error('invalid_configuration')
+  if (
+    !Array.isArray(input.optionalChallenges)
+    || input.optionalChallenges.some(value => value !== 'recovery' && value !== 'main-ability')
+  ) throw new Error('invalid_optional_challenges')
   if (!trainerVersion || !buildId) throw new Error('invalid_version')
   if (!Number.isInteger(durationMs) || durationMs < 1_000 || durationMs > 3_600_000) {
     throw new Error('implausible_duration')
@@ -216,6 +224,10 @@ function validatedCompletion(input: CompletionInput, expectedPhases: readonly st
   ) throw new Error('invalid_achievement_inputs')
   return {
     nonce,
+    configuration: {
+      fingerprint: configurationFingerprint,
+      optionalChallenges: [...new Set(input.optionalChallenges)].sort(),
+    },
     trainerVersion,
     buildId,
     durationMs,
@@ -237,29 +249,32 @@ function earnedAchievementIds(
   inputs: { wipeCount?: unknown; crystalFailures?: unknown; runeFailures?: unknown; pauseCycle?: unknown; earlyKill?: unknown; p3EarlyClear?: unknown },
 ): string[] {
   const ids: string[] = []
-  if (difficulty === 'test') ids.push('test-pilot')
-  if (difficulty === 'easy') ids.push('easy-does-it')
-  if (difficulty === 'normal') ids.push('ready-for-raid-night')
-  if (difficulty === 'hard') ids.push('midnight-shift')
-  if (difficulty === 'normal' && Number(inputs.wipeCount) === 0) ids.push('no-second-chances')
-  if (difficulty === 'normal' && mistakes.length === 0) ids.push('not-a-scratch')
+  const fullRun = phases.length === PHASES.length
+  if (fullRun && difficulty === 'test') ids.push('test-pilot')
+  if (fullRun && difficulty === 'easy') ids.push('easy-does-it')
+  if (fullRun && (difficulty === 'test' || difficulty === 'normal')) ids.push('ready-for-raid-night')
+  if (fullRun && difficulty === 'hard') ids.push('midnight-shift')
+  if (!fullRun && phases.length === 1) ids.push('one-phase-wonder')
+  if (fullRun && difficulty === 'normal' && Number(inputs.wipeCount) === 0) ids.push('no-second-chances')
+  if (fullRun && difficulty === 'normal' && mistakes.length === 0) ids.push('not-a-scratch')
   for (const phase of phases) if (phase.mistakes === 0) ids.push(`flawless-${phase.key}`)
-  if (Number(inputs.crystalFailures) === 0) ids.push('crystal-clear-conscience')
-  if (Number(inputs.runeFailures) === 0) ids.push('rune-reader')
+  if (fullRun && Number(inputs.crystalFailures) === 0) ids.push('crystal-clear-conscience')
+  if (phases.some(phase => phase.key === 'p3') && Number(inputs.runeFailures) === 0) ids.push('rune-reader')
   if (actions.recoveryPasses > 0) ids.push('prepared-for-every-phase')
-  if (actions.recoveryPasses === PHASES.length) ids.push('never-caught-unprepared')
+  if (fullRun && actions.recoveryPasses === PHASES.length) ids.push('never-caught-unprepared')
   if (actions.mainAbilityCasts > 0) ids.push('always-be-casting')
   if (inputs.pauseCycle) ids.push('strategic-timeout')
-  if (difficulty === 'hard' && mistakes.length === 0 && score > 1100) ids.push('hard-score-flawless')
+  if (fullRun && difficulty === 'hard' && mistakes.length === 0 && score > 1100) ids.push('hard-score-flawless')
   if (inputs.earlyKill) ids.push('early-kill')
   if (inputs.p3EarlyClear) ids.push('p3-early-clear')
   return [...new Set(ids)]
 }
 
-function aggregateAchievementIds(database: Database, accountId: number): string[] {
+export function aggregateAchievementIds(database: Database, accountId: number): string[] {
   const rows = database.prepare(`
     SELECT COALESCE(r.verified_difficulty, r.difficulty) AS difficulty,
-      r.duty, r.score, r.accepted_at AS acceptedAt,
+      r.duty, r.score, r.run_eligible AS runEligible, r.accepted_at AS acceptedAt,
+      s.phase_results_json AS phaseResultsJson,
       s.mistakes_json AS mistakesJson, s.actions_json AS actionsJson
     FROM results r
     JOIN attempt_summaries s ON s.attempt_id = r.attempt_id
@@ -270,18 +285,23 @@ function aggregateAchievementIds(database: Database, accountId: number): string[
     duty: string
     score: number
     acceptedAt: string
+    runEligible: number
+    phaseResultsJson: string
     mistakesJson: string
     actionsJson: string
   }>
   const parsed = rows.map(row => {
     const mistakes = JSON.parse(row.mistakesJson) as unknown[]
     const actions = JSON.parse(row.actionsJson) as { recoveryPasses?: number; mainAbilityCasts?: number }
-    return { ...row, flawless: mistakes.length === 0, actions }
+    const phaseResults = JSON.parse(row.phaseResultsJson) as unknown[]
+    return { ...row, flawless: mistakes.length === 0, actions, phaseClears: phaseResults.length }
   })
   const ids: string[] = []
-  if (new Set(parsed.map(row => row.duty)).size === 2) ids.push('both-sides-of-crystal')
+  const fullRuns = parsed.filter(row => row.runEligible === 1)
+  if (new Set(fullRuns.map(row => row.duty)).size === 2) ids.push('both-sides-of-crystal')
   const superhumanDuties = new Set(parsed
-    .filter(row => row.difficulty === 'hard'
+    .filter(row => row.runEligible === 1
+      && row.difficulty === 'hard'
       && row.flawless
       && row.score > 1100
       && row.actions.recoveryPasses === PHASES.length
@@ -289,12 +309,12 @@ function aggregateAchievementIds(database: Database, accountId: number): string[
     .map(row => row.duty))
   if (superhumanDuties.size === 2) ids.push('superhuman-both-duties')
   for (const difficulty of ['normal', 'hard']) {
-    const relevant = parsed.filter(row => row.difficulty === difficulty)
+    const relevant = fullRuns.filter(row => row.difficulty === difficulty)
     let streak = 0
     for (let index = relevant.length - 1; index >= 0 && relevant[index].flawless; index -= 1) streak += 1
     if (streak >= 5) ids.push(difficulty === 'hard' ? 'impossible-hard-streak' : 'impossible-normal-streak')
   }
-  const phaseClears = parsed.length * PHASES.length
+  const phaseClears = parsed.reduce((total, row) => total + row.phaseClears, 0)
   if (phaseClears >= 10) ids.push('phase-clears-10')
   if (phaseClears >= 50) ids.push('phase-clears-50')
   if (phaseClears >= 100) ids.push('phase-clears-100')
@@ -332,6 +352,7 @@ export function completeAttempt(
   dependencies: AuthDependencies,
   accountId: number,
   attemptId: string,
+  idempotencyKey: string,
   input: CompletionInput,
 ) {
   const attempt = database.prepare(`
@@ -339,6 +360,7 @@ export function completeAttempt(
       COALESCE(verified_difficulty, difficulty) AS verifiedDifficulty,
       duty, entry_mode AS entryMode, phase_scope AS phaseScope, trainer_version AS trainerVersion,
       build_id AS buildId, leaderboard_season AS leaderboardSeason,
+      configuration_json AS configurationJson,
       nonce_hash AS nonceHash, expires_at AS expiresAt, consumed_at AS consumedAt
     FROM attempts WHERE id = ? AND account_id = ?
   `).get(attemptId, accountId) as {
@@ -352,6 +374,7 @@ export function completeAttempt(
     trainerVersion: string
     buildId: string
     leaderboardSeason: string
+    configurationJson: string
     nonceHash: string
     expiresAt: string
     consumedAt: string | null
@@ -359,13 +382,50 @@ export function completeAttempt(
   if (!attempt) throw new Error('attempt_not_found')
   const expectedPhases = ENTRY_PHASES[attempt.entryMode]
   if (!expectedPhases || attempt.phaseScope !== (attempt.entryMode === 'arena0' ? 'full' : expectedPhases[0])) throw new Error('invalid_phase_scope')
+  const cleanIdempotencyKey = cleanString(idempotencyKey, 128)
+  if (!cleanIdempotencyKey) throw new Error('invalid_idempotency_key')
+  const completionHash = hash(JSON.stringify(input))
+  const idempotencyKeyHash = hash(cleanIdempotencyKey)
+  if (attempt.consumedAt) {
+    const summary = database.prepare(`
+      SELECT accepted_score AS score, accepted_at AS acceptedAt,
+        idempotency_key_hash AS idempotencyKeyHash,
+        completion_hash AS completionHash,
+        achievement_ids_json AS achievementIdsJson
+      FROM attempt_summaries WHERE attempt_id = ?
+    `).get(attemptId) as {
+      score: number
+      acceptedAt: string
+      idempotencyKeyHash: string | null
+      completionHash: string | null
+      achievementIdsJson: string
+    } | undefined
+    if (summary?.idempotencyKeyHash === idempotencyKeyHash) {
+      if (summary.completionHash !== completionHash) throw new Error('idempotency_conflict')
+      return {
+        accepted: true,
+        score: summary.score,
+        acceptedAt: summary.acceptedAt,
+        achievementIds: JSON.parse(summary.achievementIdsJson) as string[],
+      }
+    }
+    throw new Error('attempt_already_used')
+  }
   const completion = validatedCompletion(input, expectedPhases)
-  if (attempt.consumedAt) throw new Error('attempt_already_used')
-  if (attempt.expiresAt <= dependencies.now().toISOString()) throw new Error('attempt_expired')
   if (hash(completion.nonce) !== attempt.nonceHash) throw new Error('invalid_nonce')
   if (completion.trainerVersion !== attempt.trainerVersion || completion.buildId !== attempt.buildId) {
     throw new Error('attempt_version_mismatch')
   }
+  let issuedConfiguration: unknown
+  try {
+    issuedConfiguration = JSON.parse(attempt.configurationJson)
+  } catch {
+    throw new Error('attempt_configuration_mismatch')
+  }
+  if (JSON.stringify(completion.configuration) !== JSON.stringify(issuedConfiguration)) {
+    throw new Error('attempt_configuration_mismatch')
+  }
+  if (attempt.expiresAt <= dependencies.now().toISOString()) throw new Error('attempt_expired')
   const acceptedAt = dependencies.now().toISOString()
   const achievementIds = earnedAchievementIds(
     attempt.verifiedDifficulty,
@@ -375,6 +435,7 @@ export function completeAttempt(
     completion.actions,
     completion.achievementInputs,
   )
+  const awardedAchievementIds: string[] = []
   database.exec('BEGIN IMMEDIATE')
   try {
     const consumed = database.prepare(`
@@ -385,8 +446,9 @@ export function completeAttempt(
     database.prepare(`
       INSERT INTO attempt_summaries (
         attempt_id, duration_ms, phase_results_json, mistakes_json, actions_json,
-        accepted_score, submitted_score, accepted_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        accepted_score, submitted_score, accepted_at, idempotency_key_hash,
+        completion_hash, achievement_ids_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '[]')
     `).run(
       attemptId,
       completion.durationMs,
@@ -396,6 +458,8 @@ export function completeAttempt(
       completion.acceptedScore,
       completion.submittedScore,
       acceptedAt,
+      idempotencyKeyHash,
+      completionHash,
     )
     database.prepare(`
       INSERT INTO results (
@@ -435,7 +499,7 @@ export function completeAttempt(
           account_id, character_id, achievement_id, trainer_version,
           build_id, source_attempt_id, first_earned_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT (account_id, character_id, achievement_id, trainer_version) DO NOTHING
+        ON CONFLICT DO NOTHING
       `).run(
         accountId,
         attempt.characterId,
@@ -446,6 +510,7 @@ export function completeAttempt(
         acceptedAt,
       )
       if (insertedAchievement.changes === 1) {
+        awardedAchievementIds.push(achievementId)
         database.prepare(`
           INSERT INTO achievement_events (
             account_id, character_id, achievement_id, trainer_version,
@@ -461,10 +526,18 @@ export function completeAttempt(
         )
       }
     }
+    database.prepare(`
+      UPDATE attempt_summaries SET achievement_ids_json = ? WHERE attempt_id = ?
+    `).run(JSON.stringify(awardedAchievementIds), attemptId)
     database.exec('COMMIT')
   } catch (error) {
     database.exec('ROLLBACK')
     throw error
   }
-  return { accepted: true, score: completion.acceptedScore, acceptedAt, achievementIds }
+  return {
+    accepted: true,
+    score: completion.acceptedScore,
+    acceptedAt,
+    achievementIds: awardedAchievementIds,
+  }
 }

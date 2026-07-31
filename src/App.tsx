@@ -26,7 +26,13 @@ interface GameStats { score: number; hits: number; crystalDropped: boolean; time
 interface Assignment { x: number; y: number }
 interface Mistake { id: number; time: number; label: string; penalty: number }
 interface PhaseStart { key: PhaseKey; score: number; time: number; hits: number }
-interface ActiveOnlineAttempt { attemptId: string; nonce: string; buildId: string }
+interface ActiveOnlineAttempt {
+  attemptId: string
+  nonce: string
+  buildId: string
+  configurationFingerprint: string
+  optionalChallenges: string[]
+}
 type RecoveryStatus = 'disabled' | 'pending' | 'passed' | 'missed'
 interface PhaseCrystalAssignments { p1: number[]; intermission: number[]; p2: number[]; p3: number[] }
 interface RaidPlan { p1Positions: Assignment[]; p1BossPosition: Assignment; positions: Assignment[]; p2Positions: Assignment[]; p2SpreadPositions: Assignment[]; p3Positions: Assignment[]; p3BossPositions: Assignment[]; startSlots: Assignment[]; profiles: PlayerProfile[]; crystalAssignments: PhaseCrystalAssignments }
@@ -1208,7 +1214,13 @@ export default function App() {
           configurationFingerprint: fingerprint,
           optionalChallenges: ['recovery', 'main-ability'],
         })
-        setOnlineAttempt({ attemptId: issued.attemptId, nonce: issued.nonce, buildId })
+        setOnlineAttempt({
+          attemptId: issued.attemptId,
+          nonce: issued.nonce,
+          buildId,
+          configurationFingerprint: fingerprint,
+          optionalChallenges: ['recovery', 'main-ability'],
+        })
         setOnlineResultStatus('Online-eligible attempt active.')
       } catch {
         setOnlineResultStatus('Could not issue an online attempt. Continuing as local practice.')
@@ -2385,6 +2397,8 @@ export default function App() {
     setOnlineResultStatus('Submitting verified result…')
     void completeOnlineAttempt(onlineSession.csrfToken, onlineAttempt.attemptId, {
       nonce: onlineAttempt.nonce,
+      configurationFingerprint: onlineAttempt.configurationFingerprint,
+      optionalChallenges: onlineAttempt.optionalChallenges,
       durationMs: Math.round(stats.time * 1000),
       phaseResults: phaseResults.map(result => ({
         key: result.key,

@@ -308,3 +308,19 @@ privacy, deployment, and acceptance contract.
 - [`api-highscores.md`](api-highscores.md) is the detailed service contract and
   [`milestones.md`](milestones.md) owns the current delivery grouping. The
   historical request ledger remains in [`README.md`](README.md).
+
+## SPEC-016 · Ranking continuity and finite scoring
+
+- Retain `season-1` and its accepted results while repairing ranking and
+  achievement integrity. These corrections do not erase or reset legitimate
+  existing runs.
+- A rank-one board badge is a permanent account achievement. It is awarded
+  once when first earned and its canonical achievement points are counted once,
+  even if the account later loses or retakes that crown or qualifies with
+  another character or trainer version.
+- Global score contains one best accepted run score per account in each of the
+  four current-season divisions plus the finite, account-deduplicated canonical
+  achievement catalogue.
+- Main ability score is finite and server-validated: accepted casts cannot
+  exceed one completed cast per simulated encounter second, and accepted
+  encounter duration remains bounded.

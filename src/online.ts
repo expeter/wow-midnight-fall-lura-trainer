@@ -362,7 +362,10 @@ export function completeOnlineAttempt(
     `/v1/attempts/${encodeURIComponent(attemptId)}/complete`,
     {
       method: 'POST',
-      headers: { 'x-csrf-token': csrfToken },
+      headers: {
+        'x-csrf-token': csrfToken,
+        'idempotency-key': attemptId,
+      },
       body: JSON.stringify(input),
     },
   )

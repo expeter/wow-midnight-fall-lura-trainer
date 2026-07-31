@@ -50,7 +50,7 @@ comparability. Before releasing this milestone, explicitly ask whether it
 starts a new leaderboard season. Until the user says otherwise, retain
 `season-1`.
 
-## M2 · Ranking and achievement integrity
+## M2 · Ranking and achievement integrity — completed
 
 Goal: make every public position, crown, profile, and lifetime achievement
 agree before another SemVer release can mix results into the current season.
@@ -63,10 +63,12 @@ agree before another SemVer release can mix results into the current season.
 - `BUG-141` — never expose a linked guild from alias identity.
 - `BUG-142` — one current-season scope for public, personal, and profile ranks.
 - `BUG-143` — award the missing browser-local flawless Phase 1 achievement.
+- `SPEC-016` — retain `season-1` while making rank-one achievement points
+  permanent, account-deduplicated, and finite.
 
-Resolve this milestone before publishing a ranking-affecting `v0.7.0`.
-Corrections may change visible positions or lifetime points, so they require
-the same explicit leaderboard-season reminder as M1.
+Completed under `BUG-136`–`BUG-143` and `SPEC-016`. The repairs retain
+`season-1`. Their visible ranking and lifetime-point effects still require the
+explicit leaderboard reminder before a release.
 
 ## M3 · Developer and test tooling
 

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- BUG-136–BUG-143 / SPEC-016: Retain `season-1` while repairing ranking and
+  achievement integrity: publish one best run per account with stable search
+  ranks, use one current-season scope across boards and profiles, count actual
+  direct-phase clears, restrict full-run feats correctly, bind completion to
+  issued configuration with safe idempotent retry, throttle attempt issuance,
+  hide guild identity in alias mode, restore local flawless Phase 1 awards,
+  and store canonical/rank-one achievement points only once per account.
 - FR-065 / CR-178: Add the persisted optional in-arena action strip for Main
   ability, Interrupt, Shield, Health potion, and Crystal drop, with its own
   draggable HUD anchor.

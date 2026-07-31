@@ -249,6 +249,22 @@ privacy, deployment, and acceptance contract.
 
 ## SPEC-013 · Phase 2 center pull and crystals
 
+- Each of the three beam sets randomly assigns four distinct non-crystal
+  players. Crystal carriers are never eligible.
+- Phase 2 owns one roster of twelve orbs that orbit continuously
+  counterclockwise. Their orbit never pauses, slows, or reverses for a beam,
+  glow, or return state.
+- Each set targets four unresolved orbs, choosing the orb nearest each of the
+  four cross regions at the predicted beam-impact moment. Targets are near the
+  markers, not locked to exact cardinal coordinates; all twelve orbs are
+  resolved exactly once across the three sets.
+- NPC assignees aim their beams through the predicted moving targets. If the
+  controlled player is assigned, the rendered beam runs from L'ura through
+  the player's current rendered position. That visual ray must intersect the
+  assigned orb when the beam resolves or the attempt wipes.
+- The four resolved orbs become the yellow return set while preserving their
+  indices and counterclockwise motion, then glow and travel inward. They are
+  not duplicated by a second overlapping orb roster.
 - The five-second center pull remains weak enough through most of its duration
   for a non-carrier walking outward to hold outside the middle. Its final force
   exceeds normal walking speed.

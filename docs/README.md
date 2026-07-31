@@ -329,7 +329,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `FR-047` | Implemented | Add the Phase 3 lasso-select-and-place interaction to the Intermission, P1, P2 Soak, and P2 spread raid plans so every player layout supports moving a selected group while retaining individual player and boss/start-marker dragging. |
 | `FR-048` | Backlog | At P3 entry, make the knockback drop the trio’s crystal. Its assigned crystal NPC/player must recover it and provide one yellow safe-zone Soak; the second NPC commits to that same Soak while the controlled player resolves the other. |
 | `FR-049` | Backlog | End P2 by returning all entities to their configured personal-circle positions, then launch each one outward from that individual circle into P3 while keeping every landing inside the arena. |
-| `FR-050` | Backlog | Rework each P2 cross-beam set around four randomly selected non-crystal players. Assign each beam to intercept one continuously counterclockwise-orbiting orb near—not exactly on—the four cross-mark regions; never slow or pause the orbit. NPC assignees aim perfectly. If the controlled player is selected, their beam may naturally hit them while aiming, but missing the assigned orb is a wipe. Crystal carriers are never eligible. |
+| `FR-050` | Implemented | Rework each P2 cross-beam set around four randomly selected non-crystal players. Assign each beam to intercept one continuously counterclockwise-orbiting orb near—not exactly on—the four cross-mark regions; never slow or pause the orbit. NPC assignees aim perfectly. If the controlled player is selected, their rendered position determines the beam ray and missing the assigned orb is a wipe. Crystal carriers are never eligible. Covered by deterministic assignment/target/ray unit tests, direct-P2 state assertions, and a focused Hard-mode browser regression for a selected player missing their orb. |
 | `FR-051` | Backlog | Remove avoidable Node and test-runner warnings when they pollute developer or agent output, beginning with the conflicting `NO_COLOR` and `FORCE_COLOR` environment configuration reported by Playwright. Preserve useful diagnostics rather than hiding actionable warnings globally. |
 | `FR-052` | Implemented | When an attempt ends in a real terminal wipe, lay the controlled player and the complete NPC raid on the ground as a visibly defeated, scattered group. Test-mode “would wipe” mistakes do not trigger the defeated pose. |
 | `FR-053` | Implemented | Each P1 interrupt cast now synchronizes casts 1–5 with three fast orbs orbiting L’ura, a charging dangerous frontal cone, a two-second boss cast bar, NPC/player interruption feedback, and immediate lethal resolution when the controlled player misses their assigned kick. |
@@ -515,8 +515,11 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 
 - Three 30-second cycles using one continuous roster of twelve
   counterclockwise-orbiting orbs.
-- Seven-second cross beams convert four struck orbs to yellow; those same orbs
-  continue orbiting, glow, and return to L’ura.
+- Each cycle randomly assigns four non-crystal players to aim a beam through
+  four unresolved moving orbs near the cross regions. NPCs aim perfectly; an
+  assigned controlled player wipes if their rendered beam ray misses its orb.
+- Seven-second cross beams convert those four targeted orbs to yellow; the same
+  indexed orbs continue orbiting, glow, and return to L’ura.
 - Crystal drop/recovery, a five-second increasing center pull, large blue
   personal circles, a dedicated spread plan, roaming NPC downtime, and the
   outward Phase 3 transition.

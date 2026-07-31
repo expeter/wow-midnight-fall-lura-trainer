@@ -192,7 +192,10 @@ test('selects Arena 2 and enters the Phase 2 countdown', async ({ page }) => {
   expect(viewportFits.documentHeight).toBeLessThanOrEqual(viewportFits.viewportHeight)
 
   const beamCountdown = page.locator('.beam-drop-counter')
-  await expect(page.getByText('Soak your assigned beam.')).toBeVisible({ timeout: MECHANIC_TIMEOUT })
+  await expect(page.getByText(/Aim through your assigned orb\.|Dodge the cross beams\./)).toBeVisible({ timeout: MECHANIC_TIMEOUT })
+  const arena = page.locator('.arena-wrap')
+  await expect(arena).toHaveAttribute('data-p2-beam-assignees', /^\d+(,\d+){3}$/)
+  await expect(arena).toHaveAttribute('data-p2-beam-orbs', /^\d+(,\d+){3}$/)
   await expect(page.getByText('WAIT TO DROP')).toHaveCount(0)
   await expect(beamCountdown).toBeVisible({ timeout: MECHANIC_TIMEOUT })
   await expect(beamCountdown).toContainText(/BEAM IN [1-5]/)
@@ -206,6 +209,24 @@ test('shows the early crystal drop warning on Easy only', async ({ page }) => {
   await page.getByRole('button', { name: /Enter P2/ }).click()
 
   await expect(page.getByText('WAIT TO DROP')).toBeVisible({ timeout: MECHANIC_TIMEOUT })
+})
+
+test('wipes when the controlled Phase 2 beam misses its assigned moving orb', async ({ page }) => {
+  await page.addInitScript(() => {
+    Math.random = () => .25
+    localStorage.setItem('lura-game-speed', '2.5')
+    localStorage.setItem('lura-selected-position', '5')
+    localStorage.setItem('lura-player-positions', '[]')
+    localStorage.setItem('lura-p2-crystal-assignments', JSON.stringify([1, 4, 7, 10, 13, 16]))
+  })
+  await page.goto('/')
+  await page.getByRole('button', { name: 'hard' }).click()
+  await page.getByRole('button', { name: 'P2', exact: true }).click()
+  await page.getByRole('button', { name: /Enter P2/ }).click()
+
+  const arena = page.locator('.arena-wrap')
+  await expect(arena).toHaveAttribute('data-p2-beam-assignees', /(^|,)5(,|$)/, { timeout: MECHANIC_TIMEOUT })
+  await expect(page.getByRole('alert')).toContainText('Your Phase 2 beam missed its assigned orb', { timeout: P2_RESOLUTION_TIMEOUT })
 })
 
 test('continues the current Phase 2 sequence after the first Normal wipe', async ({ page }) => {
@@ -231,7 +252,7 @@ test('wipes when a non-carrier personal circle hits an NPC crystal in Phase 2', 
   await page.getByRole('button', { name: /Enter P2/ }).click()
 
   await expect(page.getByRole('alert')).toContainText('Your personal circle hit another player’s crystal', { timeout: P2_RESOLUTION_TIMEOUT })
-  await expect(page.locator('.score-overlay strong')).toHaveText('400')
+  await expect(page.locator('.score-overlay strong')).toHaveText('500')
 })
 
 test('Space jumps while actions are locked and P pauses', async ({ page }) => {

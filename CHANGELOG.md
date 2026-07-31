@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- FR-050: Assign each Phase 2 beam set to four random non-crystal players and
+  four unresolved continuously counterclockwise-orbiting orbs near the cross
+  regions. NPCs intercept their predicted targets; a selected controlled
+  player aims with their rendered position and wipes if that ray misses.
+
 ## 0.6.1 · 2026-07-31
 
 - BUG-144: Keep the documented Phase 3 timings intact while allowing the

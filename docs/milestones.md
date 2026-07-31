@@ -6,9 +6,9 @@ in [`specifications.md`](specifications.md).
 
 ## Current release boundary
 
-- Latest tagged release: `v0.6.0`.
-- The deployed branch also contains the post-v0.6 HUD-action, live-activity,
-  feedback, profile, and ranking changes listed under `Unreleased`.
+- Latest tagged and deployed release: `v0.6.1`.
+- `v0.6.1` contains the HUD-action, live-activity, feedback, profile, ranking,
+  and CI-stability work documented in the changelog.
 - The next feature release is expected to be `v0.7.0`, but the version is cut
   only after its selected milestone scope passes focused and complete
   regression.
@@ -26,15 +26,19 @@ This is the next implementation milestone and today's priority.
 
 Implement in dependency order:
 
-1. `FR-050` — choose four non-crystal beam players per Phase 2 set and make
-   their continuously orbiting orb interception authoritative.
-2. `FR-049` — return actors to their personal-circle positions at Phase 2 end
+1. `FR-049` — return actors to their personal-circle positions at Phase 2 end
    and launch each one outward from that position into Phase 3.
-3. `FR-048` — drop and recover the landing trio's crystal, then make the
+2. `FR-048` — drop and recover the landing trio's crystal, then make the
    crystal carrier and one helper cover one opening Soak while the controlled
    player resolves the other.
-4. `CR-051` — swap the second Phase 3 sequence's ground Soak and memory-game
+3. `CR-051` — swap the second Phase 3 sequence's ground Soak and memory-game
    order after the exact overlap timing is confirmed.
+
+Completed in this milestone:
+
+- `FR-050` — four random non-crystal beam assignees now intercept four
+  continuously orbiting unresolved orbs per set, with rendered player aim and
+  a terminal miss rule.
 
 ### Phase 4 roles
 

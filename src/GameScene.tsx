@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
-import { angleToward, assignmentRevealDistance, constrainP3NpcTargetToSide, crystalCarrierPosition, distance, distanceToSegment, hasActiveP3CrystalLight, isActiveP3RuneDuty, jumpHeights, keepP3CrystalPoolCovered, keepP3NpcInSoak, keepP4NpcInProtection, npcEntryPosition, OPENING_BOOST_SECONDS, P1_STAR_LENGTH, P2_BEAM_SECONDS, P2_ORBIT_SPEED, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_INNER_RADIUS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p2NpcRoamingPosition, p2NpcShouldReturnToSoak, p2OrbPosition, p2OrbReturnState, p2ReturningOrbPositions, p3ActiveCrystalAssignments, P3_APPROACH_NPC_SPEED_MULTIPLIER, p3ArchangelStackPosition, p3BossPosition, p3CrystalPoolCoverageTargets, p3FlightPosition, P3_FLIGHT_SECONDS, p3LandingGroupIndex, p3LandingPlanIndex, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3NpcPoolAssignment, p3NpcRuneReactionDelay, p3NpcSoaksActive, p3PoolCenters, p3PoolLayoutId, p3ProtectionBubbleCenter, p3RuneEdges, p3RuneOrbs, p3RunePartnerPosition, p3SideForPosition, p3StarsTiming, playerCarriesCrystal, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, p4EncounterBoxStates, p4FrontSoakerPosition, p4GroupPosition, p4NpcRelocationPace, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4StackPosition, p4TankAvoidSplinters, p4TankConeActive, p4TankConeHitsBox, p4TransitionStartPosition, P4_FRONT_CONE_RANGE, P4_HEAVEN_MOVE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, roamingNpcPosition, safestStarsplinterRotation, separateP3NpcTarget, shouldApplyP3NpcDisplacement, shouldHoldP3RunePartner, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type RuneSymbol } from './game'
+import { angleToward, assignmentRevealDistance, constrainP3NpcTargetToSide, crystalCarrierPosition, distance, distanceToSegment, hasActiveP3CrystalLight, isActiveP3RuneDuty, jumpHeights, keepP3CrystalPoolCovered, keepP3NpcInSoak, keepP4NpcInProtection, npcEntryPosition, OPENING_BOOST_SECONDS, P1_STAR_LENGTH, p2BeamAimPosition, P2_ORBIT_SPEED, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_INNER_RADIUS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p2NpcRoamingPosition, p2NpcShouldReturnToSoak, p2OrbPosition, p2OrbReturnState, p2ReturningOrbPositions, p3ActiveCrystalAssignments, P3_APPROACH_NPC_SPEED_MULTIPLIER, p3ArchangelStackPosition, p3BossPosition, p3CrystalPoolCoverageTargets, p3FlightPosition, P3_FLIGHT_SECONDS, p3LandingGroupIndex, p3LandingPlanIndex, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3NpcPoolAssignment, p3NpcRuneReactionDelay, p3NpcSoaksActive, p3PoolCenters, p3PoolLayoutId, p3ProtectionBubbleCenter, p3RuneEdges, p3RuneOrbs, p3RunePartnerPosition, p3SideForPosition, p3StarsTiming, playerCarriesCrystal, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, p4EncounterBoxStates, p4FrontSoakerPosition, p4GroupPosition, p4NpcRelocationPace, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4StackPosition, p4TankAvoidSplinters, p4TankConeActive, p4TankConeHitsBox, p4TransitionStartPosition, P4_FRONT_CONE_RANGE, P4_HEAVEN_MOVE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, roamingNpcPosition, safestStarsplinterRotation, separateP3NpcTarget, shouldApplyP3NpcDisplacement, shouldHoldP3RunePartner, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type RuneSymbol } from './game'
 import { p3SectorMovementSpeed, p3SpreadPosition, p4PlayerSplinterHitsNpc, p4RenderedNpcSplinterHitsPlayer, p4RenderedNpcSplinterOrigin, p4TankKillsBox } from './game'
 import { isP3RaidMemberVisible } from './game'
 import { isInsideP3Pool } from './game'
@@ -37,6 +37,11 @@ interface SceneProps {
   wipeReason: string
   p2Cycle: number
   p2OrbReturnAge: number
+  p2BeamAssignees: number[]
+  p2BeamOrbIndices: number[]
+  p2ReturningOrbIndices: number[]
+  p2ResolvedOrbIndices: number[]
+  p2BeamImpactAngle: number
   onP2OrbitAngle: (angle: number) => void
   p3Round: number
   p3ArchangelDuty: 1 | 2 | null
@@ -832,8 +837,6 @@ export default function GameScene(props: SceneProps) {
     let p3PlayerSoakEngagedRound = 0
     let previousRenderTime = performance.now()
     let orbitAngle = 0
-    let orbitSoakStart = 0
-    let orbitSoakTarget = 0
     let previousEvent: SceneProps['event'] = initial.event
     const destroyedP4BoxIds = new Set<number>()
     const resolvedP4VisualSplinters = new Set<number>()
@@ -959,11 +962,6 @@ export default function GameScene(props: SceneProps) {
           resolvedP4VisualSplinters.clear()
           p4VisualSplinterSnapshots.clear()
         }
-        if (state.event === 'p2-orbs') {
-          orbitSoakStart = orbitAngle
-          const baseTarget = -(state.p2Cycle - 1) * Math.PI / 6
-          orbitSoakTarget = baseTarget + Math.ceil((orbitAngle - baseTarget) / (Math.PI / 2)) * Math.PI / 2
-        }
         if (state.event === 'p3-landing') {
           const landing = p3LandingPosition(p3LandingIndexOf(state.assignment), WORLD.center)
           const assignedBoss = p3BossPosition(playerP3Side, WORLD.center, 1)
@@ -973,11 +971,7 @@ export default function GameScene(props: SceneProps) {
         }
         previousEvent = state.event
       }
-      if (state.event === 'p2-orbs') {
-        const progress = THREE.MathUtils.clamp(state.eventTime / P2_BEAM_SECONDS, 0, 1)
-        const eased = progress * progress * (3 - 2 * progress)
-        orbitAngle = THREE.MathUtils.lerp(orbitSoakStart, orbitSoakTarget, eased)
-      } else if (state.event.startsWith('p2-')) orbitAngle += renderDelta * P2_ORBIT_SPEED
+      if (state.event.startsWith('p2-')) orbitAngle += simulationDelta * P2_ORBIT_SPEED
       if (state.event.startsWith('p2-')) state.onP2OrbitAngle(orbitAngle)
       const jumpProgress = state.event === 'p2-jump' ? Math.min(1, state.eventTime / 1.4) : 0
       const heights = jumpHeights(jumpProgress, state.personalJumpProgress)
@@ -1117,13 +1111,17 @@ export default function GameScene(props: SceneProps) {
         sprite.visible = true
         setEntityDimmed(sprite, DIM_OPPOSITE_P3_SIDE && phaseThree && !localP3Member)
         const soakTarget = state.p2SoakPositions[baseIndex]
+        const p2BeamSlot = state.p2BeamAssignees.indexOf(baseIndex)
+        const p2BeamTarget = p2BeamSlot >= 0 && state.p2BeamOrbIndices[p2BeamSlot] !== undefined
+          ? p2BeamAimPosition(state.p2BeamOrbIndices[p2BeamSlot], state.p2BeamImpactAngle, WORLD.center)
+          : null
         const spreadTarget = state.p2SpreadPositions[baseIndex]
         const intermissionPosition = npcPosition(index, state.time, state.intermissionPositions, state.assignment, state.event, state.eventTime, state.beamAngles, state.raidStart, state.movementSpeed, state.movementBonus)
         const spreadResolutionPosition = walkTowards(WORLD.center, spreadTarget, P2_SPREAD_SECONDS, state.movementSpeed)
         const recoveredSoakPosition = state.p2Cycle === 1 ? soakTarget : walkTowards(spreadResolutionPosition, soakTarget, 8, state.movementSpeed)
         const p2WaitTarget = p2NpcShouldReturnToSoak(state.p2OrbReturnAge)
           ? soakTarget
-          : p2NpcRoamingPosition(soakTarget, index, state.time, p2ReturningOrbPositions(state.p2OrbReturnAge, state.p2Cycle, orbitAngle, WORLD.center), WORLD.center, P2_RADIUS - 2)
+          : p2NpcRoamingPosition(soakTarget, index, state.time, p2ReturningOrbPositions(state.p2OrbReturnAge, state.p2Cycle, orbitAngle, WORLD.center, 82, state.p2ReturningOrbIndices), WORLD.center, P2_RADIUS - 2)
         let p1Target = state.positions[baseIndex]
         const currentP1CrystalAssignments = state.p1CrystalAssignments.slice((state.p1Sequence - 1) * 3, state.p1Sequence * 3)
         const p1CrystalSlot = currentP1CrystalAssignments.indexOf(baseIndex)
@@ -1350,11 +1348,11 @@ export default function GameScene(props: SceneProps) {
           : state.event === 'p2-countdown'
           ? WORLD.center
           : state.event === 'p2-positioning'
-            ? walkTowards(WORLD.center, soakTarget, state.eventTime, state.movementSpeed)
+            ? p2BeamTarget
+              ? walkTowards(WORLD.center, p2BeamTarget, state.eventTime, state.movementSpeed)
+              : p2NpcRoamingPosition(soakTarget, index, state.time, [], WORLD.center, P2_RADIUS - 2)
             : state.event === 'p2-orbs'
-              ? state.p2Cycle === 1
-                ? soakTarget
-                : walkTowards(spreadResolutionPosition, soakTarget, 2 + state.eventTime, state.movementSpeed)
+              ? p2BeamTarget ?? p2NpcRoamingPosition(soakTarget, index, state.time, [], WORLD.center, P2_RADIUS - 2)
               : state.event === 'p2-recover'
                 ? soakTarget
                 : state.event === 'p2-pull'
@@ -1398,7 +1396,7 @@ export default function GameScene(props: SceneProps) {
         sprite.rotation.z = state.wipeReason ? (index % 2 ? 1 : -1) * Math.PI / 2 : 0
         const pathTarget = phaseOne && (state.event === 'p1-beam-telegraph' || state.event === 'p1-beams')
           ? p1Boss
-          : phaseOne ? p1Target : phaseThree ? p3Target : state.event === 'p2-wait' ? p2WaitTarget : state.event === 'p2-orbs' ? soakTarget : state.event === 'p2-spread' ? spreadTarget : state.event === 'p2-pull' || state.event === 'p2-jump' ? WORLD.center : null
+          : phaseOne ? p1Target : phaseThree ? p3Target : state.event === 'p2-wait' ? p2WaitTarget : state.event === 'p2-orbs' || state.event === 'p2-positioning' ? p2BeamTarget : state.event === 'p2-spread' ? spreadTarget : state.event === 'p2-pull' || state.event === 'p2-jump' ? WORLD.center : null
         if (!state.wipeReason && pathTarget && distance(position, pathTarget) > .1) sprite.rotation.y = -Math.atan2(pathTarget.y - position.y, pathTarget.x - position.x)
         const glow = sprite.getObjectByName('crystal-glow')
         const p1CollectedAssignments = state.p1CrystalAssignments.slice(
@@ -1486,7 +1484,11 @@ export default function GameScene(props: SceneProps) {
       crystal.visible = !phaseFour && Boolean(state.crystal)
       if (state.crystal) crystal.position.set(state.crystal.x, 2.5, state.crystal.y)
       npcCrystalSprites.forEach((sprite, index) => { const point = state.npcCrystals[index]; sprite.visible = !phaseFour && Boolean(point); if (point) sprite.position.set(point.x, 2.25, point.y) })
-      const recurringP2Guide = state.p2Cycle > 1 && (state.event === 'p2-wait' || state.event === 'p2-orbs' && state.eventTime < 2.5)
+      const p2PlayerBeamSlot = state.p2BeamAssignees.indexOf(state.assignment)
+      const p2PlayerBeamTarget = p2PlayerBeamSlot >= 0 && state.p2BeamOrbIndices[p2PlayerBeamSlot] !== undefined
+        ? p2BeamAimPosition(state.p2BeamOrbIndices[p2PlayerBeamSlot], state.p2BeamImpactAngle, WORLD.center)
+        : null
+      const recurringP2Guide = p2PlayerBeamTarget !== null && (state.event === 'p2-positioning' || state.event === 'p2-orbs' && state.eventTime < 2.5)
       const p2SpreadGuide = state.event === 'p2-spread'
       const p4Stack = state.event === 'p4-cycle'
         ? p4GroupPosition(p4VisualCycle, state.eventTime, WORLD.center)
@@ -1500,10 +1502,10 @@ export default function GameScene(props: SceneProps) {
         ? state.event === 'p1-transition'
           ? state.intermissionPositions[state.assignment]
           : state.event === 'p1-memory-position' ? p1MemoryAssignment : state.positions[state.assignment]
-        : phaseFour ? p4Stack : p2SpreadGuide ? state.p2SpreadPositions[state.assignment] : recurringP2Guide ? state.p2SoakPositions[state.assignment] : state.positions[state.assignment]
+        : phaseFour ? p4Stack : p2SpreadGuide ? state.p2SpreadPositions[state.assignment] : recurringP2Guide ? p2PlayerBeamTarget! : state.positions[state.assignment]
       if (state.event === 'p3-approach' && distance(state.player, assigned) <= 14) p3OpeningReached = true
       const p3Opening = phaseThree && state.event === 'p3-approach' && !p3OpeningReached
-      const opening = state.event === 'p1-countdown' || state.event === 'p1-memory-position' || state.event === 'p1-transition' || state.event === 'countdown' || state.event === 'positioning' || state.event === 'p2-countdown' || state.event === 'p2-positioning' || state.event === 'p4-transition' || p2SpreadGuide || recurringP2Guide || p3Opening
+      const opening = state.event === 'p1-countdown' || state.event === 'p1-memory-position' || state.event === 'p1-transition' || state.event === 'countdown' || state.event === 'positioning' || state.event === 'p2-countdown' || state.event === 'p4-transition' || p2SpreadGuide || recurringP2Guide || p3Opening
       const revealDistance = phaseTwo ? state.difficulty === 'normal' ? 14 : state.difficulty === 'hard' ? 7 : Infinity : assignmentRevealDistance(state.difficulty)
       helper.visible = opening && (state.easy || distance(state.player, assigned) <= revealDistance)
       helper.scale.setScalar(phaseTwo ? .55 : phaseThree ? .45 : 1)
@@ -1622,15 +1624,14 @@ export default function GameScene(props: SceneProps) {
         })
       }
       if (phaseTwo) {
-        const afterOrbResolution = state.event === 'p2-recover' || state.event === 'p2-pull' || state.event === 'p2-spread' || state.event === 'p2-fetch' || state.event === 'p2-wait'
-        const firstVisibleOrb = Math.min(12, (state.p2Cycle - 1 + (afterOrbResolution ? 1 : 0)) * 4)
-        for (let index = firstVisibleOrb; index < 12; index++) {
-          const currentBeamTarget = state.event === 'p2-orbs' && index < state.p2Cycle * 4
+        for (let index = 0; index < 12; index++) {
+          if (state.p2ResolvedOrbIndices.includes(index)) continue
+          const currentBeamTarget = state.event === 'p2-orbs' && state.p2BeamOrbIndices.includes(index)
           addOrb(hazards, p2OrbPosition(index, orbitAngle, WORLD.center), currentBeamTarget ? 0x70edff : 0xb170ff)
         }
         const returning = p2OrbReturnState(state.p2OrbReturnAge)
         if (returning.phase === 'orbiting' || returning.phase === 'charging' || returning.phase === 'returning') {
-          p2ReturningOrbPositions(state.p2OrbReturnAge, state.p2Cycle, orbitAngle, WORLD.center).forEach((point, localIndex) => {
+          p2ReturningOrbPositions(state.p2OrbReturnAge, state.p2Cycle, orbitAngle, WORLD.center, 82, state.p2ReturningOrbIndices).forEach((point, localIndex) => {
             const pulse = returning.phase === 'charging'
               ? 1 + Math.sin(state.time * 15 + localIndex) * .25
               : .75 + Math.sin(state.time * 9 + localIndex) * .2
@@ -1650,7 +1651,13 @@ export default function GameScene(props: SceneProps) {
         if (state.eventTime >= 1) {
           const beamOpacity = THREE.MathUtils.clamp((state.eventTime - 1) / .35, 0, 1) * .82
           for (let index = 0; index < 4; index++) {
-            const angle = index * Math.PI / 2
+            const assignee = state.p2BeamAssignees[index]
+            const orbIndex = state.p2BeamOrbIndices[index]
+            if (assignee === undefined || orbIndex === undefined) continue
+            const aim = assignee === state.assignment
+              ? state.player
+              : p2BeamAimPosition(orbIndex, state.p2BeamImpactAngle, WORLD.center)
+            const angle = angleToward(WORLD.center, aim)
             addFlatBeam(hazards, WORLD.center, angle, 90, 11, 0x57dffc, beamOpacity)
             addFlatBeam(hazards, WORLD.center, angle, 90, 2, 0xf1fdff, beamOpacity)
           }

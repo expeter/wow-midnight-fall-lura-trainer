@@ -1072,11 +1072,65 @@ export function p2OrbPosition(index: number, orbitAngle: number, center: Point, 
   const angle = index % 4 * Math.PI / 2 + group * Math.PI / 6 + orbitAngle
   return { x: center.x + Math.cos(angle) * radius, y: center.y + Math.sin(angle) * radius }
 }
-export function p2ReturningOrbPositions(age: number, resolvedCycle: number, orbitAngle: number, center: Point, orbitRadius = 82): Point[] {
+export function p2BeamPlayers(seed: number, cycle: number, crystalPlayers: number[], rosterSize = 20): number[] {
+  const blocked = new Set(crystalPlayers)
+  const eligible = Array.from({ length: rosterSize }, (_, index) => index).filter(index => !blocked.has(index))
+  let value = (Math.abs(seed) + cycle * 2654435761) >>> 0 || 1
+  const random = () => {
+    value = (value * 1664525 + 1013904223) >>> 0
+    return value / 4294967296
+  }
+  for (let index = eligible.length - 1; index > 0; index -= 1) {
+    const target = Math.floor(random() * (index + 1))
+    ;[eligible[index], eligible[target]] = [eligible[target], eligible[index]]
+  }
+  return eligible.slice(0, Math.min(4, eligible.length))
+}
+export function p2BeamTargetOrbIndices(resolved: number[], impactOrbitAngle: number): number[] {
+  const remaining = Array.from({ length: 12 }, (_, index) => index).filter(index => !resolved.includes(index))
+  const selected: number[] = []
+  for (let marker = 0; marker < 4; marker += 1) {
+    const markerAngle = marker * Math.PI / 2
+    const angularDistance = (index: number) => {
+      const pointAngle = Math.atan2(
+        p2OrbPosition(index, impactOrbitAngle, { x: 0, y: 0 }, 1).y,
+        p2OrbPosition(index, impactOrbitAngle, { x: 0, y: 0 }, 1).x,
+      )
+      return Math.abs(Math.atan2(Math.sin(pointAngle - markerAngle), Math.cos(pointAngle - markerAngle)))
+    }
+    const candidate = remaining
+      .filter(index => !selected.includes(index))
+      .sort((first, second) => angularDistance(first) - angularDistance(second) || first - second)[0]
+    if (candidate !== undefined) selected.push(candidate)
+  }
+  return selected
+}
+export function p2BeamAimPosition(orbIndex: number, impactOrbitAngle: number, center: Point, radius = 48): Point {
+  return p2OrbPosition(orbIndex, impactOrbitAngle, center, radius)
+}
+export function p2BeamHitsAssignedOrb(player: Point, orb: Point, center: Point, tolerance = 6): boolean {
+  const angle = angleToward(center, player)
+  const dx = orb.x - center.x
+  const dy = orb.y - center.y
+  const along = dx * Math.cos(angle) + dy * Math.sin(angle)
+  const across = Math.abs(-dx * Math.sin(angle) + dy * Math.cos(angle))
+  return along > distance(center, player) && across <= tolerance
+}
+export function p2ReturningOrbPositions(
+  age: number,
+  resolvedCycle: number,
+  orbitAngle: number,
+  center: Point,
+  orbitRadius = 82,
+  orbIndices?: number[],
+): Point[] {
   const state = p2OrbReturnState(age, orbitRadius)
   if (state.phase !== 'orbiting' && state.phase !== 'charging' && state.phase !== 'returning') return []
-  const firstIndex = (Math.max(1, Math.min(3, resolvedCycle)) - 1) * 4
-  return Array.from({ length: 4 }, (_, localIndex) => p2OrbPosition(firstIndex + localIndex, orbitAngle, center, state.radius))
+  const indices = orbIndices ?? Array.from(
+    { length: 4 },
+    (_, localIndex) => (Math.max(1, Math.min(3, resolvedCycle)) - 1) * 4 + localIndex,
+  )
+  return indices.map(index => p2OrbPosition(index, orbitAngle, center, state.radius))
 }
 export const PRE_P4_BOSS_HEALTH_BUDGET = 105
 

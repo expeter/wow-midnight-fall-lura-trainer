@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.8.0 · 2026-07-31
+
 - FR-070: Synchronize account-owned verified achievements and cumulative
   progress into the personal collection after login restoration and accepted
   completions, using account-scoped browser caching while retaining local-only

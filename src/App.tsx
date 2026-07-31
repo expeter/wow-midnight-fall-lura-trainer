@@ -2086,7 +2086,10 @@ export default function App() {
   }
   function prepareP2Beam(nextCycle: number, leadSeconds: number) {
     const impactAngle = p2OrbitAngleRef.current + P2_ORBIT_SPEED * leadSeconds
-    const assignees = p2BeamPlayers(p2SeedRef.current, nextCycle, p2CrystalAssignments, profiles.length)
+    const blockedAssignees = FEATURE_FLAGS.p2PlayerBeamDuty
+      ? p2CrystalAssignments
+      : [...p2CrystalAssignments, assignment]
+    const assignees = p2BeamPlayers(p2SeedRef.current, nextCycle, blockedAssignees, profiles.length)
     const orbIndices = p2BeamTargetOrbIndices(p2ResolvedOrbIndicesRef.current, impactAngle)
     p2BeamOrbIndicesRef.current = orbIndices
     setP2BeamAssignees(assignees)

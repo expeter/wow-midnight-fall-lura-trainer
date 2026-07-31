@@ -9,7 +9,11 @@ test('publishes the trainer favicon', async ({ page, request }) => {
   expect((await favicon.body()).byteLength).toBeGreaterThan(1000)
 })
 
-test('keeps the unreleased tank-role preview off public hosts', async ({ page }) => {
+test('keeps unreleased encounter previews off public hosts', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('lura-selected-position', '5')
+    localStorage.setItem('lura-p2-crystal-assignments', JSON.stringify([1, 4, 7, 10, 13, 16]))
+  })
   const localOrigin = process.env.LURA_E2E_PORT
     ? `http://127.0.0.1:${process.env.LURA_E2E_PORT}`
     : 'http://127.0.0.1:4173'
@@ -27,7 +31,11 @@ test('keeps the unreleased tank-role preview off public hosts', async ({ page })
   await page.getByRole('button', { name: 'P2', exact: true }).click()
   await page.getByRole('button', { name: /Enter P2/ }).click()
   await expect(page.getByLabel("Heaven's Lance tank mechanic")).toHaveCount(0)
-  await expect(page.locator('.arena-wrap')).not.toHaveAttribute('data-lance-stage')
+  const arena = page.locator('.arena-wrap')
+  await expect(arena).not.toHaveAttribute('data-lance-stage')
+  await expect(arena).toHaveAttribute('data-p2-beam-assignees', /^\d+(,\d+){3}$/, { timeout: 20_000 })
+  const beamAssignees = (await arena.getAttribute('data-p2-beam-assignees'))?.split(',').map(Number) ?? []
+  expect(beamAssignees).not.toContain(5)
 })
 
 test('keeps optional login and public leaderboards usable without the API', async ({ page }) => {

@@ -311,6 +311,10 @@ The detailed encounter, UI, recovery, and edge-case contract is maintained in
 
 - Each of the three beam sets randomly assigns four distinct non-crystal
   players. Crystal carriers are never eligible.
+- Controlled-player beam duty remains a localhost encounter preview until it
+  is explicitly approved. Public trainers assign all four beams to NPCs, so
+  the continuous orb sequence remains playable without a random unreviewed
+  player-aiming wipe.
 - Phase 2 owns one roster of twelve orbs that orbit continuously
   counterclockwise. Their orbit never pauses, slows, or reverses for a beam,
   glow, or return state.

@@ -10,6 +10,7 @@ export function featureFlagsForHost(hostname: string) {
     backgroundMusic: true,
     encounterSounds: true,
     phaseOne: true,
+    p2PlayerBeamDuty: isLocalPreviewHost(hostname),
     tankRoles: isLocalPreviewHost(hostname),
     textToSpeech: true,
   } as const

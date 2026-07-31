@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- SPEC-014: Require completed tickets to close with focused regression coverage
+  and current durable documentation, record user-visible work under
+  `Unreleased`, maintain SemVer at release time, and reserve leaderboard-season
+  changes for explicit user approval after a ranking-impact reminder.
+
 ## 0.6.0 · 2026-07-30
 
 - FR-064: Add privacy-aware public player profiles, account attempt/wipe

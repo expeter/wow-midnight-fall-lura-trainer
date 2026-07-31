@@ -134,9 +134,14 @@ See [`audio-cues.md`](audio-cues.md) and
 - For every release, choose the SemVer bump from the dominant change
   (patch for fixes, minor for backward-compatible features, major for breaking
   changes), update `CHANGELOG.md`, and publish the matching version without
-  waiting for the user to name it. If achievement scoring, eligibility, or
-  canonical points change, flag that before release so the user can decide
-  whether the leaderboard needs a new season.
+  waiting for the user to name it. Add user-visible work to the `Unreleased`
+  section when it is implemented rather than reconstructing release notes
+  later.
+- Leaderboard seasons are controlled only by the user. If mechanics, scoring,
+  achievement eligibility, validation, or accepted-run comparability may
+  change, flag that before release and ask whether the user wants a new season.
+  Never change the season automatically or infer it from SemVer; retain the
+  current season unless the user explicitly approves another.
 
 ## Validation and CI
 

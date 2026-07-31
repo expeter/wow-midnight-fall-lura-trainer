@@ -9,8 +9,17 @@ Before changing the trainer, read:
 
 Every new request receives a stable `FR`, `CR`, `BUG`, or `SPEC` ID in
 `docs/README.md` before implementation. Mark it implemented only after focused
-regression coverage passes. Commit each verified request or coherent ticket
-batch; do not push unless the user asks.
+regression coverage passes and its affected documentation is current. Do not
+leave completed work recorded as open or silently drop an unresolved ticket.
+Add every user-visible change to `CHANGELOG.md` under `Unreleased` in the same
+change, then choose and apply the correct SemVer bump when cutting a release.
+Commit each verified request or coherent ticket batch; do not push unless the
+user asks.
+
+Never change the leaderboard season without the user's explicit approval.
+When mechanics, scoring, achievement eligibility, validation, or accepted-run
+comparability may affect rankings, warn the user and ask whether a new season
+is wanted. A SemVer release never implies a leaderboard-season change.
 
 Do not change encounter mechanics merely to make a test pass. Rendering,
 collision, NPC movement, timers, raid-plan assignments, and the documented

@@ -10,6 +10,10 @@ change before implementation.
 - Every new task receives a stable `FR`, `CR`, `BUG`, or `SPEC` ID.
 - Record the request before implementation and mark it implemented only after
   focused automated regression coverage passes.
+- Update the affected encounter contract, maintainer handoff, ticket register,
+  and other durable documentation as part of the same change.
+- Resolve each completed ticket in the register. Never silently abandon an
+  unresolved ticket or leave verified completed work marked as open.
 - Commit verified changes unless explicitly asked to leave them uncommitted.
 
 ## SPEC-002 · Creator business card
@@ -206,3 +210,21 @@ privacy, deployment, and acceptance contract.
 - Touching another player's dropped Phase 2 crystal is recoverable like the
   Phase 1 wrong-pickup rule: drop it within five seconds for NPC recovery or
   wipe. An assigned crystal player treats a touched crystal as their own.
+
+## SPEC-014 · Releases, changelog, and leaderboard seasons
+
+- Add every user-visible feature, behavior change, and bug fix to
+  `CHANGELOG.md` under `Unreleased` as part of the implementing change.
+- A release moves the relevant Unreleased entries into a dated version,
+  updates the package and lockfile version, uses the SemVer bump implied by the
+  dominant change, and publishes a matching Git tag.
+- A patch release contains compatible fixes, a minor release contains
+  backward-compatible features, and a major release is reserved for breaking
+  changes.
+- Trainer SemVer and leaderboard seasons are independent.
+- Only the user may authorize a leaderboard-season change. Never infer one
+  from a SemVer bump or change it automatically.
+- Before releasing changes that may affect scoring, mechanic difficulty,
+  achievement eligibility, server validation, or accepted-run comparability,
+  explicitly warn the user and ask whether to start a new season. Without
+  explicit approval, retain the current season.

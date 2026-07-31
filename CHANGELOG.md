@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- CR-199: Add a stable local focused-Playwright wrapper with named regression
+  presets and a free-text fallback, using the repository-local Chromium install
+  and zero retries by default.
+- CR-198: Make every ordinary dropped crystal collectible after exactly one
+  second during every mechanic, while retaining its six-second ground
+  explosion. Only a correctly placed assigned Phase 3 protection crystal is
+  committed and therefore cannot be recollected; remove the Phase 2 beam lock
+  and the early silent return of wrongly picked crystals.
+- BUG-150: Hold the Phase 4 NPC tank at the rendered group position throughout
+  each active three-Starsplinter set, then resume its frontal route after the
+  final Splinter resolves.
 - FR-069: Add audited API-only exceptional achievements that do not generate
   public activity. Public rankings show a generic exceptional marker, while a
   profile reveals the achievement only to its owner or another account that
@@ -16,7 +27,7 @@
   distinguishes the played name from its verified Battle.net identity.
 - BUG-149: Keep a crystal dropped during the sequential Phase 2 beam grounded
   for the complete beam/orb event on every difficulty; normal recovery resumes
-  in the following pull window.
+  in the following pull window. This shipped behavior is superseded by CR-198.
 - CR-197: Require Phase 1 through Phase 4 for every new full-journey
   achievement and show compact saved progress on cumulative and multi-run
   badges. Already-earned records remain unchanged.

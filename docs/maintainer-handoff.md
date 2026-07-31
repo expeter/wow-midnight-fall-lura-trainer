@@ -69,10 +69,14 @@ a scripted animation.
   engages.
 - Test mode records and exposes mistakes without blocking practice. Easy may
   provide extra coaching. Normal and Hard should not leak mechanic solutions.
-- A Phase 2 crystal dropped for the assigned beam stays on the ground during
-  `p2-orbs`; generic continuous pickup resumes in the following recovery/pull
-  window. Direct-P2 positioning must not be used as evidence that this
-  transition-sensitive rule is correct.
+- Every ordinary dropped crystal becomes collectible after exactly one second,
+  regardless of the current event or difficulty, and explodes as a wipe after
+  six seconds if it remains grounded. This intentionally allows movement errors
+  to recollect a crystal during an active mechanic and allows a non-carrier to
+  pick up another player's crystal. The only non-collectible ground crystal is
+  an assigned Phase 3 crystal already committed at the valid Dark Archangel
+  protection position; an incorrectly placed P3 crystal remains ordinary and
+  may be recovered or expire.
 
 When screenshots and prose appear to conflict with an old implementation,
 preserve the newest explicit mechanic clarification as a `SPEC` or ticket

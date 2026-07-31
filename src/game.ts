@@ -629,6 +629,13 @@ export function p4SplinterResolutionActive(age: number): boolean {
   return age >= P4_SPLINTER_DETONATION_SECONDS
 }
 
+export function p4SplinterSetActive(cycle: number, eventTime: number): boolean {
+  return [0, 1, 2].some(ordinal => {
+    const age = p4SplinterAge(cycle, eventTime, ordinal)
+    return age >= 0 && age <= P4_SPLINTER_DETONATION_SECONDS
+  })
+}
+
 export function shouldSuppressRepeatedWipe(previousTime: number, currentTime: number, windowSeconds = .1): boolean {
   return currentTime - previousTime < windowSeconds
 }
@@ -1307,17 +1314,30 @@ export function npcEntryPosition(target: Point, startSlot: Point, index: number,
   const travelled = Math.min(length, time * speed)
   return { x: origin.x + dx / length * travelled, y: origin.y + dy / length * travelled }
 }
+export const CRYSTAL_GROUND_EXPLOSION_SECONDS = 6
+
 export function canPickupCrystal(player: Point, crystal: Point, groundAge: number, pickupRadius = 3): boolean {
   return groundAge >= 1 && distance(player, crystal) <= pickupRadius
 }
 export function canPickupCrystalAlongPath(previousPlayer: Point, player: Point, crystal: Point, groundAge: number, pickupRadius = 3): boolean {
   return groundAge >= 1 && distanceToSegment(crystal, previousPlayer, player) <= pickupRadius
 }
-export function canPickupCrystalDuringEvent(event: string): boolean {
-  // P2 carriers deliberately leave the crystal grounded while positioning the
-  // assigned beam. Recovery begins only after that beam has resolved; otherwise
-  // standing near the drop for one second silently puts it back in their hands.
-  return event !== 'p2-orbs' && event !== 'p3-archangel'
+export function canPickupCrystalDuringEvent(_event: string, committedToProtection = false): boolean {
+  return !committedToProtection
+}
+export function isCommittedP3ProtectionCrystal(state: {
+  event: string
+  crystal: Point | null
+  stack: Point
+  duty: 1 | 2 | null
+  round: number
+  droppedForProtection: boolean
+}): boolean {
+  return state.event === 'p3-archangel'
+    && state.duty === state.round
+    && state.droppedForProtection
+    && state.crystal !== null
+    && isP3ProtectionCrystalPlaced(state.crystal, state.stack)
 }
 export function shouldCheckIntermissionVoid(event: string): boolean {
   return event === 'beam' || event === 'splinter'
@@ -1332,6 +1352,7 @@ export function playerCarriesCrystal(state: {
   phaseFour: boolean
 }): boolean {
   if (state.phaseFour || state.dropped) return false
+  if (state.p1WrongCrystalHeld) return true
   if (state.phaseOne) return state.p1AssignedAndCollected || state.p1WrongCrystalHeld
   return state.assigned && !state.spent
 }

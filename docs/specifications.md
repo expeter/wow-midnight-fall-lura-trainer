@@ -331,9 +331,10 @@ The detailed encounter, UI, recovery, and edge-case contract is maintained in
 - Touching another player's dropped Phase 2 crystal is recoverable like the
   Phase 1 wrong-pickup rule: drop it within five seconds for NPC recovery or
   wipe. An assigned crystal player treats a touched crystal as their own.
-- A crystal deliberately dropped for the Phase 2 beam remains grounded through
-  the entire beam/orb event on every difficulty. Beam contact cannot recollect
-  it; normal recovery resumes only in the following pull/recovery window.
+- A crystal deliberately dropped for the Phase 2 beam follows the global
+  dropped-crystal rule. It becomes collectible after exactly one second even
+  while the beam is active, so remaining on or crossing the drop can recollect
+  it and cause the beam to hit the carried crystal.
 
 ## SPEC-014 · Releases, changelog, and leaderboard seasons
 
@@ -401,3 +402,22 @@ The detailed encounter, UI, recovery, and edge-case contract is maintained in
 - Main ability score is finite and server-validated: accepted casts cannot
   exceed one completed cast per simulated encounter second, and accepted
   encounter duration remains bounded.
+
+## SPEC-017 · Global dropped-crystal lifecycle
+
+- Every ordinary player or NPC crystal dropped onto the arena becomes
+  collectible after exactly one simulated second. Pickup availability never
+  depends on the current phase event, difficulty, or whether another mechanic
+  is resolving.
+- Remaining on the drop point or crossing it after the one-second lock may
+  immediately recollect the crystal. A non-carrier who touches another
+  player's collectible crystal enters the existing wrong-crystal recovery
+  path and must drop it before that path expires.
+- An ordinary dropped crystal that remains grounded for six simulated seconds
+  explodes as a wipe. Phase-specific transitions must not silently shorten,
+  extend, or bypass that timer.
+- The sole committed exception is an assigned Phase 3 crystal placed inside
+  its valid Dark Archangel protection position during its assigned round. It
+  supplies the protection bubble and cannot be recollected or expire while
+  committed. A missing, early, or incorrectly positioned P3 drop remains an
+  ordinary collectible crystal.

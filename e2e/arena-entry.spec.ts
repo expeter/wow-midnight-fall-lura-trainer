@@ -462,7 +462,7 @@ test('launches the raid into Phase 3 from its visible final Phase 2 positions', 
   expect(Math.hypot(origin[0] - 480, origin[1] - 270)).toBeGreaterThan(5)
 })
 
-test('keeps a transition-started Phase 2 crystal grounded throughout the beam', { tag: '@late-arena' }, async ({ page }) => {
+test('recollects a transition-started Phase 2 crystal after one second when the player remains on it', { tag: '@late-arena' }, async ({ page }) => {
   test.setTimeout(100_000)
   await page.addInitScript(() => {
     localStorage.setItem('lura-game-speed', '2.5')
@@ -481,9 +481,10 @@ test('keeps a transition-started Phase 2 crystal grounded throughout the beam', 
   await page.keyboard.press('c')
   const groundedCrystal = page.locator('.crystal-countdown')
   await expect(groundedCrystal).toBeVisible()
-  await page.waitForTimeout(550)
-  await expect(arena).toHaveAttribute('data-event', 'p2-orbs')
+  await page.waitForTimeout(250)
   await expect(groundedCrystal).toBeVisible()
+  await expect(groundedCrystal).toHaveCount(0, { timeout: 1_000 })
+  await expect(page.getByLabel('Test mode recent failures')).toContainText('The cross beam hit your carried crystal', { timeout: 5_000 })
 })
 
 test('enters Phase 4 directly and plays Splinters again before the second Heaven and Hell', { tag: '@late-arena' }, async ({ page }) => {

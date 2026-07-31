@@ -53,6 +53,9 @@ Implement in dependency order:
 
 Completed in this milestone:
 
+- `CR-198` — every ordinary dropped crystal now follows the global one-second
+  pickup and six-second explosion lifecycle, with only a correctly committed
+  P3 protection crystal exempt.
 - `FR-050` — four random non-crystal beam assignees now intercept four
   continuously orbiting unresolved orbs per set, with rendered player aim and
   a terminal miss rule.
@@ -63,6 +66,8 @@ Completed in this milestone:
 
 Completed in this milestone:
 
+- `BUG-150` — the NPC tank now holds the rendered group position throughout an
+  active three-Starsplinter set and resumes its frontal route afterward.
 - `FR-068` — two explicit shared tank assignments now drive the P1/P2/P3
   Heaven's Lance mitigation/swap loop. This incorporates the playable-cone
   foundation previously tracked separately by `FR-022`; `CR-195` finalizes
@@ -108,6 +113,8 @@ Goal: make local verification faster without creating production bypasses.
   achievement testing.
 - `FR-067` — add a private, rate-limited live bug-report inbox with an audited
   promotion path to GitHub.
+- `CR-199` — provide one stable local focused-Playwright wrapper with named
+  regression presets and a free-text fallback.
 
 This milestone is not leaderboard-visible. `FR-067` is a production support
 surface, but it does not alter encounter or ranking behavior.

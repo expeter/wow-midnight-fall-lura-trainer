@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { CRYSTAL_GROUND_EXPLOSION_SECONDS, isCommittedP3ProtectionCrystal, p4SplinterSetActive } from './game'
 import { angleToward, ARENA, assignmentRevealDistance, bossBeamHitsPlayer, canPickupCrystal, canPickupCrystalDuringEvent, canRecoverFromWipe, constrainP3NpcTargetToSide, crystalCarrierPosition, crystalWipeReason, difficultySettings, distance, distanceToSegment, hasActiveP3CrystalLight, healthResponsesPerPhase, INTERMISSION_SEQUENCE, isOnAssignedP3Side, isInP3ConsumedSector, isP3ConsumedSectorLethal, isP3ProtectionCrystalPlaced, isP3RuneTurn, isInSafeAnnulus, isInsideArena, isProtectedByP3Bubble, isProtectedByP3Light, jumpHeights, keepP3PointOnSide, moveInBounds, movePlayer, moveRelativeToCamera, moveWithIncreasingPull, nearestRuneEdges, npcEntryPosition, OPENING_BOOST_SECONDS, orientedAssignments, p1PositioningWipeReason, P2_BEAM_CADENCE_SECONDS, P2_BEAM_SECONDS, p2BeamAimPosition, p2BeamHitsAssignedOrb, p2BeamPlayers, p2BeamTargetOrbIndices, p2CrystalTouchResolution, P2_FETCH_SECONDS, p2FinalRegroupActive, P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS, p2NpcCrystalDrops, P2_NPC_PREPOSITION_SECONDS, p2NpcRoamingPosition, p2NpcShouldReturnToSoak, P2_ORB_GLOW_LEAD_SECONDS, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, p2OrbPosition, p2OrbReturnState, p2PhaseTransitionCountdown, p2PostBeamEvent, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_POSITIONING_SECONDS, P2_PULL_SECONDS, p2ReturningOrbPositions, P2_SPREAD_SECONDS, p3ArchangelStackPosition, p3AssignmentForRound, p3BossPosition, p3FlightPosition, P3_FLIGHT_SECONDS, p3LandingGroupCenter, p3LandingGroupIndex, p3LandingPlanIndex, p3LandingPosition, p3LandingHealthRate, p3LandingSoakOccupied, p3LandingSoakPositions, p3LightCenters, p3LightHealthRate, p3MemoryResolved, p3NpcPoolAssignment, p3NpcRuneReactionDelay, p3NpcSoaksActive, p3PoolCenters, p3PoolLayoutId, p3PoolSoakRate, p3RuneDeadline, p3RuneEdges, p3RuneOrbs, p3SectorMovementSpeed, p3StarsTiming, p3WrongRuneContact, playerCarriesCrystal, P3_LANDING_SOAK_RADIUS, P3_RUNE_ORB_MIN_GAP, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, P3_SECOND_SOAK_NPC_DELAY_SECONDS, P3_SECTOR_MOVE_SECONDS, p4BossHealth, p4BoxStates, p4EncounterBoxStates, p4FrontSoakerPosition, p4GroupPosition, P4_GROUP_HIT_RADIUS, p4NpcRelocationPace, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4SplinterStartSeconds, p4StackPosition, p4TankConeActive, p4TransitionStartPosition, P4_BOX_COUNT, P4_BOX_MIN_SEPARATION, P4_BOX_SPEED, P4_CYCLE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, P4_SPLINTER_INTERVAL_SECONDS, P4_TANK_CONE_DURATION_SECONDS, P4_TANK_CONE_INTERVAL_SECONDS, personalCircleHitsCrystal, personalCircleHitsPlayer, PLAYER_COLLISION_PENALTY, randomCrystalDropDuty, randomizeP3PoolLayout, roamingNpcPosition, seededStars, separateP3NpcTarget, setP3BossPlan, shouldCheckIntermissionVoid, shouldShowP2OrbReturnCounter, translateSelectedPoints, walkTowards, WIPE_PENALTY } from './game'
 import { keepP3CrystalPoolCovered, keepP3NpcInSoak, keepP4NpcInProtection, p3CrystalPoolCoverageTargets, P3_APPROACH_NPC_SPEED_MULTIPLIER, P3_APPROACH_SECONDS, P3_MEMORY_START_SECONDS, P3_POOL_CRYSTAL_CLEARANCE, P3_RUNE_CONNECTION_DISTANCE, P3_RUNE_HALF_CLEARANCE, P3_SAFE_ZONE_GRACE_SECONDS, P3_SAFE_ZONE_PENALTY_PER_SECOND, P3_SECTOR_SECONDS, p3UnsafePenaltyTicks, P4_SPLINTER_POST_DETONATION_HOLD_SECONDS, P4_SPLINTER_RETURN_SECONDS } from './game'
 import { p3ProtectionBubbleCenter } from './game'
@@ -122,19 +123,30 @@ describe('Intermission game rules', () => {
     expect(travelBudget(INTERMISSION_POSITIONING_SECONDS)).toBeGreaterThan(directRoute)
     expect(travelBudget(INTERMISSION_POSITIONING_SECONDS)).toBeGreaterThan(handoffRoute)
   })
-  it('allows carried crystals to be recovered during Phase 1 and later recovery windows', () => {
+  it('makes every ordinary dropped crystal collectible during every encounter event', () => {
     expect(canPickupCrystalDuringEvent('p1-crystals')).toBe(true)
     expect(canPickupCrystalDuringEvent('p1-beams')).toBe(true)
     expect(canPickupCrystalDuringEvent('p1-recover')).toBe(true)
+    expect(canPickupCrystalDuringEvent('p2-orbs')).toBe(true)
     expect(canPickupCrystalDuringEvent('p2-spread')).toBe(true)
-    expect(canPickupCrystalDuringEvent('p3-archangel')).toBe(false)
+    expect(canPickupCrystalDuringEvent('p3-archangel')).toBe(true)
+    expect(canPickupCrystalDuringEvent('p3-archangel', true)).toBe(false)
   })
-  it.each(['test', 'easy', 'normal', 'hard'])('keeps a dropped P2 beam crystal grounded on %s', () => {
+  it.each(['test', 'easy', 'normal', 'hard'])('unlocks a dropped P2 beam crystal at exactly one second on %s', () => {
     const crystal = { x: 480, y: 270 }
     const enteredBeam = { x: 483, y: 270 }
-    expect(canPickupCrystalDuringEvent('p2-orbs')).toBe(false)
+    expect(canPickupCrystalAlongPath(crystal, enteredBeam, crystal, .999)).toBe(false)
+    expect(canPickupCrystalAlongPath(crystal, enteredBeam, crystal, 1)).toBe(true)
     expect(canPickupCrystalAlongPath(crystal, enteredBeam, crystal, 1.2)).toBe(true)
-    expect(canPickupCrystalDuringEvent('p2-pull')).toBe(true)
+    expect(CRYSTAL_GROUND_EXPLOSION_SECONDS).toBe(6)
+  })
+  it('commits only a correctly placed assigned P3 crystal to the protection bubble', () => {
+    const stack = { x: 100, y: 100 }
+    const base = { event: 'p3-archangel', stack, duty: 1 as const, round: 1, droppedForProtection: true }
+    expect(isCommittedP3ProtectionCrystal({ ...base, crystal: { x: 120, y: 100 } })).toBe(true)
+    expect(isCommittedP3ProtectionCrystal({ ...base, crystal: { x: 140, y: 100 } })).toBe(false)
+    expect(isCommittedP3ProtectionCrystal({ ...base, crystal: { x: 120, y: 100 }, droppedForProtection: false })).toBe(false)
+    expect(isCommittedP3ProtectionCrystal({ ...base, crystal: { x: 120, y: 100 }, duty: 2 })).toBe(false)
   })
   it('limits the legacy annulus void check to live Intermission mechanics', () => {
     expect(shouldCheckIntermissionVoid('beam')).toBe(true)
@@ -751,6 +763,15 @@ describe('Intermission game rules', () => {
     const evaded = p4TankAvoidSplinters({ x: 112, y: 100 }, desired, stack, beam)
     expect(p4SplinterHitsGroup(beam[0].origin, beam[0].rotation, evaded, 3)).toBe(false)
     expect(distance(evaded, stack)).toBeLessThan(P4_PROTECTION_RADIUS)
+  })
+  it('holds the Phase 4 tank in the group for the complete three-Splinter set', () => {
+    const cycle = 2
+    const start = p4SplinterStartSeconds(cycle)
+    const finalDetonation = start + 2 * P4_SPLINTER_INTERVAL_SECONDS + P4_SPLINTER_DETONATION_SECONDS
+    expect(p4SplinterSetActive(cycle, start - .01)).toBe(false)
+    expect(p4SplinterSetActive(cycle, start)).toBe(true)
+    expect(p4SplinterSetActive(cycle, finalDetonation)).toBe(true)
+    expect(p4SplinterSetActive(cycle, finalDetonation + .01)).toBe(false)
   })
   it('casts the Phase 4 tank cone on an exact three-second cadence', () => {
     expect(P4_TANK_CONE_INTERVAL_SECONDS).toBe(3)

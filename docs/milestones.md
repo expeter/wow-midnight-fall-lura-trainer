@@ -6,8 +6,7 @@ in [`specifications.md`](specifications.md).
 
 ## Current release boundary
 
-- Current release line: `v0.9.1`; frontend deployment remains pending until the
-  frontend/API production checks complete.
+- Latest tagged and deployed release line: `v0.9.1`.
 - `v0.9.1` completes the interrupted Run-ID release with a compact shared
   result card while keeping controlled-player Phase 2 beam duty and the
   two-tank encounter roles in localhost preview. The v0.9.0 API deployed, but
@@ -35,9 +34,6 @@ shell never silently mistakes an expired server session for a valid login.
 
 This patch retains `season-1`: it repairs attribution and version acceptance
 without changing encounter scoring or ranking order.
-
-- `CR-226` — publish v0.9.1 with synchronized frontend/API compatibility and
-  verify production leaderboard continuity while retaining `season-1`.
 
 ## M1 · Encounter completion
 

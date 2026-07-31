@@ -109,6 +109,7 @@ export interface OnlineAchievement {
 export interface ActivityFeedRow {
   id: string
   type: 'wipe' | 'achievement' | 'completion'
+  profileId?: string | null
   displayName: string
   character: string | null
   realm: string | null
@@ -326,7 +327,14 @@ export function canRecordOnlineWipe(
 
 export function recordOnlineWipe(
   csrfToken: string | undefined,
-  input: { phase: string; difficulty: 'normal' | 'hard'; reason: string; trainerVersion: string },
+  input: {
+    phase: string
+    difficulty: 'normal' | 'hard'
+    reason: string
+    trainerVersion: string
+    attemptId?: string
+    nonce?: string
+  },
 ) {
   return api<{ recorded: boolean; id?: number; occurredAt?: string }>('/v1/wipes', {
     method: 'POST',
@@ -354,7 +362,7 @@ export function issueOnlineAttempt(csrfToken: string, input: object) {
 }
 
 export function completeOnlineAttempt(
-  csrfToken: string,
+  csrfToken: string | undefined,
   attemptId: string,
   input: object,
 ) {
@@ -363,7 +371,7 @@ export function completeOnlineAttempt(
     {
       method: 'POST',
       headers: {
-        'x-csrf-token': csrfToken,
+        ...(csrfToken ? { 'x-csrf-token': csrfToken } : {}),
         'idempotency-key': attemptId,
       },
       body: JSON.stringify(input),

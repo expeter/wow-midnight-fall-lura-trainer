@@ -505,7 +505,7 @@ function AchievementHall({
   </section>
 }
 
-function PublicProfileOverlay({ profileId, onClose }: { profileId: string; onClose: () => void }) {
+export function PublicProfileOverlay({ profileId, onClose }: { profileId: string; onClose: () => void }) {
   const [profile, setProfile] = useState<PublicPlayerProfile | null>(null)
   const [failed, setFailed] = useState(false)
   useEffect(() => {

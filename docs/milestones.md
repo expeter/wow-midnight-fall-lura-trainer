@@ -6,14 +6,28 @@ in [`specifications.md`](specifications.md).
 
 ## Current release boundary
 
-- Latest tagged and deployed release: `v0.6.1`.
-- `v0.6.1` contains the HUD-action, live-activity, feedback, profile, ranking,
-  and CI-stability work documented in the changelog.
+- Latest tagged and deployed release: `v0.6.2`.
+- `v0.6.2` preserves authenticated run identity across a later browser-session
+  expiry and links Recent activity players to their trainer profiles.
 - The next feature release is expected to be `v0.7.0`, but the version is cut
   only after its selected milestone scope passes focused and complete
   regression.
 - Current leaderboard season: `season-1`. No milestone or SemVer bump changes
   it automatically.
+
+## M0 · Online identity hotfix
+
+Goal: ensure a run that starts authenticated remains attributable and that the
+shell never silently mistakes an expired server session for a valid login.
+
+- `BUG-145` — revalidate before issuance, bind the full run and its wipes to
+  the issued attempt capability, reject stale-session anonymous downgrades, and
+  align API/client version acceptance at `0.6.2`.
+- `CR-194` — open public Recent activity identities in their trainer profile
+  instead of navigating directly to Raider.IO.
+
+This patch retains `season-1`: it repairs attribution and version acceptance
+without changing encounter scoring or ranking order.
 
 ## M1 · Encounter completion
 

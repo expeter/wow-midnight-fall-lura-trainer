@@ -14,7 +14,7 @@ import { advanceMainAbilityCast, idleMainAbilityCast, mainAbilityElapsedSeconds,
 import { encounterSoundCuesForState, playEncounterSound } from './encounterSounds'
 import { approachHealthTarget, healthBand, healthChangeRate, randomHealthTarget, unusedRecoveryPenalty } from './healthRecovery'
 import { P1_BEAM_POSITION_SECONDS, P1_CRYSTAL_PICKUP_SECONDS, P1_DEFAULT_INTERRUPT_KEY, P1_GLAIVE_CONTACT_RADIUS, P1_GLAIVE_INITIAL_SPEED_MULTIPLIER, P1_GLAIVE_RETURN_SPEED_MULTIPLIER, P1_GLAIVE_TELEGRAPH_SECONDS, P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_INTERRUPT_CAST_COUNT, P1_INTERRUPT_CAST_SECONDS, P1_MEMORY_DELAY_SECONDS, P1_MEMORY_POSITION_SECONDS, P1_MEMORY_SWEEP_SECONDS, P1_OUTER_RADIUS, P1_PLAYER_INTERRUPT_WINDOW_SECONDS, P1_PULL_DELAY_SECONDS, P1_REACTIVE_SOAK_RADIUS, P1_REACTIVE_SOAK_SECONDS, P1_ROTATING_BEAM_ACTIVE_SECONDS, P1_ROTATING_BEAM_TELEGRAPH_SECONDS, P1_SEQUENCE_COUNT, p1AddGlaiveSet, p1AdvanceGlaiveSet, p1BeamHitResolution, p1BossEncounterPosition, p1ContinuousBeamTime, p1CrystalPickupSequence, p1CrystalSpawnPosition, p1CrystalTouchResolution, p1GlaiveContactStarted, p1GlaiveSet, p1HasCollectedCrystal, p1InterruptAssignment, p1InterruptState, p1IsInPlayableArena, p1MemoryOrder, p1MemoryPlayerVerdict, p1NpcInterruptSeconds, p1ReactiveSoaks, p1RotatingBeamHitsPoint, p1RotatingBeams, p1WrongCrystalDropExpired, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
-import OnlinePanel, { BestRunsSummary, GlobalRankingSummary, OnlineStandingSummary } from './OnlinePanel'
+import OnlinePanel, { BestRunsSummary, GlobalRankingSummary, OnlineStandingSummary, PublicProfileOverlay } from './OnlinePanel'
 import { canRecordOnlineWipe, completeOnlineAttempt, configurationFingerprint, issueOnlineAttempt, loadActivityFeed, loadOnlineSession, logoutOnline, newActivityRows, recentActivityRows, recordOnlineWipe, type ActivityFeedRow, type OnlineSession } from './online'
 import './styles.css'
 
@@ -576,6 +576,7 @@ export default function App() {
   const [onlineAttempt, setOnlineAttempt] = useState<ActiveOnlineAttempt | null>(null)
   const [onlineResultStatus, setOnlineResultStatus] = useState('')
   const [activityFeed, setActivityFeed] = useState<ActivityFeedRow[]>([])
+  const [activityProfileId, setActivityProfileId] = useState<string | null>(null)
   const [activityNotificationQueue, setActivityNotificationQueue] = useState<ActivityFeedRow[]>([])
   const [newActivityFeedIds, setNewActivityFeedIds] = useState<Set<string>>(new Set())
   const seenActivityIdsRef = useRef<Set<string> | null>(null)
@@ -1183,10 +1184,29 @@ export default function App() {
     setOnlineAttempt(null)
     setOnlineResultStatus('')
     onlineCompletionStartedRef.current = ''
-    const selectedCharacter = onlineSession.privacy?.selectedCharacterId
+    let currentSession = onlineSession
+    let runWarning = ''
+    try {
+      currentSession = await loadOnlineSession()
+      setOnlineSession(currentSession)
+    } catch {
+      runWarning = 'Could not verify the online session. Continuing as local practice; this run cannot enter the leaderboard.'
+      setOnlineResultStatus(runWarning)
+      initializeAttempt(false)
+      setSoftWipeNotice(runWarning)
+      return
+    }
+    if (onlineSession.authenticated && !currentSession.authenticated) {
+      runWarning = 'Your online session expired. Please log in again before the next run; this run is local practice.'
+      setOnlineResultStatus(runWarning)
+    } else if (currentSession.authenticated && !currentSession.privacy?.selectedCharacterId) {
+      runWarning = 'Select an active Battle.net character before the next run; this run is local practice.'
+      setOnlineResultStatus(runWarning)
+    }
+    const selectedCharacter = currentSession.privacy?.selectedCharacterId
     if (
-      onlineSession.authenticated
-      && onlineSession.csrfToken
+      currentSession.authenticated
+      && currentSession.csrfToken
       && selectedCharacter
     ) {
       try {
@@ -1212,7 +1232,7 @@ export default function App() {
           p2CrystalAssignments,
           p3CrystalAssignments,
         ].some(assignments => assignments.includes(assignment))
-        const issued = await issueOnlineAttempt(onlineSession.csrfToken, {
+        const issued = await issueOnlineAttempt(currentSession.csrfToken, {
           difficulty,
           duty: crystalDuty ? 'crystal' : 'non-crystal',
           entryMode,
@@ -1230,11 +1250,23 @@ export default function App() {
           optionalChallenges: ['recovery', 'main-ability'],
         })
         setOnlineResultStatus('Online-eligible attempt active.')
-      } catch {
-        setOnlineResultStatus('Could not issue an online attempt. Continuing as local practice.')
+      } catch (error) {
+        if (error instanceof Error && error.message === 'not_authenticated') {
+          setOnlineSession({ authenticated: false })
+          runWarning = 'Your online session expired. Please log in again before the next run; this run is local practice.'
+          setOnlineResultStatus(runWarning)
+        } else if (error instanceof Error && error.message === 'character_required') {
+          setOnlineSession({ ...currentSession, privacy: currentSession.privacy ? { ...currentSession.privacy, selectedCharacterId: null } : undefined, selectedCharacter: undefined })
+          runWarning = 'Select an active Battle.net character before the next run; this run is local practice.'
+          setOnlineResultStatus(runWarning)
+        } else {
+          runWarning = 'Could not issue an online attempt. Continuing as local practice.'
+          setOnlineResultStatus(runWarning)
+        }
       }
     }
     initializeAttempt(false)
+    if (runWarning) setSoftWipeNotice(runWarning)
   }
   function previewCompletionScreen() {
     const previewResults: PhaseResult[] = [
@@ -2316,7 +2348,21 @@ export default function App() {
         difficulty: recordedDifficulty,
         reason: label,
         trainerVersion: APP_VERSION,
-      }).catch(() => undefined)
+        attemptId: onlineAttempt?.attemptId,
+        nonce: onlineAttempt?.nonce,
+      }).catch(error => {
+        if (error instanceof Error && error.message === 'not_authenticated') {
+          setOnlineSession({ authenticated: false })
+          setOnlineResultStatus('Your online session expired. This wipe was not published anonymously. Log in again before the next run.')
+        } else if (error instanceof Error && error.message === 'character_required') {
+          setOnlineSession(current => ({
+            ...current,
+            privacy: current.privacy ? { ...current.privacy, selectedCharacterId: null } : undefined,
+            selectedCharacter: undefined,
+          }))
+          setOnlineResultStatus('Your active Battle.net character is missing. This wipe was not published anonymously; select a character before the next run.')
+        }
+      })
     }
     wipeCountRef.current += 1
     const canRecover = canRecoverFromWipe(difficulty, wipeCountRef.current, stats.score, penalty)
@@ -2414,7 +2460,6 @@ export default function App() {
       screen !== 'results'
       || completionPreview
       || !onlineAttempt
-      || !onlineSession.csrfToken
       || onlineCompletionStartedRef.current === onlineAttempt.attemptId
     ) return
     onlineCompletionStartedRef.current = onlineAttempt.attemptId
@@ -2584,6 +2629,7 @@ export default function App() {
 
   if (screen === 'menu') return <main className="shell setup-shell" id="setup-top">
     <LiveActivityToast row={activityNotificationQueue[0]} />
+    {activityProfileId && <PublicProfileOverlay profileId={activityProfileId} onClose={() => setActivityProfileId(null)} />}
     <BuildIndicator />
     <aside className="recruitment-banner">We are looking for German-speaking players for Season 2: <a href="https://raider.io/guilds/eu/blackrock/IAsgardI" target="_blank" rel="noreferrer">I Asgard I on Raider.IO</a></aside>
     <CreatorCard />
@@ -2592,8 +2638,8 @@ export default function App() {
       <header><div><p className="eyebrow">LIVE ACTIVITY</p><h2>Recent activity</h2></div><span>Refreshes every 5s</span></header>
       <ol>{activityFeed.map(row => <li key={row.id} className={activityFeedRowClass(row.id, newActivityFeedIds)}>
         <time dateTime={row.occurredAt}>{new Date(row.occurredAt).toLocaleString()}</time>
-        {row.character && row.realm && row.region
-          ? <a href={`https://raider.io/characters/${row.region}/${row.realm}/${encodeURIComponent(row.character)}`} target="_blank" rel="noreferrer">{row.character}—{row.realm}</a>
+        {row.profileId
+          ? <button type="button" className="profile-name-button" onClick={() => setActivityProfileId(row.profileId!)}>{row.character && row.realm ? `${row.character}—${row.realm}` : row.displayName}</button>
           : <strong>{row.displayName}</strong>}
         <span>{row.type === 'achievement'
           ? <>earned achievement: <strong>{row.achievementTitle}</strong></>

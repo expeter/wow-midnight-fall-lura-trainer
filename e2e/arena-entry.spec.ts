@@ -182,7 +182,7 @@ test('selects Arena 2 and enters the Phase 2 countdown', async ({ page }) => {
 
   await expect(page.getByText('Get ready for Phase 2.')).toBeVisible()
   await expect(page.getByText(/PHASE 2 · CYCLE 1 \/ 3/)).toBeVisible()
-  await expect(page.getByText('Points')).toBeVisible()
+  await expect(page.getByText('Points', { exact: true })).toBeVisible()
   await expect(page.getByText(/raid begins stacked in the middle/i)).toBeVisible()
 
   const viewportFits = await page.evaluate(() => ({
@@ -264,9 +264,17 @@ test('Space jumps while actions are locked and P pauses', async ({ page }) => {
   await page.getByRole('button', { name: /Enter Intermission/ }).click()
 
   await expect(page.getByText('Take your position.')).toBeVisible({ timeout: 3_000 })
-  await page.keyboard.press('Space')
+  await expect(page.locator('.scene-3d')).toBeVisible()
+  await page.evaluate(() => {
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space' }))
+    window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Space' }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyP' }))
+    window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyP' }))
+  })
   const arena = page.locator('.arena-wrap')
+  await expect(page.getByRole('button', { name: 'Resume' })).toBeVisible()
   await expect(arena).toHaveAttribute('data-personal-jump', 'true')
+  await page.keyboard.press('p')
 
   await page.keyboard.press('f')
   await page.keyboard.press('c')
@@ -345,6 +353,8 @@ test('Main ability visibly animates and completes only once when its bound key i
   await page.goto('/')
   await page.getByRole('button', { name: 'Intermission', exact: true }).click()
   await page.getByRole('button', { name: /Enter Intermission/ }).click()
+  await expect(page.locator('.arena-wrap')).toBeVisible()
+  await expect(page.locator('.scene-3d')).toBeVisible()
   await page.evaluate(() => {
     window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Digit4' }))
     window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Digit4' }))

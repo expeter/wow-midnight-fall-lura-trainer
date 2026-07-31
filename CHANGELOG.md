@@ -10,6 +10,19 @@
   the final orb return, then launch every player into Phase 3 from their own
   rendered position without a hidden center teleport.
 
+## 0.6.2 · 2026-07-31
+
+- Stabilized the two release-gating opening/P2 browser assertions without changing encounter behavior.
+- BUG-145: Revalidate the online session before every run and reject stale
+  authenticated wipe submissions instead of silently publishing them as
+  anonymous activity. A server-issued attempt remains bound to its account and
+  character for wipes and completion even if the browser session expires
+  during play. Align the deployed API's accepted trainer version with `0.6.2`
+  while retaining leaderboard `season-1`. Deliberately signed-out Normal/Hard
+  practice remains eligible for the generic anonymous wipe feed.
+- CR-194: Open public identities in Recent activity as trainer player profiles
+  instead of external Raider.IO character pages.
+
 ## 0.6.1 · 2026-07-31
 
 - BUG-144: Keep the documented Phase 3 timings intact while allowing the

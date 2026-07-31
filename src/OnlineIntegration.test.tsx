@@ -17,6 +17,7 @@ describe('online attempt integration', () => {
       if (url.includes('/v1/activity')) return Response.json({ rows: [{
         id: 'wipe:1',
         type: 'wipe',
+        profileId: 'profile-lurana',
         displayName: 'Lurana',
         character: 'Lurana',
         realm: 'silvermoon',
@@ -30,6 +31,7 @@ describe('online attempt integration', () => {
       }, {
         id: 'achievement:1',
         type: 'achievement',
+        profileId: 'profile-lurana',
         displayName: 'Lurana',
         character: 'Lurana',
         realm: 'silvermoon',
@@ -43,6 +45,7 @@ describe('online attempt integration', () => {
       }, {
         id: 'completion:1',
         type: 'completion',
+        profileId: 'profile-lurana',
         displayName: 'Lurana',
         character: 'Lurana',
         realm: 'silvermoon',
@@ -57,15 +60,33 @@ describe('online attempt integration', () => {
         trainerVersion: '0.3.0',
         occurredAt: new Date(Date.now() - 15_000).toISOString(),
       }] })
+      if (url.endsWith('/v1/profiles/profile-lurana')) return Response.json({
+        profileId: 'profile-lurana',
+        displayName: 'Lurana',
+        character: 'Lurana',
+        realm: 'silvermoon',
+        region: 'eu',
+        guild: 'Milestone',
+        ownProfile: false,
+        attempts: 3,
+        fullRuns: 1,
+        wipes: 2,
+        boards: [],
+        achievements: [],
+        global: null,
+      })
       if (url.endsWith('/v1/me')) return Response.json({ authenticated: false }, { status: 401 })
       if (url.includes('/v1/leaderboards')) return Response.json({ rows: [] })
       if (url.endsWith('/version.json')) return new Response('', { status: 404 })
       throw new Error(`unexpected ${url}`)
     }))
+    const user = userEvent.setup()
     render(<App />)
-    const links = await screen.findAllByRole('link', { name: 'Lurana—silvermoon' })
-    expect(links).toHaveLength(3)
-    expect(links[0]).toHaveAttribute('href', 'https://raider.io/characters/eu/silvermoon/Lurana')
+    const players = await screen.findAllByRole('button', { name: 'Lurana—silvermoon' })
+    expect(players).toHaveLength(3)
+    await user.click(players[0])
+    expect(await screen.findByRole('dialog')).toHaveTextContent('PUBLIC TRAINER PROFILE')
+    expect(screen.getByRole('heading', { name: 'Lurana' })).toBeVisible()
     expect(screen.getByText(/wiped on: Phase 3 · normal/i)).toHaveTextContent('Touched a Stars beam')
     expect(screen.getByText(/earned achievement:/i)).toHaveTextContent('Ready for Raid Night')
     expect(screen.getByText(/completed full run:/i)).toHaveTextContent('hard · crystal · 1488 points · 382.4s')
@@ -121,5 +142,46 @@ describe('online attempt integration', () => {
     expect(issuance.body).toContain('"entryMode":"arena0"')
     expect(issuance.body).toMatch(/"configurationFingerprint":"[a-f0-9]{64}"/)
     expect(view.container.querySelector('[data-event="p1-countdown"]')).toBeInTheDocument()
+  })
+
+  it('revalidates a cached signed-in session before starting a leaderboard run', async () => {
+    let sessionChecks = 0
+    const requests: string[] = []
+    vi.stubGlobal('fetch', vi.fn(async input => {
+      const url = String(input)
+      requests.push(url)
+      if (url.endsWith('/v1/me')) {
+        sessionChecks += 1
+        if (sessionChecks === 1) return Response.json({
+          authenticated: true,
+          region: 'eu',
+          csrfToken: 'stale-csrf',
+          privacy: {
+            identityMode: 'character',
+            alias: null,
+            showGuild: 1,
+            selectedCharacterId: 7,
+          },
+          selectedCharacter: {
+            name: 'Brasoevo',
+            realmSlug: 'blackrock',
+            region: 'eu',
+          },
+        })
+        return Response.json({ error: 'not_authenticated' }, { status: 401 })
+      }
+      if (url.includes('/v1/activity')) return Response.json({ rows: [] })
+      if (url.includes('/v1/leaderboards')) return Response.json({ rows: [] })
+      if (url.endsWith('/version.json')) return new Response('', { status: 404 })
+      throw new Error(`unexpected ${url}`)
+    }))
+    const user = userEvent.setup()
+    render(<App />)
+    await screen.findByText(/Signed in as Brasoevo—blackrock/i)
+    await user.click(screen.getByRole('button', { name: 'normal' }))
+    await user.click(screen.getByRole('button', { name: 'Enter P1' }))
+    expect(await screen.findByText(/online session expired.*log in again.*local practice/i)).toBeVisible()
+    expect(sessionChecks).toBe(2)
+    expect(requests.some(url => url.endsWith('/v1/attempts'))).toBe(false)
   })
 })

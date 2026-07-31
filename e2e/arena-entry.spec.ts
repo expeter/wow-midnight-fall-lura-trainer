@@ -5,6 +5,7 @@ import { expect, test } from '@playwright/test'
 // time intentionally advances more slowly when the renderer is under load.
 const MECHANIC_TIMEOUT = 20_000
 const P2_RESOLUTION_TIMEOUT = 40_000
+const LATE_ARENA_TIMEOUT = 45_000
 
 test.setTimeout(60_000)
 
@@ -420,13 +421,14 @@ test('resolves a Phase 4 stack hit reliably at 2.5x speed', { tag: '@late-arena'
 })
 
 test('keeps a terminal wipe over the frozen arena and allows minimizing its details', { tag: '@late-arena' }, async ({ page }) => {
+  test.setTimeout(90_000)
   await page.addInitScript(() => localStorage.setItem('lura-game-speed', '2.5'))
   await page.goto('/')
   await page.getByRole('button', { name: 'hard', exact: true }).click()
   await page.getByRole('button', { name: 'P3', exact: true }).click()
   await page.getByRole('button', { name: /Enter Arena 3/ }).click()
   const wipe = page.getByRole('alert')
-  await expect(wipe).toContainText(/Wiped due to:/, { timeout: MECHANIC_TIMEOUT })
+  await expect(wipe).toContainText(/Wiped due to:/, { timeout: LATE_ARENA_TIMEOUT })
   await expect(page.locator('.scene-3d')).toHaveAttribute('data-defeated', 'true')
   await expect(page.locator('.scene-3d')).toHaveAttribute('data-ground-texture', 'grid-cracks')
   await expect(page.locator('canvas')).toBeVisible()

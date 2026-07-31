@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.6.1 · 2026-07-31
+
+- BUG-144: Keep the documented Phase 3 timings intact while allowing the
+  terminal-wipe browser regression enough wall-clock time to complete on
+  GitHub's software-rendered runner, unblocking the Pages release.
 - BUG-136–BUG-143 / SPEC-016: Retain `season-1` while repairing ranking and
   achievement integrity: publish one best run per account with stable search
   ranks, use one current-season scope across boards and profiles, count actual

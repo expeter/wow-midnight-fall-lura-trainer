@@ -155,6 +155,11 @@ See [`audio-cues.md`](audio-cues.md) and
 - Do not interpret an inbox ID from chat without reading its Markdown and image.
 - Make focused commits after verified bug, change, or feature work. The user
   normally pushes; do not push unless asked.
+- Use the configured GitHub MCP for repository state, Actions runs, job logs,
+  reruns, and deployment monitoring. This workspace does not use `gh` or the
+  Yeet workflow. An explicitly requested publish may use local `git push`, then
+  a background agent should watch GitHub and production through MCP while the
+  primary agent continues milestone work.
 - Preserve unrelated dirty-worktree changes and user-provided assets.
 - For every release, choose the SemVer bump from the dominant change
   (patch for fixes, minor for backward-compatible features, major for breaking

@@ -271,6 +271,7 @@ test('continues the current Phase 2 sequence after the first Normal wipe', async
 
 test('wipes when a non-carrier personal circle hits an NPC crystal in Phase 2', async ({ page }) => {
   await page.addInitScript(() => {
+    Math.random = () => 0
     localStorage.setItem('lura-game-speed', '2.5')
     localStorage.setItem('lura-selected-position', '2')
   })

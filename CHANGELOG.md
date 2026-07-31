@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- BUG-151: Stabilize the Phase 2 personal-circle/NPC-crystal browser scenario
+  against the random beam-assignment mechanic so it reaches the intended
+  collision assertion without changing either encounter failure rule.
 - CR-199: Add a stable local focused-Playwright wrapper with named regression
   presets and a free-text fallback, using the repository-local Chromium install
   and zero retries by default.

@@ -18,6 +18,13 @@ change, then choose and apply the correct SemVer bump when cutting a release.
 Commit each verified request or coherent ticket batch; do not push unless the
 user asks.
 
+This workspace uses the configured GitHub MCP for GitHub repository state,
+Actions runs, job logs, reruns, and deployment monitoring. Do not probe for or
+use `gh`, and do not invoke the Yeet workflow. When the user explicitly asks to
+publish, local `git push` is the transport; hand the subsequent GitHub Actions
+and production watch to a background agent using MCP so implementation work can
+continue in parallel.
+
 Never change the leaderboard season without the user's explicit approval.
 When mechanics, scoring, achievement eligibility, validation, or accepted-run
 comparability may affect rankings, warn the user and ask whether a new season

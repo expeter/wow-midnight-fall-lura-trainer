@@ -1,12 +1,11 @@
-# L'ura Trainer agent handoff
+# L'ura Trainer repository instructions
 
 Before changing the trainer, read:
 
-1. [`docs/maintainer-handoff.md`](docs/maintainer-handoff.md)
-2. [`docs/specifications.md`](docs/specifications.md)
-3. [`docs/p1-encounter.md`](docs/p1-encounter.md) for Phase 1 work
-4. [`docs/README.md`](docs/README.md) for ticket history and open work
-5. [`docs/milestones.md`](docs/milestones.md) for delivery order and release
+1. [`docs/specifications.md`](docs/specifications.md)
+2. [`docs/p1-encounter.md`](docs/p1-encounter.md) for Phase 1 work
+3. [`docs/README.md`](docs/README.md) for ticket history and open work
+4. [`docs/milestones.md`](docs/milestones.md) for delivery order and release
    grouping
 
 Every new request receives a stable `FR`, `CR`, `BUG`, or `SPEC` ID in

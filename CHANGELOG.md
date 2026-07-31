@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- CR-202: Retire obsolete maintainer and laptop-transfer handoff snapshots,
+  consolidate their durable references into the repository instructions and
+  specifications, and reconcile stale release-boundary documentation with
+  v0.7.2.
+
 ## 0.7.2 · 2026-07-31
 
 - BUG-155: Restore verified online-attempt issuance by aligning the API with

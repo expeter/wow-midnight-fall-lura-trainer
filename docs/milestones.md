@@ -6,10 +6,10 @@ in [`specifications.md`](specifications.md).
 
 ## Current release boundary
 
-- Latest tagged and deployed release: `v0.7.0` (`17b8592`).
-- `v0.7.0` completes the two-tank encounter roles, Phase 2 assignment/regroup
-  work, explicit run attribution, the transition crystal fix, and five-phase
-  achievement/progress reconciliation.
+- Latest tagged and deployed release line: `v0.7.2`.
+- `v0.7.2` keeps controlled-player Phase 2 beam duty and the two-tank encounter
+  roles in localhost preview, and restores frontend/API version alignment for
+  verified online attempts.
 - Current leaderboard season: `season-1`. No milestone or SemVer bump changes
   it automatically.
 

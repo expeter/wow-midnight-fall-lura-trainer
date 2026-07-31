@@ -10,8 +10,8 @@ change before implementation.
 - Every new task receives a stable `FR`, `CR`, `BUG`, or `SPEC` ID.
 - Record the request before implementation and mark it implemented only after
   focused automated regression coverage passes.
-- Update the affected encounter contract, maintainer handoff, ticket register,
-  and other durable documentation as part of the same change.
+- Update the affected encounter contract, ticket register, milestones, and
+  other durable documentation as part of the same change.
 - Resolve each completed ticket in the register. Never silently abandon an
   unresolved ticket or leave verified completed work marked as open.
 - Commit verified changes unless explicitly asked to leave them uncommitted.
@@ -383,8 +383,9 @@ The detailed encounter, UI, recovery, and edge-case contract is maintained in
   failures terminal. Mechanics are never weakened solely for automated tests.
 - Raid plans contain twenty profiles, all phase positions, movable Phase 1 and
   Phase 3 bosses, start slots, and six crystal assignments per applicable
-  phase. Shared hash, explicit/browser-local, and bundled I Asgard I defaults
-  follow the precedence in the maintainer handoff.
+  phase. A valid shared hash has precedence over an explicitly loaded or
+  browser-local plan; the bundled I Asgard I plan is used only when browser
+  storage is empty.
 - Player-facing systems include persistent inputs/camera/HUD, optional HUD
   action buttons, phase-refilling potion and shield, one-second Main ability
   casts, cosmetic class projectiles, audio channels, exact failure review,

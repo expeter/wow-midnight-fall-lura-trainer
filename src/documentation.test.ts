@@ -1,10 +1,30 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const read = (path: string) => readFileSync(resolve(process.cwd(), path), 'utf8')
 
 describe('maintained project documentation', () => {
+  it('keeps operating guidance in active documentation instead of handoff snapshots', () => {
+    expect(existsSync(resolve(process.cwd(), 'docs/maintainer-handoff.md'))).toBe(false)
+    expect(existsSync(resolve(process.cwd(), 'docs/leaderboard-api-handoff.md'))).toBe(false)
+
+    const activeDocumentation = [
+      read('AGENTS.md'),
+      read('README.md'),
+      read('docs/README.md'),
+      read('docs/specifications.md'),
+      read('docs/milestones.md'),
+    ].join('\n')
+    expect(activeDocumentation).not.toContain('maintainer-handoff.md')
+    expect(activeDocumentation).not.toContain('leaderboard-api-handoff.md')
+  })
+
+  it('keeps the milestone release boundary aligned with the package version', () => {
+    const packageVersion = JSON.parse(read('package.json')).version
+    expect(read('docs/milestones.md')).toContain(`release line: \`v${packageVersion}\``)
+  })
+
   it('groups every open request into a delivery milestone', () => {
     const requestLog = read('docs/README.md')
     const milestones = read('docs/milestones.md')

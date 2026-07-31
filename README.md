@@ -3,16 +3,16 @@
 A browser-based movement trainer for practicing the L'ura encounter from a
 top-down, player-focused 3D view.
 
-The trainer covers the Intermission, a three-cycle Phase 2 sequence, two
-sectors of Phase 3, and the four-quarter Phase 4 finale. You can practice the
-complete transition chain or enter any phase directly.
+The trainer covers Phase 1, the Intermission, a three-cycle Phase 2 sequence,
+two sectors of Phase 3, and the four-quarter Phase 4 finale. You can practice
+the complete transition chain or enter any phase directly.
 
 The detailed [feature inventory, request convention, historical bug register,
 and screenshot index](docs/README.md) document how the simulator evolved.
-Contributors and coding agents should begin with the
-[maintainer handoff](docs/maintainer-handoff.md), which records the current
-release boundary, mechanic invariants, plan-loading precedence, and validation
-workflow.
+Contributors and coding agents should begin with the repository instructions
+in [`AGENTS.md`](AGENTS.md), then review the stable
+[specifications](docs/specifications.md) and current
+[delivery milestones](docs/milestones.md).
 
 ## What you can practice
 

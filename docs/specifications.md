@@ -53,14 +53,29 @@ change before implementation.
 - Flawless means zero recorded mistakes.
 - Potion, shield, and main ability use are listed in the completion details;
   potion and shield are permanent phase-refilling actions rather than options.
-- `SUPERHUMAN FLAWLESS` requires a full sequential clear, zero mistakes, all
-  three optional challenges, crystal duty, and more than 1100 points.
+- Result-card honors summarize the current completion. They are distinct from
+  the canonical browser/API achievement catalogue and do not automatically
+  create another permanent achievement.
+- The result-card `SUPERHUMAN FLAWLESS` honor requires a full sequential clear,
+  zero mistakes, successful potion and shield play, Main ability use, crystal
+  duty, and more than 1100 points.
+- Canonical achievements use stable IDs and point tiers. Browser-local records
+  retain immutable first-earned timestamps; online records are awarded only
+  from accepted server attempts.
 
 ## SPEC-005 · Background audio
 
-- Background music is controlled by a source-level feature flag.
-- While disabled, no music setup controls, arena mute control, or audio
-  playback initialization is exposed.
+- Music, encounter sounds, and raid-lead speech are independent persisted
+  channels and default to off.
+- Music offers the reviewed licensed tracks, preview, volume, looping, and an
+  in-arena mute control.
+- The live encounter-sound allowlist currently contains only Main ability
+  release. Other reviewed samples remain available in the local soundboard and
+  must not be re-enabled without explicit approval.
+- Raid-lead assistance uses browser TTS except for the timing-critical
+  prerecorded Phase 4 `Left`, `Right`, `Left`, `Move` sequence.
+- Source-level feature flags may remove a channel. A disabled channel exposes
+  no setup control, arena control, or playback initialization.
 
 ## SPEC-006 · Phase 4 cadence
 
@@ -81,17 +96,22 @@ change before implementation.
 
 ## SPEC-007 · Setup-page hierarchy
 
-- Game settings begin with Difficulty & movement, Selected assignment, and
-  Optional combat actions in one desktop row; responsive layouts may stack
-  these cards.
-- Keyboard & mouse controls follow Game settings, followed by HUD placement.
+- The setup shell exposes six one-active-panel tabs: Game settings,
+  Keys & Mouse, HUD, Raid plan, Leaderboard, and Profile.
+- Game settings contains difficulty/movement, selected assignment, permanent
+  combat actions, audio, the current Global Top 3, and compact personal
+  achievement/run/profile summaries.
+- Keys & Mouse contains bindings, mouse inversion, keyboard turning, and
+  rotation speed. HUD owns draggable placement and optional action buttons.
 - HUD action buttons are an optional persisted display aid, off by default.
   When enabled, Main ability, Interrupt, Shield, Health potion, and Crystal drop
   default below the cast bar, have their own draggable HUD anchor, and invoke
   the same handlers and validity rules as their keyboard bindings.
-- Raid planning begins with its full-width save/load/share controls.
+- Raid plan begins with its full-width save/load/share controls.
 - Every phase map retains its own visible heading, beginning with
-  `INTERMISSION RAID PLAN`.
+  `PHASE 1 RAID PLAN`, then `INTERMISSION RAID PLAN`.
+- A valid `#raidplan=` hash opens Raid plan without losing the hash or allowing
+  an older browser-local plan to override it.
 
 ## SPEC-008 · Phase 3 Soak protection
 
@@ -104,6 +124,33 @@ change before implementation.
   satisfy both.
 - Crystal NPCs do not count as ground-Soak occupants. Rune-pair movement may
   temporarily override their support position during the memory game.
+
+## SPEC-009 · Audio and raid-lead assistance
+
+- The authoritative cue catalogue is [`audio-cues.md`](audio-cues.md).
+- Direct phase entry may speak its visible `3`, `2`, `1`; seamless transitions
+  use phase-specific calls without adding another countdown.
+- Coaching that reveals a mechanic may be difficulty-restricted. Visual
+  telegraphs and counters remain authoritative in every mode.
+- Pausing freezes scheduled speech and prerecorded calls with the shared
+  encounter clock. Resuming must not replay stale cues or skip the next call.
+
+## SPEC-010 · Canonical achievements
+
+- The browser and API share one canonical catalogue with stable IDs,
+  meaningful non-repeatable badges, point tiers, and explicit availability.
+- Related badges may unlock from one result. Already-earned badges never
+  reappear as newly earned on a later result.
+- The catalogue groups achievements into Foundations, Precision, Tools of the
+  Trade, and Feats of Movement, with no more than two cards per row.
+- Full-run streaks advance only from complete sequential clears. Direct phase
+  practice may award that phase's flawless badge and increments only the phases
+  actually cleared.
+- Result-card honors are presentation summaries governed by `SPEC-004`; they
+  are not additional canonical achievement IDs.
+- Local achievements are browser records. Only achievements derived from an
+  accepted server attempt are server-verified and contribute to the online
+  Achievement Hall and Global ranking.
 
 ## SPEC-011 · API-backed highscores and achievements
 
@@ -228,3 +275,36 @@ privacy, deployment, and acceptance contract.
   achievement eligibility, server validation, or accepted-run comparability,
   explicitly warn the user and ask whether to start a new season. Without
   explicit approval, retain the current season.
+
+## SPEC-015 · Shipped trainer and service boundary
+
+- The released sequential encounter is Phase 1, Intermission, Phase 2, Phase
+  3, then Phase 4. Every phase is also directly playable for focused practice;
+  direct entry uses a countdown while sequential handoffs preserve encounter
+  movement.
+- Phase 1 owns the detailed contract in
+  [`p1-encounter.md`](p1-encounter.md). Intermission trains boss beams,
+  six-ray Starsplinters, and crystal recovery. Phase 2 trains three cross-beam,
+  orb-return, pull, and personal-circle cycles. Phase 3 trains split-side
+  landing Soaks, crystal protection, ground Soaks, Stars, ordered runes, Dark
+  Archangel, and the north gather. Phase 4 trains four protected
+  counterclockwise quarters with sequential Starsplinters, adds, and Heaven &
+  Hell.
+- Test, Easy, Normal, and Hard share one simulation. Test records non-blocking
+  failures, assisted modes may coach, and Hard removes selected help and makes
+  failures terminal. Mechanics are never weakened solely for automated tests.
+- Raid plans contain twenty profiles, all phase positions, movable Phase 1 and
+  Phase 3 bosses, start slots, and six crystal assignments per applicable
+  phase. Shared hash, explicit/browser-local, and bundled I Asgard I defaults
+  follow the precedence in the maintainer handoff.
+- Player-facing systems include persistent inputs/camera/HUD, optional HUD
+  action buttons, phase-refilling potion and shield, one-second Main ability
+  casts, cosmetic class projectiles, audio channels, exact failure review,
+  local achievements, and shareable completion/achievement images.
+- Anonymous offline play is complete. The optional service adds Battle.net
+  identity, verified characters, one-use attempts, server score validation,
+  four run boards, Global ranking, Achievement Hall, public profiles, privacy,
+  activity events, logout, and full deletion.
+- [`api-highscores.md`](api-highscores.md) is the detailed service contract and
+  [`milestones.md`](milestones.md) owns the current delivery grouping. The
+  historical request ledger remains in [`README.md`](README.md).

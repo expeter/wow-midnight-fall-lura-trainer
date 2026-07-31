@@ -2,10 +2,31 @@
 
 ## Unreleased
 
+- FR-065 / CR-178: Add the persisted optional in-arena action strip for Main
+  ability, Interrupt, Shield, Health potion, and Crystal drop, with its own
+  draggable HUD anchor.
+- CR-176–CR-177 / CR-183 / BUG-131: Extend live activity with accepted
+  completions, default-on bottom-right messages across setup and arena screens,
+  and matching recent-feed arrival animation.
+- CR-179 / CR-181–CR-193 / BUG-120–BUG-121 / BUG-129 / BUG-132–BUG-135:
+  Reconcile the Global podium, five-column ranking views, personal summaries,
+  profiles, privacy controls, localhost fixtures, failure advice, and
+  achievement navigation into one responsive online experience.
+- BUG-123–BUG-125 / BUG-127–BUG-130: Correct Phase 3 landing occupancy and
+  health feedback, Phase 1 Glaive lifetime, Phase 4 tank avoidance, Phase 2
+  pull/crystal recovery, P3 Stars connection range, and authoritative
+  Intermission positioning time.
+- BUG-126: Award canonical server achievement points to eligible direct-phase
+  achievements while retaining their exclusion from run leaderboards.
+- BUG-134: End Normal attempts when accumulated penalties reduce the score to
+  zero.
 - SPEC-014: Require completed tickets to close with focused regression coverage
   and current durable documentation, record user-visible work under
   `Unreleased`, maintain SemVer at release time, and reserve leaderboard-season
   changes for explicit user approval after a ranking-impact reminder.
+- SPEC-015: Reconcile the shipped trainer and API feature contracts, record
+  known online correctness gaps as explicit bugs, normalize released Phase 1
+  ticket statuses, and organize all remaining work into maintained milestones.
 
 ## 0.6.0 · 2026-07-30
 

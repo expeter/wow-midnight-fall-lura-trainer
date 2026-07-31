@@ -187,14 +187,20 @@ targeted shared mechanic timeout for renderer-heavy transitions.
 
 ## Open work at this handoff
 
-Start with the current statuses in the request log, not this snapshot. At the
-time of writing, the meaningful non-complete work is:
+Start with [`milestones.md`](milestones.md) and confirm each ticket's current
+status in the request log.
 
-- `CR-051`: deferred P3 second-sequence memory/Soak order swap.
-- `FR-022` and `FR-023`: playable P4 tank cone and random protection carrier.
-- `FR-038` and `FR-039`: post-v0.2.0 `Gnomkaiser` admin/live easter eggs.
-- `FR-048`–`FR-050`: P3 crystal recovery opening, P2-position-based push into
-  P3, and the planned four-player P2 beam/orb assignment rework.
+- M1 is the immediate encounter-completion milestone: `FR-050`, `FR-049`,
+  `FR-048`, `CR-051`, `FR-022`, and `FR-023`.
+- M2 is the ranking/achievement integrity gate discovered during `SPEC-015`:
+  `BUG-136`–`BUG-143`.
+- M3 contains developer tooling: `FR-051` and localhost-only `FR-038`.
+- M4 contains later flavor: live `FR-039` and `FR-066`.
 
-Before starting any of these, confirm whether newer inbox reports or user
-clarifications supersede the recorded wording.
+Before starting a ticket, confirm whether newer inbox reports or user
+clarifications supersede its wording. `CR-051` still needs the exact
+second-sequence overlap timing before implementation.
+
+M1 and M2 can affect mechanics, scoring, achievement totals, or public
+positions. Remind the user before their release and retain `season-1` unless
+the user explicitly authorizes a new leaderboard season.

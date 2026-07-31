@@ -6,6 +6,8 @@ Before changing the trainer, read:
 2. [`docs/specifications.md`](docs/specifications.md)
 3. [`docs/p1-encounter.md`](docs/p1-encounter.md) for Phase 1 work
 4. [`docs/README.md`](docs/README.md) for ticket history and open work
+5. [`docs/milestones.md`](docs/milestones.md) for delivery order and release
+   grouping
 
 Every new request receives a stable `FR`, `CR`, `BUG`, or `SPEC` ID in
 `docs/README.md` before implementation. Mark it implemented only after focused

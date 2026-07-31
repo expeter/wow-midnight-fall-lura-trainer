@@ -7,6 +7,8 @@ work.
 
 For a concise continuation guide, read the
 [maintainer handoff](maintainer-handoff.md) before the historical ticket log.
+Current open work is grouped in [delivery milestones](milestones.md), while
+stable behavior is defined in [specifications](specifications.md).
 
 ## Request convention
 
@@ -101,7 +103,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `FR-023` | Backlog | Randomly assign the moving Phase 4 protection safe zone to a player or NPC so the controlled player may need to carry and position it while the raid follows. |
 | `FR-024` | Implemented | Make Main ability permanently available without an enable checkbox and award its hit only when the one-second cast completes. Add a persisted global cosmetic-projectile switch: completed player casts fire toward L’ura, while a capped lightweight NPC stream uses WoW class colors and simple class-specific shapes without changing encounter mechanics. |
 | `FR-025` | Implemented | Add a continuous encounter-length background theme that survives phase transitions and loops cleanly when necessary, with the existing audio feature flag and mute/volume controls restored only when suitable licensed music is selected. |
-| `FR-026` | Implemented behind localhost preview | Add distinct, synchronized sound effects for major lasers, Stars, Starsplinter detonations, returning orbs, circles, completed Soaks/runes, Dark Archangel protection, destroyed adds, mistakes, and wipes. Provide an independent persisted mute and volume channel; keep it localhost-only while the mix is reviewed for v0.2.0. |
+| `FR-026` | Superseded by CR-099 | Build and tune distinct encounter SFX through the localhost soundboard. The review tooling and candidate library remain implemented, but `CR-099` intentionally removed the unfinished mechanic/failure mix from live play; only Main ability release is currently approved. |
 | `FR-027` | Implemented | Add an optional API-backed leaderboard and achievement tracker. Anonymous play remains complete; Battle.net login imports verified characters and optional cached guild labels; privacy modes, logout, complete deletion, EU/US shared searchable boards, one-use character/version/configuration-bound attempts, server-recomputed scores, verified versioned achievements, rate limits, daily VPS-local SQLite backups, and trainer integration follow [`SPEC-011`](api-highscores.md). Off-VPS backup storage and replication are user-managed outside this project; Git-backed backup certificates, workflows, and artifacts are explicitly excluded by `CR-149`. |
 | `FR-057` | Implemented | Rebalance the setup page around practice: keep game settings near the top, move player name into assignment identity, reduce Battle.net login prominence, show a scrollable Top 10 with localhost fixtures and current Normal/Hard standings beside achievements, place search below it, link to a full leaderboard view, and link public verified characters to Raider.IO. Covered by focused online UI/integration tests and the complete browser regression suite. Tracked from [`INBOX-20260729-105518-e5a50c`](../inbox/INBOX-20260729-105518-e5a50c.md). |
 | `FR-060` | Implemented | Perform one explicitly authorized administrative backfill for Pestivator's completed 1536-point, 385.7-second Normal/crystal run from [`INBOX-20260729-185527-3c7431`](../inbox/INBOX-20260729-185527-3c7431.md) after `BUG-111` prevented issuance of its required server-side attempt. Publish only this documented run, award no unverifiable achievements, and do not add or relax any public submission path. Verified against the production current-version leaderboard. |
@@ -141,6 +143,14 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `CR-191` | Implemented | Make Global, Runs, and Achievement Hall feel like one leaderboard system. Each personal-position row uses the same aligned rank, player, guild, result, and time/date column grid as the Top 10 above it; Global also uses explicit five-column headers/rows instead of its bespoke two-column layout. Missing guild data renders as `—` and is never invented. Covered by component and browser layout regressions. |
 | `CR-192` | Implemented | Refine the authenticated Online profile summary so profile status reads naturally from left to right instead of as a narrow vertical stack, with Manage profile and Log out centered together beneath it. Tracked from [`INBOX-20260730-215154-30e512`](../inbox/INBOX-20260730-215154-30e512.md); covered by focused UI tests and production build. |
 | `BUG-135` | Implemented | Clicking the shell achievement summary stays within the setup page: it opens the Profile tab and scrolls to its existing Achievements collection instead of creating a large page-covering popup. Tracked from [`INBOX-20260730-215254-8033fe`](../inbox/INBOX-20260730-215254-8033fe.md); covered by browser navigation regression. |
+| `BUG-136` | Planned | Rank each public run board by every account's single best current-season result, matching crown awards, Global ranking, personal standings, and public profiles instead of allowing one account to occupy several rows. |
+| `BUG-137` | Planned | Preserve each run's real board rank when filtering a public run leaderboard; search-result position must not replace the authoritative unfiltered rank. |
+| `BUG-138` | Planned | Aggregate online phase-clear milestones from the phases actually completed and restrict flawless Normal/Hard streaks to full sequential runs; direct-phase practice must not count as five clears or advance a full-run streak. |
+| `BUG-139` | Planned | Complete the documented online-attempt binding and retry contract: validate completion configuration against the issued snapshot and make an identical idempotent completion retry return the accepted result instead of an unconditional conflict. |
+| `BUG-140` | Planned | Apply a bounded rate limit to authenticated online-attempt issuance as required by the API security contract. |
+| `BUG-141` | Planned | Prevent alias-mode public identities from exposing or searching the selected character's guild, including legacy accounts whose stored guild flag predates the current privacy contract. |
+| `BUG-142` | Planned | Use the same current leaderboard-season scope for public run boards, authenticated personal standings, and public-profile board ranks after a SemVer change; do not mix current-season public ranks with exact-version personal ranks. |
+| `BUG-143` | Planned | Award the browser-local `flawless-p1` achievement when Phase 1 is cleared without a mistake, matching the canonical catalogue and server-verified phase logic. |
 | `CR-193` | Implemented | Render the shell's Global Ranking podium only when all three ranked player slots are available. One- or two-player production rankings omit the entire podium section; localhost may still show it after its explicit preview fixtures fill all three slots. Covered by focused visibility regression and production build. |
 | `CR-188` | Implemented | Make every failure info control self-contained mechanic coaching rather than directing the player back to transient encounter text. In particular, assigned-interrupt help explains the five-cast order, the player's numbered assignment, and the green two-second interrupt window. Maintained failure families have specific corrective instructions and a useful generic fallback. Covered by focused advice regression and production build. |
 | `BUG-127` | Implemented | Rebalance the Phase 2 center pull so non-crystal players can counter-walk and remain outside during its early portion, while the final force still exceeds walking speed. If a non-carrier picks up the wrong crystal, reuse the Phase 1 recovery contract: drop it for the assigned NPC or wipe; the assigned crystal player keeps normal ownership. Covered by pull-force and crystal-touch rule regressions. |
@@ -149,45 +159,45 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-130` | Implemented | Keep the direct-Intermission positioning countdown synchronized with its authoritative 24-second around-the-void movement window. The HUD incorrectly reached `0.0` after ten seconds while the encounter correctly retained fourteen seconds, making the game appear stuck; once the real timer expires, invalid positioning records the expected wipe and advances according to difficulty. Tracked from [`INBOX-20260730-212157-b739c8`](../inbox/INBOX-20260730-212157-b739c8.md); covered through the complete timer boundary by browser regression. |
 | `FR-028` | Implemented | Restore optional background music with only the two newly selected licensed tracks, default playback to off, and add a dedicated Audio settings row for Music, future encounter Sounds, and deferred TTS. |
 | `FR-029` | Implemented | Implement opt-in browser TTS for the approved phase-aware raid-lead calls, suppress repeated/stale speech across render updates and pause states, and gracefully disable the option when speech synthesis is unavailable. |
-| `FR-030` | Implemented behind localhost preview | Add the five-interrupt, crystal pickup, ricocheting glaive, ordered rune beam, rotating-beam/reactive-Soak encounter, and Intermission handoff before the existing encounter. Includes a dedicated persisted P1 raid plan, six crystal assignments, Numpad 2 interrupt binding, TTS calls, and focused regression coverage. Preserve the mechanic contract in [`p1-encounter.md`](p1-encounter.md). |
-| `CR-103` | Implemented behind localhost preview | Give P1 its own wider 260-yard annular arena, visibly collapse it into the smaller Intermission room during handoff, and keep L’ura outside the middle bubble while she advances one quarter for the second demonstrated sequence. |
+| `FR-030` | Implemented | Add the five-interrupt, crystal pickup, ricocheting glaive, ordered rune beam, rotating-beam/reactive-Soak encounter, and Intermission handoff before the existing encounter. Includes a dedicated persisted P1 raid plan, six crystal assignments, Numpad 2 interrupt binding, TTS calls, and focused regression coverage. Preserve the mechanic contract in [`p1-encounter.md`](p1-encounter.md). |
+| `CR-103` | Implemented | Give P1 its own wider 260-yard annular arena, visibly collapse it into the smaller Intermission room during handoff, and keep L’ura outside the middle bubble while she advances one quarter for the second demonstrated sequence. |
 | `CR-104` | Superseded by CR-109 | Launch each P1 Heaven Glaive from the outside boss at three times configured player speed, ricochet it from both the outer wall and middle bubble, and retain it for 60 seconds without generating a new set during the rotating-beam mechanic. CR-109 replaces the earlier continuous deceleration with a first-impact speed change. |
-| `CR-105` | Implemented behind localhost preview | Default P1 L’ura 30 degrees into the lower-left opening, make her opening marker draggable and shareable on the P1 raid plan, rotate her one quarter for sequence two, and align the nearest safely telegraphed rotating beam ten degrees from her sector. |
-| `CR-106` | Implemented behind localhost preview | Split the six configured P1 crystal carriers into sequence-one slots 1–3 and sequence-two slots 4–6. When the player owns the active pickup, NPCs wait for that collection; the pull countdown names both Kick 1–5 and Crystal pickup 1/2 duty. |
-| `CR-107` | Implemented behind localhost preview | Show P1 interrupt state in a dedicated 100×100 HUD tile beside the pickup area: red means wait, orange means next, and green marks the controlled player’s two-second interrupt window. |
-| `CR-108` | Implemented behind localhost preview | Aim P1 player and NPC cosmetic attacks at the visible outside L’ura model rather than the arena center. |
-| `CR-109` | Implemented behind localhost preview | Emit each five-glaive set as an evenly spaced star around L’ura. Glaives retain triple player speed until their first wall/bubble impact, then continue every ricochet at 110% configured player speed. |
-| `CR-110` | Implemented behind localhost preview | Render roaming P1 Heaven Glaives as larger, flat luminous flying saucers rather than spherical orbs, and align their collision radius with the wider visible disc. |
-| `CR-111` | Implemented behind localhost preview | Make P1 NPCs roam unpredictably during memory positioning before settling into the correct clockwise order. During the rotating beam they cross its safe telegraph, follow a rotating ray with sufficient movement speed, and lead L’ura from her current position toward the sequence’s configured tank spot (raid-plan positions 1 then 2). |
-| `CR-112` | Implemented behind localhost preview | Keep the P1 raid active between assigned mechanics with deterministic cast-and-move waypoints around L’ura during interrupts, crystal pickups, Glaives, and reactive Soaks. Active crystal carriers still override roaming to collect their assigned crystal; memory and rotating beams retain their dedicated movement rules. Tracked from [`INBOX-20260727-200417-465bff`](../inbox/INBOX-20260727-200417-465bff.md). |
-| `CR-113` | Implemented behind localhost preview | Enlarge P1 Heaven Glaive saucers by another 1.5×, match their lethal contact radius to the new visual, and add three visibly rotating surface markers. Tracked from [`INBOX-20260727-203730-cad7f4`](../inbox/INBOX-20260727-203730-cad7f4.md). |
-| `CR-114` | Implemented behind localhost preview | End the lethal rotating-beam window after a 45-degree sweep, cap each tank-led L’ura relocation to a 45-degree arena arc, and keep the NPC raid in a compact formation that crosses during the ground telegraph and follows the moving boss until the beams disappear. Tracked from [`INBOX-20260727-203730-cad7f4`](../inbox/INBOX-20260727-203730-cad7f4.md). |
-| `CR-115` | Implemented behind localhost preview | Show each P1 Heaven Glaive during its direction telegraph, spin it rapidly on launch, and increase both its initial and reflected movement by 1.5×. Tracked from [`INBOX-20260727-205141-490baf`](../inbox/INBOX-20260727-205141-490baf.md). |
-| `CR-116` | Implemented behind localhost preview | Replace P1’s oversized orb placeholders with the established Intermission/Phase 2 ground-crystal visual. The broader crystal redesign remains deferred. Tracked from [`INBOX-20260727-205349-5a6ef1`](../inbox/INBOX-20260727-205349-5a6ef1.md). |
-| `CR-117` | Implemented behind localhost preview | Separate the P1 Interrupts label from its cast count and anchor the 100×100 kick-state tile directly beneath that mechanic counter. |
-| `CR-118` | Implemented behind localhost preview | Show the established carried-crystal marker on every collected P1 carrier without adding a protection/safe-zone ring. |
+| `CR-105` | Implemented | Default P1 L’ura 30 degrees into the lower-left opening, make her opening marker draggable and shareable on the P1 raid plan, rotate her one quarter for sequence two, and align the nearest safely telegraphed rotating beam ten degrees from her sector. |
+| `CR-106` | Implemented | Split the six configured P1 crystal carriers into sequence-one slots 1–3 and sequence-two slots 4–6. When the player owns the active pickup, NPCs wait for that collection; the pull countdown names both Kick 1–5 and Crystal pickup 1/2 duty. |
+| `CR-107` | Implemented | Show P1 interrupt state in a dedicated 100×100 HUD tile beside the pickup area: red means wait, orange means next, and green marks the controlled player’s two-second interrupt window. |
+| `CR-108` | Implemented | Aim P1 player and NPC cosmetic attacks at the visible outside L’ura model rather than the arena center. |
+| `CR-109` | Implemented | Emit each five-glaive set as an evenly spaced star around L’ura. Glaives retain triple player speed until their first wall/bubble impact, then continue every ricochet at 110% configured player speed. |
+| `CR-110` | Implemented | Render roaming P1 Heaven Glaives as larger, flat luminous flying saucers rather than spherical orbs, and align their collision radius with the wider visible disc. |
+| `CR-111` | Implemented | Make P1 NPCs roam unpredictably during memory positioning before settling into the correct clockwise order. During the rotating beam they cross its safe telegraph, follow a rotating ray with sufficient movement speed, and lead L’ura from her current position toward the sequence’s configured tank spot (raid-plan positions 1 then 2). |
+| `CR-112` | Implemented | Keep the P1 raid active between assigned mechanics with deterministic cast-and-move waypoints around L’ura during interrupts, crystal pickups, Glaives, and reactive Soaks. Active crystal carriers still override roaming to collect their assigned crystal; memory and rotating beams retain their dedicated movement rules. Tracked from [`INBOX-20260727-200417-465bff`](../inbox/INBOX-20260727-200417-465bff.md). |
+| `CR-113` | Implemented | Enlarge P1 Heaven Glaive saucers by another 1.5×, match their lethal contact radius to the new visual, and add three visibly rotating surface markers. Tracked from [`INBOX-20260727-203730-cad7f4`](../inbox/INBOX-20260727-203730-cad7f4.md). |
+| `CR-114` | Implemented | End the lethal rotating-beam window after a 45-degree sweep, cap each tank-led L’ura relocation to a 45-degree arena arc, and keep the NPC raid in a compact formation that crosses during the ground telegraph and follows the moving boss until the beams disappear. Tracked from [`INBOX-20260727-203730-cad7f4`](../inbox/INBOX-20260727-203730-cad7f4.md). |
+| `CR-115` | Implemented | Show each P1 Heaven Glaive during its direction telegraph, spin it rapidly on launch, and increase both its initial and reflected movement by 1.5×. Tracked from [`INBOX-20260727-205141-490baf`](../inbox/INBOX-20260727-205141-490baf.md). |
+| `CR-116` | Implemented | Replace P1’s oversized orb placeholders with the established Intermission/Phase 2 ground-crystal visual. The broader crystal redesign remains deferred. Tracked from [`INBOX-20260727-205349-5a6ef1`](../inbox/INBOX-20260727-205349-5a6ef1.md). |
+| `CR-117` | Implemented | Separate the P1 Interrupts label from its cast count and anchor the 100×100 kick-state tile directly beneath that mechanic counter. |
+| `CR-118` | Implemented | Show the established carried-crystal marker on every collected P1 carrier without adding a protection/safe-zone ring. |
 | `CR-119` | Implemented | Default vertical mouse-camera inversion to enabled on empty browser storage while retaining an existing user’s saved selection. |
-| `CR-120` | Implemented behind localhost preview | Use one 35-yard Starsplinter-style beam for the P1 memory-game verification sweep. |
-| `CR-121` | Implemented behind localhost preview | Keep marked P1 NPCs roaming through most of the memory positioning window and only converge them during the final 1.5 seconds, preventing the correct order from being revealed too early. |
-| `CR-122` | Implemented behind localhost preview | Start the nearest P1 rotating beam five degrees to either side of L’ura instead of ten, leaving a reachable step-through into the follow movement without changing its randomized side. |
-| `CR-123` | Implemented behind localhost preview | Render a crystal carrier’s two P1 reactive Soaks with the same 12-yard yellow disc, ring, occupancy color, and pulse treatment as the Phase 3 opening circles. Tracked from [`INBOX-20260727-211710-9c3ffd`](../inbox/INBOX-20260727-211710-9c3ffd.md). |
-| `CR-124` | Implemented behind localhost preview | Keep all eight P1 center beams rotating clockwise in both sequences. During the safe telegraph, NPCs step across a beam close to L’ura and then follow its continuous rotation instead of crossing the room or resetting with the lethal visual. Tracked from [`INBOX-20260727-213144-84bd36`](../inbox/INBOX-20260727-213144-84bd36.md), [`INBOX-20260727-213826-fc558e`](../inbox/INBOX-20260727-213826-fc558e.md). |
-| `CR-125` | Implemented behind localhost preview | Render P1’s memory verification as one Starsplinter-style sweep from L’ura instead of the former generic beam. Tracked from [`INBOX-20260727-213316-c0c91b`](../inbox/INBOX-20260727-213316-c0c91b.md). |
-| `CR-126` | Implemented behind localhost preview | Let unassigned P1 NPCs detect an approaching Heaven Glaive lane and make a short deterministic sidestep where their current mechanic duty allows it. Tracked from [`INBOX-20260727-213714-dde419`](../inbox/INBOX-20260727-213714-dde419.md). |
-| `CR-127` | Implemented behind localhost preview | During the P1 handoff, move L’ura smoothly from her final outside stop into the Intermission center rather than teleporting at the phase boundary. Tracked from [`INBOX-20260727-214015-ef8287`](../inbox/INBOX-20260727-214015-ef8287.md). |
-| `CR-128` | Implemented behind localhost preview | Add the reviewed P1 player positions and L’ura marker to the bundled I Asgard I raid plan. Use those maintained values when an older saved/shared plan has no P1 data, while preserving explicit P1 assignments. |
+| `CR-120` | Implemented | Use one 35-yard Starsplinter-style beam for the P1 memory-game verification sweep. |
+| `CR-121` | Implemented | Keep marked P1 NPCs roaming through most of the memory positioning window and only converge them during the final 1.5 seconds, preventing the correct order from being revealed too early. |
+| `CR-122` | Implemented | Start the nearest P1 rotating beam five degrees to either side of L’ura instead of ten, leaving a reachable step-through into the follow movement without changing its randomized side. |
+| `CR-123` | Implemented | Render a crystal carrier’s two P1 reactive Soaks with the same 12-yard yellow disc, ring, occupancy color, and pulse treatment as the Phase 3 opening circles. Tracked from [`INBOX-20260727-211710-9c3ffd`](../inbox/INBOX-20260727-211710-9c3ffd.md). |
+| `CR-124` | Implemented | Keep all eight P1 center beams rotating clockwise in both sequences. During the safe telegraph, NPCs step across a beam close to L’ura and then follow its continuous rotation instead of crossing the room or resetting with the lethal visual. Tracked from [`INBOX-20260727-213144-84bd36`](../inbox/INBOX-20260727-213144-84bd36.md), [`INBOX-20260727-213826-fc558e`](../inbox/INBOX-20260727-213826-fc558e.md). |
+| `CR-125` | Implemented | Render P1’s memory verification as one Starsplinter-style sweep from L’ura instead of the former generic beam. Tracked from [`INBOX-20260727-213316-c0c91b`](../inbox/INBOX-20260727-213316-c0c91b.md). |
+| `CR-126` | Implemented | Let unassigned P1 NPCs detect an approaching Heaven Glaive lane and make a short deterministic sidestep where their current mechanic duty allows it. Tracked from [`INBOX-20260727-213714-dde419`](../inbox/INBOX-20260727-213714-dde419.md). |
+| `CR-127` | Implemented | During the P1 handoff, move L’ura smoothly from her final outside stop into the Intermission center rather than teleporting at the phase boundary. Tracked from [`INBOX-20260727-214015-ef8287`](../inbox/INBOX-20260727-214015-ef8287.md). |
+| `CR-128` | Implemented | Add the reviewed P1 player positions and L’ura marker to the bundled I Asgard I raid plan. Use those maintained values when an older saved/shared plan has no P1 data, while preserving explicit P1 assignments. |
 | `CR-129` | Superseded in part by CR-130 | Extend the P1 memory sweep by five yards to 40 yards, darken its blue Starsplinter wedge, add a slim raised laser core, remove each rune as the sweep resolves it, and clamp roaming NPC targets inside the playable P1 arena. CR-130 increases its reach and width after visual review. Tracked from [`INBOX-20260727-214658-47c3b4`](../inbox/INBOX-20260727-214658-47c3b4.md). |
-| `CR-130` | Implemented behind localhost preview | Make the P1 memory verification unmistakably read as a sweeping laser through the rune players: extend it to 55 yards, widen the layered Starsplinter blade by 2.35×, and strengthen its raised core without changing the single-beam rotation. Tracked from [`INBOX-20260727-221905-a3fe33`](../inbox/INBOX-20260727-221905-a3fe33.md). |
+| `CR-130` | Implemented | Make the P1 memory verification unmistakably read as a sweeping laser through the rune players: extend it to 55 yards, widen the layered Starsplinter blade by 2.35×, and strengthen its raised core without changing the single-beam rotation. Tracked from [`INBOX-20260727-221905-a3fe33`](../inbox/INBOX-20260727-221905-a3fe33.md). |
 | `CR-131` | Implemented | Add a concise maintainer and coding-agent handoff covering release gates, mechanic intent, visual-authority rules, raid-plan precedence, audio boundaries, inbox/ticket workflow, WSL/CI validation, and currently open work. |
-| `CR-132` | Implemented behind localhost preview | Resolve an incorrect P1 memory position immediately when the sweep reaches the controlled player’s rune instead of delaying the wipe until the full rotation. Color the failed rune red at contact so the reason remains visually explicit in the frozen wipe scene. This revises the delayed-verdict wording in the P1 encounter contract. Tracked from [`INBOX-20260728-062219-d3659c`](../inbox/INBOX-20260728-062219-d3659c.md). |
-| `CR-133` | Implemented behind localhost preview | Expand P1 Heaven Glaive avoidance so NPCs try to sidestep approaching discs during compatible movement, including rotating-beam follow, while crystal pickup, rune resolution, and required beam crossing remain higher-priority duties. |
+| `CR-132` | Implemented | Resolve an incorrect P1 memory position immediately when the sweep reaches the controlled player’s rune instead of delaying the wipe until the full rotation. Color the failed rune red at contact so the reason remains visually explicit in the frozen wipe scene. This revises the delayed-verdict wording in the P1 encounter contract. Tracked from [`INBOX-20260728-062219-d3659c`](../inbox/INBOX-20260728-062219-d3659c.md). |
+| `CR-133` | Implemented | Expand P1 Heaven Glaive avoidance so NPCs try to sidestep approaching discs during compatible movement, including rotating-beam follow, while crystal pickup, rune resolution, and required beam crossing remain higher-priority duties. |
 | `CR-134` | Implemented | Give the complete encounter floor a subtle readable texture with a low-contrast grid and deterministic crack variation, so movement across the room has visible ground reference without obscuring hazards or planner markings. |
 | `CR-135` | Implemented | Doubled the density of deterministic floor cracks and strengthened the shared grid/crack contrast while retaining the reviewed style and hazard readability. |
-| `CR-136` | Implemented behind localhost preview | Replaced the linear P1 memory-order strip with a centered five-cell positional panel below the cast area, using the original-game reference to make each numbered rune and the controlled player's yellow-outlined required slot easier to read. Tracked from [`INBOX-20260728-072617-f46ae0`](../inbox/INBOX-20260728-072617-f46ae0.md). |
-| `CR-137` | Implemented behind localhost preview | Reflected P1 Heaven Glaives now gain a smooth distance-based speed multiplier from 1.0 near the inner ring to 1.22 near the outer wall, returning long room crossings to the raid sooner without an obvious acceleration jump. |
-| `CR-138` | Implemented behind localhost preview | Moved the P1 memory and kick-order panels out of the central play view into the lower HUD reference area, corrected the default raid pentagram orientation (1 top-right, 5 top-left), and added a persisted game setting that switches between pentagram and the prior positional panel orientation. Tracked from [`INBOX-20260728-074952-709830`](../inbox/INBOX-20260728-074952-709830.md). |
+| `CR-136` | Implemented | Replaced the linear P1 memory-order strip with a centered five-cell positional panel below the cast area, using the original-game reference to make each numbered rune and the controlled player's yellow-outlined required slot easier to read. Tracked from [`INBOX-20260728-072617-f46ae0`](../inbox/INBOX-20260728-072617-f46ae0.md). |
+| `CR-137` | Implemented | Reflected P1 Heaven Glaives now gain a smooth distance-based speed multiplier from 1.0 near the inner ring to 1.22 near the outer wall, returning long room crossings to the raid sooner without an obvious acceleration jump. |
+| `CR-138` | Implemented | Moved the P1 memory and kick-order panels out of the central play view into the lower HUD reference area, corrected the default raid pentagram orientation (1 top-right, 5 top-left), and added a persisted game setting that switches between pentagram and the prior positional panel orientation. Tracked from [`INBOX-20260728-074952-709830`](../inbox/INBOX-20260728-074952-709830.md). |
 | `CR-139` | Implemented | Added and documented the stable `npm run test:e2e:local` repository wrapper, which owns `PLAYWRIGHT_BROWSERS_PATH` and forwards arbitrary Playwright arguments so focused `--grep` expressions no longer change the recurring approval command shape. |
-| `CR-140` | Implemented behind localhost preview | Slowed the P1 interrupt orbs and gave all three their own cones that rotate with them. NPCs interrupt deterministically between 0.5–1.0 seconds, removing their cast bar/cones immediately; the controlled player's green kick window lasts 1.7 seconds, followed by a 0.3-second lethal completion delay. |
+| `CR-140` | Implemented | Slowed the P1 interrupt orbs and gave all three their own cones that rotate with them. NPCs interrupt deterministically between 0.5–1.0 seconds, removing their cast bar/cones immediately; the controlled player's green kick window lasts 1.7 seconds, followed by a 0.3-second lethal completion delay. |
 | `CR-141` | Implemented | Model pickups by a player outside the active P1 crystal trio as recoverable responsibility transfers: log/penalize the pickup, let the player carry and drop it within five seconds, then have the assigned NPC recover the dropped crystal; failing to drop wipes for playing the wrong assignment. A sequence-two carrier touching sequence-one crystals receives only the mistake/point penalty and leaves NPC pickups unchanged. |
 | `CR-142` | Implemented | Treat the three active P1 crystals as one interchangeable pickup trio for a player assigned to that sequence. Picking any crystal in the active trio satisfies the player's duty and is not a wrong-assignment penalty; only missing the player's assigned sequence remains a failure. |
 | `CR-143` | Implemented | Make all active P1 ground crystals remain readable while visually distinguishing the player’s interchangeable pickup trio from NPC pickups with a brighter player-duty glow. |
@@ -321,22 +331,25 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `FR-050` | Backlog | Rework each P2 cross-beam set around four randomly selected non-crystal players. Assign each beam to intercept one continuously counterclockwise-orbiting orb near—not exactly on—the four cross-mark regions; never slow or pause the orbit. NPC assignees aim perfectly. If the controlled player is selected, their beam may naturally hit them while aiming, but missing the assigned orb is a wipe. Crystal carriers are never eligible. |
 | `FR-051` | Backlog | Remove avoidable Node and test-runner warnings when they pollute developer or agent output, beginning with the conflicting `NO_COLOR` and `FORCE_COLOR` environment configuration reported by Playwright. Preserve useful diagnostics rather than hiding actionable warnings globally. |
 | `FR-052` | Implemented | When an attempt ends in a real terminal wipe, lay the controlled player and the complete NPC raid on the ground as a visibly defeated, scattered group. Test-mode “would wipe” mistakes do not trigger the defeated pose. |
-| `FR-053` | Implemented behind localhost preview | Each P1 interrupt cast now synchronizes casts 1–5 with three fast orbs orbiting L’ura, a charging dangerous frontal cone, a two-second boss cast bar, NPC/player interruption feedback, and immediate lethal resolution when the controlled player misses their assigned kick. |
-| `FR-054` | Implemented behind localhost preview | Keep the three P1 cast orbs visible through all five interrupts, removing only each cast's cones/bar on interruption, then animate the persistent orbs down into the three ground crystals used by the active pickup sequence. |
+| `FR-053` | Implemented | Each P1 interrupt cast now synchronizes casts 1–5 with three fast orbs orbiting L’ura, a charging dangerous frontal cone, a two-second boss cast bar, NPC/player interruption feedback, and immediate lethal resolution when the controlled player misses their assigned kick. |
+| `FR-054` | Implemented | Keep the three P1 cast orbs visible through all five interrupts, removing only each cast's cones/bar on interruption, then animate the persistent orbs down into the three ground crystals used by the active pickup sequence. |
 | `FR-055` | Implemented | Add a persistent Raidlead voice selector and preview to the TTS settings, list only English speech voices installed in the current browser and operating system, and prefer Google US English by default when available. |
 | `FR-056` | Implemented | Add an original, high-contrast favicon for the trainer that remains recognizable at browser-tab size. |
 | `SPEC-001` | Implemented | Define the stable ticket lifecycle: assign an ID, record intent, add focused regression coverage, validate, and commit. |
 | `SPEC-002` | Implemented | Define the creator business card’s stable content, readability, compact layout, and external-link behavior. |
 | `SPEC-003` | Implemented | Define the P3-to-P4 north gather, shared knockup origin, and phase-local HUD boundary. |
 | `SPEC-004` | Implemented | Define completion achievement inputs and the Superhuman Flawless requirements. |
-| `SPEC-005` | Implemented | Define background audio as a feature-flagged component with no controls or playback while disabled. |
+| `SPEC-005` | Implemented | Define independent persisted Music, encounter Sounds, and Raidlead/TTS channels, the reviewed live-sound allowlist, and source-level removal behavior. |
 | `SPEC-006` | Implemented | Define Phase 4 movement parity and the 21-second Starsplinter/Heaven & Hell cadence. |
-| `SPEC-007` | Implemented | Define the setup-page hierarchy and responsive grouping for game, input, HUD, sharing, and phase planning. Every top-level topic uses the same eyebrow, title, and helper-text pattern: Game settings / Practice configuration, Keyboard settings / Keyboard & mouse controls, Interface / HUD positions, Raid planning / Layouts and sharing, followed by an individually titled section for every phase map. The top setup menu links only to the four top-level topics and scrolls without replacing a shared raid-plan hash. |
+| `SPEC-007` | Implemented | Define the six-tab setup shell, permanent combat actions, HUD action strip, raid-plan headings, and shared-hash navigation behavior. |
 | `SPEC-008` | Implemented | Define Phase 3 ground-Soak light coverage: crystal NPCs support from outside the puddle, coverage takes priority over ideal separation, and non-crystal players perform the Soak. |
-| `SPEC-009` | Implemented | Define the independent Music, encounter Sounds, and TTS controls plus the phase-by-phase raid-lead and mechanic cue catalog before sound effects are sourced. See [`audio-cues.md`](audio-cues.md). |
-| `SPEC-010` | Implemented | Replace repeatable difficulty/duty achievement variants with meaningful canonical badges grouped into Foundations, Precision, Tools of the Trade, and Feats of Movement; allow related badges to unlock together, retain one future P1 teaser, and render at most two badge cards per row. |
+| `SPEC-009` | Implemented | Define difficulty-aware raid-lead calls, direct-entry countdowns, seamless-transition speech, pause behavior, and the authoritative cue catalogue. See [`audio-cues.md`](audio-cues.md). |
+| `SPEC-010` | Implemented | Define the shared canonical achievement catalogue, non-repeating unlock presentation, full-run streak and direct-phase rules, local/server verification boundary, clusters, and layout. |
 | `SPEC-011` | Implemented | Define the optional `api.asgard.website` Battle.net-authenticated highscore and achievement service, including server-issued attempts, verified character selection, privacy/deletion, SQLite storage and backups, versioned leaderboards, VPS deployment, and deferred guild tracking. See [`api-highscores.md`](api-highscores.md). |
+| `SPEC-012` | Implemented | Define Phase 3 landing-Soak occupancy, health, crystal-support, and local Stars-lattice rules. |
+| `SPEC-013` | Implemented | Define the Phase 2 center pull, personal-circle spread, crystal recovery, and transition boundary. |
 | `SPEC-014` | Implemented | Require tickets to be resolved with tests and current documentation, maintain `CHANGELOG.md` and SemVer through every release, and prohibit leaderboard-season changes without explicit user approval. Ranking-impacting changes must trigger a reminder and season decision before release. |
+| `SPEC-015` | Implemented | Define the shipped trainer/service boundary, reconcile the feature inventory and API operations with v0.6, and group every remaining request into maintained delivery milestones with encounter mechanics prioritized first. |
 | `BUG-008` | Implemented | Remove the premature 20-second P3 Soak failure; unfinished pools are now checked only when Big Boom resolves at 40 seconds. |
 | `BUG-009` | Implemented | Enforce P3 Stars orb spacing and isolate the southwest/southeast fields with clearance from the room divider. |
 | `BUG-010` | Implemented | Use the NPC protection bubble when the player's crystal duty belongs to the other Dark Archangel set; only consume the player's crystal on its assigned set. |
@@ -401,32 +414,32 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-069` | Implemented | Keep the third marked P4 Starsplinter NPC stacked until the first Starsplinter detonates. Its mark and explosion retain the original global timing, leaving a shorter but sufficient movement window and preventing it from blocking the first player’s escape beam. |
 | `BUG-070` | Implemented | Keep P4’s second marked NPC stacked until the first Starsplinter has visibly detonated, then accelerate its short move into the right-side position without changing its own explosion timer. The same post-detonation guard remains on the third marked NPC from BUG-069; tracked from [`INBOX-20260727-150659-22eff2`](../inbox/INBOX-20260727-150659-22eff2.md). |
 | `BUG-071` | Implemented | Make the visible P4 front-tank cone authoritative: every add intersecting its 30-yard, 90-degree area is permanently destroyed on any active frame. Rendering and gameplay now share the same collision rule instead of separately hiding selected group-targeted adds; tracked from [`INBOX-20260727-151636-f9f0f2`](../inbox/INBOX-20260727-151636-f9f0f2.md). |
-| `BUG-072` | Implemented behind localhost preview | Remove the invisible inner-annulus projection from P1 and Intermission player assignments. Their visual planner rings no longer prevent placing or persisting a marker in the middle area. |
-| `BUG-073` | Implemented behind localhost preview | Anchor the P1 memory sweep and first displayed rune to the ray pointing outward from L’ura. Place the remaining four runes clockwise from that ray so the rendered positions match the order checked by gameplay; tracked from [`INBOX-20260727-183629-019e73`](../inbox/INBOX-20260727-183629-019e73.md). |
-| `BUG-074` | Implemented behind localhost preview | Keep one uninterrupted P1 beam rotation clock across its two-second safe telegraph and lethal activation. Render only a low ground guide while safe, then replace it with the full laser without resetting its angle; gameplay collision and NPC following consume the same continuous time. |
-| `BUG-075` | Implemented behind localhost preview | Use the configured P1 boss marker as the shared origin for rendered rune slots, the visible sweep, and gameplay validation; resolve correct and incorrect rune order after the sweep so neither false wipes nor missed wrong-order wipes can result from two different boss locations. Tracked from [`INBOX-20260727-205141-490baf`](../inbox/INBOX-20260727-205141-490baf.md). |
-| `BUG-076` | Implemented behind localhost preview | Drive the visible P1 boss and NPC beam-follow movement from the configured opening and guarantee one 45-degree relocation even when the tank target shares the opening angle. Tracked from [`INBOX-20260727-205459-ee34c7`](../inbox/INBOX-20260727-205459-ee34c7.md). |
-| `BUG-077` | Implemented behind localhost preview | Treat a Heaven Glaive collision as contact entry rather than a once-per-run flag: continuous overlap stays deduplicated, but exiting and re-entering the same roaming disc triggers another wipe. |
-| `BUG-078` | Implemented behind localhost preview | Check the full angle swept by every lethal P1 rotating beam between simulation frames. A beam that catches a player following behind it now reliably registers the hit even when its narrow visual ray moved across the player between frame samples. |
-| `BUG-079` | Implemented behind localhost preview | Branch a P1 rotating-beam hit by actual collected-crystal ownership: a non-carrier receives only a point penalty and remains in the beam sequence, while a carrier starts the two reactive Soaks. Tracked from [`INBOX-20260727-211710-9c3ffd`](../inbox/INBOX-20260727-211710-9c3ffd.md). |
-| `BUG-080` | Implemented behind localhost preview | Replace P1 NPCs’ oversized static orbit with compact boss-relative roaming, spawn each active crystal trio in a readable lane between L’ura and the center bubble, and keep rotating-beam movement anchored to the real center ray. Tracked from [`INBOX-20260727-213144-84bd36`](../inbox/INBOX-20260727-213144-84bd36.md), [`INBOX-20260727-213826-fc558e`](../inbox/INBOX-20260727-213826-fc558e.md). |
-| `BUG-081` | Implemented behind localhost preview | Preserve the first 60-second Heaven Glaive set when sequence two launches its second set, capped at the intended two simultaneous sets. Browser coverage verifies the live set count and continuing simulation. Tracked from [`INBOX-20260727-213447-7788b3`](../inbox/INBOX-20260727-213447-7788b3.md). |
-| `BUG-082` | Implemented behind localhost preview | A non-carrier hit by a P1 rotating beam now records only its point penalty and continues the animation tick; only a crystal carrier branches into reactive Soaks. Tracked from [`INBOX-20260727-213851-b74802`](../inbox/INBOX-20260727-213851-b74802.md). |
-| `BUG-083` | Implemented behind localhost preview | Reverse the P1 NPC center-beam crossing side: start behind the ray, cross it counterclockwise during the safe telegraph, then remain just ahead of and follow the continuously rotating beam instead of trailing directly behind it. Tracked from [`INBOX-20260727-221948-3b6da6`](../inbox/INBOX-20260727-221948-3b6da6.md). |
-| `BUG-084` | Implemented behind localhost preview | Validate the controlled player when the memory sweep reaches their rune, preserve that contact verdict until the sweep finishes, and remove swept runes from the same authoritative threshold. A correct earlier position can no longer become a late false wipe after the player moves, and an earlier `+` cannot remain visible after a later rune resolves. Tracked from [`INBOX-20260727-222452-2e7d45`](../inbox/INBOX-20260727-222452-2e7d45.md). |
+| `BUG-072` | Implemented | Remove the invisible inner-annulus projection from P1 and Intermission player assignments. Their visual planner rings no longer prevent placing or persisting a marker in the middle area. |
+| `BUG-073` | Implemented | Anchor the P1 memory sweep and first displayed rune to the ray pointing outward from L’ura. Place the remaining four runes clockwise from that ray so the rendered positions match the order checked by gameplay; tracked from [`INBOX-20260727-183629-019e73`](../inbox/INBOX-20260727-183629-019e73.md). |
+| `BUG-074` | Implemented | Keep one uninterrupted P1 beam rotation clock across its two-second safe telegraph and lethal activation. Render only a low ground guide while safe, then replace it with the full laser without resetting its angle; gameplay collision and NPC following consume the same continuous time. |
+| `BUG-075` | Implemented | Use the configured P1 boss marker as the shared origin for rendered rune slots, the visible sweep, and gameplay validation; resolve correct and incorrect rune order after the sweep so neither false wipes nor missed wrong-order wipes can result from two different boss locations. Tracked from [`INBOX-20260727-205141-490baf`](../inbox/INBOX-20260727-205141-490baf.md). |
+| `BUG-076` | Implemented | Drive the visible P1 boss and NPC beam-follow movement from the configured opening and guarantee one 45-degree relocation even when the tank target shares the opening angle. Tracked from [`INBOX-20260727-205459-ee34c7`](../inbox/INBOX-20260727-205459-ee34c7.md). |
+| `BUG-077` | Implemented | Treat a Heaven Glaive collision as contact entry rather than a once-per-run flag: continuous overlap stays deduplicated, but exiting and re-entering the same roaming disc triggers another wipe. |
+| `BUG-078` | Implemented | Check the full angle swept by every lethal P1 rotating beam between simulation frames. A beam that catches a player following behind it now reliably registers the hit even when its narrow visual ray moved across the player between frame samples. |
+| `BUG-079` | Implemented | Branch a P1 rotating-beam hit by actual collected-crystal ownership: a non-carrier receives only a point penalty and remains in the beam sequence, while a carrier starts the two reactive Soaks. Tracked from [`INBOX-20260727-211710-9c3ffd`](../inbox/INBOX-20260727-211710-9c3ffd.md). |
+| `BUG-080` | Implemented | Replace P1 NPCs’ oversized static orbit with compact boss-relative roaming, spawn each active crystal trio in a readable lane between L’ura and the center bubble, and keep rotating-beam movement anchored to the real center ray. Tracked from [`INBOX-20260727-213144-84bd36`](../inbox/INBOX-20260727-213144-84bd36.md), [`INBOX-20260727-213826-fc558e`](../inbox/INBOX-20260727-213826-fc558e.md). |
+| `BUG-081` | Implemented | Preserve the first 60-second Heaven Glaive set when sequence two launches its second set, capped at the intended two simultaneous sets. Browser coverage verifies the live set count and continuing simulation. Tracked from [`INBOX-20260727-213447-7788b3`](../inbox/INBOX-20260727-213447-7788b3.md). |
+| `BUG-082` | Implemented | A non-carrier hit by a P1 rotating beam now records only its point penalty and continues the animation tick; only a crystal carrier branches into reactive Soaks. Tracked from [`INBOX-20260727-213851-b74802`](../inbox/INBOX-20260727-213851-b74802.md). |
+| `BUG-083` | Implemented | Reverse the P1 NPC center-beam crossing side: start behind the ray, cross it counterclockwise during the safe telegraph, then remain just ahead of and follow the continuously rotating beam instead of trailing directly behind it. Tracked from [`INBOX-20260727-221948-3b6da6`](../inbox/INBOX-20260727-221948-3b6da6.md). |
+| `BUG-084` | Implemented | Validate the controlled player when the memory sweep reaches their rune, preserve that contact verdict until the sweep finishes, and remove swept runes from the same authoritative threshold. A correct earlier position can no longer become a late false wipe after the player moves, and an earlier `+` cannot remain visible after a later rune resolves. Tracked from [`INBOX-20260727-222452-2e7d45`](../inbox/INBOX-20260727-222452-2e7d45.md). |
 | `BUG-085` | Implemented | Rename the achievement UI component module to avoid its case-only filename collision with the achievement data module, restoring local builds and tests on case-folding filesystems without changing achievement behavior. |
-| `BUG-086` | Implemented behind localhost preview | Start the P1 rotating-beam opening five degrees farther from L’ura so it cannot sweep the stacked raid before the player has to react. NPCs gather near the active crystal lane, cross the safe telegraph promptly, and follow that ray into the next section. Tracked from [`INBOX-20260728-062714-9305e6`](../inbox/INBOX-20260728-062714-9305e6.md). |
+| `BUG-086` | Implemented | Start the P1 rotating-beam opening five degrees farther from L’ura so it cannot sweep the stacked raid before the player has to react. NPCs gather near the active crystal lane, cross the safe telegraph promptly, and follow that ray into the next section. Tracked from [`INBOX-20260728-062714-9305e6`](../inbox/INBOX-20260728-062714-9305e6.md). |
 | `BUG-087` | Implemented | Made the grid/crack floor texture explicit in Phase 2 and darkened the shared textured floor treatment across the other phases without reducing hazard contrast. |
 | `BUG-088` | Implemented | After the direct-entry/full-pull Phase 1 countdown ends, the encounter now holds a four-second live pull window before the first interrupt cast. The complete mechanic order remains intact and all later P1 timings shift naturally. |
 | `BUG-089` | Implemented | Moved the first P1 center rotating-beam ray to the referenced left/counterclockwise side, correcting BUG-086's signed offset. After memory resolves, NPCs receive four seconds to run behind that reference near the player, then cross it left during the safe telegraph and follow it. Tracked from [`INBOX-20260728-071107-856663`](../inbox/INBOX-20260728-071107-856663.md). |
-| `BUG-090` | Implemented behind localhost preview | P1 NPCs now naturally roam behind L’ura during the hidden post-memory window without revealing the beam angle. Once the beams appear, they face and fight the boss while remaining safely centered between adjacent rays with visible clearance, then return to normal positioning after the beams disappear. Tracked from [`INBOX-20260728-072708-4e9489`](../inbox/INBOX-20260728-072708-4e9489.md). |
-| `BUG-091` | Implemented behind localhost preview | Moved the first P1 rotating-beam ray another ten degrees left/counterclockwise, from a seven-degree to a seventeen-degree signed offset, so the player must judge and execute a more meaningful crossing after the hidden staging window. |
-| `BUG-092` | Implemented behind localhost preview | Each P1 Heaven Glaive set now despawns when its memory game ends, before the next sequence launches a fresh set, instead of carrying old discs into the rotating-beam section and later sequence. |
-| `BUG-093` | Implemented behind localhost preview | P1 Heaven Glaive contact now uses the complete 11.92-yard visible saucer boundary plus the controlled player's 3.5-yard body radius, so visually touching the disc edge reliably triggers the wipe condition. |
-| `BUG-094` | Implemented behind localhost preview | During the safe P1 rotating-beam telegraph, NPCs now cross left through the reference ray before spreading with safe clearance between adjacent beams and L’ura; their centered safe-lane follow remains intact afterward. |
-| `BUG-095` | Implemented behind localhost preview | The P1 memory sweep now resolves from the live angular order in which the beam crosses players, not proximity to exact prescribed rune coordinates. A controlled player correctly placed immediately before the next rune player passes even with a different radial distance. Tracked from [`INBOX-20260728-081841-052412`](../inbox/INBOX-20260728-081841-052412.md). |
-| `BUG-096` | Implemented behind localhost preview | P1 NPCs now move to the controlled player's side of the opening rotating beam before following, rather than briefly running in front of the ray on the opposite side. Tracked from [`INBOX-20260728-082134-af06c6`](../inbox/INBOX-20260728-082134-af06c6.md). |
-| `BUG-097` | Implemented behind localhost preview | Stop P1 from falling through to the smaller Intermission annulus check, which incorrectly logs “Entered the void zone” for valid movement beyond the Intermission outer radius. Validate only the real 102–260 P1 annulus during Phase 1. |
+| `BUG-090` | Implemented | P1 NPCs now naturally roam behind L’ura during the hidden post-memory window without revealing the beam angle. Once the beams appear, they face and fight the boss while remaining safely centered between adjacent rays with visible clearance, then return to normal positioning after the beams disappear. Tracked from [`INBOX-20260728-072708-4e9489`](../inbox/INBOX-20260728-072708-4e9489.md). |
+| `BUG-091` | Implemented | Moved the first P1 rotating-beam ray another ten degrees left/counterclockwise, from a seven-degree to a seventeen-degree signed offset, so the player must judge and execute a more meaningful crossing after the hidden staging window. |
+| `BUG-092` | Implemented | Each P1 Heaven Glaive set now despawns when its memory game ends, before the next sequence launches a fresh set, instead of carrying old discs into the rotating-beam section and later sequence. |
+| `BUG-093` | Implemented | P1 Heaven Glaive contact now uses the complete 11.92-yard visible saucer boundary plus the controlled player's 3.5-yard body radius, so visually touching the disc edge reliably triggers the wipe condition. |
+| `BUG-094` | Implemented | During the safe P1 rotating-beam telegraph, NPCs now cross left through the reference ray before spreading with safe clearance between adjacent beams and L’ura; their centered safe-lane follow remains intact afterward. |
+| `BUG-095` | Implemented | The P1 memory sweep now resolves from the live angular order in which the beam crosses players, not proximity to exact prescribed rune coordinates. A controlled player correctly placed immediately before the next rune player passes even with a different radial distance. Tracked from [`INBOX-20260728-081841-052412`](../inbox/INBOX-20260728-081841-052412.md). |
+| `BUG-096` | Implemented | P1 NPCs now move to the controlled player's side of the opening rotating beam before following, rather than briefly running in front of the ray on the opposite side. Tracked from [`INBOX-20260728-082134-af06c6`](../inbox/INBOX-20260728-082134-af06c6.md). |
+| `BUG-097` | Implemented | Stop P1 from falling through to the smaller Intermission annulus check, which incorrectly logs “Entered the void zone” for valid movement beyond the Intermission outer radius. Validate only the real 102–260 P1 annulus during Phase 1. |
 | `BUG-098` | Implemented | During the P1-to-Intermission arena collapse, stop visibly sliding L’ura across the room. Warp her directly to the center with a short disappear/reappear treatment while the raid performs the handoff. |
 | `BUG-099` | Implemented | Keep the Main Ability browser regression from missing its one-second castbar on software-rendered release runs by pausing immediately after cast start for visual assertions, then resuming the unchanged live mechanic. |
 | `BUG-100` | Implemented | Stabilize the GitHub opening/P2 browser shard without changing encounter timing: give only the two long Phase 2 resolution assertions enough time for the free runner’s capped software-rendered simulation, while retaining the shard’s no-retry policy. |
@@ -445,68 +458,66 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 
 ### Application and controls
 
-- Player-focused 3D arena rendering with a high, behind-the-player camera.
-- Left-drag changes the view without changing facing. Right-drag changes both
-  view and facing immediately. The mouse wheel zooms within configured limits.
-- Camera settings persist between attempts.
-- Camera-relative `W/A/S/D` movement, a player-only jump, and pause/resume.
-  Timers and actors stop while paused.
-- Rebindable movement, jump, crystal, pause, health potion, shield, and main
-  ability controls.
-- Adjustable movement speed, global simulation timing, and optional opening
-  movement bonus.
-- Full-window game layout with compact in-arena score, mistake log, zoom/status
-  bar, and draggable HUD elements.
-- Test, Easy, Normal, and Hard modes. Test mode records failures without
-  stopping the simulation.
-- Optional ambience with track preview, mute, volume, persistence, and Pixabay
-  attribution.
+- Released direct practice for Phase 1, Intermission, Phase 2, Phase 3, and
+  Phase 4, plus the complete sequential encounter.
+- Test, Easy, Normal, and Hard difficulties with difficulty-specific coaching
+  and failure handling.
+- Player-focused Three.js rendering, camera-relative movement, jump, independent
+  view/facing controls, zoom, Q/E turning, configurable bindings, global
+  simulation speed, and complete pause/resume.
+- A persistent draggable HUD with score, health, cast/mechanic counters, exact
+  failure review, optional action buttons, build information, and deployed
+  version detection.
+- Permanent Main ability, potion, and shield actions. Potion and shield each
+  refill once per phase; optional cosmetic projectiles use class-themed forms.
+- Independent opt-in music, encounter-sound, and Raidlead/TTS channels. Only
+  Main ability release is enabled in the live encounter-sound mix; Phase 4
+  directions use timing-stable prerecorded calls.
+- Six setup tabs: Game settings, Keys & Mouse, HUD, Raid plan, Leaderboard, and
+  Profile.
 
 ### Raid planning and sharing
 
-- Twenty editable players with names, World of Warcraft class colors, and
-  crystal assignments.
-- Drag-and-drop Intermission, Phase 2 beam-soak, Phase 2 spread, and Phase 3
-  initial-position plans.
-- Mechanic-sized Phase 2 personal-circle overlays in the planner.
-- Four editable Intermission entry slots and orientation-aware plan rotation.
-- Phase 3 group lasso/multi-select movement and two movable boss positions.
-- Local persistence for player profiles, plans, keybindings, camera, sound, and
-  HUD placement.
-- Shareable `#raidplan=` links containing names, classes, crystal duties, start
-  slots, and all phase assignments.
+- Twenty editable named/class-colored players with dedicated Phase 1,
+  Intermission, Phase 2 Soak/spread, and Phase 3 maps.
+- Six phase-specific crystal assignments for Phase 1, Intermission, Phase 2,
+  and Phase 3; movable Phase 1/Phase 3 bosses and editable start slots.
+- Drag, lasso, and multi-place editing without invisible planner barriers.
+- Complete `#raidplan=` sharing and immediate browser persistence. A valid hash
+  wins over browser-local data; empty storage loads the bundled maintained
+  I Asgard I plan.
+
+### Phase 1
+
+- A wider annular arena with outside, plan-positioned L’ura and two complete
+  demonstrated sequences.
+- Five assigned interrupts with readable wait/next/kick states and a
+  configurable Interrupt action.
+- Two three-crystal pickup sets, visible carrier state, wrong-pickup recovery,
+  and pickup deadlines.
+- Ricocheting Heaven Glaives, the five-rune `T/X/O/V/+` memory sweep, eight
+  continuously rotating beams, crystal-only reactive yellow Soaks, and a
+  24-second Intermission handoff.
+- The detailed authoritative contract is
+  [`p1-encounter.md`](p1-encounter.md).
 
 ### Intermission
 
-- Ten-second positioning opener with rotated assignments and optional opening
-  speed bonus.
-- Six alternating boss-beam and Starsplinter sets based on the supplied event
-  timings.
-- Large randomized boss beams, narrow player-centered Starsplinter rays, void
-  boundaries, world markers, and mobile NPC players.
-- Crystal carriers drop a visible ground crystal, move clear of it, and recover
-  it within the displayed pickup window.
-- Player and NPC crystal interactions, collision penalties, crystal wipes, and
-  a final recovery window before the Phase 2 transition.
-- Starsplinter collisions with players and crystals are scored from the
-  player's perspective.
+- A measured 24-second assignment opener with a permanent 40% first-five-second
+  movement boost.
+- Six alternating boss-beam and six-ray Starsplinter sets with rendered-position
+  collision, void boundaries, mobile NPCs, and phase-plan assignments.
+- Crystal drop, movement, collision, recovery, and final Phase 2 handoff.
 
 ### Phase 2
 
-- Direct entry or continuous transition from Intermission.
-- Twelve orbiting orbs arranged as three groups of four.
-- Boss cross-beams destroy the assigned orbs; struck orbs glow, continue
-  orbiting, charge for one second, and return to the center over one second.
-- Beam countdowns, crystal drop/recovery, orb-return collision handling, and
-  crystal safety checks.
-- Increasing center pull followed by large blue personal circles and a
-  dedicated spread assignment.
-- Three complete cycles with walking NPC transitions and a successful flight
-  into Phase 3.
-
-The first cycle has five seconds of assignment positioning before its beam.
-Each cross-beam cycle then follows this base timeline; the global timing
-multiplier scales the complete simulation uniformly.
+- Three 30-second cycles using one continuous roster of twelve
+  counterclockwise-orbiting orbs.
+- Seven-second cross beams convert four struck orbs to yellow; those same orbs
+  continue orbiting, glow, and return to L’ura.
+- Crystal drop/recovery, a five-second increasing center pull, large blue
+  personal circles, a dedicated spread plan, roaming NPC downtime, and the
+  outward Phase 3 transition.
 
 | Time from beam start | Event |
 | ---: | --- |
@@ -521,64 +532,68 @@ multiplier scales the complete simulation uniformly.
 
 ### Phase 3
 
-- Direct entry or outward flight from Phase 2 into split three-player landing
-  groups.
-- Two yellow landing soaks per group, including crystal-player responsibility
-  and difficulty-dependent NPC help.
-- Two half-raids, a visible passable divider, a lethal center dome, and two
-  editable boss positions.
-- Persistent yellow carrier light zones with player health loss outside and
-  recovery inside.
-- Three non-overlapping dark soaks around each boss. Their progress scales with
-  actual occupancy and must finish before the boom.
-- Repeating irregular Stars lattices with local, non-crossing connections and
-  spacing designed to cover the active player area.
-- Ordered T/X/O memory matching with a preview panel, immediate correct-pair
-  resolution, wrong-contact penalties, and NPC partner behavior.
-- Dark Archangel group protection created by the assigned crystal carrier,
-  followed by a lethal consumed sector and clockwise movement.
-- Two playable sectors followed by the north regroup and Phase 4 transition.
+- Plan-derived half-raids and three-player landing groups with randomized
+  paired yellow Soaks and assigned-side scoring.
+- Three crystal protection lights per side, health/point pressure outside
+  safety, occupancy-scaled ground Soaks, NPC coverage constraints, local
+  non-crossing Stars lattices, and ordered `T/X/O` rune pairs.
+- Dark Archangel crystal consumption, sector movement, two playable sequences,
+  shared pre-Phase-4 boss health/Veil Protection, and one exact north gather
+  into Phase 4.
 
 ### Phase 4
 
-- Direct Test/Easy/Normal/Hard entry with a standard countdown, or an immediate
-  transition after the Phase 3 north regroup.
-- Opening knock-up, four 21-second quarters, moving yellow safe area, Heaven &
-  Hell sector consumption, and an 88-second boss-health timeline.
-- Three sequential Starsplinters in a left/right/left formation. Every quarter
-  randomizes the player's slot and straight/angled ray pattern.
-- Separate detonation timers, NPC return movement, and lethal group hits.
-- A continuous, separated stream of floor fragments from the inner ring toward
-  the active group, with collision penalties.
-- A front soak/tank NPC with a recurring cone and persistent close-range add
-  cleanup.
-- Final completion after the fourth Starsplinter set when no room remains.
+- An opening knockup and four counterclockwise 21-second protected quarters,
+  with health/point pressure outside the moving yellow zone and an independent
+  refreshed L’ura health pool.
+- Three randomized, separately detonating Starsplinters per quarter on the
+  exact `Left`, `Right`, `Left`, `Move` cadence, using visible actor positions
+  and all six rays for collision.
+- A continuous separated add stream, autonomous front-tank cone/nearby cleanup,
+  Heaven & Hell sector consumption, fourth-set completion, and an early-kill
+  achievement.
 
-### Scoring, results, and resilience
+### Scoring, results, and achievements
 
-- Points, exact mistake reasons, timestamps, phase counters, crystal timers,
-  cast bars, health bars, and wipe explanations.
-- Non-terminal failure recording in Test, a recoverable first wipe in
-  Easy/Normal, and immediate terminal behavior in Hard.
-- Always-available per-phase health potion and shield charges plus one-second
-  main-ability gameplay.
-- Per-phase score and time tracking.
-- Git-revision build identification, a tracked GitHub changelog, and a
-  five-minute deployed-version check with an explicit reload prompt.
-- A full-run “L'ura Movement Master” completion card with total score, time,
-  mistakes, attempt number, optional challenges, and phase breakdown.
-- Copyable result text and a generated result image for guild sharing.
+- Per-phase score/time tracking, exact mistake reasons, health and recovery
+  pressure, Test-mode non-blocking failures, recoverable assisted-mode wipes,
+  and terminal Hard failures.
+- `L’URA CONQUERED` / `L’URA CONQUERED FLAWLESSLY` results with phase
+  breakdown, attempt information, action use, copyable text, and a shareable
+  image.
+- A browser-local canonical 28-achievement ledger with immutable first-earned
+  timestamps, newly-earned-only popups, phase/flawless/streak/duty milestones,
+  and a shareable collection image.
 - A Test-mode-only, clearly watermarked final-screen preview shortcut.
+
+### Optional online service
+
+- Complete anonymous offline play plus optional Battle.net EU/US login,
+  verified character selection/refresh, character/alias/anonymous privacy,
+  logout, and complete account deletion.
+- One-use 90-minute attempts bound to character, difficulty, duty, phase scope,
+  trainer version/build, configuration fingerprint, and nonce. The server
+  validates telemetry and recomputes accepted scores.
+- Four Normal/Hard × crystal/non-crystal run boards, an account-wide
+  Achievement Hall, Global ranking, search, hidden rank-one achievements,
+  opaque public profiles, and current/personal standings.
+- A privacy-aware activity stream for wipes, accepted full completions, and
+  newly earned achievements, including generic identity-free Normal/Hard wipes.
+- The complete contract, known correctness gaps, storage, privacy, and
+  operations are documented in [`api-highscores.md`](api-highscores.md).
 
 ### Quality and delivery
 
 - Unit tests for mechanic calculations and component tests for core UI flows.
-- Playwright browser coverage for arena entry and important phase behavior.
-- Production build validation through Vite.
-- GitHub Pages deployment workflow.
-- MIT license, unofficial fan-project notice, creator card, Twitch/BattleTag
-  and Twitch contact details, optional Solana support link, and Pixabay music
-  credits.
+- Sharded Playwright browser coverage for arena, setup, ranking, and phase
+  behavior; Vite production build validation.
+- GitHub Pages frontend deployment and an independent tested, atomic VPS API
+  release with Caddy/TLS health verification and rollback.
+- SQLite WAL storage, forward migrations, daily consistent VPS-local backups,
+  14-day rotation, and cascading account deletion. Off-VPS replication remains
+  operator-managed.
+- MIT license, unofficial fan-project notice, creator/recruitment links, and
+  licensed music attribution.
 
 ## Historical issue groups
 
@@ -611,11 +626,10 @@ assets:
 
 ## Deferred ideas
 
-- `FR-022`: Player-controlled Phase 4 tank cone.
-- `FR-023`: Random player/NPC ownership of the Phase 4 protection zone.
-- `FR-026`: Laser, Starsplinter, and orb sound effects.
-- Per-phase potion/shield refills, Hard-mode recovery requirements, and
-  certificate scoring for successful low-health responses.
+- Maintained open requests and their delivery order live in
+  [`milestones.md`](milestones.md); do not duplicate their status here.
+- The wider encounter-SFX library remains intentionally soundboard-only after
+  `CR-099`. Reopening the live mix requires a new explicit request.
 - Verifiable completion links. A trustworthy proof cannot be created with a
   secret embedded in a static GitHub Pages client; it would require a backend
   or external signing service.

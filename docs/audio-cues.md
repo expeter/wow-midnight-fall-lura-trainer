@@ -2,10 +2,12 @@
 
 Status: `SPEC-009` audio reference. Music is available and defaults to off.
 Browser TTS implements the calls below as an opt-in helper. Encounter sounds
-remain disabled until suitable short files are approved through the persistent
-20-row review table in `tools/voice-soundboard/`. Its second audition pass
-provides mechanic-length dark-arcane variants for the 14 retained effects and
-explicitly preserves six reviewed cues as silent.
+are independently opt-in; the production mix currently enables only the Main
+ability release. Other effects remain disabled until suitable short files are
+approved through the persistent 20-row review table in
+`tools/voice-soundboard/`. Its second audition pass provides mechanic-length
+dark-arcane variants for the retained effects and preserves reviewed cues as
+silent.
 
 Keep the channels independent:
 

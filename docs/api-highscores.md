@@ -3,12 +3,13 @@
 Ticket: `SPEC-011`
 
 This specification defines the backend boundary for `FR-027`. It is a contract
-for later implementation, not authorization to deploy a service or change the
-VPS. The static trainer remains fully playable without an account or API.
+for the deployed optional service at `https://api.asgard.website`. It does not
+authorize an infrastructure or leaderboard-season change. The static trainer
+remains fully playable without an account or API.
 
 ## Product boundary
 
-Milestone 1 adds an optional service at `https://api.asgard.website` for:
+The deployed service provides:
 
 - Battle.net login;
 - selecting one verified World of Warcraft character;
@@ -17,6 +18,10 @@ Milestone 1 adds an optional service at `https://api.asgard.website` for:
 - publishing searchable, versioned leaderboards;
 - associating server-confirmed achievements with an account and character;
 - publishing an account-wide lifetime Achievement Hall;
+- combining lifetime achievement points and current-season run scores in a
+  Global ranking;
+- privacy-aware run, wipe, completion, and achievement activity;
+- opaque public trainer profiles with achievements and standing summaries;
 - showing the selected character's current guild when privacy permits;
 - logout, visibility controls, and complete account deletion.
 
@@ -59,14 +64,14 @@ Supported public identity modes:
 | Mode | Leaderboard identity | Character/realm | Guild |
 | --- | --- | --- | --- |
 | `anonymous` | `Anonymous` | Hidden | Hidden |
-| `alias` | Trainer player-name override, falling back to `Anonymous` | Hidden | Optional |
+| `alias` | Trainer player-name override, falling back to `Anonymous` | Hidden | Hidden |
 | `character` | Verified character name | Visible | Optional |
 
-Guild display is a separate opt-in setting and is always suppressed in
-`anonymous` mode. The server stores the verified character even when its
-public representation is anonymous. Search results must respect visibility:
-hidden character names, realms, account identifiers, and guilds are never
-searchable through public endpoints.
+Guild display belongs only to published character identity and is always
+suppressed in `anonymous` and `alias` modes. The server stores the verified
+character even when its public representation is anonymous or an alias. Search
+results must respect visibility: hidden character names, realms, account
+identifiers, and guilds are never searchable through public endpoints.
 
 The trainer may continue to use the player-name override for easter eggs even
 when a verified character is selected. Selecting a character must not replace
@@ -181,18 +186,22 @@ Rows sort by:
 2. completion duration ascending;
 3. earliest accepted completion ascending.
 
-The API records the trainer semantic version and exact build identifier with
-every attempt and result. Public queries can select:
+The API records the trainer semantic version, exact build identifier, and
+explicit leaderboard season with every attempt and result. Public queries can
+select:
 
-- current version/build policy;
-- a specific version;
-- all compatible versions;
-- historical/legacy results.
+- `version=current`, which resolves the configured current leaderboard season;
+- a specific trainer version, which returns that exact historical version.
 
 This version history allows achievements or runs earned under retired mechanics
 to become a future **Feats of Strength** category without rewriting their
 original record. The service never silently recalculates an accepted historical
 score under new rules.
+
+Each run board contains at most one row per account: that account's best result
+for the selected difficulty, duty, and release scope. Rank uses score
+descending, duration ascending, then acceptance time ascending. Filtering and
+search never renumber an entry away from its authoritative board rank.
 
 Leaderboard search covers only public fields permitted by the identity mode:
 published alias, published character name, realm, and visible guild. Search is
@@ -283,6 +292,10 @@ The expected Milestone 1 routes are:
 ```text
 GET    /health
 
+GET    /v1/activity
+GET    /v1/wipes
+POST   /v1/wipes
+
 GET    /v1/auth/battlenet/start
 GET    /v1/auth/battlenet/callback
 POST   /v1/auth/logout
@@ -301,6 +314,9 @@ DELETE /v1/me/attempts/{attemptId}
 
 GET    /v1/leaderboards
 GET    /v1/leaderboards/search
+GET    /v1/achievement-hall
+GET    /v1/global-ranking
+GET    /v1/profiles/{opaquePublicProfileId}
 GET    /v1/me/achievements
 ```
 
@@ -401,8 +417,8 @@ The service binds to loopback; Caddy owns public TLS and reverse proxies to it.
 
 ## Deployment workflow
 
-Backend implementation requires a separate GitHub Actions workflow from the
-existing GitHub Pages deployment. A proposed `.github/workflows/api.yml`:
+Backend deployment uses a separate GitHub Actions workflow from the existing
+GitHub Pages deployment. `.github/workflows/api.yml`:
 
 1. triggers on relevant `api/**` changes and manual dispatch;
 2. installs the pinned backend runtime and dependencies;
@@ -435,7 +451,7 @@ The trainer treats the API as optional:
 - The server distinguishes an already accepted retry from a conflicting second
   completion.
 
-## Milestone 1 acceptance criteria
+## Operational acceptance criteria
 
 - Anonymous users can play without API requests beyond an explicitly opened
   public leaderboard.
@@ -455,3 +471,23 @@ The trainer treats the API as optional:
   deletion behavior have automated coverage.
 - The API deployment workflow passes tests, preserves database files, deploys
   through the existing Caddy proxy, and verifies production health.
+
+## Known implementation gaps
+
+The following are tracked defects against this contract and must be resolved
+before the next ranking-affecting release:
+
+- `BUG-136`: run boards must deduplicate to one best result per account.
+- `BUG-137`: run-board search must preserve authoritative ranks.
+- `BUG-138`: direct practice must contribute only its actual phase clears and
+  must not advance full-run flawless streaks.
+- `BUG-139`: completion must validate the issued configuration and support an
+  identical idempotent retry.
+- `BUG-140`: attempt issuance needs its documented bounded rate limit.
+- `BUG-141`: alias identity must never expose the linked character's guild.
+- `BUG-142`: public, personal, and profile positions must use one current-season
+  scope after a trainer SemVer change.
+
+These corrections may change visible ranking or achievement totals. They do
+not authorize a leaderboard-season change; `SPEC-014` still requires the
+user's explicit decision.

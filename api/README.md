@@ -121,17 +121,22 @@ provides:
 - `DELETE /v1/me/attempts/{attemptId}`
 - `GET /v1/me/achievements`
 - `GET /v1/activity`
+- `GET /v1/wipes`
 - `POST /v1/wipes`
 - `GET /v1/leaderboards`
 - `GET /v1/leaderboards/search`
+- `GET /v1/achievement-hall`
+- `GET /v1/global-ranking`
+- `GET /v1/profiles/{profileId}`
 
 Battle.net access tokens are used only during the callback and are not stored.
 For local development, `BNET_CLIENT_ID`/`BNET_SECRET` are accepted aliases for
 the production `BATTLE_NET_CLIENT_ID`/`BATTLE_NET_CLIENT_SECRET` names.
 The API recomputes accepted scores from bounded completion telemetry and rejects
 expired, replayed, mismatched, or tampered attempts. Character refresh, trainer
-integration, current standings, and the privacy-aware leaderboard UI are
-implemented under `FR-027` and `FR-057`.
+integration, current standings, the Achievement Hall, Global ranking, public
+profiles, and the privacy-aware activity UI are implemented under `FR-027` and
+the later online feature tickets recorded in `docs/README.md`.
 
 ## Production paths
 

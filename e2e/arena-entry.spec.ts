@@ -69,7 +69,9 @@ test('keeps the first Phase 1 Heaven Glaive set while the second sequence launch
   await page.getByRole('button', { name: /Enter P1/ }).click()
 
   const arena = page.locator('.arena-wrap')
-  await expect(arena).toHaveAttribute('data-p1-glaive-sets', '1', { timeout: 25_000 })
+  // The first set is scripted after 22 simulated seconds. GitHub's software
+  // renderer can advance capped animation frames slightly slower than real time.
+  await expect(arena).toHaveAttribute('data-p1-glaive-sets', '1', { timeout: 40_000 })
   await expect(page.locator('.p1-rune-grid')).toBeVisible({ timeout: 15_000 })
   await expect(page.locator('.p1-rune-grid strong')).toHaveCount(5)
   await expect(page.locator('.p1-rune-grid strong.personal')).toHaveCount(1)

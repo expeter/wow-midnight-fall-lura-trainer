@@ -26,12 +26,10 @@ This is the next implementation milestone and today's priority.
 
 Implement in dependency order:
 
-1. `FR-049` — return actors to their personal-circle positions at Phase 2 end
-   and launch each one outward from that position into Phase 3.
-2. `FR-048` — drop and recover the landing trio's crystal, then make the
+1. `FR-048` — drop and recover the landing trio's crystal, then make the
    crystal carrier and one helper cover one opening Soak while the controlled
    player resolves the other.
-3. `CR-051` — swap the second Phase 3 sequence's ground Soak and memory-game
+2. `CR-051` — swap the second Phase 3 sequence's ground Soak and memory-game
    order after the exact overlap timing is confirmed.
 
 Completed in this milestone:
@@ -39,17 +37,21 @@ Completed in this milestone:
 - `FR-050` — four random non-crystal beam assignees now intercept four
   continuously orbiting unresolved orbs per set, with rendered player aim and
   a terminal miss rule.
+- `FR-049` — the final Phase 2 regroup now uses configured personal circles,
+  and each visible actor position becomes that actor's Phase 3 flight origin.
 
 ### Phase 4 roles
 
 Implement in dependency order:
 
-1. `FR-022` — make the front tank cone playable when the controlled player owns
-   that role, retaining the existing NPC behavior otherwise.
+1. `FR-068` — add two explicit tank assignments and the P1/P2/P3 Heaven's
+   Lance loop; when controlled in P4, the tank owns the existing frontal cone
+   instead of receiving Starsplinter. This incorporates the playable-cone
+   scope previously tracked separately by `FR-022`.
 2. `FR-023` — randomize protection-zone ownership between player and NPC and
    make the raid follow the rendered carrier.
 
-All six tickets affect mechanic difficulty, failures, scoring, or accepted-run
+All current M1 tickets affect mechanic difficulty, failures, scoring, or accepted-run
 comparability. Before releasing this milestone, explicitly ask whether it
 starts a new leaderboard season. Until the user says otherwise, retain
 `season-1`.
@@ -81,9 +83,11 @@ Goal: make local verification faster without creating production bypasses.
 - `FR-051` — remove avoidable runner warnings while retaining real diagnostics.
 - `FR-038` — localhost-only `Gnomkaiser` admin mode for completion and
   achievement testing.
+- `FR-067` — add a private, rate-limited live bug-report inbox with an audited
+  promotion path to GitHub.
 
-This milestone is not leaderboard-visible when its localhost boundary remains
-strict.
+This milestone is not leaderboard-visible. `FR-067` is a production support
+surface, but it does not alter encounter or ranking behavior.
 
 ## M4 · Easter egg and activity polish
 

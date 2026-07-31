@@ -398,6 +398,32 @@ test('enters Phase 3 directly in non-blocking Test mode', { tag: '@late-arena' }
   await expect(page.getByRole('alert')).toHaveCount(0)
 })
 
+test('launches the raid into Phase 3 from its visible final Phase 2 positions', { tag: '@late-arena' }, async ({ page }) => {
+  test.setTimeout(100_000)
+  await page.addInitScript(() => {
+    localStorage.setItem('lura-game-speed', '2.5')
+    localStorage.setItem('lura-selected-position', '8')
+  })
+  await page.goto('/')
+  await page.getByRole('button', { name: 'test', exact: true }).click()
+  await page.getByRole('button', { name: 'P2', exact: true }).click()
+  await page.getByRole('button', { name: /Enter P2/ }).click()
+
+  const arena = page.locator('.arena-wrap')
+  await expect(arena).toHaveAttribute('data-p2-cycle', '3', { timeout: 75_000 })
+  await expect(arena).toHaveAttribute('data-event', 'p2-orbs', { timeout: 15_000 })
+  await expect(arena).toHaveAttribute('data-event', 'p2-wait', { timeout: 15_000 })
+  await expect.poll(async () => Number(await arena.getAttribute('data-p2-orb-return-age')), { timeout: 15_000 }).toBeGreaterThanOrEqual(16)
+  await expect(page.getByRole('heading', { name: 'Return to your personal circle.' })).toBeVisible()
+  await page.keyboard.down('w')
+  await page.waitForTimeout(600)
+  await page.keyboard.up('w')
+  await expect(arena).toHaveAttribute('data-event', 'p3-flight', { timeout: 15_000 })
+
+  const origin = String(await arena.getAttribute('data-p3-flight-origin')).split(',').map(Number)
+  expect(Math.hypot(origin[0] - 480, origin[1] - 270)).toBeGreaterThan(5)
+})
+
 test('enters Phase 4 directly and plays Splinters again before the second Heaven and Hell', { tag: '@late-arena' }, async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('lura-game-speed', '2.5'))
   await page.goto('/')

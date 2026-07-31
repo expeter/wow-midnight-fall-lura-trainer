@@ -6,6 +6,9 @@
   four unresolved continuously counterclockwise-orbiting orbs near the cross
   regions. NPCs intercept their predicted targets; a selected controlled
   player aims with their rendered position and wipes if that ray misses.
+- FR-049: Regroup the raid on its configured Phase 2 personal circles after
+  the final orb return, then launch every player into Phase 3 from their own
+  rendered position without a hidden center teleport.
 
 ## 0.6.1 · 2026-07-31
 

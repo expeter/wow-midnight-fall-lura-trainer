@@ -1162,6 +1162,9 @@ export function p2PhaseTransitionCountdown(event: string, cycle: number, orbRetu
   if (event !== 'p2-wait' || cycle < 3 || orbReturnAge < returnFlightEnds) return null
   return Math.max(0, P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS - orbReturnAge)
 }
+export function p2FinalRegroupActive(event: string, cycle: number, orbReturnAge: number): boolean {
+  return p2PhaseTransitionCountdown(event, cycle, orbReturnAge) !== null
+}
 export function p2NpcRoamingPosition(base: Point, index: number, time: number, orbs: Point[], center: Point, maximumRadius: number): Point {
   const clampToArena = (point: Point): Point => {
     const dx = point.x - center.x

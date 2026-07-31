@@ -270,6 +270,10 @@ privacy, deployment, and acceptance contract.
   exceeds normal walking speed.
 - The transition preserves the controlled player's resolved position instead
   of teleporting everyone to the exact center.
+- After the third return set resolves, every raid member regroups at their
+  configured personal-circle position. The Phase 3 outward launch begins from
+  each actor's rendered regroup position; it never restacks or teleports the
+  raid to the center first.
 - Touching another player's dropped Phase 2 crystal is recoverable like the
   Phase 1 wrong-pickup rule: drop it within five seconds for NPC recovery or
   wipe. An assigned crystal player treats a touched crystal as their own.

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
-import { angleToward, assignmentRevealDistance, constrainP3NpcTargetToSide, crystalCarrierPosition, distance, distanceToSegment, hasActiveP3CrystalLight, isActiveP3RuneDuty, jumpHeights, keepP3CrystalPoolCovered, keepP3NpcInSoak, keepP4NpcInProtection, npcEntryPosition, OPENING_BOOST_SECONDS, P1_STAR_LENGTH, p2BeamAimPosition, P2_ORBIT_SPEED, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_INNER_RADIUS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p2NpcRoamingPosition, p2NpcShouldReturnToSoak, p2OrbPosition, p2OrbReturnState, p2ReturningOrbPositions, p3ActiveCrystalAssignments, P3_APPROACH_NPC_SPEED_MULTIPLIER, p3ArchangelStackPosition, p3BossPosition, p3CrystalPoolCoverageTargets, p3FlightPosition, P3_FLIGHT_SECONDS, p3LandingGroupIndex, p3LandingPlanIndex, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3NpcPoolAssignment, p3NpcRuneReactionDelay, p3NpcSoaksActive, p3PoolCenters, p3PoolLayoutId, p3ProtectionBubbleCenter, p3RuneEdges, p3RuneOrbs, p3RunePartnerPosition, p3SideForPosition, p3StarsTiming, playerCarriesCrystal, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, p4EncounterBoxStates, p4FrontSoakerPosition, p4GroupPosition, p4NpcRelocationPace, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4StackPosition, p4TankAvoidSplinters, p4TankConeActive, p4TankConeHitsBox, p4TransitionStartPosition, P4_FRONT_CONE_RANGE, P4_HEAVEN_MOVE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, roamingNpcPosition, safestStarsplinterRotation, separateP3NpcTarget, shouldApplyP3NpcDisplacement, shouldHoldP3RunePartner, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type RuneSymbol } from './game'
+import { angleToward, assignmentRevealDistance, constrainP3NpcTargetToSide, crystalCarrierPosition, distance, distanceToSegment, hasActiveP3CrystalLight, isActiveP3RuneDuty, jumpHeights, keepP3CrystalPoolCovered, keepP3NpcInSoak, keepP4NpcInProtection, npcEntryPosition, OPENING_BOOST_SECONDS, P1_STAR_LENGTH, p2BeamAimPosition, p2FinalRegroupActive, P2_ORBIT_SPEED, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_INNER_RADIUS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p2NpcRoamingPosition, p2NpcShouldReturnToSoak, p2OrbPosition, p2OrbReturnState, p2ReturningOrbPositions, p3ActiveCrystalAssignments, P3_APPROACH_NPC_SPEED_MULTIPLIER, p3ArchangelStackPosition, p3BossPosition, p3CrystalPoolCoverageTargets, p3FlightPosition, P3_FLIGHT_SECONDS, p3LandingGroupIndex, p3LandingPlanIndex, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3NpcPoolAssignment, p3NpcRuneReactionDelay, p3NpcSoaksActive, p3PoolCenters, p3PoolLayoutId, p3ProtectionBubbleCenter, p3RuneEdges, p3RuneOrbs, p3RunePartnerPosition, p3SideForPosition, p3StarsTiming, playerCarriesCrystal, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, p4EncounterBoxStates, p4FrontSoakerPosition, p4GroupPosition, p4NpcRelocationPace, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4StackPosition, p4TankAvoidSplinters, p4TankConeActive, p4TankConeHitsBox, p4TransitionStartPosition, P4_FRONT_CONE_RANGE, P4_HEAVEN_MOVE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, roamingNpcPosition, safestStarsplinterRotation, separateP3NpcTarget, shouldApplyP3NpcDisplacement, shouldHoldP3RunePartner, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type RuneSymbol } from './game'
 import { p3SectorMovementSpeed, p3SpreadPosition, p4PlayerSplinterHitsNpc, p4RenderedNpcSplinterHitsPlayer, p4RenderedNpcSplinterOrigin, p4TankKillsBox } from './game'
 import { isP3RaidMemberVisible } from './game'
 import { isInsideP3Pool } from './game'
@@ -166,12 +166,12 @@ function avoidP3Stars(position: Point, target: Point, field: P3StarsField, index
   const direction = index % 2 ? 1 : -1
   return { x: target.x - dy / length * 13 * direction, y: target.y + dx / length * 13 * direction }
 }
-function p3NpcTarget(index: number, crystal: boolean, round: number, event: SceneProps['event'], eventTime: number, landingSeed = 0, crystalSlot = -1, assignedSide?: -1 | 1, landingIndex = index): Point {
+function p3NpcTarget(index: number, crystal: boolean, round: number, event: SceneProps['event'], eventTime: number, landingSeed = 0, crystalSlot = -1, assignedSide?: -1 | 1, landingIndex = index, flightOrigin = WORLD.center): Point {
   const side: -1 | 1 = assignedSide ?? (index < 10 ? -1 : 1)
   const landing = p3LandingPosition(landingIndex, WORLD.center)
   if (event === 'p3-countdown') return WORLD.center
   if (event === 'p3-flight') {
-    return p3FlightPosition(WORLD.center, landing, eventTime)
+    return p3FlightPosition(flightOrigin, landing, eventTime)
   }
   if (event === 'p3-landing') {
     const sideIndex = index % 10
@@ -832,12 +832,14 @@ export default function GameScene(props: SceneProps) {
     scene.add(hazards)
     let animation = 0
     const renderedNpcPositions: Array<Point | null> = Array.from({ length: 19 }, () => null)
+    const p3NpcFlightOrigins: Array<Point | null> = Array.from({ length: 19 }, () => null)
     let previousSimulationTime = initial.time
     let p3OpeningReached = false
     let p3PlayerSoakEngagedRound = 0
     let previousRenderTime = performance.now()
     let orbitAngle = 0
     let previousEvent: SceneProps['event'] = initial.event
+    let p3FlightFromP2 = false
     const destroyedP4BoxIds = new Set<number>()
     const resolvedP4VisualSplinters = new Set<number>()
     const p4VisualSplinterSnapshots = new Map<number, { origin: Point; npcPositions: Point[]; player: Point }>()
@@ -948,6 +950,8 @@ export default function GameScene(props: SceneProps) {
       const playerP3Side = p3SideOf(state.assignment)
       if (state.time < previousSimulationTime) {
         renderedNpcPositions.fill(null)
+        p3NpcFlightOrigins.fill(null)
+        p3FlightFromP2 = false
         p3OpeningReached = false
         p3PlayerSoakEngagedRound = 0
       }
@@ -957,6 +961,12 @@ export default function GameScene(props: SceneProps) {
       const renderDelta = state.paused ? 0 : Math.min((renderTime - previousRenderTime) / 1000, .05)
       previousRenderTime = renderTime
       if (state.event !== previousEvent) {
+        if (state.event === 'p3-flight') {
+          p3FlightFromP2 = previousEvent === 'p2-wait'
+          renderedNpcPositions.forEach((position, index) => {
+            p3NpcFlightOrigins[index] = position ? { ...position } : null
+          })
+        }
         if (state.event === 'p4-countdown' || state.event === 'p4-transition') {
           destroyedP4BoxIds.clear()
           resolvedP4VisualSplinters.clear()
@@ -1119,7 +1129,10 @@ export default function GameScene(props: SceneProps) {
         const intermissionPosition = npcPosition(index, state.time, state.intermissionPositions, state.assignment, state.event, state.eventTime, state.beamAngles, state.raidStart, state.movementSpeed, state.movementBonus)
         const spreadResolutionPosition = walkTowards(WORLD.center, spreadTarget, P2_SPREAD_SECONDS, state.movementSpeed)
         const recoveredSoakPosition = state.p2Cycle === 1 ? soakTarget : walkTowards(spreadResolutionPosition, soakTarget, 8, state.movementSpeed)
-        const p2WaitTarget = p2NpcShouldReturnToSoak(state.p2OrbReturnAge)
+        const p2FinalRegroup = p2FinalRegroupActive(state.event, state.p2Cycle, state.p2OrbReturnAge)
+        const p2WaitTarget = p2FinalRegroup
+          ? spreadTarget
+          : p2NpcShouldReturnToSoak(state.p2OrbReturnAge)
           ? soakTarget
           : p2NpcRoamingPosition(soakTarget, index, state.time, p2ReturningOrbPositions(state.p2OrbReturnAge, state.p2Cycle, orbitAngle, WORLD.center, 82, state.p2ReturningOrbIndices), WORLD.center, P2_RADIUS - 2)
         let p1Target = state.positions[baseIndex]
@@ -1184,7 +1197,8 @@ export default function GameScene(props: SceneProps) {
           )
         }
         if (phaseOne) p1Target = p1ClampNpcToArena(p1Target, WORLD.center)
-        let p3Target = p3NpcTarget(baseIndex, npcP3CrystalActive, state.p3Round, state.event, state.eventTime, state.p4PatternSeed, crystalSlot, npcP3Side, p3LandingIndexOf(baseIndex))
+        const p3FlightOrigin = p3NpcFlightOrigins[index] ?? (p3FlightFromP2 ? spreadTarget : WORLD.center)
+        let p3Target = p3NpcTarget(baseIndex, npcP3CrystalActive, state.p3Round, state.event, state.eventTime, state.p4PatternSeed, crystalSlot, npcP3Side, p3LandingIndexOf(baseIndex), p3FlightOrigin)
         if (phaseThree && ['p3-approach', 'p3-light-pools', 'p3-pools-overlap', 'p3-rune-preview', 'p3-lattice-memory', 'p3-lattice-second', 'p3-big-boom'].includes(state.event)) {
           p3Target = state.positions[baseIndex]
         }
@@ -1490,6 +1504,7 @@ export default function GameScene(props: SceneProps) {
         : null
       const recurringP2Guide = p2PlayerBeamTarget !== null && (state.event === 'p2-positioning' || state.event === 'p2-orbs' && state.eventTime < 2.5)
       const p2SpreadGuide = state.event === 'p2-spread'
+      const p2FinalRegroupGuide = p2FinalRegroupActive(state.event, state.p2Cycle, state.p2OrbReturnAge)
       const p4Stack = state.event === 'p4-cycle'
         ? p4GroupPosition(p4VisualCycle, state.eventTime, WORLD.center)
         : p4StackPosition(1, WORLD.center)
@@ -1502,10 +1517,10 @@ export default function GameScene(props: SceneProps) {
         ? state.event === 'p1-transition'
           ? state.intermissionPositions[state.assignment]
           : state.event === 'p1-memory-position' ? p1MemoryAssignment : state.positions[state.assignment]
-        : phaseFour ? p4Stack : p2SpreadGuide ? state.p2SpreadPositions[state.assignment] : recurringP2Guide ? p2PlayerBeamTarget! : state.positions[state.assignment]
+        : phaseFour ? p4Stack : p2SpreadGuide || p2FinalRegroupGuide ? state.p2SpreadPositions[state.assignment] : recurringP2Guide ? p2PlayerBeamTarget! : state.positions[state.assignment]
       if (state.event === 'p3-approach' && distance(state.player, assigned) <= 14) p3OpeningReached = true
       const p3Opening = phaseThree && state.event === 'p3-approach' && !p3OpeningReached
-      const opening = state.event === 'p1-countdown' || state.event === 'p1-memory-position' || state.event === 'p1-transition' || state.event === 'countdown' || state.event === 'positioning' || state.event === 'p2-countdown' || state.event === 'p4-transition' || p2SpreadGuide || recurringP2Guide || p3Opening
+      const opening = state.event === 'p1-countdown' || state.event === 'p1-memory-position' || state.event === 'p1-transition' || state.event === 'countdown' || state.event === 'positioning' || state.event === 'p2-countdown' || state.event === 'p4-transition' || p2SpreadGuide || p2FinalRegroupGuide || recurringP2Guide || p3Opening
       const revealDistance = phaseTwo ? state.difficulty === 'normal' ? 14 : state.difficulty === 'hard' ? 7 : Infinity : assignmentRevealDistance(state.difficulty)
       helper.visible = opening && (state.easy || distance(state.player, assigned) <= revealDistance)
       helper.scale.setScalar(phaseTwo ? .55 : phaseThree ? .45 : 1)

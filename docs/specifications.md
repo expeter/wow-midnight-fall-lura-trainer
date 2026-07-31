@@ -258,6 +258,32 @@ privacy, deployment, and acceptance contract.
 - Phase 3 Stars-orb beams are local links: two orbs more than 48 yards apart
   never connect visually and never produce collision along that gap.
 
+## SPEC-017 · Tank assignments and Heaven's Lance
+
+- A raid plan owns exactly two distinct tank assignments. Saved, shared, and
+  maintained guild plans preserve those assignments; legacy plans normalize
+  to the two default tank positions.
+- While L'ura is available in Phase 1, Phase 2, and Phase 3, Heaven's Lance
+  gains one counter every two seconds. At five, all five impacts remain on the
+  active tank and apply independent, expiring Impaled stacks.
+- The active tank prepares its shield before impact one. The off-tank Taunts
+  only after impact five and within the two-second swap window. One failed
+  responsibility costs a strike; the second is terminal for the attempt.
+- NPC tanks mitigate and swap without player intervention. Encounter sections
+  where L'ura is unavailable suspend the counter and resynchronize to the
+  lower-risk tank while existing Impaled duration continues to elapse.
+- A controlled tank's shield recharges every 20 seconds. Tank and crystal duty
+  remain independent and may overlap; the combination is recorded for its
+  canonical achievement and Heroic crystal interaction.
+- In Phase 4 the normal Lance loop is suspended and neither configured tank
+  receives Starsplinter. Tank 1 owns the repeatable frontal cone on the
+  Taunt/tank-action binding. Tank 2 owns the rendered moving yellow protection
+  zone and the raid follows that tank's visual position. Each controlled role
+  has a distinct canonical completion achievement.
+
+The detailed encounter, UI, recovery, and edge-case contract is maintained in
+[`tank-mechanic.md`](tank-mechanic.md).
+
 ## SPEC-013 · Phase 2 center pull and crystals
 
 - Each of the three beam sets randomly assigns four distinct non-crystal

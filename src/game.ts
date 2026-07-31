@@ -503,6 +503,37 @@ export function p4GroupPosition(cycle: number, eventTime: number, center: Point,
   return { x: center.x + Math.cos(angle) * radius, y: center.y + Math.sin(angle) * radius }
 }
 
+export function p4NpcProfileIndices(profileCount: number, playerAssignment: number): number[] {
+  return Array.from({ length: profileCount }, (_, index) => index).filter(index => index !== playerAssignment)
+}
+
+export function p4NpcOrdinalForProfile(npcProfileIndices: number[], profileIndex: number): number | null {
+  const ordinal = npcProfileIndices.indexOf(profileIndex)
+  return ordinal >= 0 ? ordinal : null
+}
+
+export function p4ProtectionCenter(
+  scriptedCenter: Point,
+  player: Point,
+  controlledTank: 0 | 1 | null,
+  renderedNpcPositions: Array<Point | null>,
+  npcProfileIndices: number[],
+  tankAssignments: [number, number],
+): Point {
+  if (controlledTank === 1) return player
+  const carrierOrdinal = p4NpcOrdinalForProfile(npcProfileIndices, tankAssignments[1])
+  return carrierOrdinal === null ? scriptedCenter : renderedNpcPositions[carrierOrdinal] ?? scriptedCenter
+}
+
+export function p4NpcSplinterActorOrdinals(npcProfileIndices: number[], tankAssignments: [number, number]): number[] {
+  const preferred = [1, 4, 7]
+  const available = npcProfileIndices
+    .map((profileIndex, ordinal) => ({ profileIndex, ordinal }))
+    .filter(({ profileIndex }) => !tankAssignments.includes(profileIndex))
+    .map(({ ordinal }) => ordinal)
+  return [...preferred.filter(ordinal => available.includes(ordinal)), ...available.filter(ordinal => !preferred.includes(ordinal))].slice(0, 3)
+}
+
 export function p4SplinterRotation(cycle: number, ordinal: number, seed = 0): number {
   return p4PatternValue(seed, cycle, ordinal + 101) % 2 ? Math.PI / 6 : 0
 }
@@ -675,13 +706,13 @@ export function p4NpcSplinterOutwardSeconds(ordinal: number): number {
   return Math.max(.6, P4_SPLINTER_DETONATION_SECONDS - waitForFirstDetonation - .1)
 }
 
-export function p4RenderedNpcSplinterOrigin(renderedNpcPositions: Point[], ordinal: number, fallback: Point): Point {
-  return renderedNpcPositions[ordinal * 3 + 1] ?? fallback
+export function p4RenderedNpcSplinterOrigin(renderedNpcPositions: Point[], ordinal: number, fallback: Point, actorOrdinals = [1, 4, 7]): Point {
+  return renderedNpcPositions[actorOrdinals[ordinal]] ?? fallback
 }
 
-export function p4RenderedNpcSplinterHitsPlayer(renderedNpcPositions: Point[], ordinal: number, fallback: Point, rotation: number, player: Point, playerRadius = 3): boolean {
+export function p4RenderedNpcSplinterHitsPlayer(renderedNpcPositions: Point[], ordinal: number, fallback: Point, rotation: number, player: Point, playerRadius = 3, actorOrdinals = [1, 4, 7]): boolean {
   return p4SplinterHitsGroup(
-    p4RenderedNpcSplinterOrigin(renderedNpcPositions, ordinal, fallback),
+    p4RenderedNpcSplinterOrigin(renderedNpcPositions, ordinal, fallback, actorOrdinals),
     rotation,
     player,
     playerRadius,

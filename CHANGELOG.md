@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- FR-068: Add two persisted/shareable tank assignments. During boss-active
+  Phase 1, Phase 2, and Phase 3, the tanks play the visible five-count
+  Heaven's Lance burst, mitigation, Impaled, and post-impact-five swap loop;
+  NPC tanks resolve it correctly while a controlled tank uses a recharging
+  defensive and Taunt action under a two-strike failure rule. Suspend the loop
+  through unavailable-boss transitions, support tank-plus-crystal duty and
+  canonical achievements.
+- CR-195: Give the configured Phase 4 tanks deterministic assignments: Tank 1
+  owns the repeatable frontal add-clearing cone, Tank 2 carries the rendered
+  moving protection zone, and the raid follows Tank 2. Exclude both tanks from
+  Starsplinter and award a distinct achievement for completing either role.
 - FR-050: Assign each Phase 2 beam set to four random non-crystal players and
   four unresolved continuously counterclockwise-orbiting orbs near the cross
   regions. NPCs intercept their predicted targets; a selected controlled

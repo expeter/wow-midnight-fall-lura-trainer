@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
-import { bossBeamHitsPlayer, canPickupCrystalDuringEvent, canRecoverFromWipe, crystalWipeReason, difficultySettings, distance, distanceToSegment, isOnAssignedP3Side, isP3ConsumedSectorLethal, isInSafeAnnulus, isP3ProtectionCrystalPlaced, isProtectedByP3Bubble, isProtectedByP3Light, moveRelativeToCamera, moveWithIncreasingPull, npcEntryPosition, OPENING_BOOST_SECONDS, orientedAssignments, p1PositioningWipeReason, p2BeamHitsAssignedOrb, p2BeamPlayers, p2BeamTargetOrbIndices, p2CrystalTouchResolution, p2NpcCrystalDrops, p2OrbPosition, p2PhaseTransitionCountdown, p2PostBeamEvent, p2ReturningOrbPositions, P1_FINAL_RECOVERY_SECONDS, P1_STAR_LENGTH, P2_BEAM_SECONDS, P2_FETCH_SECONDS, P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS, P2_ORBIT_SPEED, P2_ORB_GLOW_LEAD_SECONDS, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_POSITIONING_SECONDS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p3ActiveCrystalAssignments, P3_APPROACH_SECONDS, p3ArchangelStackPosition, p3AssignmentForRound, p3BossPosition, p3FlightPosition, P3_FINAL_SECTOR_MOVE_SECONDS, P3_FLIGHT_SECONDS, p3LandingPlanIndex, p3LandingPosition, p3LandingHealthRate, p3LandingSoakOccupied, p3LandingSoakPositions, p3LightCenters, p3LightHealthRate, p3MemoryResolved, p3PoolCenters, p3PoolSoakRate, p3ProtectionBubbleCenter, p3RuneDeadline, p3RuneEdges, p3RuneOrbs, p3RuneStepAt, p3SectorMovementSpeed, p3SideForPosition, p3StarsTiming, p3UnsafePenaltyTicks, p3WrongRuneContact, P3_LANDING_SOAK_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_MEMORY_STEP_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, P3_SAFE_ZONE_PENALTY_PER_SECOND, P3_SECTOR_MOVE_SECONDS, P3_SECTOR_SECONDS, p4BossHealth, p4EncounterBoxStates, p4FrontSoakerPosition, p4GroupPosition, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4SplinterStartSeconds, p4StackPosition, p4TankConeActive, p4TankConeHitsBox, p4TransitionStartPosition, P4_CYCLE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, P4_SPLINTER_INTERVAL_SECONDS, personalCircleHitsCrystal, personalCircleHitsPlayer, PLAYER_COLLISION_PENALTY, randomCrystalDropDuty, randomizeP3PoolLayout, roamingNpcPosition, safestStarsplinterRotation, scoreExhaustionWipeReason, setP3BossPlan, shouldCheckIntermissionVoid, shouldShowP2OrbReturnCounter, starsplinterHitsPoint, translateSelectedPoints, walkTowards, WIPE_PENALTY, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type Role, type RuneSymbol } from './game'
+import { bossBeamHitsPlayer, canPickupCrystalDuringEvent, canRecoverFromWipe, crystalWipeReason, difficultySettings, distance, distanceToSegment, isOnAssignedP3Side, isP3ConsumedSectorLethal, isInSafeAnnulus, isP3ProtectionCrystalPlaced, isProtectedByP3Bubble, isProtectedByP3Light, moveRelativeToCamera, moveWithIncreasingPull, npcEntryPosition, OPENING_BOOST_SECONDS, orientedAssignments, p1PositioningWipeReason, p2BeamHitsAssignedOrb, p2BeamPlayers, p2BeamTargetOrbIndices, p2CrystalTouchResolution, p2NpcCrystalDrops, p2OrbPosition, p2PhaseTransitionCountdown, p2PostBeamEvent, p2ReturningOrbPositions, P1_FINAL_RECOVERY_SECONDS, P1_STAR_LENGTH, P2_BEAM_SECONDS, P2_FETCH_SECONDS, P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS, P2_ORBIT_SPEED, P2_ORB_GLOW_LEAD_SECONDS, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_POSITIONING_SECONDS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p3ActiveCrystalAssignments, P3_APPROACH_SECONDS, p3ArchangelStackPosition, p3AssignmentForRound, p3BossPosition, p3FlightPosition, P3_FINAL_SECTOR_MOVE_SECONDS, P3_FLIGHT_SECONDS, p3LandingPlanIndex, p3LandingPosition, p3LandingHealthRate, p3LandingSoakOccupied, p3LandingSoakPositions, p3LightCenters, p3LightHealthRate, p3MemoryResolved, p3PoolCenters, p3PoolSoakRate, p3ProtectionBubbleCenter, p3RuneDeadline, p3RuneEdges, p3RuneOrbs, p3RuneStepAt, p3SectorMovementSpeed, p3SideForPosition, p3StarsTiming, p3UnsafePenaltyTicks, p3WrongRuneContact, P3_LANDING_SOAK_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_MEMORY_STEP_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, P3_SAFE_ZONE_PENALTY_PER_SECOND, P3_SECTOR_MOVE_SECONDS, P3_SECTOR_SECONDS, p4BossHealth, p4EncounterBoxStates, p4FrontSoakerPosition, p4GroupPosition, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4SplinterStartSeconds, p4StackPosition, p4TankConeActive, p4TankConeHitsBox, p4TransitionStartPosition, P4_CYCLE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, P4_SPLINTER_INTERVAL_SECONDS, P4_TANK_CONE_DURATION_SECONDS, P4_TANK_CONE_INTERVAL_SECONDS, personalCircleHitsCrystal, personalCircleHitsPlayer, PLAYER_COLLISION_PENALTY, randomCrystalDropDuty, randomizeP3PoolLayout, roamingNpcPosition, safestStarsplinterRotation, scoreExhaustionWipeReason, setP3BossPlan, shouldCheckIntermissionVoid, shouldShowP2OrbReturnCounter, starsplinterHitsPoint, translateSelectedPoints, walkTowards, WIPE_PENALTY, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type Role, type RuneSymbol } from './game'
 import { buildPhaseResult, completionImageCardLayout, completionResultTitle, completionShareText, isFullSequenceCompletion, wrapTextByWidth, type PhaseKey, type PhaseResult } from './completion'
-import { bossDamageScoreBonus, isInsideP3Pool, p4BossHealthWithPlayerDamage, p4RenderedNpcSplinterOrigin, p4StartingBossState, p4TankKillsBox, PRE_P4_BOSS_HEALTH_BUDGET, preP4BossHealth, shouldSuppressRepeatedWipe, shouldTriggerP3EarlyClear, starsplinterHitsCrystalCarrier } from './game'
+import { bossDamageScoreBonus, isInsideP3Pool, p4BossHealthWithPlayerDamage, p4NpcOrdinalForProfile, p4NpcProfileIndices, p4NpcSplinterActorOrdinals, p4ProtectionCenter, p4RenderedNpcSplinterOrigin, p4StartingBossState, p4TankKillsBox, PRE_P4_BOSS_HEALTH_BUDGET, preP4BossHealth, shouldSuppressRepeatedWipe, shouldTriggerP3EarlyClear, starsplinterHitsCrystalCarrier } from './game'
 import { p4UnsafePenaltyTicks, P4_SAFE_ZONE_HEALTH_DRAIN_PER_SECOND, P4_SAFE_ZONE_PENALTY_PER_SECOND } from './game'
 import { canPickupCrystalAlongPath, INTERMISSION_POSITIONING_SECONDS } from './game'
 import { p4TimedVoiceCues, timedVoiceDelaySeconds, timedVoiceSupported, ttsCuesForState, type P4VoiceClip } from './audio'
@@ -14,6 +14,7 @@ import { advanceMainAbilityCast, idleMainAbilityCast, mainAbilityElapsedSeconds,
 import { encounterSoundCuesForState, playEncounterSound } from './encounterSounds'
 import { approachHealthTarget, healthBand, healthChangeRate, randomHealthTarget, unusedRecoveryPenalty } from './healthRecovery'
 import { P1_BEAM_POSITION_SECONDS, P1_CRYSTAL_PICKUP_SECONDS, P1_DEFAULT_INTERRUPT_KEY, P1_GLAIVE_CONTACT_RADIUS, P1_GLAIVE_INITIAL_SPEED_MULTIPLIER, P1_GLAIVE_RETURN_SPEED_MULTIPLIER, P1_GLAIVE_TELEGRAPH_SECONDS, P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_INTERRUPT_CAST_COUNT, P1_INTERRUPT_CAST_SECONDS, P1_MEMORY_DELAY_SECONDS, P1_MEMORY_POSITION_SECONDS, P1_MEMORY_SWEEP_SECONDS, P1_OUTER_RADIUS, P1_PLAYER_INTERRUPT_WINDOW_SECONDS, P1_PULL_DELAY_SECONDS, P1_REACTIVE_SOAK_RADIUS, P1_REACTIVE_SOAK_SECONDS, P1_ROTATING_BEAM_ACTIVE_SECONDS, P1_ROTATING_BEAM_TELEGRAPH_SECONDS, P1_SEQUENCE_COUNT, p1AddGlaiveSet, p1AdvanceGlaiveSet, p1BeamHitResolution, p1BossEncounterPosition, p1ContinuousBeamTime, p1CrystalPickupSequence, p1CrystalSpawnPosition, p1CrystalTouchResolution, p1GlaiveContactStarted, p1GlaiveSet, p1HasCollectedCrystal, p1InterruptAssignment, p1InterruptState, p1IsInPlayableArena, p1MemoryOrder, p1MemoryPlayerVerdict, p1NpcInterruptSeconds, p1ReactiveSoaks, p1RotatingBeamHitsPoint, p1RotatingBeams, p1WrongCrystalDropExpired, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
+import { advanceTankMechanic, createTankMechanicState, prepareTankDefensive, requestTankTaunt, tankMechanicActiveForEvent, type TankIndex, type TankMechanicEvent, type TankMechanicState } from './tank'
 import OnlinePanel, { BestRunsSummary, GlobalRankingSummary, OnlineStandingSummary, PublicProfileOverlay } from './OnlinePanel'
 import { canRecordOnlineWipe, completeOnlineAttempt, configurationFingerprint, issueOnlineAttempt, loadActivityFeed, loadOnlineSession, logoutOnline, newActivityRows, recentActivityRows, recordOnlineWipe, type ActivityFeedRow, type OnlineSession } from './online'
 import './styles.css'
@@ -35,9 +36,9 @@ interface ActiveOnlineAttempt {
 }
 type RecoveryStatus = 'disabled' | 'pending' | 'passed' | 'missed'
 interface PhaseCrystalAssignments { p1: number[]; intermission: number[]; p2: number[]; p3: number[] }
-interface RaidPlan { p1Positions: Assignment[]; p1BossPosition: Assignment; positions: Assignment[]; p2Positions: Assignment[]; p2SpreadPositions: Assignment[]; p3Positions: Assignment[]; p3BossPositions: Assignment[]; startSlots: Assignment[]; profiles: PlayerProfile[]; crystalAssignments: PhaseCrystalAssignments }
+interface RaidPlan { p1Positions: Assignment[]; p1BossPosition: Assignment; positions: Assignment[]; p2Positions: Assignment[]; p2SpreadPositions: Assignment[]; p3Positions: Assignment[]; p3BossPositions: Assignment[]; startSlots: Assignment[]; profiles: PlayerProfile[]; crystalAssignments: PhaseCrystalAssignments; tankAssignments: [number, number] }
 interface VersionManifest { version: string; revision: string; builtAt: string }
-interface KeyBindings { forward: string; backward: string; left: string; right: string; turnLeft: string; turnRight: string; jump: string; crystal: string; interrupt: string; pause: string; healthPot: string; shield: string; mainAbility: string }
+interface KeyBindings { forward: string; backward: string; left: string; right: string; turnLeft: string; turnRight: string; jump: string; crystal: string; interrupt: string; taunt: string; pause: string; healthPot: string; shield: string; mainAbility: string }
 type HudElement = 'mechanic' | 'beam' | 'crystal' | 'playerHealth' | 'bossHealth' | 'castbar' | 'actions'
 type HudLayout = Record<HudElement, Point>
 
@@ -81,6 +82,7 @@ type MusicTrackId = typeof MUSIC_TRACKS[number]['id']
 const DEFAULT_MUSIC_TRACK: MusicTrackId = 'criminal'
 const DEFAULT_MUSIC_VOLUME = .2
 const DEFAULT_ENCOUNTER_SOUND_VOLUME = .65
+const NO_CRYSTAL_ASSIGNMENTS: number[] = []
 const APP_VERSION = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : '0.6.0'
 const APP_BUILD_TIME = typeof __BUILD_TIME__ === 'string' ? __BUILD_TIME__ : new Date().toISOString()
 const APP_GIT_REVISION = typeof __GIT_REVISION__ === 'string' ? __GIT_REVISION__ : 'unknown'
@@ -175,7 +177,8 @@ const DEFAULT_PROFILES: PlayerProfile[] = Array.from({ length: 20 }, (_, index) 
   playerClass: CLASS_OPTIONS[index % CLASS_OPTIONS.length].value,
   crystal: [1, 4, 7, 10, 13, 16].includes(index),
 }))
-const DEFAULT_KEY_BINDINGS: KeyBindings = { forward: 'KeyW', backward: 'KeyS', left: 'KeyA', right: 'KeyD', turnLeft: 'KeyQ', turnRight: 'KeyE', jump: 'Space', crystal: 'KeyC', interrupt: P1_DEFAULT_INTERRUPT_KEY, pause: 'KeyP', healthPot: 'NumpadDecimal', shield: 'Numpad7', mainAbility: 'KeyF' }
+const DEFAULT_TANK_ASSIGNMENTS: [number, number] = [0, 1]
+const DEFAULT_KEY_BINDINGS: KeyBindings = { forward: 'KeyW', backward: 'KeyS', left: 'KeyA', right: 'KeyD', turnLeft: 'KeyQ', turnRight: 'KeyE', jump: 'Space', crystal: 'KeyC', interrupt: P1_DEFAULT_INTERRUPT_KEY, taunt: 'Numpad1', pause: 'KeyP', healthPot: 'NumpadDecimal', shield: 'Numpad7', mainAbility: 'KeyF' }
 const DEFAULT_HUD_LAYOUT: HudLayout = {
   mechanic: { x: 43, y: 23 },
   beam: { x: 57, y: 23 },
@@ -192,6 +195,7 @@ const KEY_BIND_LABELS: { action: keyof KeyBindings; label: string }[] = [
   { action: 'jump', label: 'Jump' },
   { action: 'crystal', label: 'Drop crystal' }, { action: 'pause', label: '(Un)pause' },
   { action: 'interrupt', label: 'Interrupt' },
+  { action: 'taunt', label: 'Taunt / tank action' },
   { action: 'healthPot', label: 'Health potion' }, { action: 'shield', label: 'Shield' },
   { action: 'mainAbility', label: 'Main ability' },
 ]
@@ -386,6 +390,19 @@ function loadAssignment(): number {
 function encodeRaidPlan(value: unknown): string {
   return btoa(encodeURIComponent(JSON.stringify(value)))
 }
+function normalizeTankAssignments(value: unknown): [number, number] {
+  if (!Array.isArray(value)) return [...DEFAULT_TANK_ASSIGNMENTS]
+  const valid = value.filter((index): index is number => Number.isInteger(index) && index >= 0 && index < 20)
+  if (valid.length < 2 || valid[0] === valid[1]) return [...DEFAULT_TANK_ASSIGNMENTS]
+  return [valid[0], valid[1]]
+}
+function updateTankAssignment(assignments: [number, number], slot: TankIndex, playerIndex: number): [number, number] {
+  const next: [number, number] = [...assignments]
+  const other: TankIndex = slot === 0 ? 1 : 0
+  if (next[other] === playerIndex) next[other] = next[slot]
+  next[slot] = playerIndex
+  return next
+}
 function decodeRaidPlan(value: string): RaidPlan | null {
   try {
     const raw = value.includes('#raidplan=') ? value.split('#raidplan=')[1] : value
@@ -408,7 +425,7 @@ function decodeRaidPlan(value: string): RaidPlan | null {
       p2: normalizeCrystalAssignments(plan.crystalAssignments?.p2, legacyCrystals),
       p3: normalizeCrystalAssignments(plan.crystalAssignments?.p3, legacyCrystals),
     }
-    return { ...plan, p1Positions, p1BossPosition, p2Positions, p2SpreadPositions, p3Positions, p3BossPositions, crystalAssignments }
+    return { ...plan, p1Positions, p1BossPosition, p2Positions, p2SpreadPositions, p3Positions, p3BossPositions, crystalAssignments, tankAssignments: normalizeTankAssignments(plan.tankAssignments) }
   } catch { return null }
 }
 function normalizeRaidPlanForUse(plan: RaidPlan): RaidPlan {
@@ -423,6 +440,7 @@ function normalizeRaidPlanForUse(plan: RaidPlan): RaidPlan {
     startSlots: plan.startSlots.map(clampStartSlot),
     profiles: plan.profiles.map((profile, index) => ({ ...profile, crystal: plan.crystalAssignments.intermission.includes(index) })),
     crystalAssignments: plan.crystalAssignments,
+    tankAssignments: normalizeTankAssignments(plan.tankAssignments),
   }
 }
 function persistRaidPlan(plan: RaidPlan) {
@@ -439,6 +457,7 @@ function persistRaidPlan(plan: RaidPlan) {
   localStorage.setItem('lura-intermission-crystal-assignments', JSON.stringify(plan.crystalAssignments.intermission))
   localStorage.setItem('lura-p2-crystal-assignments', JSON.stringify(plan.crystalAssignments.p2))
   localStorage.setItem('lura-p3-crystal-assignments', JSON.stringify(plan.crystalAssignments.p3))
+  localStorage.setItem('lura-tank-assignments', JSON.stringify(plan.tankAssignments))
   localStorage.setItem('lura-start-slots', JSON.stringify(plan.startSlots))
 }
 function loadStartSlots(): Assignment[] {
@@ -447,6 +466,13 @@ function loadStartSlots(): Assignment[] {
     if (Array.isArray(saved) && saved.length === 4 && saved.every(point => Number.isFinite(point.x) && Number.isFinite(point.y))) return saved.map(clampStartSlot)
   } catch { /* use defaults */ }
   return DEFAULT_START_SLOTS.map(point => ({ ...point }))
+}
+function loadTankAssignments(): [number, number] {
+  try {
+    return normalizeTankAssignments(JSON.parse(localStorage.getItem('lura-tank-assignments') || 'null'))
+  } catch {
+    return [...DEFAULT_TANK_ASSIGNMENTS]
+  }
 }
 function clampStartSlot(point: Assignment): Assignment {
   const dx = point.x - WORLD.center.x
@@ -551,6 +577,7 @@ export default function App() {
   const [p3Positions, setP3Positions] = useState<Assignment[]>(() => initialSharedPlan?.p3Positions ?? loadP3Positions())
   const [p3BossPositions, setP3BossPositions] = useState<Assignment[]>(() => initialSharedPlan?.p3BossPositions ?? loadP3BossPositions())
   const [startSlots, setStartSlots] = useState<Assignment[]>(() => initialSharedPlan?.startSlots ?? loadStartSlots())
+  const [tankAssignments, setTankAssignments] = useState<[number, number]>(() => initialSharedPlan?.tankAssignments ?? loadTankAssignments())
   const setP1BossOpening = (point: Assignment) => {
     setP1BossOpeningState(point)
     setStartSlots(current => current.map((slot, index) => index === 0 ? point : slot))
@@ -620,6 +647,8 @@ export default function App() {
   const [health, setHealth] = useState(100)
   const [healthPotUsed, setHealthPotUsed] = useState(false)
   const [shieldUsed, setShieldUsed] = useState(false)
+  const [tankMechanic, setTankMechanic] = useState<TankMechanicState>(createTankMechanicState)
+  const [p4PlayerConeUntil, setP4PlayerConeUntil] = useState(0)
   const [bossHealth, setBossHealth] = useState(100)
   const [mainCastState, setMainCastState] = useState<MainAbilityCastState>(idleMainAbilityCast)
   const [mainAbilityUsed, setMainAbilityUsed] = useState(false)
@@ -643,9 +672,10 @@ export default function App() {
   const [p1StolenCrystalSlot, setP1StolenCrystalSlot] = useState<number | null>(null)
   const [p1WrongCrystalDeadline, setP1WrongCrystalDeadline] = useState<number | null>(null)
   const phaseCrystalAssignments: PhaseCrystalAssignments = { p1: p1CrystalAssignments, intermission: intermissionCrystalAssignments, p2: p2CrystalAssignments, p3: p3CrystalAssignments }
-  const activeCrystalAssignments = event.startsWith('p1-') ? p1CrystalAssignments : event.startsWith('p2-') ? p2CrystalAssignments : event.startsWith('p3-') ? p3CrystalAssignments : event.startsWith('p4-') ? [] : intermissionCrystalAssignments
-  const entryCrystalAssignments = entryMode === 'arena0' ? p1CrystalAssignments : entryMode === 'arena2' ? p2CrystalAssignments : entryMode === 'arena3' ? p3CrystalAssignments : entryMode === 'arena4' ? [] : intermissionCrystalAssignments
+  const activeCrystalAssignments = event.startsWith('p1-') ? p1CrystalAssignments : event.startsWith('p2-') ? p2CrystalAssignments : event.startsWith('p3-') ? p3CrystalAssignments : event.startsWith('p4-') ? NO_CRYSTAL_ASSIGNMENTS : intermissionCrystalAssignments
+  const entryCrystalAssignments = entryMode === 'arena0' ? p1CrystalAssignments : entryMode === 'arena2' ? p2CrystalAssignments : entryMode === 'arena3' ? p3CrystalAssignments : entryMode === 'arena4' ? NO_CRYSTAL_ASSIGNMENTS : intermissionCrystalAssignments
   const activeCrystalCarriers = crystalNpcOrdinals(activeCrystalAssignments, assignment)
+  const controlledTank = (tankAssignments.indexOf(assignment) >= 0 ? tankAssignments.indexOf(assignment) : null) as TankIndex | null
   const hitRef = useRef(false)
   const unsafeRef = useRef(false)
   const wipeRef = useRef(false)
@@ -666,6 +696,15 @@ export default function App() {
   const nextHealthTargetRef = useRef(Infinity)
   const healthPotUsedRef = useRef(false)
   const shieldUsedRef = useRef(false)
+  const tankMechanicRef = useRef<TankMechanicState>(createTankMechanicState())
+  const tankHudSignatureRef = useRef('')
+  const tankFailureCountRef = useRef(0)
+  const tankRolePlayedRef = useRef(false)
+  const tankCrystalRolePlayedRef = useRef(false)
+  const p4ConeTankPlayedRef = useRef(false)
+  const p4ProtectionTankPlayedRef = useRef(false)
+  const p4PlayerConeUntilRef = useRef(0)
+  const p4PlayerConeReadyAtRef = useRef(0)
   const recoveryUseCountRef = useRef(0)
   const mainAbilityCastRef = useRef<MainAbilityCastState>(idleMainAbilityCast())
   const mainAbilityCastCountRef = useRef(0)
@@ -1173,6 +1212,18 @@ export default function App() {
       bossPlayerDamageRef.current = 0
       setLuraKilledEarly(false)
     }
+    const initialTankState = createTankMechanicState()
+    tankMechanicRef.current = initialTankState
+    tankHudSignatureRef.current = ''
+    setTankMechanic(initialTankState)
+    tankFailureCountRef.current = 0
+    tankRolePlayedRef.current = controlledTank !== null
+    tankCrystalRolePlayedRef.current = controlledTank !== null && entryCrystalAssignments.includes(assignment)
+    p4ConeTankPlayedRef.current = false
+    p4ProtectionTankPlayedRef.current = false
+    p4PlayerConeUntilRef.current = 0
+    p4PlayerConeReadyAtRef.current = 0
+    setP4PlayerConeUntil(0)
     jumpUntilRef.current = 0; jumpKeysRef.current.clear(); p4LastBoxHitRef.current = -Infinity; p4UnsafeSecondsRef.current = 0; setPersonalJumpProgress(0); setMusicPreviewing(false); restartMusic()
     setPhasePositions(entryMode === 'arena0' ? p1Positions : oriented); setStartSlot(slot); playerRef.current = startPosition; jumpOriginRef.current = startPosition; pullOriginRef.current = startPosition; p3FlightOriginRef.current = startPosition; crystalAgeRef.current = 0; eventTimeRef.current = 0; p3UnsafeSecondsRef.current = 0; if (!preserveScore) timeRef.current = 0; droppedForPackRef.current = false; healthRef.current = 100; healthTargetRef.current = 100; nextHealthTargetRef.current = Infinity; healthPotUsedRef.current = false; shieldUsedRef.current = false; mainAbilityCastRef.current = idleMainAbilityCast(); setMainCastState(mainAbilityCastRef.current); setHealth(100); setHealthPotUsed(false); setShieldUsed(false); setBossHealth(100); if (!preserveScore) setMainAbilityUsed(false); setMainProjectileFiredAt(null); setPlayer(startPosition); setCrystal(null); setCrystalSpent(false); setCrystalAge(0); setNpcSplinters([]); setNpcCrystals([]); setNpcCarrier(null); setNpcCrystalAge(0); setPlayerSplinterRotation(0); setP3ArchangelDuty(randomCrystalDropDuty()); if (preserveScore) setStats(current => ({ ...current, crystalDropped: false })); else { statsRef.current = { score: 1000, hits: 0, crystalDropped: false, time: 0 }; setStats(statsRef.current); setMistakes([]); wipeCountRef.current = 0; mainAbilityCastCountRef.current = 0; recoveryUseCountRef.current = 0; playerCrystalFailuresRef.current = 0; playerRuneFailuresRef.current = 0; playerPauseStartedRef.current = false; playerPauseCycleRef.current = false; phaseResultsRef.current = []; setPhaseResults([]); phaseStartRef.current = { key: phaseForEntry(entryMode), score: 1000, time: 0, hits: 0 }; resetPhaseRecovery(phaseForEntry(entryMode)); const nextAttempt = Math.max(0, Number(localStorage.getItem('lura-attempt-count')) || 0) + 1; localStorage.setItem('lura-attempt-count', String(nextAttempt)); setAttemptNumber(nextAttempt); setCompletionCopyStatus('') } lastMistakeRef.current = { label: '', time: -Infinity }; setWipeReason(''); setSoftWipeNotice(''); announceCrystalDuty([], entryCrystalAssignments, entryMode === 'arena0' ? 'P1' : entryMode === 'arena1' ? 'Intermission' : entryMode === 'arena2' ? 'P2' : entryMode === 'arena3' ? 'P3' : 'P4', true); setEvent(entryMode === 'arena0' ? 'p1-countdown' : entryMode === 'arena2' ? 'p2-countdown' : entryMode === 'arena3' ? 'p3-countdown' : entryMode === 'arena4' ? 'p4-countdown' : 'countdown'); setEventTime(0); setCycle(1); setP2Cycle(1); setP2Soaked(false); setP2OrbReturnAge(-1); setP2BeamAssignees([]); setP2BeamOrbIndices([]); setP2ReturningOrbIndices([]); setP2ResolvedOrbIndices([]); p2SeedRef.current = Math.floor(Math.random() * 2147483647); p2BeamOrbIndicesRef.current = []; p2ResolvedOrbIndicesRef.current = []; p2OrbPlayerHitRef.current = false; p2OrbReturnAgeRef.current = -1; p2OrbReturnHitRef.current = false; p2ReturnSoakCheckedRef.current = false; setP3Round(1); setP3PoolHealth(Array(6).fill(P3_POOL_HEALTH)); setP3RuneOrder(shuffledRunes()); setP3RuneStep(0); p3ResolvedRunesRef.current = []; setP3ResolvedRunes([]); p3RuneCheckedRef.current = false; setP3ResolvedRunes([]); p3RuneCheckedRef.current = false; p3RuneContactRef.current = false; p3WrongRuneSinceRef.current = { rune: null, since: 0 }; p3WrongRuneContactRef.current = false; p3RuneFailedRef.current = false; p3StarsCycleRef.current = -1; p3LandingRequiredRef.current = difficulty === 'hard' || difficulty === 'normal' && Math.random() < .5; setP1Sequence(1); const nextP1Seed = Math.floor(Math.random() * 2147483647); setP1Seed(nextP1Seed); p1InterruptAssignmentRef.current = p1InterruptAssignment(nextP1Seed + assignment); setP1InterruptCast(0); p1InterruptPressedRef.current = false; setP1InterruptPressed(false); setP1MemoryOrderState(p1MemoryOrder(nextP1Seed, 1)); setP1FailedMemoryRune(null); p1MemoryFailureTriggeredRef.current = false; p1GlaiveSetsRef.current = []; p1GlaiveContactRef.current = false; setP1GlaiveSets([]); setP1Soaks([]); setP1SoakResolved([]); p1SoakHitRef.current = false; setP1CrystalCollected(false); hitRef.current = false; unsafeRef.current = false; wipeRef.current = false; lastWipeAtRef.current = -Infinity; chooseBossPattern(oriented[assignment]); setPaused(false); setScreen('game')
     if (preserveScore) {
@@ -1219,6 +1270,7 @@ export default function App() {
           p2SpreadPositions,
           p3Positions,
           p3BossPositions,
+          tankAssignments,
           crystalAssignments: {
             p1: p1CrystalAssignments,
             intermission: intermissionCrystalAssignments,
@@ -1319,6 +1371,7 @@ export default function App() {
       if (!e.repeat && e.code === keyBindings.shield) useRecovery('shield')
       if (!e.repeat && e.code === keyBindings.mainAbility) useMainAbility()
       if (!e.repeat && e.code === keyBindings.interrupt) { e.preventDefault(); useInterrupt() }
+      if (!e.repeat && e.code === keyBindings.taunt) { e.preventDefault(); useTankAction() }
     }
     const up = (e: KeyboardEvent) => { const movement = movementActions.find(([action]) => keyBindings[action] === e.code); if (movement) keys.delete(movement[1]) }
     const clearMovement = () => keys.clear()
@@ -1330,6 +1383,22 @@ export default function App() {
       const mainAbilityDt = mainAbilityElapsedSeconds(previous, now, gameSpeed)
       previous = now
       eventTimeRef.current += dt; setEventTime(eventTimeRef.current); timeRef.current += dt; setStats(s => ({ ...s, time: s.time + dt }))
+      const tankResult = advanceTankMechanic(tankMechanicRef.current, dt, {
+        active: tankMechanicActiveForEvent(event),
+        controlledTank,
+        controlledTankHasCrystal: controlledTank !== null && activeCrystalAssignments.includes(assignment) && !crystalSpent,
+        heroic: difficulty === 'hard',
+      })
+      tankMechanicRef.current = tankResult.state
+      const tankHudSignature = `${tankResult.state.stage}:${tankResult.state.activeTank}:${tankResult.state.counter}:${tankResult.state.impactIndex}:${tankResult.state.impaledStacks.join(',')}:${Math.ceil(tankResult.state.playerShieldCooldown * 10)}`
+      if (tankHudSignature !== tankHudSignatureRef.current) {
+        tankHudSignatureRef.current = tankHudSignature
+        setTankMechanic(tankResult.state)
+      }
+      if (controlledTank !== null && activeCrystalAssignments.includes(assignment)) tankCrystalRolePlayedRef.current = true
+      if (event === 'p4-cycle' && controlledTank === 0) p4ConeTankPlayedRef.current = true
+      if (event === 'p4-cycle' && controlledTank === 1) p4ProtectionTankPlayedRef.current = true
+      handleTankMechanicEvents(tankResult.events)
       if (event === 'p1-interrupts') {
         setP1InterruptCast(Math.min(P1_INTERRUPT_CAST_COUNT - 1, Math.floor(eventTimeRef.current / P1_INTERRUPT_CAST_SECONDS)))
         const assignedCastEndsAt = (p1InterruptAssignmentRef.current + 1) * P1_INTERRUPT_CAST_SECONDS
@@ -1550,7 +1619,7 @@ export default function App() {
     }
     frame = requestAnimationFrame(tick)
     return () => { cancelAnimationFrame(frame); window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); window.removeEventListener('blur', clearMovement) }
-  }, [screen, paused, movementSpeed, movementBonus, gameSpeed, event, beamAngles, npcSplinters, crystal, npcCrystals, keyBindings, difficulty, assignment, p1Sequence, p1Seed, p1Soaks, p1Positions, p1BossOpening, p1MemoryOrderState, p2BeamAssignees, p2BeamOrbIndices, p3Round, p3RuneOrder, p3ResolvedRunes, p3Positions, p4PatternSeed, encounterSoundsEnabled, encounterSoundVolume])
+  }, [screen, paused, movementSpeed, movementBonus, gameSpeed, event, beamAngles, npcSplinters, crystal, npcCrystals, keyBindings, difficulty, assignment, controlledTank, activeCrystalAssignments, crystalSpent, p1Sequence, p1Seed, p1Soaks, p1Positions, p1BossOpening, p1MemoryOrderState, p2BeamAssignees, p2BeamOrbIndices, p3Round, p3RuneOrder, p3ResolvedRunes, p3Positions, p4PatternSeed, encounterSoundsEnabled, encounterSoundVolume])
 
   useEffect(() => {
     if (screen !== 'game' || paused) return
@@ -1929,15 +1998,49 @@ export default function App() {
   }, [crystal, crystalAge, event])
   useEffect(() => { if (!npcCrystals.length || npcCrystalAge < 6) return; setNpcCrystals([]); setNpcCarrier(null); setNpcCrystalAge(0) }, [npcCrystals, npcCrystalAge])
 
+  function handleTankMechanicEvents(events: TankMechanicEvent[]) {
+    events.forEach(tankEvent => {
+      if (tankEvent.type === 'failure') {
+        tankFailureCountRef.current += 1
+        if (tankFailureCountRef.current >= 2) triggerWipe(`${tankEvent.reason} (tank strike 2/2)`, WIPE_PENALTY, true)
+        else recordMistake(`${tankEvent.reason} (tank strike 1/2)`, 250, 0)
+      }
+      if (tankEvent.type === 'tears') {
+        recordMistake('Crystal tank triggered Tears of L’ura during Heaven’s Lance', 50, 0)
+      }
+    })
+  }
+  function useTankAction() {
+    if (jumpUntilRef.current > timeRef.current || controlledTank === null) return
+    if (event === 'p4-cycle') {
+      if (controlledTank !== 0) return
+      if (timeRef.current < p4PlayerConeReadyAtRef.current) return
+      p4PlayerConeUntilRef.current = timeRef.current + P4_TANK_CONE_DURATION_SECONDS
+      p4PlayerConeReadyAtRef.current = timeRef.current + P4_TANK_CONE_INTERVAL_SECONDS
+      setP4PlayerConeUntil(p4PlayerConeUntilRef.current)
+      return
+    }
+    const result = requestTankTaunt(tankMechanicRef.current, controlledTank)
+    tankMechanicRef.current = result.state
+    setTankMechanic(result.state)
+    handleTankMechanicEvents(result.events)
+  }
   function useRecovery(action: 'healthPot' | 'shield') {
     if (jumpUntilRef.current > timeRef.current) return
     const usedRef = action === 'healthPot' ? healthPotUsedRef : shieldUsedRef
-    if (usedRef.current) return
+    const recurringTankShield = action === 'shield' && controlledTank !== null
+    if (recurringTankShield) {
+      const prepared = prepareTankDefensive(tankMechanicRef.current, controlledTank)
+      if (prepared === tankMechanicRef.current) return
+      tankMechanicRef.current = prepared
+      setTankMechanic(prepared)
+    } else if (usedRef.current) return
+    const firstUseThisPhase = !usedRef.current
     usedRef.current = true
     recoveryUseCountRef.current += 1
     if (action === 'healthPot') setHealthPotUsed(true)
     else setShieldUsed(true)
-    const reactedInTime = healthRef.current < 30 && phaseRecoveryRef.current.status === 'pending'
+    const reactedInTime = firstUseThisPhase && healthRef.current < 30 && phaseRecoveryRef.current.status === 'pending'
     if (reactedInTime) {
       phaseRecoveryRef.current.status = 'passed'
       statsRef.current = { ...statsRef.current, score: statsRef.current.score + 50 }
@@ -2123,23 +2226,30 @@ export default function App() {
   }
   function checkHazards(position: Point, dt: number) {
     if (event.startsWith('p4-')) {
-      const stack = event === 'p4-cycle'
+      const scriptedStack = event === 'p4-cycle'
         ? p4GroupPosition(p4CycleRef.current, eventTimeRef.current, WORLD.center)
         : p4StackPosition(1, WORLD.center)
+      const npcProfileIndices = p4NpcProfileIndices(profiles.length, assignment)
+      const stack = event === 'p4-cycle'
+        ? p4ProtectionCenter(scriptedStack, position, controlledTank, renderedNpcPositionsRef.current, npcProfileIndices, tankAssignments)
+        : scriptedStack
       if (event === 'p4-cycle') {
+        const splinterActorOrdinals = p4NpcSplinterActorOrdinals(npcProfileIndices, tankAssignments)
         const encounterBoxes = p4EncounterBoxStates(p4CycleRef.current, eventTimeRef.current, WORLD.center)
         const destroyBoxesHitBySplinter = (origin: Point, rotation: number) => encounterBoxes.forEach(box => {
           if (box.active && p4SplinterHitsGroup(origin, rotation, box.position, box.size) && !p4DestroyedBoxIdsRef.current.has(box.id)) {
             p4DestroyedBoxIdsRef.current.add(box.id)
           }
         })
-        const duty = p4PlayerSplinterDuty(assignment, p4CycleRef.current, p4PatternSeed)
-        const age = p4SplinterAge(p4CycleRef.current, eventTimeRef.current, duty)
-        const checkId = p4CycleRef.current * 10 + duty
-        if (p4SplinterResolutionActive(age) && p4SplinterCheckedRef.current !== checkId) {
-          p4SplinterCheckedRef.current = checkId
-          const rotation = p4SplinterRotation(p4CycleRef.current, duty, p4PatternSeed)
-          destroyBoxesHitBySplinter(position, rotation)
+        const duty = controlledTank === null ? p4PlayerSplinterDuty(assignment, p4CycleRef.current, p4PatternSeed) : -1
+        if (duty >= 0) {
+          const age = p4SplinterAge(p4CycleRef.current, eventTimeRef.current, duty)
+          const checkId = p4CycleRef.current * 10 + duty
+          if (p4SplinterResolutionActive(age) && p4SplinterCheckedRef.current !== checkId) {
+            p4SplinterCheckedRef.current = checkId
+            const rotation = p4SplinterRotation(p4CycleRef.current, duty, p4PatternSeed)
+            destroyBoxesHitBySplinter(position, rotation)
+          }
         }
         for (let ordinal = 0; ordinal < 3; ordinal += 1) {
           if (ordinal === duty) continue
@@ -2149,12 +2259,19 @@ export default function App() {
           p4NpcSplinterCheckedRef.current.add(npcCheckId)
           const rotation = p4SplinterRotation(p4CycleRef.current, ordinal, p4PatternSeed)
           const fallbackOrigin = p4NpcSplinterPosition(stack, WORLD.center, ordinal, npcAge, rotation)
-          const origin = p4RenderedNpcSplinterOrigin(renderedNpcPositionsRef.current, ordinal, fallbackOrigin)
+          const origin = p4RenderedNpcSplinterOrigin(renderedNpcPositionsRef.current, ordinal, fallbackOrigin, splinterActorOrdinals)
           destroyBoxesHitBySplinter(origin, rotation)
         }
-        const frontSoaker = p4FrontSoakerPosition(stack, WORLD.center)
-        const frontConeActive = p4TankConeActive(eventTimeRef.current)
-        const frontConeAngle = Math.atan2(WORLD.center.y - frontSoaker.y, WORLD.center.x - frontSoaker.x)
+        const coneTankOrdinal = p4NpcOrdinalForProfile(npcProfileIndices, tankAssignments[0])
+        const frontSoaker = controlledTank === 0
+          ? position
+          : coneTankOrdinal === null
+            ? p4FrontSoakerPosition(stack, WORLD.center)
+            : renderedNpcPositionsRef.current[coneTankOrdinal] ?? p4FrontSoakerPosition(stack, WORLD.center)
+        const frontConeActive = controlledTank === 0 ? timeRef.current < p4PlayerConeUntilRef.current : p4TankConeActive(eventTimeRef.current)
+        const frontConeAngle = controlledTank !== 0
+          ? Math.atan2(WORLD.center.y - frontSoaker.y, WORLD.center.x - frontSoaker.x)
+          : Math.atan2(cameraForward.current.y, cameraForward.current.x)
         encounterBoxes.forEach(box => {
           const tankDestroyed = p4TankKillsBox(box.position, frontSoaker)
             || frontConeActive && p4TankConeHitsBox(box.position, frontSoaker, frontConeAngle, box.size / 2)
@@ -2323,7 +2440,7 @@ export default function App() {
     setMistakes(current => [{ id: Date.now() + Math.random(), time: timeRef.current, label, penalty }, ...current])
     setStats(s => ({ ...s, score: Math.max(0, s.score - penalty), hits: s.hits + 1 }))
   }
-  function triggerWipe(label: string, penalty = WIPE_PENALTY): boolean {
+  function triggerWipe(label: string, penalty = WIPE_PENALTY, forceTerminal = false): boolean {
     if (wipeRef.current) return true
     if (shouldSuppressRepeatedWipe(lastWipeAtRef.current, timeRef.current)) return false
     lastWipeAtRef.current = timeRef.current
@@ -2365,7 +2482,7 @@ export default function App() {
       })
     }
     wipeCountRef.current += 1
-    const canRecover = canRecoverFromWipe(difficulty, wipeCountRef.current, stats.score, penalty)
+    const canRecover = !forceTerminal && canRecoverFromWipe(difficulty, wipeCountRef.current, stats.score, penalty)
     setFailureFlash(true)
     window.setTimeout(() => setFailureFlash(false), 420)
     recordMistake(`${label} — wipe`, penalty, 0)
@@ -2403,6 +2520,7 @@ export default function App() {
   const enabledExtras = [
     recoveryUseCountRef.current ? `${recoveryUseCountRef.current} recovery item${recoveryUseCountRef.current === 1 ? '' : 's'} used` : '',
     mainAbilityUsed ? 'Main ability used' : '',
+    tankRolePlayedRef.current ? tankCrystalRolePlayedRef.current ? 'Tank + crystal duty' : 'Tank duty' : '',
     bossPlayerDamageRef.current >= 10 ? `${Math.floor(bossPlayerDamageRef.current / 10) * 10}% boss damage · +${Math.floor(bossPlayerDamageRef.current / 10) * 50} points` : '',
   ].filter(Boolean)
   const extrasSummary = enabledExtras.length
@@ -2432,6 +2550,10 @@ export default function App() {
     recoveryUses: recoveryUseCountRef.current,
     earlyKill: luraKilledEarly,
     p3EarlyClear: p3DamageClear,
+    tankRole: tankRolePlayedRef.current,
+    tankCrystalRole: tankCrystalRolePlayedRef.current,
+    p4ConeTankRole: p4ConeTankPlayedRef.current,
+    p4ProtectionTankRole: p4ProtectionTankPlayedRef.current,
   }
   const collectibleAwards = collectibleAchievements(achievementSummary, achievementCollection, attemptNumber)
   const newCollectibleAwards = newlyEarnedAchievements(collectibleAwards, achievementCollection)
@@ -2496,6 +2618,10 @@ export default function App() {
         pauseCycle: playerPauseCycleRef.current,
         earlyKill: luraKilledEarly,
         p3EarlyClear: p3DamageClear,
+        tankRole: tankRolePlayedRef.current,
+        tankCrystalRole: tankCrystalRolePlayedRef.current,
+        p4ConeTankRole: p4ConeTankPlayedRef.current,
+        p4ProtectionTankRole: p4ProtectionTankPlayedRef.current,
       },
       submittedScore: Math.round(stats.score),
       trainerVersion: APP_VERSION,
@@ -2687,7 +2813,8 @@ export default function App() {
     </section>
     <section className="setup-tab-panel" aria-label="Raid plan" hidden={setupTab !== 'raidplan'}>
     <div className="plan-heading raid-planning-heading" id="raid-planning"><p className="eyebrow">RAID PLANNING</p><h2>Layouts and sharing</h2><p className="hint">Load a guild layout, exchange a complete plan, or configure each phase below.</p><a className="setup-back-to-top" href="#setup-top" aria-label="Back to top from Raid planning" onClick={event => scrollToSetupSection(event, 'setup-top')}>↑ Top</a></div>
-    <fieldset className="raid-share-settings" aria-label="Raid-plan sharing"><legend>Raid-plan sharing</legend><p className="assignment">Save, load, or share the complete plan<span>Names, classes, Intermission/P2/P3 positions, crystal assignments, and start slots are included.</span></p><div className="editor-actions"><button className={layoutSaveConfirmed ? 'save-confirmed' : ''} onClick={savePositions}>{layoutSaveConfirmed ? '✓ Layout saved' : 'Save layout'}</button><button onClick={resetPositions}>Reset</button></div><button className="asgard-plan-link" type="button" onClick={loadAsgardRaidPlan}>Load I Asgard I raid plan<span>Bundled guild layout · loads here and saves to this browser</span></button><label className="profile-control">Share link or code<input aria-label="Raid plan share code" value={shareInput} onChange={event => setShareInput(event.target.value)} placeholder="Paste a shared plan here" /></label><div className="editor-actions"><button onClick={copyRaidPlan}>Copy share link</button><button onClick={applyRaidPlan}>Load shared plan</button></div>{shareStatus && <p className="share-status" role="status">{shareStatus}</p>}</fieldset>
+    <fieldset className="raid-share-settings" aria-label="Raid-plan sharing"><legend>Raid-plan sharing</legend><p className="assignment">Save, load, or share the complete plan<span>Names, classes, tank/crystal roles, all phase positions, and start slots are included.</span></p><div className="editor-actions"><button className={layoutSaveConfirmed ? 'save-confirmed' : ''} onClick={savePositions}>{layoutSaveConfirmed ? '✓ Layout saved' : 'Save layout'}</button><button onClick={resetPositions}>Reset</button></div><button className="asgard-plan-link" type="button" onClick={loadAsgardRaidPlan}>Load I Asgard I raid plan<span>Bundled guild layout · loads here and saves to this browser</span></button><label className="profile-control">Share link or code<input aria-label="Raid plan share code" value={shareInput} onChange={event => setShareInput(event.target.value)} placeholder="Paste a shared plan here" /></label><div className="editor-actions"><button onClick={copyRaidPlan}>Copy share link</button><button onClick={applyRaidPlan}>Load shared plan</button></div>{shareStatus && <p className="share-status" role="status">{shareStatus}</p>}</fieldset>
+    <TankAssignmentEditor assignments={tankAssignments} profiles={profiles} onChange={(slot, playerIndex) => setTankAssignments(current => updateTankAssignment(current, slot, playerIndex))} />
     {FEATURE_FLAGS.phaseOne && <><div className="plan-heading"><p className="eyebrow">PHASE 1 RAID PLAN</p><h2>Interrupt and crystal positions</h2><p className="hint">P1 uses the wider outer arena. Player assignments must remain between the central void and outer wall; L’ura’s opening position remains freely assignable.</p></div><P2PositionMap phaseOne bossPosition={p1BossOpening} onBossChange={setP1BossOpening} mapLabel="Phase 1 position map" buttonLabel="P1" assignment={assignment} positions={p1Positions} profiles={profiles.map((profile, index) => ({ ...profile, crystal: p1CrystalAssignments.includes(index) }))} onChange={(index, point) => { setAssignment(index); setP1Positions(current => normalizeP1Assignments(current.map((position, positionIndex) => positionIndex === index ? point : position))) }} /><CrystalAssignmentEditor phaseLabel="Phase 1" assignments={p1CrystalAssignments} profiles={profiles} onChange={(slot, playerIndex) => setP1CrystalAssignments(current => updateCrystalAssignmentSlot(current, slot, playerIndex))} /></>}
     <div className="plan-heading"><p className="eyebrow">INTERMISSION RAID PLAN</p><h2>Opening positions</h2><p className="hint">Drag all 20 players into the playable ring and place the four start-slot orientation anchors.</p></div>
     <PositionMap assignment={assignment} positions={positions} startSlots={startSlots} profiles={intermissionProfiles} onPositionChange={(index, point) => { setAssignment(index); setPositions(current => current.map((position, positionIndex) => positionIndex === index ? point : position)) }} onStartSlotChange={(index, point) => setStartSlots(current => current.map((slot, slotIndex) => slotIndex === index ? clampStartSlot(point) : slot))} />
@@ -2755,8 +2882,8 @@ export default function App() {
     <div className="actions"><button onClick={start}>Run it again</button><button className="secondary" onClick={() => setScreen('menu')}>Change setup</button></div>
   </main>
   function updateProfile(update: Partial<PlayerProfile>) { setProfiles(current => current.map((profile, index) => index === assignment ? { ...profile, ...update } : profile)) }
-  function currentRaidPlan(): RaidPlan { return normalizeRaidPlanForUse({ p1Positions, p1BossPosition: p1BossOpening, positions, p2Positions, p2SpreadPositions, p3Positions, p3BossPositions, startSlots, profiles, crystalAssignments: phaseCrystalAssignments }) }
-  function loadRaidPlanIntoApp(sourcePlan: RaidPlan) { const plan = normalizeRaidPlanForUse(sourcePlan); persistRaidPlan(plan); setP1Positions(plan.p1Positions); setP1BossOpening(plan.p1BossPosition); setPositions(plan.positions); setPhasePositions(plan.positions); setP2Positions(plan.p2Positions); setP2SpreadPositions(plan.p2SpreadPositions); setP3Positions(plan.p3Positions); setP3BossPositions(plan.p3BossPositions); setStartSlots(plan.startSlots); setProfiles(plan.profiles); setP1CrystalAssignments(plan.crystalAssignments.p1); setIntermissionCrystalAssignments(plan.crystalAssignments.intermission); setP2CrystalAssignments(plan.crystalAssignments.p2); setP3CrystalAssignments(plan.crystalAssignments.p3) }
+  function currentRaidPlan(): RaidPlan { return normalizeRaidPlanForUse({ p1Positions, p1BossPosition: p1BossOpening, positions, p2Positions, p2SpreadPositions, p3Positions, p3BossPositions, startSlots, profiles, crystalAssignments: phaseCrystalAssignments, tankAssignments }) }
+  function loadRaidPlanIntoApp(sourcePlan: RaidPlan) { const plan = normalizeRaidPlanForUse(sourcePlan); persistRaidPlan(plan); setP1Positions(plan.p1Positions); setP1BossOpening(plan.p1BossPosition); setPositions(plan.positions); setPhasePositions(plan.positions); setP2Positions(plan.p2Positions); setP2SpreadPositions(plan.p2SpreadPositions); setP3Positions(plan.p3Positions); setP3BossPositions(plan.p3BossPositions); setStartSlots(plan.startSlots); setProfiles(plan.profiles); setTankAssignments(plan.tankAssignments); setP1CrystalAssignments(plan.crystalAssignments.p1); setIntermissionCrystalAssignments(plan.crystalAssignments.intermission); setP2CrystalAssignments(plan.crystalAssignments.p2); setP3CrystalAssignments(plan.crystalAssignments.p3) }
   function savePositions() {
     persistRaidPlan(currentRaidPlan())
     setShareStatus('Layout saved')
@@ -2788,6 +2915,7 @@ export default function App() {
     setIntermissionCrystalAssignments(defaultCrystals)
     setP2CrystalAssignments(defaultCrystals)
     setP3CrystalAssignments(defaultCrystals)
+    setTankAssignments([...DEFAULT_TANK_ASSIGNMENTS])
     persistRaidPlan({
       p1Positions: defaultP1,
       p1BossPosition: { ...DEFAULT_P1_BOSS_POSITION },
@@ -2799,6 +2927,7 @@ export default function App() {
       startSlots: defaultStarts,
       profiles: defaultProfiles,
       crystalAssignments: { p1: defaultCrystals, intermission: defaultCrystals, p2: defaultCrystals, p3: defaultCrystals },
+      tankAssignments: [...DEFAULT_TANK_ASSIGNMENTS],
     })
     setShareStatus('Default layout restored')
   }
@@ -2825,8 +2954,8 @@ export default function App() {
   const mainCastRemaining = mainCastState.phase === 'casting'
     ? mainCastState.remaining
     : 0
-  const hudActionCallbacks = { activityNotification: activityNotificationQueue[0], onMainAbility: useMainAbility, onInterrupt: useInterrupt, onHealthPot: () => useRecovery('healthPot'), onShield: () => useRecovery('shield') }
-  return <GameArena hudActionButtonsEnabled={hudActionButtonsEnabled} {...hudActionCallbacks} p1Sequence={p1Sequence} p1Seed={p1Seed} p1BossOpening={p1BossOpening} p1InterruptAssignment={p1InterruptAssignmentRef.current} p1InterruptCast={p1InterruptCast} p1InterruptPressed={p1InterruptPressed} p1RunePanelOrientation={p1RunePanelOrientation} p1MemoryOrder={p1MemoryOrderState} p1FailedMemoryRune={p1FailedMemoryRune} p1GlaiveSets={p1GlaiveSets} p1Soaks={p1Soaks} p1SoakResolved={p1SoakResolved} p1CrystalAssignments={p1CrystalAssignments} p1CrystalCollected={p1CrystalCollected} p1WrongCrystalHeld={p1WrongCrystalHeld} p1StolenCrystalSlot={p1StolenCrystalSlot} p1WrongCrystalDeadline={p1WrongCrystalDeadline} combatProjectilesEnabled={combatProjectilesEnabled} mainProjectileFiredAt={mainProjectileFiredAt} bossHealth={bossHealth} mainCastRemaining={mainCastRemaining} personalJumpProgress={personalJumpProgress} musicMuted={musicMuted} encounterSoundsEnabled={encounterSoundsEnabled} ttsAvailable={raidleadAvailable} ttsEnabled={ttsEnabled} softWipeNotice={softWipeNotice} crystalDutyNotice={crystalDutyNotice} hudLayout={hudLayout} positions={activePositions} intermissionPositions={phasePositions} p2SoakPositions={p2Positions} p2SpreadPositions={p2SpreadPositions} p3Positions={p3Positions} p3FlightOrigin={p3FlightOriginRef.current} profiles={gameProfiles} raidStart={startSlots[startSlot]} movementSpeed={movementSpeed} movementBonus={movementBonus} gameSpeed={gameSpeed} p2Cycle={p2Cycle} p2Soaked={p2Soaked} p2OrbReturnAge={p2OrbReturnAge} p2BeamAssignees={p2BeamAssignees} p2BeamOrbIndices={p2BeamOrbIndices} p2ReturningOrbIndices={p2ReturningOrbIndices} p2ResolvedOrbIndices={p2ResolvedOrbIndices} p2BeamImpactAngle={p2BeamImpactAngle} onP2OrbitAngle={angle => { p2OrbitAngleRef.current = angle }} p3Round={p3Round} p3ArchangelDuty={activeCrystalAssignments.includes(assignment) ? p3ArchangelDuty : null} crystalSpent={crystalSpent} p4Cycle={p4Cycle} p4PatternSeed={p4PatternSeed} p3PoolHealth={p3PoolHealth} onP3PoolOccupancy={occupancy => { p3PoolOccupancyRef.current = occupancy }} onP3LightCenters={centers => { p3NpcLightCentersRef.current = centers }} onP3RuneContacts={runes => { p3RuneContactsRef.current = runes }} onNpcPositions={positions => { renderedNpcPositionsRef.current = positions }} onP4SplinterHit={reason => triggerWipe(reason)} p3RuneOrder={p3RuneOrder} p3RuneStep={p3RuneStep} p3ResolvedRunes={p3ResolvedRunes} health={health} healthPotUsed={healthPotUsed} shieldUsed={shieldUsed} keyBindings={keyBindings} crystalCarriers={activeCrystalCarriers} beamPattern={beamPattern} failureFlash={failureFlash} wipeReason={wipeReason} player={player} crystal={crystal} npcCrystals={npcCrystals} npcCarrier={npcCarrier} npcCrystalAge={npcCrystalAge} playerSplinterRotation={playerSplinterRotation} crystalAge={crystalAge} role={activeCrystalAssignments.includes(assignment) ? 'carrier' : 'non-carrier'} difficulty={difficulty} assignment={assignment} stats={stats} mistakes={mistakes} startSlotName={`S${startSlot + 1}`} paused={paused} event={event} eventTime={eventTime} beamAngles={beamAngles} npcSplinters={npcSplinters} cycle={cycle} setPaused={setPaused} setMusicMuted={setMusicMuted} setEncounterSoundsEnabled={setEncounterSoundsEnabled} setTtsEnabled={setTtsEnabled} onRetry={start} onExit={() => setScreen('menu')} onDrop={toggleCrystal} onCameraDirection={direction => { cameraForward.current = direction }} />
+  const hudActionCallbacks = { activityNotification: activityNotificationQueue[0], onMainAbility: useMainAbility, onInterrupt: useInterrupt, onTankAction: useTankAction, onHealthPot: () => useRecovery('healthPot'), onShield: () => useRecovery('shield') }
+  return <GameArena hudActionButtonsEnabled={hudActionButtonsEnabled} {...hudActionCallbacks} tankMechanic={tankMechanic} controlledTank={controlledTank} tankAssignments={tankAssignments} p4PlayerConeActive={p4PlayerConeUntil > stats.time} p4PlayerConeCooldown={Math.max(0, p4PlayerConeReadyAtRef.current - stats.time)} p4PlayerConeAngle={Math.atan2(cameraForward.current.y, cameraForward.current.x)} p1Sequence={p1Sequence} p1Seed={p1Seed} p1BossOpening={p1BossOpening} p1InterruptAssignment={p1InterruptAssignmentRef.current} p1InterruptCast={p1InterruptCast} p1InterruptPressed={p1InterruptPressed} p1RunePanelOrientation={p1RunePanelOrientation} p1MemoryOrder={p1MemoryOrderState} p1FailedMemoryRune={p1FailedMemoryRune} p1GlaiveSets={p1GlaiveSets} p1Soaks={p1Soaks} p1SoakResolved={p1SoakResolved} p1CrystalAssignments={p1CrystalAssignments} p1CrystalCollected={p1CrystalCollected} p1WrongCrystalHeld={p1WrongCrystalHeld} p1StolenCrystalSlot={p1StolenCrystalSlot} p1WrongCrystalDeadline={p1WrongCrystalDeadline} combatProjectilesEnabled={combatProjectilesEnabled} mainProjectileFiredAt={mainProjectileFiredAt} bossHealth={bossHealth} mainCastRemaining={mainCastRemaining} personalJumpProgress={personalJumpProgress} musicMuted={musicMuted} encounterSoundsEnabled={encounterSoundsEnabled} ttsAvailable={raidleadAvailable} ttsEnabled={ttsEnabled} softWipeNotice={softWipeNotice} crystalDutyNotice={crystalDutyNotice} hudLayout={hudLayout} positions={activePositions} intermissionPositions={phasePositions} p2SoakPositions={p2Positions} p2SpreadPositions={p2SpreadPositions} p3Positions={p3Positions} p3FlightOrigin={p3FlightOriginRef.current} profiles={gameProfiles} raidStart={startSlots[startSlot]} movementSpeed={movementSpeed} movementBonus={movementBonus} gameSpeed={gameSpeed} p2Cycle={p2Cycle} p2Soaked={p2Soaked} p2OrbReturnAge={p2OrbReturnAge} p2BeamAssignees={p2BeamAssignees} p2BeamOrbIndices={p2BeamOrbIndices} p2ReturningOrbIndices={p2ReturningOrbIndices} p2ResolvedOrbIndices={p2ResolvedOrbIndices} p2BeamImpactAngle={p2BeamImpactAngle} onP2OrbitAngle={angle => { p2OrbitAngleRef.current = angle }} p3Round={p3Round} p3ArchangelDuty={activeCrystalAssignments.includes(assignment) ? p3ArchangelDuty : null} crystalSpent={crystalSpent} p4Cycle={p4Cycle} p4PatternSeed={p4PatternSeed} p3PoolHealth={p3PoolHealth} onP3PoolOccupancy={occupancy => { p3PoolOccupancyRef.current = occupancy }} onP3LightCenters={centers => { p3NpcLightCentersRef.current = centers }} onP3RuneContacts={runes => { p3RuneContactsRef.current = runes }} onNpcPositions={positions => { renderedNpcPositionsRef.current = positions }} onP4SplinterHit={reason => triggerWipe(reason)} p3RuneOrder={p3RuneOrder} p3RuneStep={p3RuneStep} p3ResolvedRunes={p3ResolvedRunes} health={health} healthPotUsed={healthPotUsed} shieldUsed={shieldUsed} keyBindings={keyBindings} crystalCarriers={activeCrystalCarriers} beamPattern={beamPattern} failureFlash={failureFlash} wipeReason={wipeReason} player={player} crystal={crystal} npcCrystals={npcCrystals} npcCarrier={npcCarrier} npcCrystalAge={npcCrystalAge} playerSplinterRotation={playerSplinterRotation} crystalAge={crystalAge} role={activeCrystalAssignments.includes(assignment) ? 'carrier' : 'non-carrier'} difficulty={difficulty} assignment={assignment} stats={stats} mistakes={mistakes} startSlotName={`S${startSlot + 1}`} paused={paused} event={event} eventTime={eventTime} beamAngles={beamAngles} npcSplinters={npcSplinters} cycle={cycle} setPaused={setPaused} setMusicMuted={setMusicMuted} setEncounterSoundsEnabled={setEncounterSoundsEnabled} setTtsEnabled={setTtsEnabled} onRetry={start} onExit={() => setScreen('menu')} onDrop={toggleCrystal} onCameraDirection={direction => { cameraForward.current = direction }} />
 }
 
 function rayHitsAny(point: Point, origin: Point, rotation = 0, minimumLength = 10, maximumLength = STAR_LENGTH): boolean { return starsplinterHitsPoint(point, origin, rotation, minimumLength, maximumLength) }
@@ -2842,6 +2971,15 @@ function CrystalAssignmentEditor({ phaseLabel, assignments, profiles, onChange }
     <header><div><p className="eyebrow">{phaseLabel.toUpperCase()} CRYSTALS</p><h3>Six crystal carriers</h3></div><p>Each dropdown assigns crystal duty to one raid-plan spot for this phase only.</p></header>
     <div className="phase-crystal-grid">
       {assignments.map((playerIndex, slot) => <label key={slot}><span><i aria-hidden="true">◆</i> Crystal <b>{String(slot + 1).padStart(2, '0')}</b></span><select aria-label={`${phaseLabel} crystal ${slot + 1}`} value={playerIndex} onChange={event => onChange(slot, Number(event.target.value))}>{profiles.map((profile, index) => <option value={index} key={index}>Spot {index + 1} · {profile.name}</option>)}</select></label>)}
+    </div>
+  </section>
+}
+
+function TankAssignmentEditor({ assignments, profiles, onChange }: { assignments: [number, number]; profiles: PlayerProfile[]; onChange: (slot: TankIndex, playerIndex: number) => void }) {
+  return <section className="phase-crystal-editor tank-assignment-editor" aria-label="Tank assignments">
+    <header><div><p className="eyebrow">TANK ROLE</p><h3>Two Heaven’s Lance tanks</h3></div><p>The selected raid-plan spots alternate the boss in P1, P2, and P3. A controlled tank plays the frontal cone in P4 instead of Starsplinter.</p></header>
+    <div className="phase-crystal-grid tank-assignment-grid">
+      {assignments.map((playerIndex, slot) => <label key={slot}><span><i aria-hidden="true">🛡</i> Tank <b>{slot + 1}</b></span><select aria-label={`Tank ${slot + 1}`} value={playerIndex} onChange={event => onChange(slot as TankIndex, Number(event.target.value))}>{profiles.map((profile, index) => <option value={index} key={index}>Spot {index + 1} · {profile.name}</option>)}</select></label>)}
     </div>
   </section>
 }
@@ -3138,7 +3276,7 @@ export function failureAdvice(label: string): string {
   return 'Identify the highlighted danger or assignment, move to the required safe position before resolution, and remain there until the mechanic visibly completes.'
 }
 
-function GameArena(props: { activityNotification: ActivityFeedRow | undefined; hudActionButtonsEnabled: boolean; onMainAbility: () => void; onInterrupt: () => void; onHealthPot: () => void; onShield: () => void; p1Sequence: number; p1Seed: number; p1BossOpening: Point; p1InterruptAssignment: number; p1InterruptCast: number; p1InterruptPressed: boolean; p1RunePanelOrientation: P1RunePanelOrientation; p1MemoryOrder: P1Rune[]; p1FailedMemoryRune: P1Rune | null; p1GlaiveSets: P1GlaiveSet[]; p1Soaks: P1ReactiveSoak[]; p1SoakResolved: number[]; p1CrystalAssignments: number[]; p1CrystalCollected: boolean; p1WrongCrystalHeld: boolean; p1StolenCrystalSlot: number | null; p1WrongCrystalDeadline: number | null; combatProjectilesEnabled: boolean; mainProjectileFiredAt: number | null; bossHealth: number; mainCastRemaining: number; personalJumpProgress: number; musicMuted: boolean; encounterSoundsEnabled: boolean; ttsAvailable: boolean; ttsEnabled: boolean; softWipeNotice: string; crystalDutyNotice: string; hudLayout: HudLayout; positions: Assignment[]; intermissionPositions: Assignment[]; p2SoakPositions: Assignment[]; p2SpreadPositions: Assignment[]; p3Positions: Assignment[]; p3FlightOrigin: Point; profiles: PlayerProfile[]; raidStart: Point; movementSpeed: number; movementBonus: boolean; gameSpeed: number; p2Cycle: number; p2Soaked: boolean; p2OrbReturnAge: number; p2BeamAssignees: number[]; p2BeamOrbIndices: number[]; p2ReturningOrbIndices: number[]; p2ResolvedOrbIndices: number[]; p2BeamImpactAngle: number; onP2OrbitAngle: (angle: number) => void; p3Round: number; p3ArchangelDuty: 1 | 2 | null; crystalSpent: boolean; p4Cycle: number; p4PatternSeed: number; p3PoolHealth: number[]; onP3PoolOccupancy: (occupancy: number[]) => void; onP3LightCenters: (centers: Point[]) => void; onP3RuneContacts: (runes: RuneSymbol[]) => void; onNpcPositions: (positions: Point[]) => void; onP4SplinterHit: (reason: string) => void; p3RuneOrder: RuneSymbol[]; p3RuneStep: number; p3ResolvedRunes: RuneSymbol[]; health: number; healthPotUsed: boolean; shieldUsed: boolean; keyBindings: KeyBindings; crystalCarriers: number[]; beamPattern: 'line' | 'gap'; failureFlash: boolean; wipeReason: string; player: Point; crystal: Point | null; npcCrystals: Point[]; npcCarrier: number | null; npcCrystalAge: number; playerSplinterRotation: number; crystalAge: number; role: Role; difficulty: Difficulty; assignment: number; stats: GameStats; mistakes: Mistake[]; startSlotName: string; paused: boolean; event: EventKind; eventTime: number; beamAngles: number[]; npcSplinters: number[]; cycle: number; setPaused: (p: boolean) => void; setMusicMuted: (muted: boolean) => void; setEncounterSoundsEnabled: (enabled: boolean) => void; setTtsEnabled: (enabled: boolean) => void; onRetry: () => void; onExit: () => void; onDrop: () => void; onCameraDirection: (direction: Point) => void }) {
+function GameArena(props: { activityNotification: ActivityFeedRow | undefined; hudActionButtonsEnabled: boolean; onMainAbility: () => void; onInterrupt: () => void; onTankAction: () => void; onHealthPot: () => void; onShield: () => void; tankMechanic: TankMechanicState; controlledTank: TankIndex | null; tankAssignments: [number, number]; p4PlayerConeActive: boolean; p4PlayerConeCooldown: number; p4PlayerConeAngle: number; p1Sequence: number; p1Seed: number; p1BossOpening: Point; p1InterruptAssignment: number; p1InterruptCast: number; p1InterruptPressed: boolean; p1RunePanelOrientation: P1RunePanelOrientation; p1MemoryOrder: P1Rune[]; p1FailedMemoryRune: P1Rune | null; p1GlaiveSets: P1GlaiveSet[]; p1Soaks: P1ReactiveSoak[]; p1SoakResolved: number[]; p1CrystalAssignments: number[]; p1CrystalCollected: boolean; p1WrongCrystalHeld: boolean; p1StolenCrystalSlot: number | null; p1WrongCrystalDeadline: number | null; combatProjectilesEnabled: boolean; mainProjectileFiredAt: number | null; bossHealth: number; mainCastRemaining: number; personalJumpProgress: number; musicMuted: boolean; encounterSoundsEnabled: boolean; ttsAvailable: boolean; ttsEnabled: boolean; softWipeNotice: string; crystalDutyNotice: string; hudLayout: HudLayout; positions: Assignment[]; intermissionPositions: Assignment[]; p2SoakPositions: Assignment[]; p2SpreadPositions: Assignment[]; p3Positions: Assignment[]; p3FlightOrigin: Point; profiles: PlayerProfile[]; raidStart: Point; movementSpeed: number; movementBonus: boolean; gameSpeed: number; p2Cycle: number; p2Soaked: boolean; p2OrbReturnAge: number; p2BeamAssignees: number[]; p2BeamOrbIndices: number[]; p2ReturningOrbIndices: number[]; p2ResolvedOrbIndices: number[]; p2BeamImpactAngle: number; onP2OrbitAngle: (angle: number) => void; p3Round: number; p3ArchangelDuty: 1 | 2 | null; crystalSpent: boolean; p4Cycle: number; p4PatternSeed: number; p3PoolHealth: number[]; onP3PoolOccupancy: (occupancy: number[]) => void; onP3LightCenters: (centers: Point[]) => void; onP3RuneContacts: (runes: RuneSymbol[]) => void; onNpcPositions: (positions: Point[]) => void; onP4SplinterHit: (reason: string) => void; p3RuneOrder: RuneSymbol[]; p3RuneStep: number; p3ResolvedRunes: RuneSymbol[]; health: number; healthPotUsed: boolean; shieldUsed: boolean; keyBindings: KeyBindings; crystalCarriers: number[]; beamPattern: 'line' | 'gap'; failureFlash: boolean; wipeReason: string; player: Point; crystal: Point | null; npcCrystals: Point[]; npcCarrier: number | null; npcCrystalAge: number; playerSplinterRotation: number; crystalAge: number; role: Role; difficulty: Difficulty; assignment: number; stats: GameStats; mistakes: Mistake[]; startSlotName: string; paused: boolean; event: EventKind; eventTime: number; beamAngles: number[]; npcSplinters: number[]; cycle: number; setPaused: (p: boolean) => void; setMusicMuted: (muted: boolean) => void; setEncounterSoundsEnabled: (enabled: boolean) => void; setTtsEnabled: (enabled: boolean) => void; onRetry: () => void; onExit: () => void; onDrop: () => void; onCameraDirection: (direction: Point) => void }) {
   const [zoomDisplay, setZoomDisplay] = useState(16)
   const [wipeMinimized, setWipeMinimized] = useState(false)
   const [failureLogCopied, setFailureLogCopied] = useState(false)
@@ -3246,6 +3384,18 @@ function GameArena(props: { activityNotification: ActivityFeedRow | undefined; h
   const p1DisplayState = p1AssignedCastActive && !p1KickWindowOpen && !props.p1InterruptPressed
     ? 'red'
     : p1InterruptState(props.p1InterruptAssignment, props.p1InterruptCast)
+  const tankMechanicVisible = props.tankMechanic.stage !== 'suspended'
+  const activeTankProfile = props.profiles[props.tankAssignments[props.tankMechanic.activeTank]]
+  const playerIsActiveTank = props.controlledTank === props.tankMechanic.activeTank
+  const tankCallout = props.tankMechanic.stage === 'burst'
+    ? playerIsActiveTank ? 'DEFENSIVE — HOLD BOSS' : 'HOLD — BURST ACTIVE'
+    : props.tankMechanic.stage === 'swap'
+      ? playerIsActiveTank ? 'HOLD — OTHER TANK TAUNTS' : 'OTHER TANK TAUNT'
+      : props.tankMechanic.counter >= 4
+        ? playerIsActiveTank ? 'LANCE NEXT — PREPARE DEFENSIVE' : 'READY TO TAUNT AFTER BURST'
+        : 'BUILDING HEAVEN’S LANCE'
+  const tankShieldCooling = props.controlledTank !== null && props.tankMechanic.playerShieldCooldown > 0
+  const shieldUnavailable = props.controlledTank === null ? props.shieldUsed : tankShieldCooling
   return <main className="game-shell">
     <LiveActivityToast row={props.activityNotification} />
     <div className="game-top">
@@ -3275,6 +3425,15 @@ function GameArena(props: { activityNotification: ActivityFeedRow | undefined; h
         data-p1-glaive-sets={props.p1GlaiveSets.length}
         data-p1-glaive-set-ids={props.p1GlaiveSets.map(set => set.id).join(',')}
         data-player-profile={`${props.profiles[props.assignment].name}|${props.profiles[props.assignment].playerClass}`}
+        data-tank-role={props.controlledTank === null ? 'none' : `tank-${props.controlledTank + 1}`}
+        data-lance-stage={props.tankMechanic.stage}
+        data-lance-counter={props.tankMechanic.counter}
+        data-lance-impact={props.tankMechanic.impactIndex}
+        data-active-tank={props.tankAssignments[props.tankMechanic.activeTank]}
+        data-tank-shield-cooldown={props.tankMechanic.playerShieldCooldown.toFixed(2)}
+        data-p4-player-splinter-duty={props.controlledTank === null ? p4PlayerSplinterDuty(props.assignment, props.p4Cycle, props.p4PatternSeed) : -1}
+        data-p4-tank-cone-active={props.p4PlayerConeActive}
+        data-p4-tank-cone-cooldown={props.p4PlayerConeCooldown.toFixed(2)}
       >
         <GameScene
           p1Sequence={props.p1Sequence}
@@ -3321,6 +3480,10 @@ function GameArena(props: { activityNotification: ActivityFeedRow | undefined; h
           onP3RuneContacts={props.onP3RuneContacts}
           onNpcPositions={props.onNpcPositions}
           onP4SplinterHit={props.onP4SplinterHit}
+          playerTankRole={props.controlledTank}
+          tankAssignments={props.tankAssignments}
+          playerTankConeActive={props.p4PlayerConeActive}
+          playerTankConeAngle={props.p4PlayerConeAngle}
           p3RuneOrder={props.p3RuneOrder}
           p3RuneStep={props.p3RuneStep}
           p3ResolvedRunes={props.p3ResolvedRunes}
@@ -3353,6 +3516,22 @@ function GameArena(props: { activityNotification: ActivityFeedRow | undefined; h
         </aside>
         {props.softWipeNotice && <div className="soft-wipe-notice" role="status"><span>{props.difficulty === 'test' ? 'Test mode · run continues' : 'Strike 1 / 2 · −500 points'}</span><strong>{props.softWipeNotice}</strong><small>Practice continues</small></div>}
         {props.crystalDutyNotice && <div className="crystal-duty-notice" role="status"><span>PHASE CRYSTAL DUTY</span><strong>{props.crystalDutyNotice}</strong></div>}
+        {tankMechanicVisible && <aside className={`tank-mechanic-hud stage-${props.tankMechanic.stage}`} aria-label="Heaven's Lance tank mechanic">
+          <header><span>HEAVEN’S LANCE</span><strong>{props.tankMechanic.stage === 'burst' ? `${props.tankMechanic.impactIndex} / 5` : `${props.tankMechanic.counter} / 5`}</strong></header>
+          <p>{tankCallout}</p>
+          <small>Active: {activeTankProfile?.name ?? `Tank ${props.tankMechanic.activeTank + 1}`} · Impaled {props.tankMechanic.impaledStacks[0]} / {props.tankMechanic.impaledStacks[1]}</small>
+          {props.controlledTank !== null && <small>Shield {tankShieldCooling ? `${props.tankMechanic.playerShieldCooldown.toFixed(1)}s` : 'ready'} · Taunt {keyLabel(props.keyBindings.taunt)}</small>}
+        </aside>}
+        {phaseFour && props.controlledTank === 0 && <aside className="tank-mechanic-hud p4-tank-duty" aria-label="Phase 4 tank cone">
+          <header><span>TANK 1 · FRONTAL CONE</span><strong>{props.p4PlayerConeActive ? 'ACTIVE' : props.p4PlayerConeCooldown > 0 ? `${props.p4PlayerConeCooldown.toFixed(1)}s` : 'READY'}</strong></header>
+          <p>Face the incoming adds and fire the 30-yard cone.</p>
+          <small>{keyLabel(props.keyBindings.taunt)} · You will not receive Starsplinter.</small>
+        </aside>}
+        {phaseFour && props.controlledTank === 1 && <aside className="tank-mechanic-hud p4-tank-duty" aria-label="Phase 4 protection tank">
+          <header><span>TANK 2 · PROTECTION ZONE</span><strong>FOLLOWED</strong></header>
+          <p>Your position carries the yellow safe zone. Lead the raid through Heaven &amp; Hell.</p>
+          <small>You will not receive Starsplinter.</small>
+        </aside>}
         {phaseOne && (props.event === 'p1-memory-position' || props.event === 'p1-memory-sweep') && <div className={`rune-order p1-rune-order ${props.p1RunePanelOrientation}`} role="status"><span>MEMORY ORDER</span><div className="p1-rune-grid">{props.p1MemoryOrder.map((rune, index) => <strong className={`${props.p1FailedMemoryRune === rune ? 'failed' : props.event === 'p1-memory-sweep' && index <= Math.floor(props.eventTime / P1_MEMORY_SWEEP_SECONDS * 5) ? 'active' : ''}${rune === playerP1Rune ? ' personal' : ''}`} key={`${rune}-${index}`}><small>{index + 1}</small><b>{rune}</b></strong>)}</div></div>}
         {phaseThree && (props.event === 'p3-rune-preview' || props.event === 'p3-lattice-memory' || props.event === 'p3-light-pools' && props.eventTime >= P3_MEMORY_PANEL_SECONDS + 3 && props.eventTime < P3_MEMORY_START_SECONDS + P3_MEMORY_STEP_SECONDS * 3) && <div className="rune-order" role="status"><span>RUNE ORDER</span>{props.p3RuneOrder.map((rune, index) => <strong className={props.p3ResolvedRunes.includes(rune) ? 'done' : memoryGameActive && index === props.p3RuneStep ? 'active' : memoryGameActive && index < props.p3RuneStep ? 'done' : ''} key={`${rune}-${index}`}>{rune}</strong>)}</div>}
         {props.event === 'p2-orbs' && (props.difficulty === 'easy' || props.difficulty === 'test' || props.eventTime >= 2) && <div className={`beam-drop-counter${props.eventTime >= 2 ? ' safe' : ''}`} style={{ left: `${props.hudLayout.beam.x}%`, top: `${props.hudLayout.beam.y}%` }}>{props.eventTime < 2 ? <strong>WAIT TO DROP</strong> : <>{props.difficulty === 'easy' || props.difficulty === 'test' ? 'SAFE TO DROP · ' : ''}BEAM IN <strong>{Math.max(1, Math.ceil(P2_BEAM_SECONDS - props.eventTime))}</strong></>}</div>}
@@ -3391,10 +3570,10 @@ function GameArena(props: { activityNotification: ActivityFeedRow | undefined; h
         </div>
         {props.p1WrongCrystalDeadline !== null && <div className="crystal-countdown wrong-p1-crystal"><>DROP WRONG CRYSTAL<br /><strong>{Math.max(1, Math.ceil(props.p1WrongCrystalDeadline - props.stats.time))}</strong></></div>}
         {props.crystal && <div className="crystal-countdown" style={{ left: `${props.hudLayout.crystal.x}%`, top: `${props.hudLayout.crystal.y}%` }}>{props.event === 'p3-archangel' ? <>PROTECTION<br /><strong>{Math.max(1, Math.ceil(6 - props.eventTime))}</strong></> : <>PICK UP IN<br /><strong>{finalRecovery ? Math.max(1, Math.ceil(2 - props.eventTime)) : Math.max(1, Math.ceil(6 - props.crystalAge))}</strong></>}</div>}
-        <div className={`player-health health-${healthBand(props.health)}`} style={{ left: `${props.hudLayout.playerHealth.x}%`, top: `${props.hudLayout.playerHealth.y}%` }}><div className="health-abilities" aria-label="Recovery charges"><b className={props.healthPotUsed ? 'used' : ''} title={props.healthPotUsed ? 'Health potion used until next phase' : 'Health potion ready'}>🧪 <span>{keyLabel(props.keyBindings.healthPot)}</span></b><b className={props.shieldUsed ? 'used' : ''} title={props.shieldUsed ? 'Shield used until next phase' : 'Shield ready'}>🛡 <span>{keyLabel(props.keyBindings.shield)}</span></b></div><div className="health-track"><i style={{ width: `${props.health}%` }} /></div><span>{Math.round(props.health)}%</span></div>
+        <div className={`player-health health-${healthBand(props.health)}`} style={{ left: `${props.hudLayout.playerHealth.x}%`, top: `${props.hudLayout.playerHealth.y}%` }}><div className="health-abilities" aria-label="Recovery charges"><b className={props.healthPotUsed ? 'used' : ''} title={props.healthPotUsed ? 'Health potion used until next phase' : 'Health potion ready'}>🧪 <span>{keyLabel(props.keyBindings.healthPot)}</span></b><b className={shieldUnavailable ? 'used' : ''} title={props.controlledTank !== null ? tankShieldCooling ? `Tank shield recharging for ${props.tankMechanic.playerShieldCooldown.toFixed(1)} seconds` : 'Tank shield ready' : props.shieldUsed ? 'Shield used until next phase' : 'Shield ready'}>🛡 <span>{props.controlledTank !== null && tankShieldCooling ? props.tankMechanic.playerShieldCooldown.toFixed(1) : keyLabel(props.keyBindings.shield)}</span></b></div><div className="health-track"><i style={{ width: `${props.health}%` }} /></div><span>{Math.round(props.health)}%</span></div>
         <><div className="boss-health" style={{ left: `${props.hudLayout.bossHealth.x}%`, top: `${props.hudLayout.bossHealth.y}%` }}><span>L’URA · {props.bossHealth.toFixed(1)}%{!phaseFour && props.p3Round < 2 && props.bossHealth <= 3 ? <em className="boss-health-shield"> ◈ VEIL PROTECTION</em> : null}</span><div className="boss-health-track"><i style={{ width: `${props.bossHealth}%` }} /></div><small>{phaseFour ? 'L’URA falls steadily over the 88-second phase' : !phaseFour && props.p3Round < 2 && props.bossHealth <= 3 ? 'Damage and points continue · protection ends with P3 sequence two' : 'The veil shudders with every step.'}</small></div>{props.mainCastRemaining > 0 && <div className="player-castbar main-cast" style={{ left: `${props.hudLayout.castbar.x}%`, top: `${props.hudLayout.castbar.y}%` }}><i className="main-cast-fill" style={{ animationDuration: `${MAIN_ABILITY_CAST_SECONDS / Math.max(.01, props.gameSpeed)}s`, animationPlayState: props.paused ? 'paused' : 'running' }} /><b>MAIN ABILITY · {props.mainCastRemaining.toFixed(1)}s</b></div>}</>
         <div className="controls"><span className="controls-copy">{keyLabel(props.keyBindings.forward)}/{keyLabel(props.keyBindings.left)}/{keyLabel(props.keyBindings.backward)}/{keyLabel(props.keyBindings.right)} move · {keyLabel(props.keyBindings.jump)} jump · {keyLabel(props.keyBindings.pause)} pause · left-drag look · right-drag view + face · wheel zoom · Zoom {zoomDisplay.toFixed(1)} yd · {phaseOne ? p1?.detail : phaseFour ? props.event === 'p4-countdown' ? 'Movement unlocks after the countdown and raid knockup.' : props.event === 'p4-transition' ? 'The 21-second Heaven & Hell clock is running; adds begin when the raid lands.' : p4SplinterActive ? 'Three players alternate left, right, left with Starsplinter; Heaven & Hell remains on its global timer.' : p4RelocationProgress(props.p4Cycle, props.eventTime) !== null ? 'Move with the yellow protection zone and leave the consumed quarter behind.' : props.p4Cycle >= 5 ? 'No safe quarter remains. Hold until Lura falls.' : 'Stack safely; Heaven & Hell resolves every 21 seconds.' : p3 ? p3.detail : p2 ? p2.detail : countdown ? `Wait for the timer at ${props.startSlotName}` : positioning ? props.difficulty === 'easy' || props.difficulty === 'test' ? `Follow the teal guide to Spot ${props.assignment + 1}` : `Find Spot ${props.assignment + 1}; its ring appears only when close` : finalRecovery ? 'Two seconds to recover the final crystal before the Phase 2 center jump' : props.role === 'carrier' ? `${keyLabel(props.keyBindings.crystal)} drops the crystal anywhere · move away · pick up in time` : props.cycle === 6 ? 'Final set: all 20 players marked' : 'Dodge the ten marked Starsplinters'}</span><BuildIndicator inGame /></div>
-        {props.hudActionButtonsEnabled && <div className="hud-action-buttons" aria-label="HUD action buttons" style={{ left: `${props.hudLayout.actions.x}%`, top: `${props.hudLayout.actions.y}%` }}><button type="button" onClick={props.onMainAbility} disabled={props.paused || !!props.wipeReason}>Main ability <kbd>{keyLabel(props.keyBindings.mainAbility)}</kbd></button><button type="button" onClick={props.onInterrupt} disabled={props.paused || !!props.wipeReason || props.event !== 'p1-interrupts'}>Interrupt <kbd>{keyLabel(props.keyBindings.interrupt)}</kbd></button><button type="button" onClick={props.onShield} disabled={props.paused || !!props.wipeReason || props.shieldUsed}>Shield <kbd>{keyLabel(props.keyBindings.shield)}</kbd></button><button type="button" onClick={props.onHealthPot} disabled={props.paused || !!props.wipeReason || props.healthPotUsed}>Health potion <kbd>{keyLabel(props.keyBindings.healthPot)}</kbd></button><button type="button" onClick={props.onDrop} disabled={props.paused || !!props.wipeReason || !!props.crystal || (!props.p1WrongCrystalHeld && (phaseOne ? !props.p1CrystalCollected : props.role !== 'carrier' || props.crystalSpent))}>Crystal drop <kbd>{keyLabel(props.keyBindings.crystal)}</kbd></button></div>}
+        {props.hudActionButtonsEnabled && <div className="hud-action-buttons" aria-label="HUD action buttons" style={{ left: `${props.hudLayout.actions.x}%`, top: `${props.hudLayout.actions.y}%` }}><button type="button" onClick={props.onMainAbility} disabled={props.paused || !!props.wipeReason}>Main ability <kbd>{keyLabel(props.keyBindings.mainAbility)}</kbd></button><button type="button" onClick={props.onInterrupt} disabled={props.paused || !!props.wipeReason || props.event !== 'p1-interrupts'}>Interrupt <kbd>{keyLabel(props.keyBindings.interrupt)}</kbd></button>{props.controlledTank !== null && (!phaseFour || props.controlledTank === 0) && <button type="button" onClick={props.onTankAction} disabled={props.paused || !!props.wipeReason || (phaseFour && props.p4PlayerConeCooldown > 0)}>{phaseFour ? 'Tank cone' : 'Taunt'} <kbd>{keyLabel(props.keyBindings.taunt)}</kbd></button>}<button type="button" onClick={props.onShield} disabled={props.paused || !!props.wipeReason || shieldUnavailable}>Shield <kbd>{keyLabel(props.keyBindings.shield)}</kbd></button><button type="button" onClick={props.onHealthPot} disabled={props.paused || !!props.wipeReason || props.healthPotUsed}>Health potion <kbd>{keyLabel(props.keyBindings.healthPot)}</kbd></button><button type="button" onClick={props.onDrop} disabled={props.paused || !!props.wipeReason || !!props.crystal || (!props.p1WrongCrystalHeld && (phaseOne ? !props.p1CrystalCollected : props.role !== 'carrier' || props.crystalSpent))}>Crystal drop <kbd>{keyLabel(props.keyBindings.crystal)}</kbd></button></div>}
       </div>
     </div>
   </main>

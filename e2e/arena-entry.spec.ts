@@ -88,6 +88,7 @@ test('unlocks and schedules the complete prerecorded P4 raidlead in the browser'
   await page.addInitScript(() => {
     localStorage.setItem('lura-tts-enabled', 'true')
     localStorage.setItem('lura-game-speed', '2.5')
+    localStorage.setItem('lura-selected-position', '2')
     const voiceState = { played: [] as string[] }
     Object.defineProperty(window, '__p4VoiceState', { value: voiceState })
     HTMLMediaElement.prototype.play = function play() {
@@ -201,6 +202,30 @@ test('selects Arena 2 and enters the Phase 2 countdown', async ({ page }) => {
   await expect(beamCountdown).toContainText(/BEAM IN [1-5]/)
 })
 
+test('plays the five-hit Heaven’s Lance swap as the configured off-tank', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('lura-game-speed', '2.5')
+    localStorage.setItem('lura-difficulty', 'test')
+    localStorage.setItem('lura-selected-position', '1')
+    localStorage.setItem('lura-tank-assignments', JSON.stringify([0, 1]))
+  })
+  await page.goto('/')
+  await page.getByRole('button', { name: 'test', exact: true }).click()
+  await page.getByRole('button', { name: 'P2', exact: true }).click()
+  await page.getByRole('button', { name: /Enter P2/ }).click()
+
+  const arena = page.locator('.arena-wrap')
+  await expect(arena).toHaveAttribute('data-tank-role', 'tank-2')
+  await expect(page.getByLabel("Heaven's Lance tank mechanic")).toBeVisible({ timeout: MECHANIC_TIMEOUT })
+  await expect(arena).toHaveAttribute('data-lance-counter', '4', { timeout: MECHANIC_TIMEOUT })
+  await expect(arena).toHaveAttribute('data-lance-stage', 'burst', { timeout: MECHANIC_TIMEOUT })
+  await expect.poll(async () => Number(await arena.getAttribute('data-lance-impact')), { timeout: MECHANIC_TIMEOUT }).toBeGreaterThanOrEqual(1)
+  await expect(arena).toHaveAttribute('data-lance-stage', 'swap', { timeout: MECHANIC_TIMEOUT })
+  await page.keyboard.press('Numpad1')
+  await expect(arena).toHaveAttribute('data-active-tank', '1')
+  await expect(arena).toHaveAttribute('data-lance-stage', 'building')
+})
+
 test('shows the early crystal drop warning on Easy only', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('lura-game-speed', '2.5'))
   await page.goto('/')
@@ -245,7 +270,10 @@ test('continues the current Phase 2 sequence after the first Normal wipe', async
 })
 
 test('wipes when a non-carrier personal circle hits an NPC crystal in Phase 2', async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem('lura-game-speed', '2.5'))
+  await page.addInitScript(() => {
+    localStorage.setItem('lura-game-speed', '2.5')
+    localStorage.setItem('lura-selected-position', '2')
+  })
   await page.goto('/')
   await page.getByRole('button', { name: 'hard' }).click()
   await page.getByRole('button', { name: 'P2', exact: true }).click()
@@ -435,7 +463,10 @@ test('launches the raid into Phase 3 from its visible final Phase 2 positions', 
 })
 
 test('enters Phase 4 directly and plays Splinters again before the second Heaven and Hell', { tag: '@late-arena' }, async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem('lura-game-speed', '2.5'))
+  await page.addInitScript(() => {
+    localStorage.setItem('lura-game-speed', '2.5')
+    localStorage.setItem('lura-selected-position', '2')
+  })
   await page.goto('/')
   await page.getByRole('button', { name: 'test', exact: true }).click()
   await page.getByRole('button', { name: 'P4', exact: true }).click()
@@ -465,7 +496,10 @@ test('enters Phase 4 directly and plays Splinters again before the second Heaven
 })
 
 test('resolves a Phase 4 stack hit reliably at 2.5x speed', { tag: '@late-arena' }, async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem('lura-game-speed', '2.5'))
+  await page.addInitScript(() => {
+    localStorage.setItem('lura-game-speed', '2.5')
+    localStorage.setItem('lura-selected-position', '2')
+  })
   await page.goto('/')
   await page.getByRole('button', { name: 'test', exact: true }).click()
   await page.getByRole('button', { name: 'P4', exact: true }).click()
@@ -475,6 +509,55 @@ test('resolves a Phase 4 stack hit reliably at 2.5x speed', { tag: '@late-arena'
     'Phase 4 Starsplinter hit another player',
     { timeout: MECHANIC_TIMEOUT },
   )
+})
+
+test('gives the controlled Phase 4 tank a repeatable cone and no Starsplinter', { tag: '@late-arena' }, async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('lura-game-speed', '2.5')
+    localStorage.setItem('lura-selected-position', '0')
+    localStorage.setItem('lura-tank-assignments', JSON.stringify([0, 1]))
+    localStorage.setItem('lura-hud-action-buttons-enabled', 'true')
+  })
+  await page.goto('/')
+  await page.getByRole('button', { name: 'test', exact: true }).click()
+  await page.getByRole('button', { name: 'P4', exact: true }).click()
+  await page.getByRole('button', { name: /Enter Arena 4/ }).click()
+
+  const arena = page.locator('.arena-wrap')
+  await expect(arena).toHaveAttribute('data-tank-role', 'tank-1')
+  await expect(arena).toHaveAttribute('data-p4-player-splinter-duty', '-1')
+  await expect(page.getByLabel('Phase 4 tank cone')).toContainText('You will not receive Starsplinter')
+  await expect(arena).toHaveAttribute('data-event', 'p4-cycle', { timeout: MECHANIC_TIMEOUT })
+  await page.getByRole('button', { name: /Tank cone/ }).click()
+  await expect(arena).toHaveAttribute('data-p4-tank-cone-active', 'true')
+  await expect.poll(async () => Number(await arena.getAttribute('data-p4-tank-cone-cooldown'))).toBeGreaterThan(0)
+  await expect(page.getByRole('button', { name: /Tank cone/ })).toBeDisabled()
+})
+
+test('makes the second Phase 4 tank move the protection zone and receive no Starsplinter', { tag: '@late-arena' }, async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('lura-game-speed', '2.5')
+    localStorage.setItem('lura-selected-position', '1')
+    localStorage.setItem('lura-tank-assignments', JSON.stringify([0, 1]))
+    localStorage.setItem('lura-hud-action-buttons-enabled', 'true')
+  })
+  await page.goto('/')
+  await page.getByRole('button', { name: 'test', exact: true }).click()
+  await page.getByRole('button', { name: 'P4', exact: true }).click()
+  await page.getByRole('button', { name: /Enter Arena 4/ }).click()
+
+  const arena = page.locator('.arena-wrap')
+  const scene = page.locator('canvas')
+  await expect(arena).toHaveAttribute('data-tank-role', 'tank-2')
+  await expect(arena).toHaveAttribute('data-p4-player-splinter-duty', '-1')
+  await expect(page.getByLabel('Phase 4 protection tank')).toContainText('Your position carries the yellow safe zone')
+  await expect(page.getByRole('button', { name: /Tank cone/ })).toHaveCount(0)
+  await expect(arena).toHaveAttribute('data-event', 'p4-cycle', { timeout: MECHANIC_TIMEOUT })
+  await expect.poll(async () => {
+    const [playerX, playerY] = (await arena.getAttribute('data-player-position') ?? '').split(',').map(Number)
+    const [zoneX, zoneY] = (await scene.getAttribute('data-p4-protection-center') ?? '').split(',').map(Number)
+    return Math.hypot(playerX - zoneX, playerY - zoneY)
+  }).toBeLessThan(1)
 })
 
 test('keeps a terminal wipe over the frozen arena and allows minimizing its details', { tag: '@late-arena' }, async ({ page }) => {

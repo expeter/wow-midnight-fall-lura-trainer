@@ -121,6 +121,22 @@ describe('canonical achievement rules', () => {
     expect(firstUse).not.toContain('never-caught-unprepared')
   })
 
+  it('awards the tank and combined tank-crystal duties independently', () => {
+    expect(ids({ ...normalFlawless, tankRole: true })).toContain('heavens-lance-warden')
+    expect(ids({ ...normalFlawless, tankRole: true, tankCrystalRole: false })).not.toContain('dawnforged-vanguard')
+    expect(ids({ ...normalFlawless, tankRole: true, tankCrystalRole: true })).toEqual(expect.arrayContaining([
+      'heavens-lance-warden',
+      'dawnforged-vanguard',
+    ]))
+  })
+
+  it('awards the two deterministic Phase 4 tank positions independently', () => {
+    expect(ids({ ...normalFlawless, p4ConeTankRole: true })).toContain('p4-frontal-tank')
+    expect(ids({ ...normalFlawless, p4ConeTankRole: true })).not.toContain('p4-protection-tank')
+    expect(ids({ ...normalFlawless, p4ProtectionTankRole: true })).toContain('p4-protection-tank')
+    expect(ids({ ...normalFlawless, p4ProtectionTankRole: true })).not.toContain('p4-frontal-tank')
+  })
+
   it('requires clean rune telemetry and the strict hard score threshold', () => {
     expect(ids({ ...normalFlawless, runeFailures: 1 })).not.toContain('rune-reader')
     expect(ids({ ...normalFlawless, difficulty: 'Hard', totalScore: 1100 })).not.toContain('hard-score-flawless')
@@ -242,9 +258,9 @@ describe('persistent achievement collection', () => {
     expect(parseAchievementCollection(serializeAchievementCollection(loaded))).toEqual(loaded)
   })
 
-  it('publishes all 28 canonical achievements', () => {
+  it('publishes all 32 canonical achievements', () => {
     const catalog = achievementCatalog()
-    expect(catalog.filter(achievement => achievement.available)).toHaveLength(28)
+    expect(catalog.filter(achievement => achievement.available)).toHaveLength(32)
     expect(catalog.find(achievement => achievement.id === 'flawless-p1')).toMatchObject({ available: true })
     expect(new Set(catalog.map(achievement => achievement.id)).size).toBe(catalog.length)
   })

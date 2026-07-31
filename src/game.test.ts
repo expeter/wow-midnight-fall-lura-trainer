@@ -4,7 +4,7 @@ import { keepP3CrystalPoolCovered, keepP3NpcInSoak, keepP4NpcInProtection, p3Cry
 import { p3ProtectionBubbleCenter } from './game'
 import { scoreExhaustionWipeReason } from './game'
 import type { Point } from './game'
-import { P3_LIGHT_RADIUS, p3SpreadPosition, p4NpcSplinterMovementAge, p4NpcSplinterOutwardSeconds, p4RenderedNpcSplinterHitsPlayer, p4RenderedNpcSplinterOrigin, p4TankConeHitsBox, p4TankKillsBox, P4_TANK_KILL_RADIUS } from './game'
+import { P3_LIGHT_RADIUS, p3SpreadPosition, p4NpcOrdinalForProfile, p4NpcProfileIndices, p4NpcSplinterActorOrdinals, p4NpcSplinterMovementAge, p4NpcSplinterOutwardSeconds, p4ProtectionCenter, p4RenderedNpcSplinterHitsPlayer, p4RenderedNpcSplinterOrigin, p4TankConeHitsBox, p4TankKillsBox, P4_TANK_KILL_RADIUS } from './game'
 import { isP3RaidMemberVisible, p3ActiveCrystalAssignments } from './game'
 import { bossDamageScoreBonus, isActiveP3RuneDuty, isInsideP3Pool, p4BossHealthWithPlayerDamage, p4PlayerSplinterHitsNpc, p4StartingBossState, p4TankAvoidSplinters, P1_STAR_LENGTH, preP4BossHealth, safestStarsplinterRotation, shouldApplyP3NpcDisplacement, shouldHoldP3RunePartner, shouldSuppressRepeatedWipe, shouldTriggerP3EarlyClear, starsplinterHitsCrystalCarrier, starsplinterHitsPoint } from './game'
 import { p4UnsafePenaltyTicks, P4_SAFE_ZONE_HEALTH_DRAIN_PER_SECOND, P4_SAFE_ZONE_PENALTY_PER_SECOND } from './game'
@@ -636,6 +636,40 @@ describe('Intermission game rules', () => {
     expect(p4RenderedNpcSplinterOrigin([], 2, fallback)).toEqual(fallback)
     expect(p4RenderedNpcSplinterHitsPlayer(rendered, 0, fallback, 0, { x: 32, y: 1 })).toBe(true)
     expect(p4RenderedNpcSplinterHitsPlayer(rendered, 0, fallback, 0, { x: 32, y: 8 })).toBe(false)
+  })
+  it('assigns the two Phase 4 tanks deterministic rendered roles and excludes both from Starsplinter', () => {
+    const scripted = { x: 480, y: 120 }
+    const player = { x: 430, y: 160 }
+    const tankAssignments: [number, number] = [0, 1]
+
+    const tankOneNpcProfiles = p4NpcProfileIndices(20, 0)
+    const tankTwoOrdinal = p4NpcOrdinalForProfile(tankOneNpcProfiles, 1)!
+    const renderedTankOneNpcs = Array.from({ length: 19 }, (_, ordinal) => ({ x: 500 + ordinal, y: 200 + ordinal }))
+    expect(p4ProtectionCenter(scripted, player, 0, renderedTankOneNpcs, tankOneNpcProfiles, tankAssignments))
+      .toEqual(renderedTankOneNpcs[tankTwoOrdinal])
+    expect(p4NpcSplinterActorOrdinals(tankOneNpcProfiles, tankAssignments)
+      .map(ordinal => tankOneNpcProfiles[ordinal]))
+      .not.toContain(1)
+
+    const tankTwoNpcProfiles = p4NpcProfileIndices(20, 1)
+    expect(p4ProtectionCenter(scripted, player, 1, [], tankTwoNpcProfiles, tankAssignments)).toEqual(player)
+    expect(p4NpcSplinterActorOrdinals(tankTwoNpcProfiles, tankAssignments)
+      .map(ordinal => tankTwoNpcProfiles[ordinal]))
+      .not.toContain(0)
+
+    const nonTankNpcProfiles = p4NpcProfileIndices(20, 4)
+    const actorProfiles = p4NpcSplinterActorOrdinals(nonTankNpcProfiles, tankAssignments)
+      .map(ordinal => nonTankNpcProfiles[ordinal])
+    expect(actorProfiles).toHaveLength(3)
+    expect(actorProfiles).not.toContain(0)
+    expect(actorProfiles).not.toContain(1)
+  })
+  it('uses the configured non-tank Starsplinter actor mapping for rendered collisions', () => {
+    const rendered = Array.from({ length: 8 }, (_, index) => ({ x: index * 10, y: 10 }))
+    const fallback = { x: 999, y: 999 }
+    const actors = [2, 3, 6]
+    expect(p4RenderedNpcSplinterOrigin(rendered, 0, fallback, actors)).toEqual(rendered[2])
+    expect(p4RenderedNpcSplinterHitsPlayer(rendered, 0, fallback, 0, { x: 40, y: 10 }, 3, actors)).toBe(true)
   })
   it('makes an NPC Phase 4 Starsplinter lethal only to the controlled player', () => {
     const fallback = { x: 999, y: 999 }

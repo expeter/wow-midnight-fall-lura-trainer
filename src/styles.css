@@ -360,6 +360,14 @@
 .splinter-counter.p3-duty-counter > span + span { padding-left: 10px; border-left: 1px solid rgba(255,225,61,.4); color: #ffe13d; }
 .splinter-counter.p3-duty-counter > span.spent { color: #9a9ca8; }
 .splinter-counter.p1-interrupt-counter { display: flex; gap: 10px; align-items: center; }
+.tank-mechanic-hud { position: absolute; z-index: 6; top: 78px; left: 14px; width: 246px; padding: 9px 11px; border: 1px solid rgba(255, 190, 72, .62); border-radius: 8px; color: #ffe5a3; background: rgba(24, 13, 5, .9); box-shadow: 0 0 18px rgba(255, 150, 40, .14); pointer-events: none; font-family: 'DM Mono', monospace; }
+.tank-mechanic-hud header { display: flex; justify-content: space-between; gap: 10px; font-size: 10px; letter-spacing: .08em; }
+.tank-mechanic-hud header strong { color: #fff; }
+.tank-mechanic-hud p { margin: 7px 0 5px; color: #fff; font-size: 11px; font-weight: 700; }
+.tank-mechanic-hud small { display: block; color: #d8ba83; font-size: 8px; line-height: 1.45; }
+.tank-mechanic-hud.stage-burst { border-color: #ff5b6f; color: #ff91a0; box-shadow: 0 0 22px rgba(255, 50, 78, .3); }
+.tank-mechanic-hud.stage-swap { border-color: #70caff; color: #a9dcff; box-shadow: 0 0 22px rgba(55, 161, 255, .25); }
+.tank-mechanic-hud.p4-tank-duty { border-color: #70caff; color: #a9dcff; }
 .p1-interrupt-display { position: absolute; z-index: 6; left: 50%; bottom: 5%; width: 250px; transform: translateX(-50%); display: grid; place-content: center; gap: 6px; padding: 10px 14px; border: 2px solid currentColor; border-radius: 10px; text-align: center; color: #fff; background: rgba(40,8,12,.94); box-shadow: 0 0 22px currentColor; pointer-events: none; font-family: 'DM Mono', monospace; }
 .p1-interrupt-display span { font-size: 12px; letter-spacing: .09em; }
 .p1-interrupt-display > div { display: flex; justify-content: center; gap: 7px; }

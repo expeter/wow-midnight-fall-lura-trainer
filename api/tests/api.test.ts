@@ -1228,7 +1228,8 @@ describe('Lura API foundation', () => {
         actions: { recoveryPasses: 0, mainAbilityCasts: 0, continuousPenalty: 0 },
         achievementInputs: {
           wipeCount: 0, crystalFailures: 0, runeFailures: 0, pauseCycle: false,
-          earlyKill: false, p3EarlyClear: false,
+          earlyKill: false, p3EarlyClear: false, tankRole: true, tankCrystalRole: false,
+          p4ConeTankRole: true, p4ProtectionTankRole: false,
         },
         submittedScore: 1000,
         trainerVersion: '0.3.0',
@@ -1239,6 +1240,10 @@ describe('Lura API foundation', () => {
     const achievementIds = ((await accepted.json()) as { achievementIds: string[] }).achievementIds
     assert.ok(achievementIds.includes('one-phase-wonder'))
     assert.ok(achievementIds.includes('flawless-p4'))
+    assert.ok(achievementIds.includes('heavens-lance-warden'))
+    assert.ok(achievementIds.includes('p4-frontal-tank'))
+    assert.ok(!achievementIds.includes('p4-protection-tank'))
+    assert.ok(!achievementIds.includes('dawnforged-vanguard'))
     assert.ok(!achievementIds.includes('midnight-shift'))
     assert.ok(!achievementIds.includes('hard-score-flawless'))
     assert.ok(!achievementIds.includes('crystal-clear-conscience'))

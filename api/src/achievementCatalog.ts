@@ -16,7 +16,8 @@ const entry = (
   tier: AchievementTier,
   points: CanonicalAchievement['points'],
   retiredVersion: string | null = null,
-): CanonicalAchievement => ({ id, title, tier, points, season: 1, introducedVersion: '0.3.0', retiredVersion })
+  introducedVersion = '0.3.0',
+): CanonicalAchievement => ({ id, title, tier, points, season: 1, introducedVersion, retiredVersion })
 
 export const ACHIEVEMENT_CATALOG: readonly CanonicalAchievement[] = [
   entry('test-pilot', 'The Test Must Go On', 'Common', 10),
@@ -24,6 +25,9 @@ export const ACHIEVEMENT_CATALOG: readonly CanonicalAchievement[] = [
   entry('strategic-timeout', 'Strategic Timeout', 'Common', 10),
   entry('prepared-for-every-phase', 'Prepared for Anything', 'Common', 10),
   entry('always-be-casting', 'Always Be Casting', 'Common', 10),
+  entry('heavens-lance-warden', 'The Lance Passes On', 'Uncommon', 25, null, '0.7.0'),
+  entry('p4-frontal-tank', 'Point of the Spear', 'Uncommon', 25, null, '0.7.0'),
+  entry('p4-protection-tank', 'Carry the Light', 'Uncommon', 25, null, '0.7.0'),
   entry('easy-does-it', 'Easy Does It', 'Uncommon', 25),
   entry('ready-for-raid-night', 'Ready for Raid Night', 'Uncommon', 25),
   entry('crystal-clear-conscience', 'Crystal-Clear Conscience', 'Uncommon', 25),
@@ -47,6 +51,7 @@ export const ACHIEVEMENT_CATALOG: readonly CanonicalAchievement[] = [
   entry('hard-score-flawless', 'Eleven Hundred and Flawless', 'Epic', 100),
   entry('early-kill', 'Ahead of the Darkness', 'Epic', 100),
   entry('p3-early-clear', 'The Stars Can Wait', 'Epic', 100),
+  entry('dawnforged-vanguard', 'Dawnforged Vanguard', 'Epic', 100, null, '0.7.0'),
   entry('impossible-normal-streak', 'The Impossible', 'Epic', 100),
   entry('phase-clears-100', 'Can’t Get Enough', 'Epic', 100),
   entry('superhuman-both-duties', 'Superhuman: Refraction', 'Legendary', 200),

@@ -25,6 +25,11 @@ shell never silently mistakes an expired server session for a valid login.
   align API/client version acceptance at `0.6.2`.
 - `CR-194` — open public Recent activity identities in their trainer profile
   instead of navigating directly to Raider.IO.
+- `BUG-148` — show whether the next pull is a verified attempt, deliberately
+  anonymous, or local because the signed-in account lacks an active character.
+- `CR-196` — show the played raid-plan name and selected verified Battle.net
+  character together on the controlled-player nameplate without implying
+  attribution when no active character is selected.
 
 This patch retains `season-1`: it repairs attribution and version acceptance
 without changing encounter scoring or ranking order.
@@ -56,14 +61,16 @@ Completed in this milestone:
 
 ### Phase 4 roles
 
-Implement in dependency order:
+Completed in this milestone:
 
-1. `FR-068` — add two explicit tank assignments and the P1/P2/P3 Heaven's
-   Lance loop; when controlled in P4, the tank owns the existing frontal cone
-   instead of receiving Starsplinter. This incorporates the playable-cone
-   scope previously tracked separately by `FR-022`.
-2. `FR-023` — randomize protection-zone ownership between player and NPC and
-   make the raid follow the rendered carrier.
+- `FR-068` — two explicit shared tank assignments now drive the P1/P2/P3
+  Heaven's Lance mitigation/swap loop. This incorporates the playable-cone
+  foundation previously tracked separately by `FR-022`; `CR-195` finalizes
+  which configured tank owns each Phase 4 role.
+- `FR-023` — superseded by deterministic two-tank ownership under `CR-195`.
+- `CR-195` — Tank 1 now owns the frontal cone, Tank 2 owns the moving rendered
+  protection zone, neither receives Starsplinter, and each controlled role has
+  its own canonical achievement.
 
 All current M1 tickets affect mechanic difficulty, failures, scoring, or accepted-run
 comparability. Before releasing this milestone, explicitly ask whether it

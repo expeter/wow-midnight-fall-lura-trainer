@@ -237,6 +237,10 @@ function validatedCompletion(input: CompletionInput, expectedPhases: readonly st
     pauseCycle?: unknown
     earlyKill?: unknown
     p3EarlyClear?: unknown
+    tankRole?: unknown
+    tankCrystalRole?: unknown
+    p4ConeTankRole?: unknown
+    p4ProtectionTankRole?: unknown
   } | null
   const count = (value: unknown) => Number.isInteger(value) && Number(value) >= 0 && Number(value) <= 100
   if (
@@ -247,6 +251,10 @@ function validatedCompletion(input: CompletionInput, expectedPhases: readonly st
     || typeof achievementInputs.pauseCycle !== 'boolean'
     || typeof achievementInputs.earlyKill !== 'boolean'
     || typeof achievementInputs.p3EarlyClear !== 'boolean'
+    || typeof achievementInputs.tankRole !== 'undefined' && typeof achievementInputs.tankRole !== 'boolean'
+    || typeof achievementInputs.tankCrystalRole !== 'undefined' && typeof achievementInputs.tankCrystalRole !== 'boolean'
+    || typeof achievementInputs.p4ConeTankRole !== 'undefined' && typeof achievementInputs.p4ConeTankRole !== 'boolean'
+    || typeof achievementInputs.p4ProtectionTankRole !== 'undefined' && typeof achievementInputs.p4ProtectionTankRole !== 'boolean'
   ) throw new Error('invalid_achievement_inputs')
   return {
     nonce,
@@ -262,7 +270,13 @@ function validatedCompletion(input: CompletionInput, expectedPhases: readonly st
     phases,
     mistakes,
     actions: { recoveryPasses, mainAbilityCasts, continuousPenalty },
-    achievementInputs,
+    achievementInputs: {
+      ...achievementInputs,
+      tankRole: achievementInputs.tankRole === true,
+      tankCrystalRole: achievementInputs.tankCrystalRole === true,
+      p4ConeTankRole: achievementInputs.p4ConeTankRole === true,
+      p4ProtectionTankRole: achievementInputs.p4ProtectionTankRole === true,
+    },
   }
 }
 
@@ -272,7 +286,7 @@ function earnedAchievementIds(
   phases: PhaseResult[],
   mistakes: Mistake[],
   actions: { recoveryPasses: number; mainAbilityCasts: number },
-  inputs: { wipeCount?: unknown; crystalFailures?: unknown; runeFailures?: unknown; pauseCycle?: unknown; earlyKill?: unknown; p3EarlyClear?: unknown },
+  inputs: { wipeCount?: unknown; crystalFailures?: unknown; runeFailures?: unknown; pauseCycle?: unknown; earlyKill?: unknown; p3EarlyClear?: unknown; tankRole?: unknown; tankCrystalRole?: unknown; p4ConeTankRole?: unknown; p4ProtectionTankRole?: unknown },
 ): string[] {
   const ids: string[] = []
   const fullRun = phases.length === PHASES.length
@@ -293,6 +307,10 @@ function earnedAchievementIds(
   if (fullRun && difficulty === 'hard' && mistakes.length === 0 && score > 1100) ids.push('hard-score-flawless')
   if (inputs.earlyKill) ids.push('early-kill')
   if (inputs.p3EarlyClear) ids.push('p3-early-clear')
+  if (inputs.tankRole) ids.push('heavens-lance-warden')
+  if (inputs.tankCrystalRole) ids.push('dawnforged-vanguard')
+  if (inputs.p4ConeTankRole) ids.push('p4-frontal-tank')
+  if (inputs.p4ProtectionTankRole) ids.push('p4-protection-tank')
   return [...new Set(ids)]
 }
 

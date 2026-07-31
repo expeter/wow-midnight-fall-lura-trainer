@@ -197,8 +197,9 @@ targeted shared mechanic timeout for renderer-heavy transitions.
 Start with [`milestones.md`](milestones.md) and confirm each ticket's current
 status in the request log.
 
-- M1 is the immediate encounter-completion milestone. `FR-049` and `FR-050`
-  are complete; continue with `FR-068`, `FR-048`, `CR-051`, and `FR-023`.
+- M1 is the immediate encounter-completion milestone. `FR-049`, `FR-050`,
+  `FR-068`, and `CR-195` are complete; continue with `FR-048` and `CR-051`.
+  `FR-023` was superseded by the deterministic P4 tank roles.
 - M2, the ranking/achievement integrity gate discovered during `SPEC-015`, is
   complete under `BUG-136`–`BUG-143` and `SPEC-016`.
 - M3 contains developer tooling: `FR-051` and localhost-only `FR-038`.

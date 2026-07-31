@@ -33,6 +33,10 @@ export type AchievementId =
   | 'phase-clears-10'
   | 'phase-clears-50'
   | 'phase-clears-100'
+  | 'heavens-lance-warden'
+  | 'dawnforged-vanguard'
+  | 'p4-frontal-tank'
+  | 'p4-protection-tank'
 
 export interface AchievementDefinition extends Achievement {
   id: AchievementId
@@ -91,11 +95,15 @@ const DEFINITIONS: AchievementDefinition[] = [
   badge('prepared-for-every-phase', 'Tools of the Trade', 'Prepared for Anything', 'A timely answer turns a dangerous health bar into another solved mechanic.', 'Use a health potion or shield at least once.', '✚'),
   badge('never-caught-unprepared', 'Tools of the Trade', 'Never Caught Unprepared', 'Every phase asks a new question. Every time, you have an answer ready.', 'Successfully use a health potion or shield in every phase of a full run.', '✙'),
   badge('always-be-casting', 'Tools of the Trade', 'Always Be Casting', 'Even perfect footwork leaves room for one more spell.', 'Complete at least one Main Ability cast in a finished attempt.', '➶'),
+  badge('heavens-lance-warden', 'Tools of the Trade', 'The Lance Passes On', 'Take the full weight of Heaven’s Lance, then pass L’ura cleanly to your partner.', 'Finish an attempt while assigned as one of the two tanks.', '🛡'),
+  badge('p4-frontal-tank', 'Tools of the Trade', 'Point of the Spear', 'Stand one step ahead of the raid and break the darkness before it reaches them.', 'Finish Phase 4 as Tank 1 with the frontal-cone assignment.', '➤'),
+  badge('p4-protection-tank', 'Tools of the Trade', 'Carry the Light', 'Where you lead, the last circle of safety follows.', 'Finish Phase 4 as Tank 2 carrying the protection zone.', '☀'),
   badge('hard-score-flawless', 'Feats of Movement', 'Eleven Hundred and Flawless', 'Cross the midnight line without leaving a mark behind.', 'Clear the full sequence on Hard with zero mistakes and more than 1,100 points.', '★'),
   badge('both-sides-of-crystal', 'Feats of Movement', 'Both Sides of the Crystal', 'Master the burden—and the space around the one who carries it.', 'Complete the full journey once with crystal duty and once without it.', '◈'),
   badge('superhuman-both-duties', 'Feats of Movement', 'Superhuman: Refraction', 'Two duties. Every tool. Not one step out of place.', 'Earn >1,100-point flawless Hard clears as crystal and non-crystal with every combat option handled.', '✪'),
   badge('early-kill', 'Feats of Movement', 'Ahead of the Darkness', 'Bring L’ura down before the final Heaven & Hell can close.', 'Reach 0% boss health before the final Phase 4 sequence.', '⚔'),
   badge('p3-early-clear', 'Feats of Movement', 'The Stars Can Wait', 'Push L’ura’s image beyond its limit before Phase 3 can complete its course.', 'Reduce L’ura to 0% during Phase 3.', '☄'),
+  badge('dawnforged-vanguard', 'Feats of Movement', 'Dawnforged Vanguard', 'Carry the crystal and the boss together without letting either duty break the line.', 'Finish an attempt with both tank and crystal duty.', '♜'),
   badge('impossible-normal-streak', 'Feats of Movement', 'The Impossible', 'Five flawless rehearsals in a row. At some point, impossible becomes preparation.', 'Complete five consecutive full runs flawlessly on Normal.', '∞'),
   badge('impossible-hard-streak', 'Feats of Movement', 'Beyond the Impossible', 'Five perfect journeys through the hardest rehearsal without surrendering a single step.', 'Complete five consecutive full runs flawlessly on Hard.', '♛'),
   badge('phase-clears-10', 'Foundations', 'Still Standing', 'Ten phases cleared and the floor is beginning to remember your footsteps.', 'Clear 10 phases across all finished attempts.', 'Ⅹ'),
@@ -148,6 +156,10 @@ export function currentRunAchievements(summary: AchievementSummary): Achievement
   if ((summary.recoveryUses ?? 0) > 0) ids.push('prepared-for-every-phase')
   if (summary.fullSequence && summary.allPhaseRecovery) ids.push('never-caught-unprepared')
   if ((summary.mainAbilityCasts ?? (summary.mainAbilityEnabled ? 1 : 0)) > 0) ids.push('always-be-casting')
+  if (summary.tankRole) ids.push('heavens-lance-warden')
+  if (summary.tankCrystalRole) ids.push('dawnforged-vanguard')
+  if (summary.p4ConeTankRole) ids.push('p4-frontal-tank')
+  if (summary.p4ProtectionTankRole) ids.push('p4-protection-tank')
   if (summary.fullSequence && difficulty === 'hard' && summary.mistakes === 0 && summary.totalScore > 1100) ids.push('hard-score-flawless')
   if (summary.earlyKill) ids.push('early-kill')
   if (summary.p3EarlyClear) ids.push('p3-early-clear')

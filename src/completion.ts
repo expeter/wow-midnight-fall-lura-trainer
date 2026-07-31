@@ -99,6 +99,10 @@ export interface AchievementSummary {
   allPhaseRecovery?: boolean
   recoveryUses?: number
   mainAbilityCasts?: number
+  tankRole?: boolean
+  tankCrystalRole?: boolean
+  p4ConeTankRole?: boolean
+  p4ProtectionTankRole?: boolean
 }
 
 export function completionAchievements(summary: AchievementSummary): Achievement[] {

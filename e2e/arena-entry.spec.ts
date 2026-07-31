@@ -243,9 +243,17 @@ test('Space jumps while actions are locked and P pauses', async ({ page }) => {
   await page.getByRole('button', { name: /Enter Intermission/ }).click()
 
   await expect(page.getByText('Take your position.')).toBeVisible({ timeout: 3_000 })
-  await page.keyboard.press('Space')
+  await expect(page.locator('.scene-3d')).toBeVisible()
+  await page.evaluate(() => {
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space' }))
+    window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Space' }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyP' }))
+    window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyP' }))
+  })
   const arena = page.locator('.arena-wrap')
+  await expect(page.getByRole('button', { name: 'Resume' })).toBeVisible()
   await expect(arena).toHaveAttribute('data-personal-jump', 'true')
+  await page.keyboard.press('p')
 
   await page.keyboard.press('f')
   await page.keyboard.press('c')

@@ -237,6 +237,14 @@ account's `own` row, matching the run-board standing pattern. An optional
 privacy-filtered `q` parameter searches published display names and guilds
 without changing each matching player's global rank.
 
+Exceptional achievements are server-only, opaque-ID catalogue entries. They
+are granted by a reviewed administrative operation recorded in
+`exceptional_achievement_grants`, never by a browser submission and never with
+an `achievement_events` row. Their points still count once toward lifetime and
+Global totals. Public Global/Hall rows expose a generic exceptional marker;
+profile responses conceal the ID and title unless the viewer owns the same
+badge or is viewing their own profile.
+
 Rank-one board achievements are evaluated by the server after accepting a
 run. Each of the four board crowns is hidden until earned and worth 50 points;
 simultaneously leading all four boards awards the hidden 200-point Legendary

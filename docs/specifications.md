@@ -199,6 +199,12 @@ change before implementation.
   canonical achievement points. It shows the highest-value achievement and
   first-earned time; retired achievements retain their points. Catalogue
   entries carry season metadata, while season-specific UI remains deferred.
+- Exceptional achievements exist only in the API catalogue and require an
+  audited manual grant; their IDs and unlock conditions are not shipped in the
+  browser catalogue. A grant never creates a public activity event. Global and
+  Hall rows expose only a generic exceptional marker, and public profiles hide
+  the title/ID unless the viewer owns that same badge or is viewing their own
+  profile. Each account receives the badge and its points at most once.
 - Public identity is optional. Anonymous mode hides character, realm, and
   guild and excludes that account from public run and achievement rankings;
   published character, alias, realm, and guild fields are searchable.

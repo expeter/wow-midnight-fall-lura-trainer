@@ -6,8 +6,7 @@ in [`specifications.md`](specifications.md).
 
 ## Current release boundary
 
-- Release being cut: `v0.7.0` (latest deployed remains `v0.6.2` until both
-  Pages and API deployment checks succeed).
+- Latest tagged and deployed release: `v0.7.0` (`17b8592`).
 - `v0.7.0` completes the two-tank encounter roles, Phase 2 assignment/regroup
   work, explicit run attribution, the transition crystal fix, and five-phase
   achievement/progress reconciliation.

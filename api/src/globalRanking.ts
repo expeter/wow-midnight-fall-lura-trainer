@@ -1,5 +1,6 @@
 import type { Database } from './database.js'
 import { accountLeaderboardStandings } from './leaderboards.js'
+import { isExceptionalAchievement } from './exceptionalAchievements.js'
 
 export interface GlobalRankingRow {
   rank: number
@@ -11,6 +12,7 @@ export interface GlobalRankingRow {
   totalPoints: number
   crystalFlawless: boolean
   hardClear: boolean
+  exceptionalAchievementCount: number
 }
 
 interface RawGlobalRow extends Omit<GlobalRankingRow, 'rank' | 'totalPoints'> {
@@ -24,7 +26,8 @@ export function listGlobalRanking(database: Database, season: string, ownAccount
 } {
   const raw = database.prepare(`
     WITH achievement_totals AS (
-      SELECT aa.account_id AS accountId, SUM(ac.points) AS achievementPoints
+      SELECT aa.account_id AS accountId, SUM(ac.points) AS achievementPoints,
+        SUM(CASE WHEN ac.id LIKE 'exceptional-%' THEN 1 ELSE 0 END) AS exceptionalAchievementCount
       FROM (
         SELECT account_id, achievement_id, MIN(first_earned_at) AS firstEarnedAt
         FROM account_achievements GROUP BY account_id, achievement_id
@@ -52,7 +55,8 @@ export function listGlobalRanking(database: Database, season: string, ownAccount
       COALESCE(at.achievementPoints, 0) AS achievementPoints,
       COALESCE(rt.runPoints, 0) AS runPoints,
       COALESCE(cr.crystalFlawless, 0) AS crystalFlawless,
-      COALESCE(cr.hardClear, 0) AS hardClear
+      COALESCE(cr.hardClear, 0) AS hardClear,
+      COALESCE(at.exceptionalAchievementCount, 0) AS exceptionalAchievementCount
     FROM accounts a
     JOIN privacy_settings p ON p.account_id = a.id
     LEFT JOIN characters c ON c.id = a.selected_character_id
@@ -62,7 +66,12 @@ export function listGlobalRanking(database: Database, season: string, ownAccount
     WHERE p.identity_mode != 'anonymous'
       AND (COALESCE(at.achievementPoints, 0) > 0 OR COALESCE(rt.runPoints, 0) > 0)
   `).all(season, season) as unknown as Array<Omit<RawGlobalRow, 'crystalFlawless' | 'hardClear'> & { crystalFlawless: number; hardClear: number }>
-  const normalized = raw.map(row => ({ ...row, crystalFlawless: Boolean(row.crystalFlawless), hardClear: Boolean(row.hardClear) }))
+  const normalized = raw.map(row => ({
+    ...row,
+    crystalFlawless: Boolean(row.crystalFlawless),
+    hardClear: Boolean(row.hardClear),
+    exceptionalAchievementCount: Number(row.exceptionalAchievementCount),
+  }))
   const ranked = normalized.sort((left, right) =>
     right.achievementPoints + right.runPoints - (left.achievementPoints + left.runPoints)
     || right.runPoints - left.runPoints
@@ -90,12 +99,30 @@ export function publicPlayerProfile(database: Database, profileId: string, seaso
     WHERE a.public_profile_id = ? AND (p.identity_mode != 'anonymous' OR a.id = ?)
   `).get(profileId, viewerAccountId ?? -1) as { accountId: number; profileId: string; identityMode: string; displayName: string; character: string | null; realm: string | null; region: string | null; guild: string | null } | undefined
   if (!identity) return null
-  const achievements = database.prepare(`
+  const achievementRows = database.prepare(`
     SELECT aa.achievement_id AS id, ac.title, ac.tier, ac.points, MIN(aa.first_earned_at) AS firstEarnedAt
     FROM account_achievements aa JOIN achievement_catalog ac ON ac.id = aa.achievement_id
     WHERE aa.account_id = ? GROUP BY aa.achievement_id
     ORDER BY ac.points DESC, firstEarnedAt ASC
-  `).all(identity.accountId)
+  `).all(identity.accountId) as Array<{ id: string; title: string; tier: string; points: number; firstEarnedAt: string }>
+  const viewerExceptionalIds = viewerAccountId ? new Set((database.prepare(`
+    SELECT achievement_id AS id FROM account_achievements WHERE account_id = ?
+  `).all(viewerAccountId) as Array<{ id: string }>).map(row => row.id).filter(isExceptionalAchievement)) : new Set<string>()
+  let hiddenIndex = 0
+  const achievements = achievementRows.map(achievement => {
+    if (!isExceptionalAchievement(achievement.id) || identity.accountId === viewerAccountId || viewerExceptionalIds.has(achievement.id)) {
+      return { ...achievement, hidden: false }
+    }
+    hiddenIndex += 1
+    return {
+      id: `hidden-exceptional-${hiddenIndex}`,
+      title: 'Hidden achievement',
+      tier: 'Exceptional',
+      points: achievement.points,
+      firstEarnedAt: achievement.firstEarnedAt,
+      hidden: true,
+    }
+  })
   const attempts = Number((database.prepare('SELECT COUNT(*) AS count FROM attempts WHERE account_id = ?').get(identity.accountId) as { count: number }).count)
   const fullRuns = Number((database.prepare('SELECT COUNT(*) AS count FROM results WHERE account_id = ? AND run_eligible = 1 AND leaderboard_season = ?').get(identity.accountId, season) as { count: number }).count)
   const wipes = Number((database.prepare('SELECT COUNT(*) AS count FROM wipe_events WHERE account_id = ?').get(identity.accountId) as { count: number }).count)

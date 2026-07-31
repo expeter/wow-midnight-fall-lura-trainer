@@ -61,6 +61,7 @@ const LOCAL_HALL_FIXTURES: AchievementHallRow[] = Array.from({ length: 100 }, (_
     guild: rank % 5 ? LOCAL_GUILDS[(index + 1) % LOCAL_GUILDS.length] : null,
     totalPoints: Math.max(10, 1675 - rank * 13),
     achievementCount: Math.max(1, 29 - Math.floor(rank / 4)),
+    exceptionalAchievementCount: rank % 13 === 0 ? 1 : 0,
     highestAchievement: {
       id: `fixture-${rank}`,
       title: rank <= 10 ? 'Beyond the Impossible' : rank <= 30 ? 'The Stars Can Wait' : 'Perfectly Orb-ital',
@@ -87,6 +88,7 @@ const LOCAL_GLOBAL_FIXTURES: GlobalRankingRow[] = Array.from({ length: 100 }, (_
     totalPoints: achievementPoints + runPoints,
     crystalFlawless: rank % 3 !== 0,
     hardClear: rank % 4 !== 0,
+    exceptionalAchievementCount: rank % 11 === 0 ? 1 : 0,
   }
 })
 
@@ -174,7 +176,7 @@ function GlobalRankRow({ row, onOpenProfile }: { row: GlobalRankingRow; onOpenPr
     <span className={`standard-rank global-rank rank-${row.rank}`}>{row.rank <= 3 ? ['🏆', '🥈', '🥉'][row.rank - 1] : `${row.rank}.`}</span>
     <span className="global-player">{anonymousPreviewProfile(row.profileId) ? <strong>Anonymous</strong> : <button className="profile-name-button" onClick={() => onOpenProfile(row.profileId)}>{row.displayName}</button>}</span>
     <span className="standard-guild">{row.guild ?? '—'}</span>
-    <span className="player-credentials">{row.crystalFlawless && <i title="Flawless crystal run" aria-label="Flawless crystal run">◆</i>}{row.hardClear && <i title="Hard mode clear" aria-label="Hard mode clear">H</i>}</span>
+    <span className="player-credentials">{row.crystalFlawless && <i title="Flawless crystal run" aria-label="Flawless crystal run">◆</i>}{row.hardClear && <i title="Hard mode clear" aria-label="Hard mode clear">H</i>}{row.exceptionalAchievementCount > 0 && <i title="Hidden exceptional achievement" aria-label="Hidden exceptional achievement">✦</i>}</span>
     <b className="standard-points">{row.totalPoints} pts</b>
   </li>
 }
@@ -192,7 +194,7 @@ function GlobalLeaderboard({ rows, own, search, onSearch, onRefresh, onOpenProfi
     <ol className="global-leaderboard-rows standard-leaderboard-rows">{rows.map(row => <GlobalRankRow key={row.profileId} row={row} onOpenProfile={onOpenProfile} />)}</ol>
     {own && own.rank > 10 && <div className="leaderboard-own-position global-own-position" aria-label="Your global position">
       <span aria-hidden="true">…</span>
-      <div className="standard-own-row"><b className="standard-rank">{own.rank}.</b><button className="profile-name-button" onClick={() => onOpenProfile(own.profileId)}>{own.displayName}</button><span className="standard-guild">{own.guild ?? '—'}</span><span className="player-credentials">{own.crystalFlawless && <i>◆</i>}{own.hardClear && <i>H</i>}</span><strong className="standard-points">{own.totalPoints} pts</strong></div>
+      <div className="standard-own-row"><b className="standard-rank">{own.rank}.</b><button className="profile-name-button" onClick={() => onOpenProfile(own.profileId)}>{own.displayName}</button><span className="standard-guild">{own.guild ?? '—'}</span><span className="player-credentials">{own.crystalFlawless && <i>◆</i>}{own.hardClear && <i>H</i>}{own.exceptionalAchievementCount > 0 && <i title="Hidden exceptional achievement">✦</i>}</span><strong className="standard-points">{own.totalPoints} pts</strong></div>
     </div>}
     <div className="leaderboard-search">
       <label><span>Find a public ranking</span><small>Searches public player names and guilds.</small>
@@ -494,10 +496,10 @@ function AchievementHall({
       {displayed.map(row => <li key={`${row.rank}-${row.displayName}`}>
         <b className="standard-rank">{row.rank}.</b>
         <button className="profile-name-button" onClick={() => onOpenProfile(row.profileId)}>{row.displayName}</button>
-        <span className="standard-guild">{row.guild ?? '—'}</span><strong className="standard-points">{row.totalPoints} pts</strong><time dateTime={row.highestAchievement.firstEarnedAt}>{new Date(row.highestAchievement.firstEarnedAt).toLocaleDateString()}</time>
+        <span className="standard-guild">{row.guild ?? '—'}</span><strong className="standard-points">{row.totalPoints} pts{row.exceptionalAchievementCount > 0 && <i className="exceptional-achievement-mark" title="Hidden exceptional achievement" aria-label="Hidden exceptional achievement">✦</i>}</strong><time dateTime={row.highestAchievement.firstEarnedAt}>{new Date(row.highestAchievement.firstEarnedAt).toLocaleDateString()}</time>
       </li>)}
     </ol>
-    {own && <div className="leaderboard-own-position" aria-label="Your achievement Hall position"><span aria-hidden="true">…</span><div className="standard-own-row"><b className="standard-rank">{own.rank}.</b><button className="profile-name-button" onClick={() => onOpenProfile(own.profileId)}>{own.displayName}</button><span className="standard-guild">{own.guild ?? '—'}</span><strong className="standard-points">{own.totalPoints} pts</strong><time dateTime={own.highestAchievement.firstEarnedAt}>{new Date(own.highestAchievement.firstEarnedAt).toLocaleDateString()}</time></div></div>}
+    {own && <div className="leaderboard-own-position" aria-label="Your achievement Hall position"><span aria-hidden="true">…</span><div className="standard-own-row"><b className="standard-rank">{own.rank}.</b><button className="profile-name-button" onClick={() => onOpenProfile(own.profileId)}>{own.displayName}</button><span className="standard-guild">{own.guild ?? '—'}</span><strong className="standard-points">{own.totalPoints} pts{own.exceptionalAchievementCount > 0 && <i className="exceptional-achievement-mark" title="Hidden exceptional achievement">✦</i>}</strong><time dateTime={own.highestAchievement.firstEarnedAt}>{new Date(own.highestAchievement.firstEarnedAt).toLocaleDateString()}</time></div></div>}
     <div className="leaderboard-search">
       <label><span>Find a Hall of Fame player</span><small>Searches public profile names and guilds.</small><input aria-label="Search achievement Hall" value={search} onChange={event => onSearch(event.target.value)} /></label>
       <button className="secondary" onClick={onRefresh}>Search Hall</button>
@@ -530,7 +532,7 @@ export function PublicProfileOverlay({ profileId, onClose }: { profileId: string
         <div className="public-profile-boards">{profile.boards.map(board => <span key={`${board.difficulty}:${board.duty}`}><small>{board.difficulty} · {board.duty}</small><strong>{board.rank ? `#${board.rank}` : '—'}</strong></span>)}</div>
         {profile.character && profile.region && profile.realm && <a className="raiderio-profile-link" href={`https://raider.io/characters/${profile.region}/${profile.realm}/${profile.character}`} target="_blank" rel="noreferrer">View Raider.IO profile <span>↗</span></a>}
         <h3>Verified achievements · {profile.achievements.length}/28</h3>
-        {profile.achievements.length ? <ul className="public-profile-achievements">{profile.achievements.map(achievement => <li key={achievement.id}><b>{achievement.title}</b><span>{achievement.tier} · {achievement.points} pts · {new Date(achievement.firstEarnedAt).toLocaleDateString()}</span></li>)}</ul> : <p>No verified achievements yet.</p>}
+        {profile.achievements.length ? <ul className="public-profile-achievements">{profile.achievements.map(achievement => <li className={achievement.hidden ? 'hidden-exceptional-achievement' : ''} key={achievement.id}><b>{achievement.hidden ? '✦ Hidden achievement' : achievement.title}</b><span>{achievement.tier} · {achievement.points} pts · {new Date(achievement.firstEarnedAt).toLocaleDateString()}</span></li>)}</ul> : <p>No verified achievements yet.</p>}
       </>}
     </section>
   </div>

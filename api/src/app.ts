@@ -3,6 +3,7 @@ import type { Database } from './database.js'
 import { accountLeaderboardStandings, listLeaderboard, type Difficulty, type Duty } from './leaderboards.js'
 import { activeAttemptIdentity, completeAttempt, issueAttempt } from './attempts.js'
 import { ACHIEVEMENT_CATALOG } from './achievementCatalog.js'
+import { SERVER_ONLY_ACHIEVEMENTS } from './exceptionalAchievements.js'
 import { listAchievementHall } from './achievementHall.js'
 import { listGlobalRanking, publicPlayerProfile } from './globalRanking.js'
 import {
@@ -63,7 +64,7 @@ export function createApp(
       introduced_version = excluded.introduced_version,
       retired_version = excluded.retired_version
   `)
-  for (const achievement of ACHIEVEMENT_CATALOG) upsertAchievement.run(
+  for (const achievement of [...ACHIEVEMENT_CATALOG, ...SERVER_ONLY_ACHIEVEMENTS]) upsertAchievement.run(
     achievement.id,
     achievement.title,
     achievement.tier,

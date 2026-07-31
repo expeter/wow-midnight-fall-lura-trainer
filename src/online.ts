@@ -60,6 +60,7 @@ export interface AchievementHallRow {
   guild: string | null
   totalPoints: number
   achievementCount: number
+  exceptionalAchievementCount: number
   highestAchievement: {
     id: string
     title: string
@@ -80,6 +81,7 @@ export interface GlobalRankingRow {
   totalPoints: number
   crystalFlawless: boolean
   hardClear: boolean
+  exceptionalAchievementCount: number
 }
 
 export interface PublicPlayerProfile {
@@ -94,7 +96,7 @@ export interface PublicPlayerProfile {
   fullRuns: number
   wipes: number
   boards: Array<{ difficulty: string; duty: string; rank: number | null }>
-  achievements: Array<{ id: string; title: string; tier: string; points: number; firstEarnedAt: string }>
+  achievements: Array<{ id: string; title: string; tier: string; points: number; firstEarnedAt: string; hidden: boolean }>
   global: GlobalRankingRow | null
 }
 
@@ -263,12 +265,12 @@ export function localhostPublicPlayerProfile(profileId: string): PublicPlayerPro
     fullRuns: 37,
     wipes: 96,
     achievements: [
-      { id: 'ready-for-raid-night', title: 'Ready for Raid Night', tier: 'Legendary', points: 200, firstEarnedAt: '2026-07-24T20:12:00.000Z' },
-      { id: 'four-boards-one-throne', title: 'Four Boards, One Throne', tier: 'Legendary', points: 200, firstEarnedAt: '2026-07-26T18:05:00.000Z' },
-      { id: 'always-be-casting', title: 'Always Be Casting', tier: 'Epic', points: 100, firstEarnedAt: '2026-07-23T19:42:00.000Z' },
-      { id: 'crystal-clear', title: 'Crystal Clear', tier: 'Rare', points: 50, firstEarnedAt: '2026-07-22T21:31:00.000Z' },
-      { id: 'mind-the-gap', title: 'Mind the Gap', tier: 'Rare', points: 50, firstEarnedAt: '2026-07-22T21:38:00.000Z' },
-      { id: 'no-splinters', title: 'No Splinters', tier: 'Rare', points: 50, firstEarnedAt: '2026-07-23T19:47:00.000Z' },
+      { id: 'ready-for-raid-night', title: 'Ready for Raid Night', tier: 'Legendary', points: 200, firstEarnedAt: '2026-07-24T20:12:00.000Z', hidden: false },
+      { id: 'four-boards-one-throne', title: 'Four Boards, One Throne', tier: 'Legendary', points: 200, firstEarnedAt: '2026-07-26T18:05:00.000Z', hidden: false },
+      { id: 'always-be-casting', title: 'Always Be Casting', tier: 'Epic', points: 100, firstEarnedAt: '2026-07-23T19:42:00.000Z', hidden: false },
+      { id: 'crystal-clear', title: 'Crystal Clear', tier: 'Rare', points: 50, firstEarnedAt: '2026-07-22T21:31:00.000Z', hidden: false },
+      { id: 'mind-the-gap', title: 'Mind the Gap', tier: 'Rare', points: 50, firstEarnedAt: '2026-07-22T21:38:00.000Z', hidden: false },
+      { id: 'no-splinters', title: 'No Splinters', tier: 'Rare', points: 50, firstEarnedAt: '2026-07-23T19:47:00.000Z', hidden: false },
     ],
     global: {
       rank: 1,
@@ -280,6 +282,7 @@ export function localhostPublicPlayerProfile(profileId: string): PublicPlayerPro
       totalPoints: 7095,
       crystalFlawless: true,
       hardClear: true,
+      exceptionalAchievementCount: 0,
     },
     boards: [
       { difficulty: 'normal', duty: 'crystal', rank: 1 },

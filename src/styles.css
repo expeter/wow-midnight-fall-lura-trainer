@@ -1466,6 +1466,8 @@
 .global-player { display: grid; min-width: 0; justify-items: start; }
 .global-player small { overflow: hidden; max-width: 100%; margin-top: 3px; color: #91a0b8; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .player-credentials { display: flex; align-items: center; gap: 5px; }
+.exceptional-achievement-mark { margin-left: 6px; color: #d9bdff; font-style: normal; }
+.hidden-exceptional-achievement { border-color: rgba(196,154,255,.48) !important; background: linear-gradient(135deg, rgba(89,53,127,.22), rgba(10,14,26,.92)) !important; }
 .player-credentials i { display: grid; place-items: center; width: 22px; height: 22px; border: 1px solid rgba(143,240,211,.45); border-radius: 50%; color: #8ff0d3; font: 800 11px 'DM Mono', monospace; font-style: normal; }
 .player-credentials i[title="Flawless crystal run"] { color: #9fe9ff; }
 .global-own-position { margin-top: 2px; }

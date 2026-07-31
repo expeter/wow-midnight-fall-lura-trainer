@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- FR-069: Add audited API-only exceptional achievements that do not generate
+  public activity. Public rankings show a generic exceptional marker, while a
+  profile reveals the achievement only to its owner or another account that
+  owns the same secret. The first manually granted badge is the 10-point
+  **Find a Bug** achievement.
+
 ## 0.7.0 · 2026-07-31
 
 - BUG-148 / CR-196: Freeze each pull as verified, deliberately anonymous, or

@@ -8,6 +8,9 @@ import { applyMigrations, openDatabase, type Database } from '../src/database.js
 import { isDatabaseBusyError } from '../src/http.js'
 import type { AuthDependencies } from '../src/auth.js'
 import { aggregateAchievementIds, leaderboardAchievementIds } from '../src/attempts.js'
+import { listAchievementHall } from '../src/achievementHall.js'
+import { FIND_A_BUG_ACHIEVEMENT_ID, grantExceptionalAchievement } from '../src/exceptionalAchievements.js'
+import { listGlobalRanking, publicPlayerProfile } from '../src/globalRanking.js'
 
 const config: ApiConfig = {
   host: '127.0.0.1',
@@ -178,6 +181,54 @@ describe('Lura API foundation', () => {
       'rank-one-normal-crystal',
       'rank-one-normal-non-crystal',
     ])
+  })
+
+  it('keeps manually granted exceptional achievements out of activity and concealed until the viewer owns them', () => {
+    const targetId = insertResult(database, {
+      region: 'eu', account: 'bug-finder', character: 'Bugfinder', realm: 'blackrock',
+      mode: 'character', score: 1200, duration: 80_000, acceptedAt: '2026-07-28T00:01:00.000Z',
+    })
+    const fellowId = insertResult(database, {
+      region: 'eu', account: 'fellow-finder', character: 'Fellowfinder', realm: 'blackhand',
+      mode: 'character', score: 1100, duration: 82_000, acceptedAt: '2026-07-28T00:02:00.000Z',
+    })
+    const outsiderId = insertResult(database, {
+      region: 'eu', account: 'outsider', character: 'Outsider', realm: 'antonidas',
+      mode: 'character', score: 1000, duration: 84_000, acceptedAt: '2026-07-28T00:03:00.000Z',
+    })
+    for (const accountId of [targetId, fellowId, outsiderId]) {
+      const character = database.prepare('SELECT id FROM characters WHERE account_id = ?').get(accountId) as { id: number }
+      database.prepare('UPDATE accounts SET selected_character_id = ? WHERE id = ?').run(character.id, accountId)
+    }
+    createApp(database, config)
+    const grant = (accountId: number) => grantExceptionalAchievement(database, {
+      accountId,
+      achievementId: FIND_A_BUG_ACHIEVEMENT_ID,
+      trainerVersion: config.currentTrainerVersion,
+      grantedBy: 'Pestivator',
+      reason: 'Verified trainer bug report',
+      grantedAt: '2026-07-31T11:00:00.000Z',
+    })
+    assert.equal(grant(targetId), true)
+    assert.equal(grant(fellowId), true)
+    assert.equal(grant(targetId), false)
+    assert.equal(database.prepare('SELECT COUNT(*) AS count FROM achievement_events').get()!.count, 0)
+    assert.equal(database.prepare('SELECT COUNT(*) AS count FROM exceptional_achievement_grants').get()!.count, 2)
+
+    const targetProfileId = (database.prepare('SELECT public_profile_id AS id FROM accounts WHERE id = ?').get(targetId) as { id: string }).id
+    const hidden = publicPlayerProfile(database, targetProfileId, 'season-1', outsiderId)!
+    assert.deepEqual(hidden.achievements, [{
+      id: 'hidden-exceptional-1', title: 'Hidden achievement', tier: 'Exceptional', points: 10,
+      firstEarnedAt: '2026-07-31T11:00:00.000Z', hidden: true,
+    }])
+    assert.equal(publicPlayerProfile(database, targetProfileId, 'season-1', fellowId)!.achievements[0].title, 'Find a Bug')
+    assert.equal(publicPlayerProfile(database, targetProfileId, 'season-1', targetId)!.achievements[0].title, 'Find a Bug')
+    assert.equal(listGlobalRanking(database, 'season-1').rows.find(row => row.profileId === targetProfileId)?.exceptionalAchievementCount, 1)
+    const hallTarget = listAchievementHall(database, { limit: 10, offset: 0 }).rows.find(row => row.profileId === targetProfileId)!
+    assert.equal(hallTarget.exceptionalAchievementCount, 1)
+    assert.equal(hallTarget.highestAchievement.title, 'Hidden achievement')
+    const sharedHallTarget = listAchievementHall(database, { limit: 10, offset: 0, ownAccountId: fellowId }).rows.find(row => row.profileId === targetProfileId)!
+    assert.equal(sharedHallTarget.highestAchievement.title, 'Find a Bug')
   })
 
   it('does not let a stale environment override pin attempt compatibility', () => {

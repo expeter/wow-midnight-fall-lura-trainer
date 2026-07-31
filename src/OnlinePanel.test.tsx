@@ -20,7 +20,7 @@ describe('optional online profile', () => {
   it('fills a partial localhost ranking without duplicating the real player', () => {
     const real = {
       rank: 1, profileId: 'real', displayName: 'Real Player', guild: 'Real Guild',
-      achievementPoints: 10, runPoints: 100, totalPoints: 110, crystalFlawless: false, hardClear: false,
+      achievementPoints: 10, runPoints: 100, totalPoints: 110, crystalFlawless: false, hardClear: false, exceptionalAchievementCount: 0,
     }
     const rows = localhostGlobalRows([real], 3)
     expect(rows).toHaveLength(3)
@@ -44,9 +44,9 @@ describe('optional online profile', () => {
 
   it('shows guild names in all three Global podium columns when available', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => json({ rows: [
-      { rank: 1, profileId: 'one', displayName: 'One', guild: 'Guild One', achievementPoints: 50, runPoints: 100, totalPoints: 150, crystalFlawless: false, hardClear: true },
-      { rank: 2, profileId: 'two', displayName: 'Two', guild: 'Guild Two', achievementPoints: 40, runPoints: 90, totalPoints: 130, crystalFlawless: true, hardClear: false },
-      { rank: 3, profileId: 'three', displayName: 'Three', guild: 'Guild Three', achievementPoints: 30, runPoints: 80, totalPoints: 110, crystalFlawless: false, hardClear: false },
+      { rank: 1, profileId: 'one', displayName: 'One', guild: 'Guild One', achievementPoints: 50, runPoints: 100, totalPoints: 150, crystalFlawless: false, hardClear: true, exceptionalAchievementCount: 0 },
+      { rank: 2, profileId: 'two', displayName: 'Two', guild: 'Guild Two', achievementPoints: 40, runPoints: 90, totalPoints: 130, crystalFlawless: true, hardClear: false, exceptionalAchievementCount: 0 },
+      { rank: 3, profileId: 'three', displayName: 'Three', guild: 'Guild Three', achievementPoints: 30, runPoints: 80, totalPoints: 110, crystalFlawless: false, hardClear: false, exceptionalAchievementCount: 0 },
     ] })))
     render(<GlobalRankingSummary />)
     const podium = await screen.findByLabelText('Global player ranking')
@@ -59,7 +59,7 @@ describe('optional online profile', () => {
       if (url.endsWith('/v1/me')) return json({ error: 'not_authenticated' }, 401)
       if (url.includes('/v1/global-ranking')) return json({ rows: [{
         rank: 1, profileId: 'aligned', displayName: 'Aligned Player', guild: 'Aligned Guild',
-        achievementPoints: 50, runPoints: 100, totalPoints: 150, crystalFlawless: false, hardClear: true,
+        achievementPoints: 50, runPoints: 100, totalPoints: 150, crystalFlawless: false, hardClear: true, exceptionalAchievementCount: 1,
       }], own: null })
       throw new Error(`unexpected ${url}`)
     }))
@@ -67,6 +67,8 @@ describe('optional online profile', () => {
     const player = await within(view.container).findByText('Aligned Player')
     expect(player.closest('li')?.querySelector('.standard-guild')).toHaveTextContent('Aligned Guild')
     expect(player).toHaveClass('profile-name-button')
+    expect(player.closest('li')).toHaveTextContent('✦')
+    expect(within(player.closest('li')!).getByLabelText('Hidden exceptional achievement')).toBeInTheDocument()
   })
   it('shows all four personal board positions and the global position', () => {
     render(<BestRunsSummary session={{

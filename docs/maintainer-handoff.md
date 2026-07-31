@@ -22,6 +22,11 @@ original chat history. It complements the detailed ticket log in
 - Encounter SFX candidates remain in the repository and soundboard, but the
   live encounter mix intentionally enables only Main ability release. P4
   `Left`, `Right`, `Left`, `Move` uses separate prerecorded raid-lead clips.
+- Exceptional/secret achievements live in
+  [`api/src/exceptionalAchievements.ts`](../api/src/exceptionalAchievements.ts),
+  never in the client-imported canonical catalogue. Grant them through the
+  audited server helper or an equivalent reviewed database operation; do not
+  insert `achievement_events` for these grants.
 
 The source of truth for host gates is [`src/features.ts`](../src/features.ts).
 

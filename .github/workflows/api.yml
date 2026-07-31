@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "api/**"
+      - "package.json"
       - ".github/workflows/api.yml"
   workflow_dispatch:
 

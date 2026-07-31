@@ -244,15 +244,16 @@ test('game settings use one compact three-card row on desktop', async ({ page })
   expect(bounds[0]!.x + bounds[0]!.width).toBeLessThan(bounds[1]!.x)
   expect(bounds[1]!.x + bounds[1]!.width).toBeLessThan(bounds[2]!.x)
 
-  const difficultyButtons = ['test', 'easy', 'normal', 'hard'].map(name => page.getByRole('button', { name, exact: true }))
-  const difficultyBounds = await Promise.all(difficultyButtons.map(button => button.boundingBox()))
-  expect(difficultyBounds.every(Boolean)).toBe(true)
-  expect(difficultyBounds[0]!.y).toBeCloseTo(difficultyBounds[1]!.y, 0)
-  expect(difficultyBounds[2]!.y).toBeCloseTo(difficultyBounds[3]!.y, 0)
-  expect(difficultyBounds[2]!.y).toBeGreaterThan(difficultyBounds[0]!.y + difficultyBounds[0]!.height)
-  for (const button of difficultyButtons) {
-    expect(await button.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
-  }
+  const difficultyButtons = page.locator('.difficulty-row .compact')
+  const difficultyBounds = await difficultyButtons.evaluateAll(elements => elements.map(element => {
+    const { x, y, width, height } = element.getBoundingClientRect()
+    return { x, y, width, height, contentFits: element.scrollWidth <= element.clientWidth }
+  }))
+  expect(difficultyBounds).toHaveLength(4)
+  expect(difficultyBounds[0].y).toBeCloseTo(difficultyBounds[1].y, 0)
+  expect(difficultyBounds[2].y).toBeCloseTo(difficultyBounds[3].y, 0)
+  expect(difficultyBounds[2].y).toBeGreaterThan(difficultyBounds[0].y + difficultyBounds[0].height)
+  expect(difficultyBounds.every(button => button.contentFits)).toBe(true)
 })
 
 test('setup tabs preserve the raid-plan hash and expose one section at a time', async ({ page }) => {

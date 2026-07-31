@@ -462,6 +462,30 @@ test('launches the raid into Phase 3 from its visible final Phase 2 positions', 
   expect(Math.hypot(origin[0] - 480, origin[1] - 270)).toBeGreaterThan(5)
 })
 
+test('keeps a transition-started Phase 2 crystal grounded throughout the beam', { tag: '@late-arena' }, async ({ page }) => {
+  test.setTimeout(100_000)
+  await page.addInitScript(() => {
+    localStorage.setItem('lura-game-speed', '2.5')
+    localStorage.setItem('lura-selected-position', '0')
+  })
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Raid plan' }).click()
+  await page.getByLabel('Phase 2 crystal 1').selectOption('0')
+  await page.getByRole('button', { name: 'Game settings' }).click()
+  await page.getByRole('button', { name: 'test', exact: true }).click()
+  await page.getByRole('button', { name: 'Intermission', exact: true }).click()
+  await page.getByRole('button', { name: /Enter Intermission/ }).click()
+
+  const arena = page.locator('.arena-wrap')
+  await expect(arena).toHaveAttribute('data-event', 'p2-orbs', { timeout: 75_000 })
+  await page.keyboard.press('c')
+  const groundedCrystal = page.locator('.crystal-countdown')
+  await expect(groundedCrystal).toBeVisible()
+  await page.waitForTimeout(550)
+  await expect(arena).toHaveAttribute('data-event', 'p2-orbs')
+  await expect(groundedCrystal).toBeVisible()
+})
+
 test('enters Phase 4 directly and plays Splinters again before the second Heaven and Hell', { tag: '@late-arena' }, async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('lura-game-speed', '2.5')

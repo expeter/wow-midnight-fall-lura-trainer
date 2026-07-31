@@ -107,6 +107,11 @@ describe('online attempt integration', () => {
           showGuild: 0,
           selectedCharacterId: 7,
         },
+        selectedCharacter: {
+          name: 'Lurana',
+          realmSlug: 'silvermoon',
+          region: 'eu',
+        },
       })
       if (url.endsWith('/v1/me/characters')) return Response.json({ rows: [{
         id: 7,
@@ -141,7 +146,46 @@ describe('online attempt integration', () => {
     expect(issuance.body).toContain('"difficulty":"normal"')
     expect(issuance.body).toContain('"entryMode":"arena0"')
     expect(issuance.body).toMatch(/"configurationFingerprint":"[a-f0-9]{64}"/)
-    expect(view.container.querySelector('[data-event="p1-countdown"]')).toBeInTheDocument()
+    const arena = view.container.querySelector('[data-event="p1-countdown"]')
+    expect(arena).toBeInTheDocument()
+    expect(arena).toHaveAttribute('data-run-attribution', 'verified')
+    expect(arena).toHaveAttribute('data-played-name', 'Player 1')
+    expect(arena).toHaveAttribute('data-verified-character', 'Lurana—silvermoon')
+  })
+
+  it('marks a signed-in run without an active character as local and not attributable', async () => {
+    const requests: string[] = []
+    vi.stubGlobal('fetch', vi.fn(async input => {
+      const url = String(input)
+      requests.push(url)
+      if (url.endsWith('/v1/me')) return Response.json({
+        authenticated: true,
+        region: 'eu',
+        csrfToken: 'csrf-token',
+        privacy: {
+          identityMode: 'character',
+          alias: null,
+          showGuild: 1,
+          selectedCharacterId: null,
+        },
+      })
+      if (url.includes('/v1/activity')) return Response.json({ rows: [] })
+      if (url.includes('/v1/leaderboards')) return Response.json({ rows: [] })
+      if (url.endsWith('/version.json')) return new Response('', { status: 404 })
+      throw new Error(`unexpected ${url}`)
+    }))
+    const user = userEvent.setup()
+    const view = render(<App />)
+    await screen.findByText(/^Signed in$/i)
+    await user.click(screen.getByRole('button', { name: 'normal' }))
+    await user.click(screen.getByRole('button', { name: 'Enter P1' }))
+    expect(await screen.findByText(/select an active Battle\.net character.*local practice/i)).toBeVisible()
+    const arena = view.container.querySelector('[data-event="p1-countdown"]')
+    expect(arena).toHaveAttribute('data-run-attribution', 'local')
+    expect(arena).toHaveAttribute('data-played-name', 'Player 1')
+    expect(arena).toHaveAttribute('data-verified-character', '')
+    expect(requests.some(url => url.endsWith('/v1/attempts'))).toBe(false)
+    expect(requests.some(url => url.endsWith('/v1/wipes'))).toBe(false)
   })
 
   it('revalidates a cached signed-in session before starting a leaderboard run', async () => {

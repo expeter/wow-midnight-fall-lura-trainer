@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
+import type { RunAttributionMode } from './online'
 import { angleToward, assignmentRevealDistance, constrainP3NpcTargetToSide, crystalCarrierPosition, distance, distanceToSegment, hasActiveP3CrystalLight, isActiveP3RuneDuty, jumpHeights, keepP3CrystalPoolCovered, keepP3NpcInSoak, keepP4NpcInProtection, npcEntryPosition, OPENING_BOOST_SECONDS, P1_STAR_LENGTH, p2BeamAimPosition, p2FinalRegroupActive, P2_ORBIT_SPEED, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_INNER_RADIUS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p2NpcRoamingPosition, p2NpcShouldReturnToSoak, p2OrbPosition, p2OrbReturnState, p2ReturningOrbPositions, p3ActiveCrystalAssignments, P3_APPROACH_NPC_SPEED_MULTIPLIER, p3ArchangelStackPosition, p3BossPosition, p3CrystalPoolCoverageTargets, p3FlightPosition, P3_FLIGHT_SECONDS, p3LandingGroupIndex, p3LandingPlanIndex, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3NpcPoolAssignment, p3NpcRuneReactionDelay, p3NpcSoaksActive, p3PoolCenters, p3PoolLayoutId, p3ProtectionBubbleCenter, p3RuneEdges, p3RuneOrbs, p3RunePartnerPosition, p3SideForPosition, p3StarsTiming, playerCarriesCrystal, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, p4EncounterBoxStates, p4FrontSoakerPosition, p4GroupPosition, p4NpcOrdinalForProfile, p4NpcRelocationPace, p4NpcSplinterActorOrdinals, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4ProtectionCenter, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4StackPosition, p4TankAvoidSplinters, p4TankConeActive, p4TankConeHitsBox, p4TransitionStartPosition, P4_FRONT_CONE_RANGE, P4_HEAVEN_MOVE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, roamingNpcPosition, safestStarsplinterRotation, separateP3NpcTarget, shouldApplyP3NpcDisplacement, shouldHoldP3RunePartner, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type RuneSymbol } from './game'
 import { p3SectorMovementSpeed, p3SpreadPosition, p4PlayerSplinterHitsNpc, p4RenderedNpcSplinterHitsPlayer, p4RenderedNpcSplinterOrigin, p4TankKillsBox } from './game'
 import { isP3RaidMemberVisible } from './game'
@@ -28,6 +29,9 @@ interface SceneProps {
   p2SoakPositions: Point[]
   p2SpreadPositions: Point[]
   profiles: PlayerProfile[]
+  playerDisplayName: string
+  verifiedCharacterLabel: string | null
+  runAttribution: RunAttributionMode
   raidStart: Point
   p1BossOpening: Point
   movementSpeed: number
@@ -474,10 +478,45 @@ function makeTextTexture(text: string, color: string, plate = false) {
   texture.colorSpace = THREE.SRGBColorSpace
   return texture
 }
+function makePlayerNameplateTexture(name: string, color: string, verifiedCharacter: string | null, attribution: RunAttributionMode) {
+  if (attribution === 'anonymous') return makeTextTexture(name || 'Player', color, true)
+  const canvas = document.createElement('canvas')
+  canvas.width = 384
+  canvas.height = 96
+  const context = canvas.getContext('2d')!
+  context.fillStyle = 'rgba(5,6,14,.82)'
+  context.roundRect(3, 5, canvas.width - 6, canvas.height - 10, 14)
+  context.fill()
+  context.fillStyle = color
+  context.font = '700 30px sans-serif'
+  context.textAlign = 'center'
+  context.textBaseline = 'middle'
+  context.fillText(name || 'Player', canvas.width / 2, 31)
+  if (verifiedCharacter) {
+    context.fillStyle = '#148eff'
+    context.beginPath()
+    context.arc(52, 67, 13, 0, Math.PI * 2)
+    context.fill()
+    context.fillStyle = '#ffffff'
+    context.font = '800 15px sans-serif'
+    context.fillText('B', 52, 67)
+    context.font = '600 19px sans-serif'
+    context.textAlign = 'left'
+    context.fillText(verifiedCharacter, 73, 68)
+  } else {
+    context.fillStyle = '#aeb8c7'
+    context.font = '700 17px sans-serif'
+    context.textAlign = 'center'
+    context.fillText('LOCAL · NOT ATTRIBUTED', canvas.width / 2, 68)
+  }
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.colorSpace = THREE.SRGBColorSpace
+  return texture
+}
 function classInitials(playerClass: PlayerClass) {
   return ({ mage: 'MA', warlock: 'WL', augmentation: 'AUG', priest: 'PR', 'death-knight': 'DK', 'demon-hunter': 'DH', warrior: 'WA', paladin: 'PA', druid: 'DR', evoker: 'EV', shaman: 'SH', hunter: 'HU', monk: 'MO' } as Record<PlayerClass, string>)[playerClass]
 }
-function makeEntity(profile: PlayerProfile, player = false) {
+function makeEntity(profile: PlayerProfile, player = false, playerDisplayName?: string, verifiedCharacterLabel: string | null = null, runAttribution: RunAttributionMode = 'anonymous') {
   const group = new THREE.Group()
   const color = CLASS_COLORS[profile.playerClass]
   const body = new THREE.Mesh(new THREE.BoxGeometry(player ? 5.67 : 4.5, player ? 10.53 : 8.1, player ? 5.67 : 4.5), new THREE.MeshBasicMaterial({ color }))
@@ -496,8 +535,10 @@ function makeEntity(profile: PlayerProfile, player = false) {
   badge.rotation.x = -Math.PI / 2
   badge.position.y = player ? 10.57 : 8.14
   group.add(badge)
-  const nameplate = new THREE.Sprite(new THREE.SpriteMaterial({ map: makeTextTexture(profile.name || 'Player', colorCss, true), transparent: true, depthTest: true }))
-  nameplate.scale.set(player ? 10 : 8, player ? 2.5 : 2, 1)
+  const nameplate = new THREE.Sprite(new THREE.SpriteMaterial({ map: player
+    ? makePlayerNameplateTexture(playerDisplayName || profile.name || 'Player', colorCss, verifiedCharacterLabel, runAttribution)
+    : makeTextTexture(profile.name || 'Player', colorCss, true), transparent: true, depthTest: true }))
+  nameplate.scale.set(player && runAttribution !== 'anonymous' ? 15 : player ? 10 : 8, player && runAttribution !== 'anonymous' ? 3.75 : player ? 2.5 : 2, 1)
   nameplate.position.y = player ? 13.4 : 10.5
   group.add(nameplate)
   const carriedCrystal = new THREE.Group()
@@ -697,6 +738,9 @@ export default function GameScene(props: SceneProps) {
     renderer.setSize(element.clientWidth || 760, element.clientHeight || 540)
     renderer.outputColorSpace = THREE.SRGBColorSpace
     renderer.domElement.draggable = false
+    renderer.domElement.dataset.playerNameplate = latest.current.playerDisplayName
+    renderer.domElement.dataset.verifiedCharacter = latest.current.verifiedCharacterLabel ?? ''
+    renderer.domElement.dataset.runAttribution = latest.current.runAttribution
     element.appendChild(renderer.domElement)
 
     const scene = new THREE.Scene()
@@ -812,7 +856,7 @@ export default function GameScene(props: SceneProps) {
     })
 
     const initial = latest.current
-    const player = makeEntity(initial.profiles[initial.assignment], true)
+    const player = makeEntity(initial.profiles[initial.assignment], true, initial.playerDisplayName, initial.verifiedCharacterLabel, initial.runAttribution)
     scene.add(player)
     const npcProfileIndices = initial.profiles.map((_, index) => index).filter(index => index !== initial.assignment)
     const npcs = Array.from({ length: 19 }, (_, i) => {

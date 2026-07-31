@@ -1314,7 +1314,10 @@ export function canPickupCrystalAlongPath(previousPlayer: Point, player: Point, 
   return groundAge >= 1 && distanceToSegment(crystal, previousPlayer, player) <= pickupRadius
 }
 export function canPickupCrystalDuringEvent(event: string): boolean {
-  return event !== 'p3-archangel'
+  // P2 carriers deliberately leave the crystal grounded while positioning the
+  // assigned beam. Recovery begins only after that beam has resolved; otherwise
+  // standing near the drop for one second silently puts it back in their hands.
+  return event !== 'p2-orbs' && event !== 'p3-archangel'
 }
 export function shouldCheckIntermissionVoid(event: string): boolean {
   return event === 'beam' || event === 'splinter'

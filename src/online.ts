@@ -27,6 +27,8 @@ export interface OnlineSession {
   }
 }
 
+export type RunAttributionMode = 'verified' | 'anonymous' | 'local'
+
 export interface OnlineCharacter {
   id: number
   region: 'eu' | 'us'
@@ -319,10 +321,10 @@ export async function loadActivityFeed(limit = 20): Promise<{ rows: ActivityFeed
 }
 
 export function canRecordOnlineWipe(
-  _session: Pick<OnlineSession, 'authenticated' | 'csrfToken' | 'privacy'>,
+  attribution: RunAttributionMode,
   difficulty: string,
 ): boolean {
-  return difficulty === 'normal' || difficulty === 'hard'
+  return attribution !== 'local' && (difficulty === 'normal' || difficulty === 'hard')
 }
 
 export function recordOnlineWipe(

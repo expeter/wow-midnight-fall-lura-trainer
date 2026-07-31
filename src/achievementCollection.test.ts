@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { AchievementSummary, PhaseResult } from './completion'
 import {
   achievementCatalog,
+  achievementProgress,
   collectibleAchievements,
   emptyCollection,
   flawlessFullRunStreak,
@@ -14,6 +15,7 @@ import {
 } from './achievementCollection'
 
 const flawlessPhases: PhaseResult[] = [
+  { key: 'p1', label: 'Phase 1', points: 1000, time: 60, mistakes: 0, recovery: 'passed' },
   { key: 'intermission', label: 'Intermission', points: 1000, time: 60, mistakes: 0, recovery: 'passed' },
   { key: 'p2', label: 'Phase 2', points: 1000, time: 70, mistakes: 0, recovery: 'passed' },
   { key: 'p3', label: 'Phase 3', points: 1000, time: 90, mistakes: 0, recovery: 'passed' },
@@ -57,7 +59,7 @@ describe('canonical achievement rules', () => {
     totalScore: 1120,
     allOptions: true,
     allPhaseRecovery: true,
-    phaseClears: 4,
+    phaseClears: 5,
     ...overrides,
   })
 
@@ -82,7 +84,7 @@ describe('canonical achievement rules', () => {
     const direct = ids({
       ...normalFlawless,
       fullSequence: false,
-      phaseResults: [flawlessPhases[2]],
+      phaseResults: [flawlessPhases[3]],
       allPhaseRecovery: false,
     })
     expect(direct).toContain('one-phase-wonder')
@@ -191,23 +193,35 @@ describe('canonical achievement rules', () => {
     const history = {
       ...emptyCollection(),
       runs: [
-        recordedRun(1, 'normal', { phaseClears: 4 }),
         recordedRun(2, 'normal', { fullSequence: false, fullRunAttempt: false, phaseClears: 1 }),
       ],
     }
-    expect(totalPhaseClears(history.runs)).toBe(5)
+    expect(totalPhaseClears(history.runs)).toBe(1)
     const ten = collectibleAchievements(normalFlawless, history, 3).map(entry => entry.id)
     expect(ten).not.toContain('phase-clears-10')
 
-    const fortySixClears = Array.from({ length: 11 }, (_, index) => recordedRun(index + 20, 'normal'))
-      .concat(recordedRun(31, 'normal', { fullSequence: false, fullRunAttempt: false, phaseClears: 2 }))
+    const fortySixClears = Array.from({ length: 9 }, (_, index) => recordedRun(index + 20, 'normal'))
+      .concat(recordedRun(31, 'normal', { fullSequence: false, fullRunAttempt: false, phaseClears: 1 }))
     expect(totalPhaseClears(fortySixClears)).toBe(46)
     expect(collectibleAchievements(normalFlawless, { ...emptyCollection(), runs: fortySixClears }, 32).map(entry => entry.id))
       .toEqual(expect.arrayContaining(['phase-clears-10', 'phase-clears-50']))
 
-    const ninetySixClears = Array.from({ length: 24 }, (_, index) => recordedRun(index + 40, 'hard'))
+    const ninetySixClears = Array.from({ length: 20 }, (_, index) => recordedRun(index + 40, 'hard'))
     expect(collectibleAchievements(normalFlawless, { ...emptyCollection(), runs: ninetySixClears }, 70).map(entry => entry.id))
       .toEqual(expect.arrayContaining(['phase-clears-10', 'phase-clears-50', 'phase-clears-100']))
+  })
+
+  it('reports compact progress for multi-run and cumulative achievements', () => {
+    const runs = [
+      recordedRun(1, 'normal', { crystalPlayer: true }),
+      recordedRun(2, 'normal', { crystalPlayer: true }),
+      recordedRun(3, 'normal', { crystalPlayer: false }),
+    ]
+    const collection = { ...emptyCollection(), runs }
+    expect(achievementProgress({ id: 'both-sides-of-crystal' }, collection)).toEqual({ current: 2, target: 2, label: '2 of 2 duties' })
+    expect(achievementProgress({ id: 'impossible-normal-streak' }, collection)).toEqual({ current: 3, target: 5, label: '3 of 5 flawless runs' })
+    expect(achievementProgress({ id: 'phase-clears-50' }, collection)).toEqual({ current: 15, target: 50, label: '15 of 50 phase clears' })
+    expect(achievementProgress({ id: 'midnight-shift' }, collection)).toBeNull()
   })
 })
 

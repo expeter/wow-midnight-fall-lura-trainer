@@ -129,6 +129,13 @@ describe('Intermission game rules', () => {
     expect(canPickupCrystalDuringEvent('p2-spread')).toBe(true)
     expect(canPickupCrystalDuringEvent('p3-archangel')).toBe(false)
   })
+  it.each(['test', 'easy', 'normal', 'hard'])('keeps a dropped P2 beam crystal grounded on %s', () => {
+    const crystal = { x: 480, y: 270 }
+    const enteredBeam = { x: 483, y: 270 }
+    expect(canPickupCrystalDuringEvent('p2-orbs')).toBe(false)
+    expect(canPickupCrystalAlongPath(crystal, enteredBeam, crystal, 1.2)).toBe(true)
+    expect(canPickupCrystalDuringEvent('p2-pull')).toBe(true)
+  })
   it('limits the legacy annulus void check to live Intermission mechanics', () => {
     expect(shouldCheckIntermissionVoid('beam')).toBe(true)
     expect(shouldCheckIntermissionVoid('splinter')).toBe(true)

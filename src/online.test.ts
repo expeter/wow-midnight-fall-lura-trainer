@@ -75,28 +75,10 @@ describe('online API client', () => {
     expect(first).toBe(second)
   })
 
-  it('records authenticated wipes even while the selected profile is anonymous', () => {
-    expect(canRecordOnlineWipe({
-      authenticated: true,
-      csrfToken: 'csrf-token',
-      privacy: {
-        identityMode: 'anonymous',
-        alias: null,
-        showGuild: 0,
-        selectedCharacterId: 7,
-      },
-    }, 'normal')).toBe(true)
-    expect(canRecordOnlineWipe({
-      authenticated: true,
-      csrfToken: 'csrf-token',
-      privacy: {
-        identityMode: 'character',
-        alias: null,
-        showGuild: 0,
-        selectedCharacterId: null,
-      },
-    }, 'normal')).toBe(true)
-    expect(canRecordOnlineWipe({ authenticated: false }, 'hard')).toBe(true)
-    expect(canRecordOnlineWipe({ authenticated: false }, 'easy')).toBe(false)
+  it('records only verified or deliberately anonymous Normal/Hard run wipes', () => {
+    expect(canRecordOnlineWipe('verified', 'normal')).toBe(true)
+    expect(canRecordOnlineWipe('anonymous', 'hard')).toBe(true)
+    expect(canRecordOnlineWipe('local', 'normal')).toBe(false)
+    expect(canRecordOnlineWipe('verified', 'easy')).toBe(false)
   })
 })

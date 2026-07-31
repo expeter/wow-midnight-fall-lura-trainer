@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+## 0.7.0 · 2026-07-31
+
+- BUG-148 / CR-196: Freeze each pull as verified, deliberately anonymous, or
+  local-only. Signed-in players without an active character can no longer
+  publish anonymous wipes by accident, and the controlled-player nameplate
+  distinguishes the played name from its verified Battle.net identity.
+- BUG-149: Keep a crystal dropped during the sequential Phase 2 beam grounded
+  for the complete beam/orb event on every difficulty; normal recovery resumes
+  in the following pull window.
+- CR-197: Require Phase 1 through Phase 4 for every new full-journey
+  achievement and show compact saved progress on cumulative and multi-run
+  badges. Already-earned records remain unchanged.
 - FR-068: Add two persisted/shareable tank assignments. During boss-active
   Phase 1, Phase 2, and Phase 3, the tanks play the visible five-count
   Heaven's Lance burst, mitigation, Impaled, and post-impact-five swap loop;

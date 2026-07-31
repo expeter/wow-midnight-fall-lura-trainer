@@ -8,7 +8,7 @@ original chat history. It complements the detailed ticket log in
 
 ## Current release boundary
 
-- The package version is `0.6.2`.
+- The package version is `0.7.0`.
 - Intermission and Phases 2–4 are production features.
 - Phase 1 is released in production. The host feature flag remains explicit,
   but no longer hides P1 outside localhost.
@@ -31,6 +31,11 @@ session expiry during combat neither pauses the encounter nor downgrades its
 wipes or completion to anonymous. Stale session claims without a valid active
 attempt are rejected; only deliberately signed-out wipe submissions enter the
 generic anonymous feed.
+
+At pull start the client also freezes an explicit `verified`, `anonymous`, or
+`local` attribution mode. Signed-in accounts without an active selected
+character remain local practice and are labelled that way on the controlled
+player nameplate; they never fall into anonymous Recent activity.
 
 ## Product intent that is easy to lose
 
@@ -59,6 +64,10 @@ a scripted animation.
   engages.
 - Test mode records and exposes mistakes without blocking practice. Easy may
   provide extra coaching. Normal and Hard should not leak mechanic solutions.
+- A Phase 2 crystal dropped for the assigned beam stays on the ground during
+  `p2-orbs`; generic continuous pickup resumes in the following recovery/pull
+  window. Direct-P2 positioning must not be used as evidence that this
+  transition-sensitive rule is correct.
 
 When screenshots and prose appear to conflict with an old implementation,
 preserve the newest explicit mechanic clarification as a `SPEC` or ticket

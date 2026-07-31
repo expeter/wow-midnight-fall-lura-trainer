@@ -12,11 +12,11 @@ describe('completion card results', () => {
     expect(buildPhaseResult('p3', 900, 950, 40, 70, 'passed').recovery).toBe('passed')
   })
 
-  it('unlocks the achievement only for all four phases in sequence', () => {
-    const full = (['intermission', 'p2', 'p3', 'p4'] as const).map((key, index) => buildPhaseResult(key, 1000, 1000, index * 10, index * 10 + 10))
+  it('unlocks the achievement only for Phase 1 through Phase 4 in sequence', () => {
+    const full = (['p1', 'intermission', 'p2', 'p3', 'p4'] as const).map((key, index) => buildPhaseResult(key, 1000, 1000, index * 10, index * 10 + 10))
     expect(isFullSequenceCompletion(full)).toBe(true)
     expect(isFullSequenceCompletion(full.slice(1))).toBe(false)
-    expect(isFullSequenceCompletion([full[0], full[2], full[1], full[3]])).toBe(false)
+    expect(isFullSequenceCompletion([full[0], full[2], full[1], full[3], full[4]])).toBe(false)
   })
 
   it('builds a compact guild-shareable result', () => {

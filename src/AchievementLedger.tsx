@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { achievementCatalog, type AchievementCluster, type AchievementCollectionData, type AchievementDefinition } from './achievementCollection'
+import { achievementCatalog, achievementProgress, type AchievementCluster, type AchievementCollectionData, type AchievementDefinition } from './achievementCollection'
 
 interface AchievementCollectionProps {
   collection: AchievementCollectionData
@@ -176,12 +176,17 @@ export default function AchievementCollection({ collection }: AchievementCollect
             {entries.map(achievement => {
               const record = earned.get(achievement.key)
               const status = record ? 'Earned' : achievement.available ? 'Locked' : 'Coming soon'
+              const progress = achievementProgress(achievement, collection)
               return <article aria-label={`${achievement.label} · ${status}`} className={record ? 'earned' : achievement.available ? 'locked' : 'coming-soon'} key={achievement.key}>
                 <span className="achievement-icon" aria-hidden="true">{achievement.icon}</span>
                 <div>
                   <div className="achievement-title"><h4>{achievement.label}</h4><span>{achievement.tier} · {achievement.points} pts</span><span>{status}</span></div>
                   <p>{achievement.flavor}</p>
                   <small className="achievement-requirement"><b>How to earn</b>{achievement.requirement}</small>
+                  {progress && <div className="achievement-requirement-progress">
+                    <div role="progressbar" aria-label={`${achievement.label} progress`} aria-valuemin={0} aria-valuemax={progress.target} aria-valuenow={progress.current}><i style={{ width: `${progress.current / progress.target * 100}%` }} /></div>
+                    <small>{progress.label}</small>
+                  </div>}
                   {record && <small className="achievement-earned-at">{`First earned ${new Date(record.earnedAt).toLocaleString()}${record.playerName ? ` · ${record.playerName}` : ''}${record.attempt ? ` · Attempt #${record.attempt}` : ''}`}</small>}
                 </div>
               </article>

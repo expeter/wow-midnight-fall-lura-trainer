@@ -146,6 +146,10 @@ change before implementation.
 - Full-run streaks advance only from complete sequential clears. Direct phase
   practice may award that phase's flawless badge and increments only the phases
   actually cleared.
+- A complete sequential clear means Phase 1, Intermission, Phase 2, Phase 3,
+  and Phase 4 in order. Legacy four-phase summaries do not unlock new
+  full-journey achievements. Cumulative and multi-run badges expose compact
+  progress without re-awarding badges that are already earned.
 - Result-card honors are presentation summaries governed by `SPEC-004`; they
   are not additional canonical achievement IDs.
 - Local achievements are browser records. Only achievements derived from an
@@ -164,6 +168,13 @@ change before implementation.
   active when the optional bottom-right message queue is disabled.
 - Posting online results requires Battle.net authentication, a verified
   selected WoW character, and a one-use server-issued attempt.
+- Every pull snapshots one explicit attribution mode. A successfully issued
+  attempt is `verified`; a deliberately signed-out pull is `anonymous`; a
+  signed-in pull without a selected character or valid issuance is local-only.
+  The mode cannot silently change during combat. The controlled-player
+  nameplate shows the played raid-plan name and, only for verified pulls, the
+  selected Battle.net character; incomplete signed-in identity is visibly
+  labelled local and not attributed.
 - The trainer revalidates the server session immediately before issuing each
   attempt. A request that presents authenticated-session metadata may never be
   silently downgraded into anonymous activity when its session has expired or
@@ -314,6 +325,9 @@ The detailed encounter, UI, recovery, and edge-case contract is maintained in
 - Touching another player's dropped Phase 2 crystal is recoverable like the
   Phase 1 wrong-pickup rule: drop it within five seconds for NPC recovery or
   wipe. An assigned crystal player treats a touched crystal as their own.
+- A crystal deliberately dropped for the Phase 2 beam remains grounded through
+  the entire beam/orb event on every difficulty. Beam contact cannot recollect
+  it; normal recovery resumes only in the following pull/recovery window.
 
 ## SPEC-014 · Releases, changelog, and leaderboard seasons
 

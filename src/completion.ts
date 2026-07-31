@@ -29,10 +29,9 @@ export function buildPhaseResult(key: PhaseKey, startScore: number, endScore: nu
 }
 
 export function isFullSequenceCompletion(results: PhaseResult[]): boolean {
-  const legacy: PhaseKey[] = ['intermission', 'p2', 'p3', 'p4']
-  const complete: PhaseKey[] = ['p1', ...legacy]
-  return [legacy, complete].some(required =>
-    results.length === required.length && results.every((result, index) => result.key === required[index]))
+  const complete: PhaseKey[] = ['p1', 'intermission', 'p2', 'p3', 'p4']
+  return results.length === complete.length
+    && results.every((result, index) => result.key === complete[index])
 }
 
 export function completionResultTitle(fullSequence: boolean, mistakes: number): string {

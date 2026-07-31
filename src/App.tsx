@@ -16,7 +16,7 @@ import { approachHealthTarget, healthBand, healthChangeRate, randomHealthTarget,
 import { P1_BEAM_POSITION_SECONDS, P1_CRYSTAL_PICKUP_SECONDS, P1_DEFAULT_INTERRUPT_KEY, P1_GLAIVE_CONTACT_RADIUS, P1_GLAIVE_INITIAL_SPEED_MULTIPLIER, P1_GLAIVE_RETURN_SPEED_MULTIPLIER, P1_GLAIVE_TELEGRAPH_SECONDS, P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_INTERRUPT_CAST_COUNT, P1_INTERRUPT_CAST_SECONDS, P1_MEMORY_DELAY_SECONDS, P1_MEMORY_POSITION_SECONDS, P1_MEMORY_SWEEP_SECONDS, P1_OUTER_RADIUS, P1_PLAYER_INTERRUPT_WINDOW_SECONDS, P1_PULL_DELAY_SECONDS, P1_REACTIVE_SOAK_RADIUS, P1_REACTIVE_SOAK_SECONDS, P1_ROTATING_BEAM_ACTIVE_SECONDS, P1_ROTATING_BEAM_TELEGRAPH_SECONDS, P1_SEQUENCE_COUNT, p1AddGlaiveSet, p1AdvanceGlaiveSet, p1BeamHitResolution, p1BossEncounterPosition, p1ContinuousBeamTime, p1CrystalPickupSequence, p1CrystalSpawnPosition, p1CrystalTouchResolution, p1GlaiveContactStarted, p1GlaiveSet, p1HasCollectedCrystal, p1InterruptAssignment, p1InterruptState, p1IsInPlayableArena, p1MemoryOrder, p1MemoryPlayerVerdict, p1NpcInterruptSeconds, p1ReactiveSoaks, p1RotatingBeamHitsPoint, p1RotatingBeams, p1WrongCrystalDropExpired, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
 import { advanceTankMechanic, createTankMechanicState, prepareTankDefensive, requestTankTaunt, tankMechanicActiveForEvent, type TankIndex, type TankMechanicEvent, type TankMechanicState } from './tank'
 import OnlinePanel, { BestRunsSummary, GlobalRankingSummary, OnlineStandingSummary, PublicProfileOverlay } from './OnlinePanel'
-import { canRecordOnlineWipe, completeOnlineAttempt, configurationFingerprint, issueOnlineAttempt, loadActivityFeed, loadOnlineSession, logoutOnline, newActivityRows, recentActivityRows, recordOnlineWipe, type ActivityFeedRow, type OnlineSession } from './online'
+import { canRecordOnlineWipe, completeOnlineAttempt, configurationFingerprint, issueOnlineAttempt, loadActivityFeed, loadOnlineSession, logoutOnline, newActivityRows, recentActivityRows, recordOnlineWipe, type ActivityFeedRow, type OnlineSession, type RunAttributionMode } from './online'
 import './styles.css'
 
 type Screen = 'menu' | 'game' | 'results'
@@ -601,6 +601,8 @@ export default function App() {
   const [onlineSession, setOnlineSession] = useState<OnlineSession>({ authenticated: false })
   const [setupTab, setSetupTab] = useState<'game' | 'keyboard' | 'hud' | 'raidplan' | 'leaderboard' | 'profile'>(() => window.location.hash.startsWith('#raidplan=') ? 'raidplan' : 'game')
   const [onlineAttempt, setOnlineAttempt] = useState<ActiveOnlineAttempt | null>(null)
+  const [runAttribution, setRunAttribution] = useState<RunAttributionMode>('local')
+  const runAttributionRef = useRef<RunAttributionMode>('local')
   const [onlineResultStatus, setOnlineResultStatus] = useState('')
   const [activityFeed, setActivityFeed] = useState<ActivityFeedRow[]>([])
   const [activityProfileId, setActivityProfileId] = useState<string | null>(null)
@@ -1233,6 +1235,8 @@ export default function App() {
   }
   const start = async () => {
     setOnlineAttempt(null)
+    runAttributionRef.current = 'local'
+    setRunAttribution('local')
     setOnlineResultStatus('')
     onlineCompletionStartedRef.current = ''
     let currentSession = onlineSession
@@ -1255,6 +1259,7 @@ export default function App() {
       setOnlineResultStatus(runWarning)
     }
     const selectedCharacter = currentSession.privacy?.selectedCharacterId
+    let nextAttribution: RunAttributionMode = currentSession.authenticated ? 'local' : 'anonymous'
     if (
       currentSession.authenticated
       && currentSession.csrfToken
@@ -1301,6 +1306,7 @@ export default function App() {
           configurationFingerprint: fingerprint,
           optionalChallenges: ['recovery', 'main-ability'],
         })
+        nextAttribution = 'verified'
         setOnlineResultStatus('Online-eligible attempt active.')
       } catch (error) {
         if (error instanceof Error && error.message === 'not_authenticated') {
@@ -1317,17 +1323,20 @@ export default function App() {
         }
       }
     }
+    runAttributionRef.current = nextAttribution
+    setRunAttribution(nextAttribution)
     initializeAttempt(false)
     if (runWarning) setSoftWipeNotice(runWarning)
   }
   function previewCompletionScreen() {
     const previewResults: PhaseResult[] = [
+      { key: 'p1', label: 'Phase 1', points: 990, time: 64.8 },
       { key: 'intermission', label: 'Intermission', points: 980, time: 58.4 },
       { key: 'p2', label: 'Phase 2', points: 950, time: 76.2 },
       { key: 'p3', label: 'Phase 3', points: 920, time: 130.1 },
       { key: 'p4', label: 'Phase 4', points: 900, time: 92 },
     ]
-    const previewStats: GameStats = { score: 850, hits: 3, crystalDropped: false, time: 356.7 }
+    const previewStats: GameStats = { score: 850, hits: 3, crystalDropped: false, time: 421.5 }
     const previewMistakes: Mistake[] = [
       { id: 1, time: 41.2, label: 'Hit by another player’s Starsplinter', penalty: 50 },
       { id: 2, time: 164.8, label: 'Outside the Phase 3 light zone', penalty: 50 },
@@ -2453,7 +2462,7 @@ export default function App() {
       window.setTimeout(() => setSoftWipeNotice(current => current === notice ? '' : current), 1800)
       return false
     }
-    if (canRecordOnlineWipe(onlineSession, difficulty)) {
+    if (canRecordOnlineWipe(runAttributionRef.current, difficulty)) {
       const recordedDifficulty = difficulty === 'hard' ? 'hard' : 'normal'
       const phase = event.startsWith('p1-') ? 'Phase 1'
         : event.startsWith('p2-') ? 'Phase 2'
@@ -2954,7 +2963,19 @@ export default function App() {
   const mainCastRemaining = mainCastState.phase === 'casting'
     ? mainCastState.remaining
     : 0
-  const hudActionCallbacks = { activityNotification: activityNotificationQueue[0], onMainAbility: useMainAbility, onInterrupt: useInterrupt, onTankAction: useTankAction, onHealthPot: () => useRecovery('healthPot'), onShield: () => useRecovery('shield') }
+  const hudActionCallbacks = {
+    activityNotification: activityNotificationQueue[0],
+    playerDisplayName: effectivePlayerName,
+    verifiedCharacterLabel: runAttribution === 'verified' && onlineSession.selectedCharacter
+      ? `${onlineSession.selectedCharacter.name}—${onlineSession.selectedCharacter.realmSlug}`
+      : null,
+    runAttribution,
+    onMainAbility: useMainAbility,
+    onInterrupt: useInterrupt,
+    onTankAction: useTankAction,
+    onHealthPot: () => useRecovery('healthPot'),
+    onShield: () => useRecovery('shield'),
+  }
   return <GameArena hudActionButtonsEnabled={hudActionButtonsEnabled} {...hudActionCallbacks} tankMechanic={tankMechanic} controlledTank={controlledTank} tankAssignments={tankAssignments} p4PlayerConeActive={p4PlayerConeUntil > stats.time} p4PlayerConeCooldown={Math.max(0, p4PlayerConeReadyAtRef.current - stats.time)} p4PlayerConeAngle={Math.atan2(cameraForward.current.y, cameraForward.current.x)} p1Sequence={p1Sequence} p1Seed={p1Seed} p1BossOpening={p1BossOpening} p1InterruptAssignment={p1InterruptAssignmentRef.current} p1InterruptCast={p1InterruptCast} p1InterruptPressed={p1InterruptPressed} p1RunePanelOrientation={p1RunePanelOrientation} p1MemoryOrder={p1MemoryOrderState} p1FailedMemoryRune={p1FailedMemoryRune} p1GlaiveSets={p1GlaiveSets} p1Soaks={p1Soaks} p1SoakResolved={p1SoakResolved} p1CrystalAssignments={p1CrystalAssignments} p1CrystalCollected={p1CrystalCollected} p1WrongCrystalHeld={p1WrongCrystalHeld} p1StolenCrystalSlot={p1StolenCrystalSlot} p1WrongCrystalDeadline={p1WrongCrystalDeadline} combatProjectilesEnabled={combatProjectilesEnabled} mainProjectileFiredAt={mainProjectileFiredAt} bossHealth={bossHealth} mainCastRemaining={mainCastRemaining} personalJumpProgress={personalJumpProgress} musicMuted={musicMuted} encounterSoundsEnabled={encounterSoundsEnabled} ttsAvailable={raidleadAvailable} ttsEnabled={ttsEnabled} softWipeNotice={softWipeNotice} crystalDutyNotice={crystalDutyNotice} hudLayout={hudLayout} positions={activePositions} intermissionPositions={phasePositions} p2SoakPositions={p2Positions} p2SpreadPositions={p2SpreadPositions} p3Positions={p3Positions} p3FlightOrigin={p3FlightOriginRef.current} profiles={gameProfiles} raidStart={startSlots[startSlot]} movementSpeed={movementSpeed} movementBonus={movementBonus} gameSpeed={gameSpeed} p2Cycle={p2Cycle} p2Soaked={p2Soaked} p2OrbReturnAge={p2OrbReturnAge} p2BeamAssignees={p2BeamAssignees} p2BeamOrbIndices={p2BeamOrbIndices} p2ReturningOrbIndices={p2ReturningOrbIndices} p2ResolvedOrbIndices={p2ResolvedOrbIndices} p2BeamImpactAngle={p2BeamImpactAngle} onP2OrbitAngle={angle => { p2OrbitAngleRef.current = angle }} p3Round={p3Round} p3ArchangelDuty={activeCrystalAssignments.includes(assignment) ? p3ArchangelDuty : null} crystalSpent={crystalSpent} p4Cycle={p4Cycle} p4PatternSeed={p4PatternSeed} p3PoolHealth={p3PoolHealth} onP3PoolOccupancy={occupancy => { p3PoolOccupancyRef.current = occupancy }} onP3LightCenters={centers => { p3NpcLightCentersRef.current = centers }} onP3RuneContacts={runes => { p3RuneContactsRef.current = runes }} onNpcPositions={positions => { renderedNpcPositionsRef.current = positions }} onP4SplinterHit={reason => triggerWipe(reason)} p3RuneOrder={p3RuneOrder} p3RuneStep={p3RuneStep} p3ResolvedRunes={p3ResolvedRunes} health={health} healthPotUsed={healthPotUsed} shieldUsed={shieldUsed} keyBindings={keyBindings} crystalCarriers={activeCrystalCarriers} beamPattern={beamPattern} failureFlash={failureFlash} wipeReason={wipeReason} player={player} crystal={crystal} npcCrystals={npcCrystals} npcCarrier={npcCarrier} npcCrystalAge={npcCrystalAge} playerSplinterRotation={playerSplinterRotation} crystalAge={crystalAge} role={activeCrystalAssignments.includes(assignment) ? 'carrier' : 'non-carrier'} difficulty={difficulty} assignment={assignment} stats={stats} mistakes={mistakes} startSlotName={`S${startSlot + 1}`} paused={paused} event={event} eventTime={eventTime} beamAngles={beamAngles} npcSplinters={npcSplinters} cycle={cycle} setPaused={setPaused} setMusicMuted={setMusicMuted} setEncounterSoundsEnabled={setEncounterSoundsEnabled} setTtsEnabled={setTtsEnabled} onRetry={start} onExit={() => setScreen('menu')} onDrop={toggleCrystal} onCameraDirection={direction => { cameraForward.current = direction }} />
 }
 
@@ -3277,6 +3298,11 @@ export function failureAdvice(label: string): string {
 }
 
 function GameArena(props: { activityNotification: ActivityFeedRow | undefined; hudActionButtonsEnabled: boolean; onMainAbility: () => void; onInterrupt: () => void; onTankAction: () => void; onHealthPot: () => void; onShield: () => void; tankMechanic: TankMechanicState; controlledTank: TankIndex | null; tankAssignments: [number, number]; p4PlayerConeActive: boolean; p4PlayerConeCooldown: number; p4PlayerConeAngle: number; p1Sequence: number; p1Seed: number; p1BossOpening: Point; p1InterruptAssignment: number; p1InterruptCast: number; p1InterruptPressed: boolean; p1RunePanelOrientation: P1RunePanelOrientation; p1MemoryOrder: P1Rune[]; p1FailedMemoryRune: P1Rune | null; p1GlaiveSets: P1GlaiveSet[]; p1Soaks: P1ReactiveSoak[]; p1SoakResolved: number[]; p1CrystalAssignments: number[]; p1CrystalCollected: boolean; p1WrongCrystalHeld: boolean; p1StolenCrystalSlot: number | null; p1WrongCrystalDeadline: number | null; combatProjectilesEnabled: boolean; mainProjectileFiredAt: number | null; bossHealth: number; mainCastRemaining: number; personalJumpProgress: number; musicMuted: boolean; encounterSoundsEnabled: boolean; ttsAvailable: boolean; ttsEnabled: boolean; softWipeNotice: string; crystalDutyNotice: string; hudLayout: HudLayout; positions: Assignment[]; intermissionPositions: Assignment[]; p2SoakPositions: Assignment[]; p2SpreadPositions: Assignment[]; p3Positions: Assignment[]; p3FlightOrigin: Point; profiles: PlayerProfile[]; raidStart: Point; movementSpeed: number; movementBonus: boolean; gameSpeed: number; p2Cycle: number; p2Soaked: boolean; p2OrbReturnAge: number; p2BeamAssignees: number[]; p2BeamOrbIndices: number[]; p2ReturningOrbIndices: number[]; p2ResolvedOrbIndices: number[]; p2BeamImpactAngle: number; onP2OrbitAngle: (angle: number) => void; p3Round: number; p3ArchangelDuty: 1 | 2 | null; crystalSpent: boolean; p4Cycle: number; p4PatternSeed: number; p3PoolHealth: number[]; onP3PoolOccupancy: (occupancy: number[]) => void; onP3LightCenters: (centers: Point[]) => void; onP3RuneContacts: (runes: RuneSymbol[]) => void; onNpcPositions: (positions: Point[]) => void; onP4SplinterHit: (reason: string) => void; p3RuneOrder: RuneSymbol[]; p3RuneStep: number; p3ResolvedRunes: RuneSymbol[]; health: number; healthPotUsed: boolean; shieldUsed: boolean; keyBindings: KeyBindings; crystalCarriers: number[]; beamPattern: 'line' | 'gap'; failureFlash: boolean; wipeReason: string; player: Point; crystal: Point | null; npcCrystals: Point[]; npcCarrier: number | null; npcCrystalAge: number; playerSplinterRotation: number; crystalAge: number; role: Role; difficulty: Difficulty; assignment: number; stats: GameStats; mistakes: Mistake[]; startSlotName: string; paused: boolean; event: EventKind; eventTime: number; beamAngles: number[]; npcSplinters: number[]; cycle: number; setPaused: (p: boolean) => void; setMusicMuted: (muted: boolean) => void; setEncounterSoundsEnabled: (enabled: boolean) => void; setTtsEnabled: (enabled: boolean) => void; onRetry: () => void; onExit: () => void; onDrop: () => void; onCameraDirection: (direction: Point) => void }) {
+  const identityProps = props as typeof props & {
+    playerDisplayName: string
+    verifiedCharacterLabel: string | null
+    runAttribution: RunAttributionMode
+  }
   const [zoomDisplay, setZoomDisplay] = useState(16)
   const [wipeMinimized, setWipeMinimized] = useState(false)
   const [failureLogCopied, setFailureLogCopied] = useState(false)
@@ -3424,6 +3450,9 @@ function GameArena(props: { activityNotification: ActivityFeedRow | undefined; h
         data-p3-pool-health={props.p3PoolHealth.join(',')}
         data-p1-glaive-sets={props.p1GlaiveSets.length}
         data-p1-glaive-set-ids={props.p1GlaiveSets.map(set => set.id).join(',')}
+        data-run-attribution={identityProps.runAttribution}
+        data-played-name={identityProps.playerDisplayName}
+        data-verified-character={identityProps.verifiedCharacterLabel ?? ''}
         data-player-profile={`${props.profiles[props.assignment].name}|${props.profiles[props.assignment].playerClass}`}
         data-tank-role={props.controlledTank === null ? 'none' : `tank-${props.controlledTank + 1}`}
         data-lance-stage={props.tankMechanic.stage}
@@ -3436,6 +3465,9 @@ function GameArena(props: { activityNotification: ActivityFeedRow | undefined; h
         data-p4-tank-cone-cooldown={props.p4PlayerConeCooldown.toFixed(2)}
       >
         <GameScene
+          playerDisplayName={identityProps.playerDisplayName}
+          verifiedCharacterLabel={identityProps.verifiedCharacterLabel}
+          runAttribution={identityProps.runAttribution}
           p1Sequence={props.p1Sequence}
           p1Seed={props.p1Seed}
           p1InterruptAssignment={props.p1InterruptAssignment}

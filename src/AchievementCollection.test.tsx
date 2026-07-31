@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import AchievementCollection, { AchievementBadgeSummary, AchievementUnlockPopups } from './AchievementLedger'
@@ -17,6 +17,7 @@ const collection: AchievementCollectionData = {
 
 describe('achievement collection UI', () => {
   afterEach(() => {
+    cleanup()
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
   })
@@ -31,6 +32,27 @@ describe('achievement collection UI', () => {
     expect(within(earned).getByText(/First earned.*Pestivator.*Attempt #4/)).toBeInTheDocument()
     expect(screen.getAllByText('Locked').length).toBeGreaterThan(0)
     expect(screen.queryByText('Coming soon')).not.toBeInTheDocument()
+  })
+
+  it('shows progress bars on cumulative and multi-run achievements', () => {
+    render(<AchievementCollection collection={{
+      ...collection,
+      runs: [{
+        attempt: 1,
+        difficulty: 'normal',
+        fullSequence: true,
+        fullRunAttempt: true,
+        crystalPlayer: false,
+        flawless: true,
+        totalScore: 1120,
+        allOptions: true,
+        allPhaseRecovery: true,
+        phaseClears: 5,
+      }],
+    }} />)
+    expect(screen.getByRole('progressbar', { name: 'Can’t Get Enough progress' })).toHaveAttribute('aria-valuenow', '5')
+    expect(screen.getByText('5 of 100 phase clears')).toBeInTheDocument()
+    expect(screen.getByRole('progressbar', { name: 'The Impossible progress' })).toHaveAttribute('aria-valuenow', '1')
   })
 
   it('opens personal achievements from the compact summary', async () => {

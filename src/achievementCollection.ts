@@ -76,11 +76,17 @@ export interface AchievementCollectionData {
   runs: AchievementRunRecord[]
 }
 
+export interface AchievementProgress {
+  current: number
+  target: number
+  label: string
+}
+
 const DEFINITIONS: AchievementDefinition[] = [
-  badge('test-pilot', 'Foundations', 'The Test Must Go On', 'Complete the full journey in Test mode. The hazards were optional; the footwork was not.', 'Complete Intermission through Phase 4 in Test mode.', '⌁'),
-  badge('easy-does-it', 'Foundations', 'Easy Does It', 'Complete the full journey on Easy and leave the training wheels polished.', 'Complete Intermission through Phase 4 on Easy.', '❖'),
-  badge('ready-for-raid-night', 'Foundations', 'Ready for Raid Night', 'See the complete rehearsal through before the real pull begins.', 'Complete the full sequence on Test or Normal.', '◆'),
-  badge('midnight-shift', 'Foundations', 'The Midnight Shift', 'Complete the full journey on Hard. No overtime pay included.', 'Complete Intermission through Phase 4 on Hard.', '☾'),
+  badge('test-pilot', 'Foundations', 'The Test Must Go On', 'Complete the full journey in Test mode. The hazards were optional; the footwork was not.', 'Complete Phase 1 through Phase 4 in Test mode.', '⌁'),
+  badge('easy-does-it', 'Foundations', 'Easy Does It', 'Complete the full journey on Easy and leave the training wheels polished.', 'Complete Phase 1 through Phase 4 on Easy.', '❖'),
+  badge('ready-for-raid-night', 'Foundations', 'Ready for Raid Night', 'See the complete rehearsal through before the real pull begins.', 'Complete Phase 1 through Phase 4 on Test or Normal.', '◆'),
+  badge('midnight-shift', 'Foundations', 'The Midnight Shift', 'Complete the full journey on Hard. No overtime pay included.', 'Complete Phase 1 through Phase 4 on Hard.', '☾'),
   badge('one-phase-wonder', 'Foundations', 'One Phase Wonder', 'Enter one phase directly and bring that assignment home.', 'Complete exactly one directly selected phase.', 'Ⅰ'),
   badge('strategic-timeout', 'Foundations', 'Strategic Timeout', 'Pause, take a breath, then return to the pull.', 'Pause and resume during an attempt that reaches its result.', 'Ⅱ'),
   badge('no-second-chances', 'Precision', 'No Second Chances Needed', 'Complete Normal without spending a single wipe allowance.', 'Complete the full sequence on Normal without a wipe event.', '♢'),
@@ -177,7 +183,7 @@ function runRecord(summary: AchievementSummary, attempt: number): AchievementRun
     allOptions: summary.healthPotEnabled && summary.shieldEnabled && (summary.mainAbilityCasts ?? 0) > 0,
     allPhaseRecovery: Boolean(summary.allPhaseRecovery),
     fullRunAttempt: Boolean(summary.fullRunAttempt ?? summary.fullSequence),
-    phaseClears: summary.phaseResults?.length ?? (summary.fullSequence ? 4 : 0),
+    phaseClears: summary.phaseResults?.length ?? (summary.fullSequence ? 5 : 0),
   }
 }
 
@@ -195,6 +201,37 @@ export function flawlessFullRunStreak(runs: AchievementRunRecord[], difficulty: 
 
 export function totalPhaseClears(runs: AchievementRunRecord[]): number {
   return runs.reduce((total, run) => total + (run.phaseClears ?? (run.fullSequence ? 4 : 1)), 0)
+}
+
+export function achievementProgress(
+  achievement: Pick<AchievementDefinition, 'id'>,
+  collection: AchievementCollectionData,
+): AchievementProgress | null {
+  const fullRuns = collection.runs.filter(run => run.fullSequence)
+  if (achievement.id === 'both-sides-of-crystal') {
+    const duties = new Set(fullRuns.map(run => run.crystalPlayer ? 'crystal' : 'non-crystal'))
+    return { current: Math.min(2, duties.size), target: 2, label: `${Math.min(2, duties.size)} of 2 duties` }
+  }
+  if (achievement.id === 'superhuman-both-duties') {
+    const duties = new Set(fullRuns
+      .filter(run => run.difficulty === 'hard' && run.flawless && run.totalScore > 1100 && run.allOptions && run.allPhaseRecovery)
+      .map(run => run.crystalPlayer ? 'crystal' : 'non-crystal'))
+    return { current: Math.min(2, duties.size), target: 2, label: `${Math.min(2, duties.size)} of 2 flawless duties` }
+  }
+  if (achievement.id === 'impossible-normal-streak' || achievement.id === 'impossible-hard-streak') {
+    const difficulty = achievement.id === 'impossible-hard-streak' ? 'hard' : 'normal'
+    const current = Math.min(5, flawlessFullRunStreak(collection.runs, difficulty))
+    return { current, target: 5, label: `${current} of 5 flawless runs` }
+  }
+  const phaseTarget = achievement.id === 'phase-clears-10' ? 10
+    : achievement.id === 'phase-clears-50' ? 50
+      : achievement.id === 'phase-clears-100' ? 100
+        : null
+  if (phaseTarget) {
+    const current = Math.min(phaseTarget, totalPhaseClears(collection.runs))
+    return { current, target: phaseTarget, label: `${current} of ${phaseTarget} phase clears` }
+  }
+  return null
 }
 
 export function collectibleAchievements(summary: AchievementSummary, collection: AchievementCollectionData = emptyCollection(), attempt = 0): AchievementDefinition[] {

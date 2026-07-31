@@ -6,12 +6,11 @@ in [`specifications.md`](specifications.md).
 
 ## Current release boundary
 
-- Latest tagged and deployed release: `v0.6.2`.
-- `v0.6.2` preserves authenticated run identity across a later browser-session
-  expiry and links Recent activity players to their trainer profiles.
-- The next feature release is expected to be `v0.7.0`, but the version is cut
-  only after its selected milestone scope passes focused and complete
-  regression.
+- Release being cut: `v0.7.0` (latest deployed remains `v0.6.2` until both
+  Pages and API deployment checks succeed).
+- `v0.7.0` completes the two-tank encounter roles, Phase 2 assignment/regroup
+  work, explicit run attribution, the transition crystal fix, and five-phase
+  achievement/progress reconciliation.
 - Current leaderboard season: `season-1`. No milestone or SemVer bump changes
   it automatically.
 
@@ -30,6 +29,8 @@ shell never silently mistakes an expired server session for a valid login.
 - `CR-196` — show the played raid-plan name and selected verified Battle.net
   character together on the controlled-player nameplate without implying
   attribution when no active character is selected.
+- `BUG-149` — keep a transition-started Phase 2 crystal grounded throughout
+  the beam/orb event, matching direct entry and every difficulty.
 
 This patch retains `season-1`: it repairs attribution and version acceptance
 without changing encounter scoring or ranking order.
@@ -71,6 +72,8 @@ Completed in this milestone:
 - `CR-195` — Tank 1 now owns the frontal cone, Tank 2 owns the moving rendered
   protection zone, neither receives Starsplinter, and each controlled role has
   its own canonical achievement.
+- `CR-197` — full-journey achievements now require Phase 1 through Phase 4 and
+  cumulative/multi-run badges display their saved progress.
 
 All current M1 tickets affect mechanic difficulty, failures, scoring, or accepted-run
 comparability. Before releasing this milestone, explicitly ask whether it
@@ -116,6 +119,8 @@ Goal: add optional flavor only after encounter and ranking correctness.
 
 - `FR-039` — live `Gnomkaiser` crown, raid scale treatment, and hidden
   achievement.
+- `FR-069` — API-only manually granted exceptional achievements, beginning
+  with the hidden 10-point Find a Bug badge and concealed public credentials.
 - `FR-066` — clearly fictional live-activity flavor using the prepared copy
   deck after frequency, injection, accessibility, and localization decisions.
 

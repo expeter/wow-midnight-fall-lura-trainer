@@ -182,7 +182,7 @@ describe('Lura API foundation', () => {
 
   it('does not let a stale environment override pin attempt compatibility', () => {
     const releaseConfig = loadConfig({ TRAINER_CURRENT_VERSION: '0.3.0' })
-    assert.equal(releaseConfig.currentTrainerVersion, '0.6.0')
+    assert.equal(releaseConfig.currentTrainerVersion, '0.6.2')
     assert.equal(releaseConfig.currentLeaderboardSeason, 'season-1')
   })
 
@@ -431,6 +431,56 @@ describe('Lura API foundation', () => {
     assert.equal(rows[0].character, null)
     assert.equal(rows[0].realm, null)
     assert.equal(rows[0].region, null)
+  })
+
+  it('never downgrades stale authenticated wipe submissions to anonymous activity', async () => {
+    const app = createApp(database, config)
+    const stale = await app.handle(new Request('http://api.test/v1/wipes', {
+      method: 'POST',
+      headers: {
+        origin: config.trainerOrigin,
+        'content-type': 'application/json',
+        'x-csrf-token': 'expired-session-csrf',
+      },
+      body: JSON.stringify({
+        phase: 'Phase 1',
+        difficulty: 'hard',
+        reason: 'Missed assigned interrupt',
+        trainerVersion: '0.6.1',
+      }),
+    }))
+    assert.equal(stale.status, 401)
+    assert.deepEqual(await stale.json(), { error: 'not_authenticated' })
+    assert.equal(database.prepare('SELECT COUNT(*) AS count FROM anonymous_wipe_events').get()!.count, 0)
+  })
+
+  it('requires an active character for authenticated wipe submissions', async () => {
+    const accountId = insertResult(database, {
+      region: 'eu', account: 'unselected-wipe', character: 'Nochoice', realm: 'blackrock',
+      mode: 'character', score: 100, duration: 500_000,
+      acceptedAt: '2026-07-27T00:00:00.000Z',
+    })
+    const session = insertSession(database, accountId)
+    const app = createApp(database, config)
+    const response = await app.handle(new Request('http://api.test/v1/wipes', {
+      method: 'POST',
+      headers: {
+        cookie: session.cookie,
+        origin: config.trainerOrigin,
+        'content-type': 'application/json',
+        'x-csrf-token': session.csrf,
+      },
+      body: JSON.stringify({
+        phase: 'Phase 2',
+        difficulty: 'normal',
+        reason: 'Hit by a boss beam',
+        trainerVersion: '0.6.1',
+      }),
+    }))
+    assert.equal(response.status, 409)
+    assert.deepEqual(await response.json(), { error: 'character_required' })
+    assert.equal(database.prepare('SELECT COUNT(*) AS count FROM anonymous_wipe_events').get()!.count, 0)
+    assert.equal(database.prepare('SELECT COUNT(*) AS count FROM wipe_events').get()!.count, 0)
   })
 
   it('cascades complete account deletion through attempts and public results', () => {
@@ -815,6 +865,9 @@ describe('Lura API foundation', () => {
     const character = database.prepare(
       'SELECT id FROM characters WHERE account_id = ?',
     ).get(accountId) as { id: number }
+    const publicProfileId = (database.prepare(
+      'SELECT public_profile_id AS profileId FROM accounts WHERE id = ?',
+    ).get(accountId) as { profileId: string }).profileId
     database.prepare('UPDATE accounts SET selected_character_id = ? WHERE id = ?')
       .run(character.id, accountId)
     const session = insertSession(database, accountId)
@@ -842,6 +895,7 @@ describe('Lura API foundation', () => {
     const feed = await app.handle(new Request('http://api.test/v1/wipes?limit=20'))
     assert.deepEqual(
       (await feed.json() as { rows: Array<Record<string, unknown>> }).rows.map(row => ({
+        profileId: row.profileId,
         displayName: row.displayName,
         character: row.character,
         realm: row.realm,
@@ -851,6 +905,7 @@ describe('Lura API foundation', () => {
         occurredAt: row.occurredAt,
       })),
       [{
+        profileId: publicProfileId,
         displayName: 'Wiper',
         character: 'Wiper',
         realm: 'blackrock',
@@ -991,11 +1046,54 @@ describe('Lura API foundation', () => {
       null,
     )
 
+    const invalidCapabilityWipe = await app.handle(new Request('http://api.test/v1/wipes', {
+      method: 'POST',
+      headers: {
+        origin: config.trainerOrigin,
+        'content-type': 'application/json',
+        'x-csrf-token': session.csrf,
+      },
+      body: JSON.stringify({
+        phase: 'Phase 3',
+        difficulty: 'hard',
+        reason: 'Touched a Stars beam',
+        trainerVersion: '0.3.0',
+        attemptId: attempt.attemptId,
+        nonce: 'wrong-nonce',
+      }),
+    }))
+    assert.equal(invalidCapabilityWipe.status, 401)
+    assert.deepEqual(await invalidCapabilityWipe.json(), { error: 'invalid_attempt_capability' })
+
+    const sessionBoundWipe = await app.handle(new Request('http://api.test/v1/wipes', {
+      method: 'POST',
+      headers: {
+        origin: config.trainerOrigin,
+        'content-type': 'application/json',
+        'x-csrf-token': session.csrf,
+      },
+      body: JSON.stringify({
+        phase: 'Phase 3',
+        difficulty: 'hard',
+        reason: 'Touched a Stars beam',
+        trainerVersion: '0.3.0',
+        attemptId: attempt.attemptId,
+        nonce: attempt.nonce,
+      }),
+    }))
+    assert.equal(sessionBoundWipe.status, 201)
+    assert.equal(database.prepare('SELECT COUNT(*) AS count FROM wipe_events WHERE account_id = ?').get(accountId)!.count, 1)
+    assert.equal(database.prepare('SELECT COUNT(*) AS count FROM anonymous_wipe_events').get()!.count, 0)
+
     const accepted = await app.handle(new Request(
       `http://api.test/v1/attempts/${attempt.attemptId}/complete`,
       {
         method: 'POST',
-        headers: { ...headers, 'idempotency-key': attempt.attemptId },
+        headers: {
+          origin: config.trainerOrigin,
+          'content-type': 'application/json',
+          'idempotency-key': attempt.attemptId,
+        },
         body: JSON.stringify(completion),
       },
     ))

@@ -1,7 +1,7 @@
 import type { ApiConfig } from './config.js'
 import type { Database } from './database.js'
 import { accountLeaderboardStandings, listLeaderboard, type Difficulty, type Duty } from './leaderboards.js'
-import { completeAttempt, issueAttempt } from './attempts.js'
+import { activeAttemptIdentity, completeAttempt, issueAttempt } from './attempts.js'
 import { ACHIEVEMENT_CATALOG } from './achievementCatalog.js'
 import { listAchievementHall } from './achievementHall.js'
 import { listGlobalRanking, publicPlayerProfile } from './globalRanking.js'
@@ -155,6 +155,7 @@ export function createApp(
             WHERE r.run_eligible = 1
           )
           SELECT activity.id, activity.type,
+            CASE WHEN p.identity_mode <> 'anonymous' THEN a.public_profile_id ELSE NULL END AS profileId,
             CASE
               WHEN p.identity_mode = 'character' THEN c.name
               WHEN p.identity_mode = 'alias' THEN COALESCE(p.alias, 'Anonymous')
@@ -220,10 +221,22 @@ export function createApp(
         if (!session) return json({ authenticated: false }, 401, corsHeaders)
         const profile = database.prepare(`
           SELECT p.identity_mode AS identityMode, p.alias, p.show_guild AS showGuild,
-            a.selected_character_id AS selectedCharacterId
-          FROM privacy_settings p JOIN accounts a ON a.id = p.account_id
+            a.selected_character_id AS selectedCharacterId,
+            c.name AS selectedCharacterName, c.realm_slug AS selectedCharacterRealm,
+            c.region AS selectedCharacterRegion
+          FROM privacy_settings p
+          JOIN accounts a ON a.id = p.account_id
+          LEFT JOIN characters c ON c.id = a.selected_character_id
           WHERE p.account_id = ?
-        `).get(session.accountId)
+        `).get(session.accountId) as {
+          identityMode: string
+          alias: string | null
+          showGuild: number
+          selectedCharacterId: number | null
+          selectedCharacterName: string | null
+          selectedCharacterRealm: string | null
+          selectedCharacterRegion: 'eu' | 'us' | null
+        }
         const standings = accountLeaderboardStandings(
           database,
           config.currentLeaderboardSeason,
@@ -234,7 +247,22 @@ export function createApp(
           authenticated: true,
           region: session.region,
           csrfToken: session.csrfToken,
-          privacy: profile,
+          privacy: {
+            identityMode: profile.identityMode,
+            alias: profile.alias,
+            showGuild: profile.showGuild,
+            selectedCharacterId: profile.selectedCharacterId,
+          },
+          selectedCharacter: profile.selectedCharacterId
+            && profile.selectedCharacterName
+            && profile.selectedCharacterRealm
+            && profile.selectedCharacterRegion
+            ? {
+                name: profile.selectedCharacterName,
+                realmSlug: profile.selectedCharacterRealm,
+                region: profile.selectedCharacterRegion,
+              }
+            : undefined,
           standings,
           globalPosition,
         }, 200, corsHeaders)
@@ -339,11 +367,19 @@ export function createApp(
         }
         if (!origin || !allowedOrigins.has(origin)) return json({ error: 'origin_not_allowed' }, 403, corsHeaders)
         const session = authenticate(database, config, dependencies, request)
+        const claimedAuthentication = Boolean(request.headers.get('x-csrf-token'))
         if (session) {
           const csrf = request.headers.get('x-csrf-token')
           if (!csrf || !safeEqual(csrf, session.csrfToken)) return json({ error: 'invalid_csrf' }, 403, corsHeaders)
         }
-        let input: { phase?: unknown; difficulty?: unknown; reason?: unknown; trainerVersion?: unknown }
+        let input: {
+          phase?: unknown
+          difficulty?: unknown
+          reason?: unknown
+          trainerVersion?: unknown
+          attemptId?: unknown
+          nonce?: unknown
+        }
         try {
           input = await request.json() as typeof input
         } catch {
@@ -358,13 +394,29 @@ export function createApp(
           return json({ error: 'invalid_difficulty' }, 400, corsHeaders)
         }
         if (!trainerVersion || trainerVersion.length > 40) return json({ error: 'invalid_version' }, 400, corsHeaders)
+        const suppliedAttemptIdentity = input.attemptId !== undefined || input.nonce !== undefined
+        const attemptIdentity = typeof input.attemptId === 'string' && typeof input.nonce === 'string'
+          ? activeAttemptIdentity(database, dependencies, input.attemptId, input.nonce)
+          : null
+        if (suppliedAttemptIdentity && !attemptIdentity) {
+          return json({ error: 'invalid_attempt_capability' }, 401, corsHeaders)
+        }
+        if (session && attemptIdentity && attemptIdentity.accountId !== session.accountId) {
+          return json({ error: 'attempt_identity_mismatch' }, 403, corsHeaders)
+        }
+        if (!session && claimedAuthentication && !attemptIdentity) {
+          return json({ error: 'not_authenticated' }, 401, corsHeaders)
+        }
         const selectedCharacter = session ? database.prepare(`
           SELECT a.selected_character_id AS characterId
           FROM accounts a
           WHERE a.id = ?
         `).get(session.accountId) as { characterId: number | null } | undefined : undefined
         const occurredAt = dependencies.now().toISOString()
-        if (!session || !selectedCharacter?.characterId) {
+        if (session && !attemptIdentity && !selectedCharacter?.characterId) {
+          return json({ error: 'character_required' }, 409, corsHeaders)
+        }
+        if (!session && !attemptIdentity) {
           const inserted = database.prepare(`
             INSERT INTO anonymous_wipe_events (phase, difficulty, reason, trainer_version, occurred_at)
             VALUES (?, ?, ?, ?, ?)
@@ -376,8 +428,8 @@ export function createApp(
             account_id, character_id, phase, difficulty, reason, trainer_version, occurred_at
           ) VALUES (?, ?, ?, ?, ?, ?, ?)
         `).run(
-          session.accountId,
-          selectedCharacter.characterId,
+          attemptIdentity?.accountId ?? session!.accountId,
+          attemptIdentity?.characterId ?? selectedCharacter!.characterId,
           phase,
           input.difficulty,
           reason,
@@ -442,9 +494,10 @@ export function createApp(
         }
         if (!origin || !allowedOrigins.has(origin)) return json({ error: 'origin_not_allowed' }, 403, corsHeaders)
         const session = authenticate(database, config, dependencies, request)
-        if (!session) return json({ error: 'not_authenticated' }, 401, corsHeaders)
-        const csrf = request.headers.get('x-csrf-token')
-        if (!csrf || !safeEqual(csrf, session.csrfToken)) return json({ error: 'invalid_csrf' }, 403, corsHeaders)
+        if (session) {
+          const csrf = request.headers.get('x-csrf-token')
+          if (!csrf || !safeEqual(csrf, session.csrfToken)) return json({ error: 'invalid_csrf' }, 403, corsHeaders)
+        }
         const idempotencyKey = request.headers.get('idempotency-key') ?? ''
         let input: unknown
         try {
@@ -452,13 +505,21 @@ export function createApp(
         } catch {
           return json({ error: 'invalid_body' }, 400, corsHeaders)
         }
+        const attemptId = decodeURIComponent(completionMatch[1])
+        const boundAccount = database.prepare(
+          'SELECT account_id AS accountId FROM attempts WHERE id = ?',
+        ).get(attemptId) as { accountId: number } | undefined
+        const accountId = session?.accountId ?? boundAccount?.accountId ?? -1
+        if (session && boundAccount && boundAccount.accountId !== session.accountId) {
+          return json({ error: 'attempt_not_found' }, 400, corsHeaders)
+        }
         try {
           return json(
             completeAttempt(
               database,
               dependencies,
-              session.accountId,
-              decodeURIComponent(completionMatch[1]),
+              accountId,
+              attemptId,
               idempotencyKey,
               input as never,
             ),

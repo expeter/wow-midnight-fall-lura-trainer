@@ -41,6 +41,32 @@ function hash(value: string): string {
   return createHash('sha256').update(value).digest('hex')
 }
 
+export function activeAttemptIdentity(
+  database: Database,
+  dependencies: AuthDependencies,
+  attemptId: string,
+  nonce: string,
+): { accountId: number; characterId: number } | null {
+  const attempt = database.prepare(`
+    SELECT account_id AS accountId, character_id AS characterId,
+      nonce_hash AS nonceHash, expires_at AS expiresAt, consumed_at AS consumedAt
+    FROM attempts WHERE id = ?
+  `).get(attemptId) as {
+    accountId: number
+    characterId: number
+    nonceHash: string
+    expiresAt: string
+    consumedAt: string | null
+  } | undefined
+  if (
+    !attempt
+    || attempt.consumedAt
+    || attempt.expiresAt <= dependencies.now().toISOString()
+    || hash(nonce) !== attempt.nonceHash
+  ) return null
+  return { accountId: attempt.accountId, characterId: attempt.characterId }
+}
+
 function cleanString(value: unknown, maximum: number): string | null {
   return typeof value === 'string' && value.length > 0 && value.length <= maximum ? value : null
 }

@@ -8,7 +8,7 @@ original chat history. It complements the detailed ticket log in
 
 ## Current release boundary
 
-- The package version is `0.6.0`.
+- The package version is `0.6.2`.
 - Intermission and Phases 2–4 are production features.
 - Phase 1 is released in production. The host feature flag remains explicit,
   but no longer hides P1 outside localhost.
@@ -24,6 +24,13 @@ original chat history. It complements the detailed ticket log in
   `Left`, `Right`, `Left`, `Move` uses separate prerecorded raid-lead clips.
 
 The source of truth for host gates is [`src/features.ts`](../src/features.ts).
+
+Online runs revalidate `/v1/me` before attempt issuance. After issuance, the
+attempt ID and nonce are the run's account/character identity capability, so a
+session expiry during combat neither pauses the encounter nor downgrades its
+wipes or completion to anonymous. Stale session claims without a valid active
+attempt are rejected; only deliberately signed-out wipe submissions enter the
+generic anonymous feed.
 
 ## Product intent that is easy to lose
 

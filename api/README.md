@@ -138,6 +138,13 @@ integration, current standings, the Achievement Hall, Global ranking, public
 profiles, and the privacy-aware activity UI are implemented under `FR-027` and
 the later online feature tickets recorded in `docs/README.md`.
 
+An issued attempt is a short-lived one-use capability bound to the issuing
+account and selected character. Its ID and nonce may finish that run and
+attribute its in-progress wipes even if the browser login session expires
+during play. Requests that merely present stale session metadata are rejected
+and are never silently inserted into the anonymous wipe feed; only explicitly
+signed-out requests create generic anonymous activity.
+
 Attempt completion is bound to the issued configuration and requires an
 idempotency key; identical retries return the stored accepted response.
 Current-season run boards and profiles publish one best result per account.

@@ -164,6 +164,17 @@ change before implementation.
   active when the optional bottom-right message queue is disabled.
 - Posting online results requires Battle.net authentication, a verified
   selected WoW character, and a one-use server-issued attempt.
+- The trainer revalidates the server session immediately before issuing each
+  attempt. A request that presents authenticated-session metadata may never be
+  silently downgraded into anonymous activity when its session has expired or
+  its selected character is missing; the player receives a reconnect or
+  character-selection warning instead. Anonymous wipe activity remains
+  available only to requests that are explicitly signed out.
+- Once issued, a one-use attempt remains bound to its original account and
+  selected character until it is consumed or expires. Its secret nonce
+  authorizes that run's completion and in-progress wipe attribution even if
+  the browser login session expires during combat; gameplay is not paused or
+  converted to anonymous play.
 - The server recomputes accepted scores from validated attempt inputs; OAuth
   proves identity but never proves gameplay legitimacy by itself.
 - Normal and Hard each have separate crystal and non-crystal leaderboards,

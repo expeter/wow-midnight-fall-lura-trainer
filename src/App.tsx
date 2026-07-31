@@ -7,7 +7,7 @@ import { p4UnsafePenaltyTicks, P4_SAFE_ZONE_HEALTH_DRAIN_PER_SECOND, P4_SAFE_ZON
 import { canPickupCrystalAlongPath, INTERMISSION_POSITIONING_SECONDS } from './game'
 import { p4TimedVoiceCues, timedVoiceDelaySeconds, timedVoiceSupported, ttsCuesForState, type P4VoiceClip } from './audio'
 import AchievementCollection, { AchievementBadgeSummary, AchievementUnlockPopups } from './AchievementLedger'
-import { ACHIEVEMENT_STORAGE_KEY, collectibleAchievements, mergeEarnedAchievements, newlyEarnedAchievements, parseAchievementCollection, serializeAchievementCollection, type AchievementDefinition } from './achievementCollection'
+import { ACHIEVEMENT_STORAGE_KEY, achievementAccountStorageKey, collectibleAchievements, collectionFromVerifiedAchievements, emptyCollection, mergeAchievementCollections, mergeEarnedAchievements, newlyEarnedAchievements, parseAchievementCollection, serializeAchievementCollection, type AchievementCollectionData, type AchievementDefinition } from './achievementCollection'
 import { FEATURE_FLAGS } from './features'
 import { normalizeP1PlanAssignments } from './game'
 import GameScene from './GameScene'
@@ -17,7 +17,7 @@ import { approachHealthTarget, healthBand, healthChangeRate, randomHealthTarget,
 import { P1_BEAM_POSITION_SECONDS, P1_CRYSTAL_PICKUP_SECONDS, P1_DEFAULT_INTERRUPT_KEY, P1_GLAIVE_CONTACT_RADIUS, P1_GLAIVE_INITIAL_SPEED_MULTIPLIER, P1_GLAIVE_RETURN_SPEED_MULTIPLIER, P1_GLAIVE_TELEGRAPH_SECONDS, P1_INNER_RADIUS, P1_INTERMISSION_POSITION_SECONDS, P1_INTERRUPT_CAST_COUNT, P1_INTERRUPT_CAST_SECONDS, P1_MEMORY_DELAY_SECONDS, P1_MEMORY_POSITION_SECONDS, P1_MEMORY_SWEEP_SECONDS, P1_OUTER_RADIUS, P1_PLAYER_INTERRUPT_WINDOW_SECONDS, P1_PULL_DELAY_SECONDS, P1_REACTIVE_SOAK_RADIUS, P1_REACTIVE_SOAK_SECONDS, P1_ROTATING_BEAM_ACTIVE_SECONDS, P1_ROTATING_BEAM_TELEGRAPH_SECONDS, P1_SEQUENCE_COUNT, p1AddGlaiveSet, p1AdvanceGlaiveSet, p1BeamHitResolution, p1BossEncounterPosition, p1ContinuousBeamTime, p1CrystalPickupSequence, p1CrystalSpawnPosition, p1CrystalTouchResolution, p1GlaiveContactStarted, p1GlaiveSet, p1HasCollectedCrystal, p1InterruptAssignment, p1InterruptState, p1IsInPlayableArena, p1MemoryOrder, p1MemoryPlayerVerdict, p1NpcInterruptSeconds, p1ReactiveSoaks, p1RotatingBeamHitsPoint, p1RotatingBeams, p1WrongCrystalDropExpired, type P1GlaiveSet, type P1ReactiveSoak, type P1Rune } from './p1'
 import { advanceTankMechanic, createTankMechanicState, prepareTankDefensive, requestTankTaunt, tankMechanicActiveForEvent, type TankIndex, type TankMechanicEvent, type TankMechanicState } from './tank'
 import OnlinePanel, { BestRunsSummary, GlobalRankingSummary, OnlineStandingSummary, PublicProfileOverlay } from './OnlinePanel'
-import { canRecordOnlineWipe, completeOnlineAttempt, configurationFingerprint, issueOnlineAttempt, loadActivityFeed, loadOnlineSession, logoutOnline, newActivityRows, recentActivityRows, recordOnlineWipe, type ActivityFeedRow, type OnlineSession, type RunAttributionMode } from './online'
+import { canRecordOnlineWipe, completeOnlineAttempt, configurationFingerprint, issueOnlineAttempt, loadActivityFeed, loadOnlineAchievements, loadOnlineSession, logoutOnline, newActivityRows, recentActivityRows, recordOnlineWipe, type ActivityFeedRow, type OnlineSession, type RunAttributionMode } from './online'
 import './styles.css'
 
 type Screen = 'menu' | 'game' | 'results'
@@ -596,10 +596,20 @@ export default function App() {
   const [phaseResults, setPhaseResults] = useState<PhaseResult[]>([])
   const [completionCopyStatus, setCompletionCopyStatus] = useState('')
   const [completionPreview, setCompletionPreview] = useState(false)
-  const [achievementCollection, setAchievementCollection] = useState(() => parseAchievementCollection(localStorage.getItem(ACHIEVEMENT_STORAGE_KEY)))
+  const [localAchievementCollection, setLocalAchievementCollection] = useState<AchievementCollectionData>(() => {
+    const collection = parseAchievementCollection(localStorage.getItem(ACHIEVEMENT_STORAGE_KEY))
+    const { verifiedProgress: _verifiedProgress, ...localCollection } = collection
+    return {
+      ...localCollection,
+      records: collection.records.map(record => ({ ...record, verified: false })),
+    }
+  })
+  const [accountAchievementCollection, setAccountAchievementCollection] = useState(emptyCollection)
+  const achievementCollection = mergeAchievementCollections(localAchievementCollection, accountAchievementCollection)
   const [achievementPopups, setAchievementPopups] = useState<AchievementDefinition[]>([])
   const [attemptNumber, setAttemptNumber] = useState(() => Math.max(0, Number(localStorage.getItem('lura-attempt-count')) || 0))
   const [onlineSession, setOnlineSession] = useState<OnlineSession>({ authenticated: false })
+  const [achievementSyncRevision, setAchievementSyncRevision] = useState(0)
   const [setupTab, setSetupTab] = useState<'game' | 'keyboard' | 'hud' | 'raidplan' | 'leaderboard' | 'profile'>(() => window.location.hash.startsWith('#raidplan=') ? 'raidplan' : 'game')
   const [onlineAttempt, setOnlineAttempt] = useState<ActiveOnlineAttempt | null>(null)
   const [runAttribution, setRunAttribution] = useState<RunAttributionMode>('local')
@@ -1031,6 +1041,22 @@ export default function App() {
     if (screen !== 'menu') return
     void loadOnlineSession().then(setOnlineSession).catch(() => setOnlineSession({ authenticated: false }))
   }, [screen])
+  useEffect(() => {
+    if (!onlineSession.authenticated || !onlineSession.achievementSyncKey) {
+      setAccountAchievementCollection(emptyCollection())
+      return
+    }
+    const storageKey = achievementAccountStorageKey(onlineSession.achievementSyncKey)
+    setAccountAchievementCollection(parseAchievementCollection(localStorage.getItem(storageKey)))
+    let active = true
+    void loadOnlineAchievements().then(result => {
+      if (!active) return
+      const synchronized = collectionFromVerifiedAchievements(result.rows, result.progress)
+      localStorage.setItem(storageKey, serializeAchievementCollection(synchronized))
+      setAccountAchievementCollection(synchronized)
+    }).catch(() => { /* retain the last account-scoped cache while offline */ })
+    return () => { active = false }
+  }, [onlineSession.authenticated, onlineSession.achievementSyncKey, achievementSyncRevision])
   useEffect(() => {
     const loadHashPlan = () => {
       const hashPlan = window.location.hash.startsWith('#raidplan=') ? decodeRaidPlan(window.location.hash) : null
@@ -2581,7 +2607,7 @@ export default function App() {
   useEffect(() => {
     if (screen !== 'results' || completionPreview) return
     if (newCollectibleAwards.length) setAchievementPopups(newCollectibleAwards)
-    setAchievementCollection(current => {
+    setLocalAchievementCollection(current => {
       const updated = mergeEarnedAchievements(current, collectibleAwards, new Date().toISOString(), {
         attempt: attemptNumber,
         playerName: effectivePlayerName,
@@ -2648,6 +2674,7 @@ export default function App() {
     }).then(result => {
       setOnlineResultStatus(`Verified online result posted · ${result.score} points`)
       setOnlineAttempt(null)
+      setAchievementSyncRevision(current => current + 1)
     }).catch(() => {
       setOnlineResultStatus('Online verification rejected this result. The local result is unchanged.')
     })

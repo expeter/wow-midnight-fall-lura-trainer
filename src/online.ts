@@ -4,6 +4,7 @@ export const ONLINE_API_ORIGIN = ['localhost', '127.0.0.1'].includes(window.loca
 
 export interface OnlineSession {
   authenticated: boolean
+  achievementSyncKey?: string
   globalPosition?: number | null
   region?: 'eu' | 'us'
   csrfToken?: string
@@ -110,6 +111,13 @@ export interface OnlineAchievement {
   realmSlug: string
 }
 
+export interface OnlineAchievementProgress {
+  phaseClears: number
+  duties: string[]
+  superhumanDuties: string[]
+  flawlessStreaks: { normal: number; hard: number }
+}
+
 export interface ActivityFeedRow {
   id: string
   type: 'wipe' | 'achievement' | 'completion'
@@ -181,7 +189,7 @@ export function loadCharacters(): Promise<{ rows: OnlineCharacter[] }> {
   return api('/v1/me/characters')
 }
 
-export function loadOnlineAchievements(): Promise<{ rows: OnlineAchievement[] }> {
+export function loadOnlineAchievements(): Promise<{ rows: OnlineAchievement[]; progress: OnlineAchievementProgress }> {
   return api('/v1/me/achievements')
 }
 

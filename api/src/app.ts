@@ -1,7 +1,7 @@
 import type { ApiConfig } from './config.js'
 import type { Database } from './database.js'
 import { accountLeaderboardStandings, listLeaderboard, type Difficulty, type Duty } from './leaderboards.js'
-import { activeAttemptIdentity, completeAttempt, issueAttempt } from './attempts.js'
+import { accountAchievementProgress, activeAttemptIdentity, completeAttempt, issueAttempt } from './attempts.js'
 import { ACHIEVEMENT_CATALOG } from './achievementCatalog.js'
 import { SERVER_ONLY_ACHIEVEMENTS } from './exceptionalAchievements.js'
 import { listAchievementHall } from './achievementHall.js'
@@ -222,6 +222,7 @@ export function createApp(
         if (!session) return json({ authenticated: false }, 401, corsHeaders)
         const profile = database.prepare(`
           SELECT p.identity_mode AS identityMode, p.alias, p.show_guild AS showGuild,
+            a.public_profile_id AS achievementSyncKey,
             a.selected_character_id AS selectedCharacterId,
             c.name AS selectedCharacterName, c.realm_slug AS selectedCharacterRealm,
             c.region AS selectedCharacterRegion
@@ -233,6 +234,7 @@ export function createApp(
           identityMode: string
           alias: string | null
           showGuild: number
+          achievementSyncKey: string
           selectedCharacterId: number | null
           selectedCharacterName: string | null
           selectedCharacterRealm: string | null
@@ -248,6 +250,7 @@ export function createApp(
           authenticated: true,
           region: session.region,
           csrfToken: session.csrfToken,
+          achievementSyncKey: profile.achievementSyncKey,
           privacy: {
             identityMode: profile.identityMode,
             alias: profile.alias,
@@ -586,7 +589,7 @@ export function createApp(
           WHERE aa.account_id = ?
           ORDER BY aa.first_earned_at, aa.achievement_id
         `).all(session.accountId)
-        return json({ rows }, 200, corsHeaders)
+        return json({ rows, progress: accountAchievementProgress(database, session.accountId) }, 200, corsHeaders)
       }
       if (request.method === 'POST' && url.pathname === '/v1/auth/logout') {
         if (!origin || !allowedOrigins.has(origin)) return json({ error: 'origin_not_allowed' }, 403, corsHeaders)

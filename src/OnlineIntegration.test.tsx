@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from './App'
+import { achievementAccountStorageKey } from './achievementCollection'
 
 afterEach(() => {
   cleanup()
@@ -10,6 +11,50 @@ afterEach(() => {
 })
 
 describe('online attempt integration', () => {
+  it('restores verified achievements and cumulative progress from an account-scoped cache', async () => {
+    const syncKey = 'profile-sync-one'
+    Object.defineProperty(Element.prototype, 'scrollIntoView', { configurable: true, value: vi.fn() })
+    vi.stubGlobal('fetch', vi.fn(async input => {
+      const url = String(input)
+      if (url.endsWith('/v1/me')) return Response.json({
+        authenticated: true,
+        achievementSyncKey: syncKey,
+        region: 'eu',
+        csrfToken: 'csrf-token',
+        privacy: { identityMode: 'anonymous', alias: null, showGuild: 0, selectedCharacterId: null },
+      })
+      if (url.endsWith('/v1/me/achievements')) return Response.json({
+        rows: [{
+          achievementId: 'always-be-casting',
+          trainerVersion: '0.7.2',
+          buildId: 'verified-build',
+          firstEarnedAt: '2026-07-26T10:00:00.000Z',
+          currentlyObtainable: 1,
+          characterName: 'Lurana',
+          realmSlug: 'silvermoon',
+        }],
+        progress: {
+          phaseClears: 37,
+          duties: ['crystal'],
+          superhumanDuties: [],
+          flawlessStreaks: { normal: 3, hard: 1 },
+        },
+      })
+      if (url.includes('/v1/activity')) return Response.json({ rows: [] })
+      if (url.includes('/v1/leaderboards')) return Response.json({ rows: [] })
+      if (url.endsWith('/version.json')) return new Response('', { status: 404 })
+      throw new Error(`unexpected ${url}`)
+    }))
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(await screen.findByRole('button', { name: 'Open personal achievements, 1 of 32 earned' }))
+    expect(await screen.findByText(/First earned.*Lurana.*Server verified/)).toBeVisible()
+    expect(screen.getByText('37 of 50 phase clears')).toBeVisible()
+    expect(localStorage.getItem(achievementAccountStorageKey(syncKey))).toContain('always-be-casting')
+    expect(localStorage.getItem('lura-achievement-collection')).toBeNull()
+  })
+
   it('shows chronological wipe and achievement activity with a Raider.IO character link', async () => {
     history.replaceState(null, '', '/?wipe-feed-test=1')
     vi.stubGlobal('fetch', vi.fn(async input => {

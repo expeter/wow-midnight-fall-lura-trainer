@@ -269,10 +269,15 @@ character, build, or later qualifying run. In particular, each rank-one crown
 and its canonical points are permanent once earned and cannot be farmed by
 repeatedly retaking a board.
 
-Browser-local achievements remain available without login. Milestone 1 may
-offer an explicit synchronization action, but must not treat an arbitrary local
-achievement list as server-verified. Only achievements derived from accepted
-online attempts receive verified status.
+Browser-local achievements remain available without login. After an
+authenticated session is restored and after each accepted completion, the
+trainer fetches the account's verified records and server-derived cumulative
+progress. The response includes total verified phase clears, completed crystal
+duties, qualifying superhuman duties, and current Normal/Hard flawless streaks.
+The browser stores this response under an opaque account-specific sync key and
+merges it with device-local records for display. It never submits an arbitrary
+local achievement list or treats one as server-verified. Only achievements
+derived from accepted online attempts receive verified status.
 
 Guild-wide achievement reporting is Milestone 2.
 
@@ -339,6 +344,12 @@ GET    /v1/global-ranking
 GET    /v1/profiles/{opaquePublicProfileId}
 GET    /v1/me/achievements
 ```
+
+`GET /v1/me` includes an opaque `achievementSyncKey` used only to partition
+browser caches between accounts. `GET /v1/me/achievements` returns verified
+achievement rows plus the cumulative progress snapshot described above. The
+sync key is not an authentication capability; requests still require the
+authenticated session cookie.
 
 Mutating cookie-authenticated routes require CSRF protection in addition to
 origin checks. Authentication, attempt issuance/completion, search, and

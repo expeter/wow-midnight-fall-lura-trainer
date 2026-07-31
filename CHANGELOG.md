@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- FR-070: Synchronize account-owned verified achievements and cumulative
+  progress into the personal collection after login restoration and accepted
+  completions, using account-scoped browser caching while retaining local-only
+  records as unverified device data.
 - CR-202: Retire obsolete maintainer and laptop-transfer handoff snapshots,
   consolidate their durable references into the repository instructions and
   specifications, and reconcile stale release-boundary documentation with

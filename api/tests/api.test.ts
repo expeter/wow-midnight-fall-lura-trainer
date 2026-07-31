@@ -625,10 +625,11 @@ describe('Lura API foundation', () => {
     const cookie = setCookie.split(';', 1)[0]
     const me = await app.handle(new Request('http://api.test/v1/me', { headers: { cookie } }))
     assert.equal(me.status, 200)
-    const profile = await me.json() as { authenticated: boolean; region: string; csrfToken: string }
+    const profile = await me.json() as { authenticated: boolean; region: string; csrfToken: string; achievementSyncKey: string }
     assert.equal(profile.authenticated, true)
     assert.equal(profile.region, 'us')
     assert.ok(profile.csrfToken)
+    assert.match(profile.achievementSyncKey, /^[0-9a-f]{24}$/)
 
     const characters = await app.handle(new Request('http://api.test/v1/me/characters', { headers: { cookie } }))
     assert.equal(characters.status, 200)
@@ -1214,12 +1215,20 @@ describe('Lura API foundation', () => {
       { headers: { cookie: session.cookie } },
     ))
     assert.equal(achievements.status, 200)
-    const achievementRows = (await achievements.json() as {
+    const achievementBody = await achievements.json() as {
       rows: Array<{ achievementId: string; buildId: string }>
-    }).rows
+      progress: { phaseClears: number; duties: string[]; flawlessStreaks: { hard: number } }
+    }
+    const achievementRows = achievementBody.rows
     assert.ok(achievementRows.some(row => (
       row.achievementId === 'hard-score-flawless' && row.buildId === 'build-online'
     )))
+    assert.deepEqual(achievementBody.progress, {
+      phaseClears: 5,
+      duties: ['crystal'],
+      superhumanDuties: ['crystal'],
+      flawlessStreaks: { normal: 0, hard: 1 },
+    })
     const hall = await app.handle(new Request('http://api.test/v1/achievement-hall', {
       headers: { cookie: session.cookie },
     }))

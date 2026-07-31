@@ -314,8 +314,26 @@ function earnedAchievementIds(
   return [...new Set(ids)]
 }
 
-export function aggregateAchievementIds(database: Database, accountId: number): string[] {
-  const rows = database.prepare(`
+interface AchievementProgressRow {
+  difficulty: string
+  duty: string
+  score: number
+  acceptedAt: string
+  runEligible: number
+  phaseResultsJson: string
+  mistakesJson: string
+  actionsJson: string
+}
+
+export interface AccountAchievementProgress {
+  phaseClears: number
+  duties: string[]
+  superhumanDuties: string[]
+  flawlessStreaks: { normal: number; hard: number }
+}
+
+function achievementProgressRows(database: Database, accountId: number): AchievementProgressRow[] {
+  return database.prepare(`
     SELECT COALESCE(r.verified_difficulty, r.difficulty) AS difficulty,
       r.duty, r.score, r.run_eligible AS runEligible, r.accepted_at AS acceptedAt,
       s.phase_results_json AS phaseResultsJson,
@@ -324,44 +342,51 @@ export function aggregateAchievementIds(database: Database, accountId: number): 
     JOIN attempt_summaries s ON s.attempt_id = r.attempt_id
     WHERE r.account_id = ?
     ORDER BY r.accepted_at
-  `).all(accountId) as Array<{
-    difficulty: string
-    duty: string
-    score: number
-    acceptedAt: string
-    runEligible: number
-    phaseResultsJson: string
-    mistakesJson: string
-    actionsJson: string
-  }>
-  const parsed = rows.map(row => {
+  `).all(accountId) as unknown as AchievementProgressRow[]
+}
+
+export function accountAchievementProgress(database: Database, accountId: number): AccountAchievementProgress {
+  const parsed = achievementProgressRows(database, accountId).map(row => {
     const mistakes = JSON.parse(row.mistakesJson) as unknown[]
     const actions = JSON.parse(row.actionsJson) as { recoveryPasses?: number; mainAbilityCasts?: number }
     const phaseResults = JSON.parse(row.phaseResultsJson) as unknown[]
     return { ...row, flawless: mistakes.length === 0, actions, phaseClears: phaseResults.length }
   })
-  const ids: string[] = []
   const fullRuns = parsed.filter(row => row.runEligible === 1)
-  if (new Set(fullRuns.map(row => row.duty)).size === 2) ids.push('both-sides-of-crystal')
-  const superhumanDuties = new Set(parsed
+  const duties = [...new Set(fullRuns.map(row => row.duty))]
+  const superhumanDuties = [...new Set(parsed
     .filter(row => row.runEligible === 1
       && row.difficulty === 'hard'
       && row.flawless
       && row.score > 1100
       && row.actions.recoveryPasses === PHASES.length
       && Number(row.actions.mainAbilityCasts) > 0)
-    .map(row => row.duty))
-  if (superhumanDuties.size === 2) ids.push('superhuman-both-duties')
-  for (const difficulty of ['normal', 'hard']) {
+    .map(row => row.duty))]
+  const flawlessStreaks = { normal: 0, hard: 0 }
+  for (const difficulty of ['normal', 'hard'] as const) {
     const relevant = fullRuns.filter(row => row.difficulty === difficulty)
-    let streak = 0
-    for (let index = relevant.length - 1; index >= 0 && relevant[index].flawless; index -= 1) streak += 1
-    if (streak >= 5) ids.push(difficulty === 'hard' ? 'impossible-hard-streak' : 'impossible-normal-streak')
+    for (let index = relevant.length - 1; index >= 0 && relevant[index].flawless; index -= 1) {
+      flawlessStreaks[difficulty] += 1
+    }
   }
-  const phaseClears = parsed.reduce((total, row) => total + row.phaseClears, 0)
-  if (phaseClears >= 10) ids.push('phase-clears-10')
-  if (phaseClears >= 50) ids.push('phase-clears-50')
-  if (phaseClears >= 100) ids.push('phase-clears-100')
+  return {
+    phaseClears: parsed.reduce((total, row) => total + row.phaseClears, 0),
+    duties,
+    superhumanDuties,
+    flawlessStreaks,
+  }
+}
+
+export function aggregateAchievementIds(database: Database, accountId: number): string[] {
+  const progress = accountAchievementProgress(database, accountId)
+  const ids: string[] = []
+  if (progress.duties.length === 2) ids.push('both-sides-of-crystal')
+  if (progress.superhumanDuties.length === 2) ids.push('superhuman-both-duties')
+  if (progress.flawlessStreaks.normal >= 5) ids.push('impossible-normal-streak')
+  if (progress.flawlessStreaks.hard >= 5) ids.push('impossible-hard-streak')
+  if (progress.phaseClears >= 10) ids.push('phase-clears-10')
+  if (progress.phaseClears >= 50) ids.push('phase-clears-50')
+  if (progress.phaseClears >= 100) ids.push('phase-clears-100')
   return ids
 }
 

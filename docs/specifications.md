@@ -155,6 +155,11 @@ change before implementation.
 - Local achievements are browser records. Only achievements derived from an
   accepted server attempt are server-verified and contribute to the online
   Achievement Hall and Global ranking.
+- Restoring an authenticated session refreshes server-verified achievements
+  and server-derived cumulative progress into an account-scoped browser cache.
+  The personal ledger merges those records with device-local practice while
+  labelling their provenance; editable local records are never uploaded or
+  promoted to verified status.
 
 ## SPEC-011 · API-backed highscores and achievements
 
@@ -195,6 +200,10 @@ change before implementation.
 - Direct phase practice may earn server-verified phase achievements and their
   canonical Achievement Hall/global-ranking points. Only a complete sequential
   run may enter one of the four run leaderboards.
+- Authenticated achievement synchronization runs after session restoration and
+  each accepted completion. It restores stable achievement IDs, earliest-earned
+  metadata, phase-clear totals, duty coverage, and current Normal/Hard flawless
+  streaks without changing award eligibility or leaderboard scoring.
 - The Achievement Hall is account-wide and ranks public profiles by lifetime
   canonical achievement points. It shows the highest-value achievement and
   first-earned time; retired achievements retain their points. Catalogue

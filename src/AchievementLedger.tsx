@@ -187,7 +187,7 @@ export default function AchievementCollection({ collection }: AchievementCollect
                     <div role="progressbar" aria-label={`${achievement.label} progress`} aria-valuemin={0} aria-valuemax={progress.target} aria-valuenow={progress.current}><i style={{ width: `${progress.current / progress.target * 100}%` }} /></div>
                     <small>{progress.label}</small>
                   </div>}
-                  {record && <small className="achievement-earned-at">{`First earned ${new Date(record.earnedAt).toLocaleString()}${record.playerName ? ` · ${record.playerName}` : ''}${record.attempt ? ` · Attempt #${record.attempt}` : ''}`}</small>}
+                  {record && <small className="achievement-earned-at">{`First earned ${new Date(record.earnedAt).toLocaleString()}${record.playerName ? ` · ${record.playerName}` : ''}${record.attempt ? ` · Attempt #${record.attempt}` : ''} · ${record.verified ? 'Server verified' : 'Local device'}`}</small>}
                 </div>
               </article>
             })}

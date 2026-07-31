@@ -3,6 +3,7 @@ import { ACHIEVEMENT_BY_ID, type AchievementTier } from '../api/src/achievementC
 import { FEATURE_FLAGS } from './features'
 
 export const ACHIEVEMENT_STORAGE_KEY = 'lura-achievement-collection'
+export const ACHIEVEMENT_ACCOUNT_STORAGE_PREFIX = 'lura-achievement-account:'
 
 export type AchievementCluster = 'Foundations' | 'Precision' | 'Tools of the Trade' | 'Feats of Movement'
 export type AchievementId =
@@ -56,6 +57,7 @@ export interface EarnedAchievement {
   earnedAt: string
   attempt?: number
   playerName?: string
+  verified?: boolean
 }
 
 export interface AchievementRunRecord {
@@ -75,6 +77,20 @@ export interface AchievementCollectionData {
   version: 2
   records: EarnedAchievement[]
   runs: AchievementRunRecord[]
+  verifiedProgress?: VerifiedAchievementProgress
+}
+
+export interface VerifiedAchievementProgress {
+  phaseClears: number
+  duties: string[]
+  superhumanDuties: string[]
+  flawlessStreaks: { normal: number; hard: number }
+}
+
+export interface VerifiedAchievementRecord {
+  achievementId: string
+  firstEarnedAt: string
+  characterName: string
 }
 
 export interface AchievementProgress {
@@ -213,17 +229,22 @@ export function achievementProgress(
   const fullRuns = collection.runs.filter(run => run.fullSequence)
   if (achievement.id === 'both-sides-of-crystal') {
     const duties = new Set(fullRuns.map(run => run.crystalPlayer ? 'crystal' : 'non-crystal'))
-    return { current: Math.min(2, duties.size), target: 2, label: `${Math.min(2, duties.size)} of 2 duties` }
+    const current = Math.min(2, Math.max(duties.size, collection.verifiedProgress?.duties.length ?? 0))
+    return { current, target: 2, label: `${current} of 2 duties` }
   }
   if (achievement.id === 'superhuman-both-duties') {
     const duties = new Set(fullRuns
       .filter(run => run.difficulty === 'hard' && run.flawless && run.totalScore > 1100 && run.allOptions && run.allPhaseRecovery)
       .map(run => run.crystalPlayer ? 'crystal' : 'non-crystal'))
-    return { current: Math.min(2, duties.size), target: 2, label: `${Math.min(2, duties.size)} of 2 flawless duties` }
+    const current = Math.min(2, Math.max(duties.size, collection.verifiedProgress?.superhumanDuties.length ?? 0))
+    return { current, target: 2, label: `${current} of 2 flawless duties` }
   }
   if (achievement.id === 'impossible-normal-streak' || achievement.id === 'impossible-hard-streak') {
     const difficulty = achievement.id === 'impossible-hard-streak' ? 'hard' : 'normal'
-    const current = Math.min(5, flawlessFullRunStreak(collection.runs, difficulty))
+    const current = Math.min(5, Math.max(
+      flawlessFullRunStreak(collection.runs, difficulty),
+      collection.verifiedProgress?.flawlessStreaks[difficulty] ?? 0,
+    ))
     return { current, target: 5, label: `${current} of 5 flawless runs` }
   }
   const phaseTarget = achievement.id === 'phase-clears-10' ? 10
@@ -231,7 +252,7 @@ export function achievementProgress(
       : achievement.id === 'phase-clears-100' ? 100
         : null
   if (phaseTarget) {
-    const current = Math.min(phaseTarget, totalPhaseClears(collection.runs))
+    const current = Math.min(phaseTarget, Math.max(totalPhaseClears(collection.runs), collection.verifiedProgress?.phaseClears ?? 0))
     return { current, target: phaseTarget, label: `${current} of ${phaseTarget} phase clears` }
   }
   return null
@@ -270,6 +291,49 @@ export function emptyCollection(): AchievementCollectionData {
   return { version: 2, records: [], runs: [] }
 }
 
+export function achievementAccountStorageKey(syncKey: string): string {
+  return `${ACHIEVEMENT_ACCOUNT_STORAGE_PREFIX}${encodeURIComponent(syncKey)}`
+}
+
+export function collectionFromVerifiedAchievements(
+  rows: VerifiedAchievementRecord[],
+  progress: VerifiedAchievementProgress,
+): AchievementCollectionData {
+  const records = rows.flatMap(row => {
+    const definition = DEFINITIONS.find(candidate => candidate.id === row.achievementId)
+    if (!definition || Number.isNaN(Date.parse(row.firstEarnedAt))) return []
+    return [{
+      key: definition.id,
+      earnedAt: row.firstEarnedAt,
+      playerName: row.characterName,
+      verified: true,
+    } satisfies EarnedAchievement]
+  })
+  return { version: 2, records, runs: [], verifiedProgress: progress }
+}
+
+export function mergeAchievementCollections(
+  local: AchievementCollectionData,
+  account: AchievementCollectionData,
+): AchievementCollectionData {
+  const records = new Map<AchievementId, EarnedAchievement>()
+  for (const candidate of [...local.records, ...account.records]) {
+    const existing = records.get(candidate.key)
+    if (!existing) {
+      records.set(candidate.key, candidate)
+      continue
+    }
+    const earlier = Date.parse(candidate.earnedAt) < Date.parse(existing.earnedAt) ? candidate : existing
+    records.set(candidate.key, { ...earlier, verified: Boolean(existing.verified || candidate.verified) })
+  }
+  return {
+    version: 2,
+    records: [...records.values()],
+    runs: local.runs,
+    ...(account.verifiedProgress ? { verifiedProgress: account.verifiedProgress } : {}),
+  }
+}
+
 function validRecord(value: unknown): value is EarnedAchievement {
   if (!value || typeof value !== 'object') return false
   const candidate = value as Partial<EarnedAchievement>
@@ -292,6 +356,18 @@ function validRun(value: unknown): value is AchievementRunRecord {
     && typeof run.allPhaseRecovery === 'boolean'
     && (typeof run.fullRunAttempt === 'undefined' || typeof run.fullRunAttempt === 'boolean')
     && (typeof run.phaseClears === 'undefined' || typeof run.phaseClears === 'number' && run.phaseClears >= 0)
+}
+
+function validVerifiedProgress(value: unknown): value is VerifiedAchievementProgress {
+  if (!value || typeof value !== 'object') return false
+  const progress = value as Partial<VerifiedAchievementProgress>
+  return typeof progress.phaseClears === 'number'
+    && progress.phaseClears >= 0
+    && Array.isArray(progress.duties)
+    && Array.isArray(progress.superhumanDuties)
+    && Boolean(progress.flawlessStreaks)
+    && typeof progress.flawlessStreaks?.normal === 'number'
+    && typeof progress.flawlessStreaks?.hard === 'number'
 }
 
 const LEGACY_ID_MAP: Record<string, AchievementId[]> = {
@@ -340,7 +416,16 @@ export function parseAchievementCollection(raw: string | null): AchievementColle
     const sourceRuns = parsed && typeof parsed === 'object' && Array.isArray((parsed as { runs?: unknown }).runs)
       ? (parsed as { runs: unknown[] }).runs
       : []
-    return { version: 2, records: [...unique.values()], runs: sourceRuns.filter(validRun) }
+    const verifiedProgress = parsed && typeof parsed === 'object'
+      && validVerifiedProgress((parsed as { verifiedProgress?: unknown }).verifiedProgress)
+      ? (parsed as { verifiedProgress: VerifiedAchievementProgress }).verifiedProgress
+      : undefined
+    return {
+      version: 2,
+      records: [...unique.values()],
+      runs: sourceRuns.filter(validRun),
+      ...(verifiedProgress ? { verifiedProgress } : {}),
+    }
   } catch {
     return emptyCollection()
   }
@@ -370,5 +455,10 @@ export function mergeEarnedAchievements(
 }
 
 export function serializeAchievementCollection(collection: AchievementCollectionData): string {
-  return JSON.stringify({ version: 2, records: collection.records, runs: collection.runs })
+  return JSON.stringify({
+    version: 2,
+    records: collection.records,
+    runs: collection.runs,
+    ...(collection.verifiedProgress ? { verifiedProgress: collection.verifiedProgress } : {}),
+  })
 }

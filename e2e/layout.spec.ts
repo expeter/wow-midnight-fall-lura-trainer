@@ -142,6 +142,47 @@ test('opens the in-page Profile achievements from the shell summary', async ({ p
   await expect(page.getByRole('dialog', { name: 'Personal achievements' })).toHaveCount(0)
 })
 
+test('restores verified achievements and progress for the authenticated account', async ({ page }) => {
+  await page.route('http://127.0.0.1:8787/**', async route => {
+    const path = new URL(route.request().url()).pathname
+    if (path === '/v1/me') return route.fulfill({ json: {
+      authenticated: true,
+      achievementSyncKey: 'browser-account-one',
+      region: 'eu',
+      csrfToken: 'csrf-token',
+      privacy: { identityMode: 'anonymous', alias: null, showGuild: 0, selectedCharacterId: null },
+    } })
+    if (path === '/v1/me/achievements') return route.fulfill({ json: {
+      rows: [{
+        achievementId: 'always-be-casting',
+        trainerVersion: '0.7.2',
+        buildId: 'verified-build',
+        firstEarnedAt: '2026-07-26T10:00:00.000Z',
+        currentlyObtainable: 1,
+        characterName: 'Lurana',
+        realmSlug: 'silvermoon',
+      }],
+      progress: {
+        phaseClears: 37,
+        duties: ['crystal'],
+        superhumanDuties: [],
+        flawlessStreaks: { normal: 3, hard: 1 },
+      },
+    } })
+    return route.fulfill({ status: 200, json: { rows: [] } })
+  })
+  await page.goto('/')
+
+  await expect(page.getByRole('button', { name: 'Open personal achievements, 1 of 32 earned' })).toBeVisible()
+  await page.getByRole('button', { name: 'Open personal achievements, 1 of 32 earned' }).click()
+  await expect(page.getByText(/First earned.*Lurana.*Server verified/)).toBeVisible()
+  await expect(page.getByText('37 of 50 phase clears')).toBeVisible()
+  expect(await page.evaluate(() => ({
+    local: localStorage.getItem('lura-achievement-collection'),
+    account: localStorage.getItem('lura-achievement-account:browser-account-one'),
+  }))).toEqual({ local: null, account: expect.stringContaining('always-be-casting') })
+})
+
 test('raidlead menu exposes system voice selection and preview', async ({ page }) => {
   await page.goto('/')
   const tts = page.getByRole('group', { name: 'TTS settings' })

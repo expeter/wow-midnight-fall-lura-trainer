@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import type { AchievementSummary, PhaseResult } from './completion'
 import {
+  achievementAccountStorageKey,
   achievementCatalog,
   achievementProgress,
   collectibleAchievements,
+  collectionFromVerifiedAchievements,
   currentRunAchievements,
   emptyCollection,
   flawlessFullRunStreak,
+  mergeAchievementCollections,
   mergeEarnedAchievements,
   newlyEarnedAchievements,
   parseAchievementCollection,
@@ -235,6 +238,39 @@ describe('canonical achievement rules', () => {
     expect(achievementProgress({ id: 'impossible-normal-streak' }, collection)).toEqual({ current: 3, target: 5, label: '3 of 5 flawless runs' })
     expect(achievementProgress({ id: 'phase-clears-50' }, collection)).toEqual({ current: 15, target: 50, label: '15 of 50 phase clears' })
     expect(achievementProgress({ id: 'midnight-shift' }, collection)).toBeNull()
+  })
+
+  it('merges server-verified records by earliest date and restores account progress', () => {
+    const local = mergeEarnedAchievements(
+      emptyCollection(),
+      [achievementCatalog().find(entry => entry.id === 'always-be-casting')!],
+      '2026-07-27T10:00:00.000Z',
+      { attempt: 4, playerName: 'Localname' },
+    )
+    const account = collectionFromVerifiedAchievements([{
+      achievementId: 'always-be-casting',
+      firstEarnedAt: '2026-07-26T10:00:00.000Z',
+      characterName: 'Verifiedname',
+    }], {
+      phaseClears: 37,
+      duties: ['crystal'],
+      superhumanDuties: [],
+      flawlessStreaks: { normal: 3, hard: 1 },
+    })
+    const merged = mergeAchievementCollections(local, account)
+
+    expect(merged.records).toEqual([expect.objectContaining({
+      key: 'always-be-casting',
+      earnedAt: '2026-07-26T10:00:00.000Z',
+      verified: true,
+    })])
+    expect(achievementProgress({ id: 'phase-clears-50' }, merged)).toEqual({
+      current: 37, target: 50, label: '37 of 50 phase clears',
+    })
+    expect(achievementProgress({ id: 'impossible-normal-streak' }, merged)).toEqual({
+      current: 3, target: 5, label: '3 of 5 flawless runs',
+    })
+    expect(achievementAccountStorageKey('account/a')).toBe('lura-achievement-account:account%2Fa')
   })
 })
 

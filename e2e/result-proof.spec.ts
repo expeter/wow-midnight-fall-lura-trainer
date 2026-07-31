@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 
-test('result preview exposes an offline Run-ID and copyable canonical proof JSON', async ({ page }) => {
+test('result preview fits a compact card with a branded offline Run-ID', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
   await page.addInitScript(() => {
     Object.defineProperty(window, '__copiedRunProof', { configurable: true, writable: true, value: '' })
     Object.defineProperty(window, '__resultCanvasText', { configurable: true, writable: true, value: [] })
@@ -33,40 +34,41 @@ test('result preview exposes an offline Run-ID and copyable canonical proof JSON
   await expect(phases).toContainText('850 pts')
   await expect(phases).toContainText('Phase contribution −90')
 
-  await page.getByRole('button', { name: 'Copy proof' }).click()
-  const copied = await page.evaluate(() => (
-    window as typeof window & { __copiedRunProof: string }
-  ).__copiedRunProof)
-  expect(JSON.parse(copied)).toMatchObject({
-    runId: await runId.textContent(),
-    checksumKey: 'LURA-RESULT-V1',
-    claim: {
-      schema: 'lura-result-v1',
-      preview: true,
-      run: { score: 850, durationMs: 421500, mistakes: 3 },
-      phases: [
-        { key: 'p1', cumulativePoints: 990, contribution: -10 },
-        { key: 'intermission', cumulativePoints: 970, contribution: -20 },
-        { key: 'p2', cumulativePoints: 920, contribution: -50 },
-        { key: 'p3', cumulativePoints: 940, contribution: 20 },
-        { key: 'p4', cumulativePoints: 850, contribution: -90 },
-      ],
-    },
-  })
+  await expect(page.getByRole('button', { name: /copy proof/i })).toHaveCount(0)
+  await expect(page.getByLabel('Achievements')).toHaveCount(0)
+  const card = await page.locator('.completion-card').boundingBox()
+  expect(card).not.toBeNull()
+  expect(card!.height).toBeLessThanOrEqual(780)
+  expect(card!.y + card!.height).toBeLessThanOrEqual(890)
 
   await page.getByRole('button', { name: 'Copy result text' }).click()
-  const summary = await page.evaluate(() => (
+  const copiedText = await page.evaluate(() => (
     window as typeof window & { __copiedRunProof: string }
   ).__copiedRunProof)
-  expect(summary).toContain('Phase 4: 850 pts · Phase contribution −90')
+  expect(copiedText).toContain(`Run-ID: ${await runId.textContent()}`)
+  expect(copiedText).not.toContain('Run data:')
+  expect(copiedText).not.toContain(page.url())
+  expect(copiedText.trimEnd()).toMatch(/Run-ID: LURA1-(?:[0-9A-F]{4}-){4}[0-9A-F]{4}$/)
+  expect(copiedText).toContain('Phase 4: 850 pts · Phase contribution −90')
 
   await page.getByRole('button', { name: 'Copy result image' }).click()
   await expect.poll(() => page.evaluate(() => (
     window as typeof window & { __resultCanvasText: string[] }
   ).__resultCanvasText)).toEqual(expect.arrayContaining([
+    'RESULT SCREEN PREVIEW',
+    'L’ura conquered!',
+    `RUN-ID  ${await runId.textContent()}`,
     '990 pts',
     'Phase contribution −10',
     '850 pts',
     'Phase contribution −90',
+  ]))
+  const canvasText = await page.evaluate(() => (
+    window as typeof window & { __resultCanvasText: string[] }
+  ).__resultCanvasText)
+  expect(canvasText).not.toEqual(expect.arrayContaining([
+    expect.stringContaining('localhost'),
+    expect.stringContaining('Client checksum'),
+    expect.stringContaining('NEW ACHIEVEMENTS'),
   ]))
 })

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
 import { CRYSTAL_GROUND_EXPLOSION_SECONDS, isCommittedP3ProtectionCrystal } from './game'
 import { bossBeamHitsPlayer, canPickupCrystalDuringEvent, canRecoverFromWipe, crystalWipeReason, difficultySettings, distance, distanceToSegment, isOnAssignedP3Side, isP3ConsumedSectorLethal, isInSafeAnnulus, isP3ProtectionCrystalPlaced, isProtectedByP3Bubble, isProtectedByP3Light, moveRelativeToCamera, moveWithIncreasingPull, npcEntryPosition, OPENING_BOOST_SECONDS, orientedAssignments, p1PositioningWipeReason, p2BeamHitsAssignedOrb, p2BeamPlayers, p2BeamTargetOrbIndices, p2NpcCrystalDrops, p2OrbPosition, p2PhaseTransitionCountdown, p2PostBeamEvent, p2ReturningOrbPositions, P1_FINAL_RECOVERY_SECONDS, P1_STAR_LENGTH, P2_BEAM_SECONDS, P2_FETCH_SECONDS, P2_NEXT_BEAM_AFTER_RESOLUTION_SECONDS, P2_ORBIT_SPEED, P2_ORB_GLOW_LEAD_SECONDS, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_POSITIONING_SECONDS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p3ActiveCrystalAssignments, P3_APPROACH_SECONDS, p3ArchangelStackPosition, p3AssignmentForRound, p3BossPosition, p3FlightPosition, P3_FINAL_SECTOR_MOVE_SECONDS, P3_FLIGHT_SECONDS, p3LandingPlanIndex, p3LandingPosition, p3LandingHealthRate, p3LandingSoakOccupied, p3LandingSoakPositions, p3LightCenters, p3LightHealthRate, p3MemoryResolved, p3PoolCenters, p3PoolSoakRate, p3ProtectionBubbleCenter, p3RuneDeadline, p3RuneEdges, p3RuneOrbs, p3RuneStepAt, p3SectorMovementSpeed, p3SideForPosition, p3StarsTiming, p3UnsafePenaltyTicks, p3WrongRuneContact, P3_LANDING_SOAK_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_MEMORY_STEP_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, P3_SAFE_ZONE_PENALTY_PER_SECOND, P3_SECTOR_MOVE_SECONDS, P3_SECTOR_SECONDS, p4BossHealth, p4EncounterBoxStates, p4FrontSoakerPosition, p4GroupPosition, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4SplinterStartSeconds, p4StackPosition, p4TankConeActive, p4TankConeHitsBox, p4TransitionStartPosition, P4_CYCLE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, P4_SPLINTER_INTERVAL_SECONDS, P4_TANK_CONE_DURATION_SECONDS, P4_TANK_CONE_INTERVAL_SECONDS, personalCircleHitsCrystal, personalCircleHitsPlayer, PLAYER_COLLISION_PENALTY, randomCrystalDropDuty, randomizeP3PoolLayout, roamingNpcPosition, safestStarsplinterRotation, scoreExhaustionWipeReason, setP3BossPlan, shouldCheckIntermissionVoid, shouldShowP2OrbReturnCounter, starsplinterHitsPoint, translateSelectedPoints, walkTowards, WIPE_PENALTY, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type Role, type RuneSymbol } from './game'
-import { buildPhaseResult, completionImageCardLayout, completionPhasePresentation, completionResultTitle, completionShareText, isFullSequenceCompletion, signedPhaseContribution, wrapTextByWidth, type PhaseKey, type PhaseResult } from './completion'
+import { buildPhaseResult, completionImageCardLayout, completionPhasePresentation, completionShareText, isFullSequenceCompletion, signedPhaseContribution, wrapTextByWidth, type PhaseKey, type PhaseResult } from './completion'
 import { bossDamageScoreBonus, isInsideP3Pool, p4BossHealthWithPlayerDamage, p4NpcOrdinalForProfile, p4NpcProfileIndices, p4NpcSplinterActorOrdinals, p4ProtectionCenter, p4RenderedNpcSplinterOrigin, p4StartingBossState, p4TankKillsBox, PRE_P4_BOSS_HEALTH_BUDGET, preP4BossHealth, shouldSuppressRepeatedWipe, shouldTriggerP3EarlyClear, starsplinterHitsCrystalCarrier } from './game'
 import { p4UnsafePenaltyTicks, P4_SAFE_ZONE_HEALTH_DRAIN_PER_SECOND, P4_SAFE_ZONE_PENALTY_PER_SECOND } from './game'
 import { canPickupCrystalAlongPath, INTERMISSION_POSITIONING_SECONDS } from './game'
@@ -18,7 +18,7 @@ import { P1_BEAM_POSITION_SECONDS, P1_CRYSTAL_PICKUP_SECONDS, P1_DEFAULT_INTERRU
 import { advanceTankMechanic, createTankMechanicState, prepareTankDefensive, requestTankTaunt, tankMechanicActiveForEvent, type TankIndex, type TankMechanicEvent, type TankMechanicState } from './tank'
 import OnlinePanel, { BestRunsSummary, GlobalRankingSummary, OnlineStandingSummary, PublicProfileOverlay } from './OnlinePanel'
 import { canRecordOnlineWipe, completeOnlineAttempt, configurationFingerprint, issueOnlineAttempt, loadActivityFeed, loadOnlineAchievements, loadOnlineSession, logoutOnline, newActivityRows, recentActivityRows, recordOnlineWipe, type ActivityFeedRow, type OnlineSession, type RunAttributionMode } from './online'
-import { resultProofClaim, resultProofFromJson, serializeResultProof, serializeResultProofBundle, type ResultProof } from './resultProof'
+import { resultProofClaim, resultProofFromJson, serializeResultProof, type ResultProof } from './resultProof'
 import './styles.css'
 
 type Screen = 'menu' | 'game' | 'results'
@@ -2720,10 +2720,6 @@ export default function App() {
       setOnlineResultStatus('Online verification rejected this result. The local result is unchanged.')
     })
   }, [screen, completionPreview, onlineAttempt?.attemptId, completionProofJson])
-  const primaryAchievement = achievements.find(achievement => achievement.id === 'superhuman-both-duties')
-    ?? achievements.find(achievement => achievement.id === 'hard-score-flawless')
-    ?? achievements.find(achievement => achievement.id === 'not-a-scratch')
-    ?? achievements[0]
   async function copyCompletion() {
     const proof = completionProof ?? await resultProofFromJson(completionProofJson)
     const text = `${completionPreview ? 'PREVIEW DATA — NOT A COMPLETED RUN\n' : ''}${completionShareText({
@@ -2739,19 +2735,10 @@ export default function App() {
       fullSequence: fullSequenceComplete,
       results: phaseResults,
       achievements,
-    })}\nRun-ID: ${proof.code}\nProof JSON: ${proof.json}\n${window.location.origin}${window.location.pathname}`
+    })}\nRun-ID: ${proof.code}`
     try {
       await navigator.clipboard.writeText(text)
       setCompletionCopyStatus('Completion copied — ready for Discord')
-    } catch {
-      setCompletionCopyStatus('Clipboard access was blocked')
-    }
-  }
-  async function copyCompletionProof() {
-    const proof = completionProof ?? await resultProofFromJson(completionProofJson)
-    try {
-      await navigator.clipboard.writeText(serializeResultProofBundle(proof))
-      setCompletionCopyStatus('Run proof JSON copied')
     } catch {
       setCompletionCopyStatus('Clipboard access was blocked')
     }
@@ -2760,76 +2747,105 @@ export default function App() {
     const proof = completionProof ?? await resultProofFromJson(completionProofJson)
     const canvas = document.createElement('canvas')
     canvas.width = 1200
-    canvas.height = 760
+    canvas.height = 620
     const context = canvas.getContext('2d')
     if (!context) { setCompletionCopyStatus('Image export is unavailable in this browser'); return }
-    const gradient = context.createLinearGradient(0, 0, 1200, 760)
+    const roundedPanel = (x: number, y: number, width: number, height: number, radius: number, fill: string, stroke: string) => {
+      context.beginPath()
+      context.roundRect(x, y, width, height, radius)
+      context.fillStyle = fill
+      context.fill()
+      context.strokeStyle = stroke
+      context.lineWidth = 1
+      context.stroke()
+    }
+    const gradient = context.createLinearGradient(0, 0, 1200, 620)
     gradient.addColorStop(0, fullSequenceComplete ? '#202238' : '#15243a')
     gradient.addColorStop(1, '#080b16')
     context.fillStyle = gradient
-    context.fillRect(0, 0, 1200, 760)
+    context.fillRect(0, 0, 1200, 620)
+    context.beginPath()
+    context.roundRect(28, 28, 1144, 564, 20)
     context.strokeStyle = fullSequenceComplete ? '#ffd978' : '#73e0c1'
-    context.lineWidth = 3
-    context.strokeRect(28, 28, 1144, 704)
+    context.lineWidth = 2
+    context.setLineDash(completionPreview ? [5, 4] : [])
+    context.stroke()
+    context.setLineDash([])
+    context.fillStyle = fullSequenceComplete ? 'rgba(255, 217, 120, .13)' : 'rgba(115, 224, 193, .11)'
+    context.font = '180px sans-serif'
+    context.fillText('✦', 940, 170)
     context.fillStyle = fullSequenceComplete ? '#ffd978' : '#73e0c1'
-    context.font = '600 24px sans-serif'
-    context.fillText(completionPreview ? 'RESULT SCREEN PREVIEW · NOT A COMPLETED RUN' : fullSequenceComplete ? `FULL RUN COMPLETE${achievements.length ? ' · ACHIEVEMENT UNLOCKED' : ''}` : 'L’URA PRACTICE COMPLETE', 70, 92)
+    context.font = '700 16px monospace'
+    context.fillText(completionPreview ? 'RESULT SCREEN PREVIEW' : fullSequenceComplete ? 'FULL RUN COMPLETE' : 'PRACTICE COMPLETE', 70, 72)
+    roundedPanel(785, 48, 345, 34, 8, 'rgba(5, 9, 18, .58)', 'rgba(115, 224, 193, .28)')
+    context.fillStyle = '#94a2ba'
+    context.font = '500 13px monospace'
+    context.fillText(`RUN-ID  ${proof.code}`, 800, 70)
     context.fillStyle = '#f7f5ee'
-    const imageTitle = primaryAchievement?.label ?? completionResultTitle(fullSequenceComplete, stats.hits)
-    context.font = '800 64px sans-serif'
-    const imageTitleWidth = context.measureText(imageTitle).width
-    if (imageTitleWidth > 1060) context.font = `800 ${Math.floor(64 * 1060 / imageTitleWidth)}px sans-serif`
-    context.fillText(imageTitle, 70, 165)
+    context.font = '800 58px sans-serif'
+    context.fillText(fullSequenceComplete ? 'L’ura conquered!' : 'Phase clear!', 70, 139)
     context.fillStyle = '#f7f5ee'
-    context.font = '700 34px sans-serif'
-    context.fillText(effectivePlayerName, 72, 211)
+    context.font = '700 28px sans-serif'
+    context.fillText(effectivePlayerName, 72, 181)
+    const playerNameWidth = context.measureText(effectivePlayerName).width
     context.fillStyle = '#aeb8d0'
-    context.font = '500 19px sans-serif'
-    context.fillText(`Played position: ${playedPositionLabel} · ${resultClass} · ${difficulty.toUpperCase()} · ATTEMPT #${attemptNumber}`, 72, 243)
-    context.fillStyle = '#f7f5ee'
-    context.font = '700 38px sans-serif'
-    context.fillText(`${Math.round(stats.score)} POINTS`, 72, 286)
-    context.fillText(`${stats.time.toFixed(1)}s`, 340, 286)
-    context.fillText(`${stats.hits} MISTAKE${stats.hits === 1 ? '' : 'S'}`, 530, 286)
+    context.font = '500 15px monospace'
+    context.fillText(`Played position: ${playedPositionLabel} · ${resultClass} · ${difficulty}`, 88 + playerNameWidth, 179)
+    if (completionPreview) {
+      roundedPanel(70, 197, 680, 34, 7, 'rgba(255, 217, 120, .08)', 'rgba(255, 217, 120, .38)')
+      context.fillStyle = '#ffd978'
+      context.font = '600 13px monospace'
+      context.fillText('Preview data only — not stored or presented as a completed attempt.', 84, 219)
+    }
+    const previewShift = completionPreview ? 48 : 0
+    const summaryTop = 205 + previewShift
+    const summaryWidth = 1060 / 3
+    ;[
+      [`${Math.round(stats.score)}`, 'TOTAL POINTS'],
+      [`${stats.time.toFixed(1)}s`, 'TIME IN ARENA'],
+      [`${stats.hits}`, `MISTAKES · ATTEMPT #${attemptNumber}`],
+    ].forEach(([value, label], index) => {
+      const x = 70 + index * summaryWidth
+      roundedPanel(x, summaryTop, summaryWidth, 72, 0, 'rgba(8, 12, 23, .8)', '#33415f')
+      context.fillStyle = '#f7f5ee'
+      context.font = '700 27px sans-serif'
+      context.fillText(value, x + 17, summaryTop + 31)
+      context.fillStyle = '#7f8da8'
+      context.font = '500 12px monospace'
+      context.fillText(label, x + 17, summaryTop + 53)
+    })
     const cards = completionImageCardLayout(phaseResults.length)
+    const phaseTop = 292 + previewShift
     completionPhases.forEach((result, index) => {
       const { x, width: cardWidth } = cards[index]
-      context.fillStyle = 'rgba(7, 11, 22, .7)'
-      context.fillRect(x, 330, cardWidth, 150)
-      context.strokeStyle = '#33415f'
-      context.lineWidth = 1
-      context.strokeRect(x, 330, cardWidth, 150)
+      roundedPanel(x, phaseTop, cardWidth, 140, 10, 'rgba(7, 11, 22, .72)', '#33415f')
+      context.fillStyle = '#52617f'
+      context.font = '500 11px monospace'
+      context.fillText(String(index + 1).padStart(2, '0'), x + 16, phaseTop + 21)
       context.fillStyle = '#f7f5ee'
-      context.font = '700 24px sans-serif'
-      context.fillText(result.label, x + 18, 370)
+      context.font = '700 19px sans-serif'
+      context.fillText(result.label, x + 16, phaseTop + 49)
       context.fillStyle = '#73e0c1'
-      context.font = '700 29px sans-serif'
-      context.fillText(`${result.cumulativePoints} pts`, x + 18, 414)
+      context.font = '700 23px sans-serif'
+      context.fillText(`${result.cumulativePoints} pts`, x + 16, phaseTop + 82)
       context.fillStyle = '#9ba8c2'
-      context.font = '500 15px sans-serif'
-      context.fillText(`Phase contribution ${signedPhaseContribution(result.contribution)}`, x + 18, 444)
-      context.fillText(`${result.time.toFixed(1)}s${result.recovery ? ` · Recovery ${result.recovery === 'passed' ? '+50' : '−50'}` : ''}`, x + 18, 466)
+      context.font = '500 11px monospace'
+      context.fillText(`Phase contribution ${signedPhaseContribution(result.contribution)}`, x + 16, phaseTop + 108)
+      context.fillText(`${result.time.toFixed(1)}s${result.recovery ? ` · Recovery ${result.recovery === 'passed' ? '+50' : '−50'}` : ''}`, x + 16, phaseTop + 127)
     })
-    context.fillStyle = '#c7cfdf'
-    context.font = '500 21px sans-serif'
-    const achievementLines = wrapTextByWidth(
-      `NEW ACHIEVEMENTS · ${achievements.map(achievement => achievement.label).join(' · ') || 'None this run'}`,
-      1056,
-      value => context.measureText(value).width,
-    )
-    achievementLines.forEach((line, index) => context.fillText(line, 72, 525 + index * 27))
-    const extrasStart = 525 + achievementLines.length * 27 + 6
+    const extrasStart = phaseTop + 166
+    context.fillStyle = '#f7f5ee'
+    context.font = '700 16px sans-serif'
+    context.fillText('Optional challenges', 72, extrasStart)
+    const extrasLabelWidth = context.measureText('Optional challenges').width
+    context.fillStyle = '#aeb8d0'
+    context.font = '500 16px sans-serif'
     const extrasLines = wrapTextByWidth(
-      `OPTIONAL CHALLENGES · ${extrasSummary}`,
-      1056,
+      extrasSummary,
+      1038 - extrasLabelWidth,
       value => context.measureText(value).width,
     )
-    extrasLines.forEach((line, index) => context.fillText(line, 72, extrasStart + index * 27))
-    context.fillStyle = '#73819e'
-    context.font = '500 16px monospace'
-    context.fillText(`Run-ID: ${proof.code}`, 72, 676)
-    context.font = '500 18px sans-serif'
-    context.fillText(`${window.location.host}${window.location.pathname} · Client checksum`, 72, 706)
+    extrasLines.forEach((line, index) => context.fillText(line, 88 + extrasLabelWidth, extrasStart + index * 21))
     const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'))
     if (!blob) { setCompletionCopyStatus('Could not create the result image'); return }
     try {
@@ -2944,17 +2960,18 @@ export default function App() {
     <AchievementUnlockPopups achievements={achievementPopups} />
     <section className={`completion-card ${fullSequenceComplete ? 'achievement-unlocked' : ''} ${completionPreview ? 'result-preview' : ''}`}>
       <div className="completion-glow" aria-hidden="true">✦</div>
-      <p className="eyebrow">{completionPreview ? 'RESULT SCREEN PREVIEW' : fullSequenceComplete ? `FULL RUN COMPLETE${achievements.length ? ' · ACHIEVEMENT UNLOCKED' : ''}` : 'PRACTICE COMPLETE'}</p>
-      <h1>{fullSequenceComplete ? 'L’ura conquered!' : 'Phase clear!'}</h1>
-      <h2 className="completion-player-name">{effectivePlayerName}</h2>
-      <p className="completion-played-position">Played position: {playedPositionLabel}</p>
-      <p className="lede">{fullSequenceComplete ? `${phaseResults.map(result => result.label).join(', ')} cleared in one continuous run.` : `${phaseResults.map(result => result.label).join(' → ')} completed. Clear every available phase in one run to unlock the full achievement.`}</p>
-      {completionPreview && <p className="completion-preview-note">Preview data only — this is not stored or presented as a completed attempt.</p>}
-      <div className="achievement-badge">
-        <span aria-hidden="true">{fullSequenceComplete ? '🏆' : '✦'}</span>
-        <div><strong>{primaryAchievement?.label ?? completionResultTitle(fullSequenceComplete, stats.hits)}</strong><small>{primaryAchievement?.detail ?? (completionPreview ? `${resultClass} · ${difficulty}` : 'No new achievements this run')}</small></div>
+      <div className="completion-card-header">
+        <p className="eyebrow">{completionPreview ? 'RESULT SCREEN PREVIEW' : fullSequenceComplete ? 'FULL RUN COMPLETE' : 'PRACTICE COMPLETE'}</p>
+        <p className="completion-run-id" title="Browser-generated checksum of the displayed result values. It helps detect ordinary screenshot edits but is not a server signature.">
+          Run-ID <code>{completionProof?.code ?? 'Generating…'}</code>
+        </p>
       </div>
-      {achievements.length > 1 && <div className="achievement-list" aria-label="Achievements">{achievements.map(achievement => <span key={achievement.id}><strong>{achievement.label}</strong><small>{achievement.detail}</small></span>)}</div>}
+      <h1>{fullSequenceComplete ? 'L’ura conquered!' : 'Phase clear!'}</h1>
+      <div className="completion-identity">
+        <h2 className="completion-player-name">{effectivePlayerName}</h2>
+        <p className="completion-played-position">Played position: {playedPositionLabel} · {resultClass} · {difficulty}</p>
+      </div>
+      {completionPreview && <p className="completion-preview-note">Preview data only — this is not stored or presented as a completed attempt.</p>}
       <div className="completion-summary">
         <div><strong>{Math.round(stats.score)}</strong><span>Total points</span></div>
         <div><strong>{stats.time.toFixed(1)}s</strong><span>Time in arena</span></div>
@@ -2970,10 +2987,6 @@ export default function App() {
         </article>)}
       </div>
       <p className="completion-extras"><strong>Optional challenges</strong>{extrasSummary}</p>
-      <p className="completion-run-id" title="Browser-generated checksum of the displayed result values. It helps detect ordinary screenshot edits but is not a server signature.">
-        Run-ID: <code>{completionProof?.code ?? 'Generating…'}</code>
-        <button type="button" onClick={copyCompletionProof} disabled={!completionProof}>Copy proof</button>
-      </p>
       {onlineResultStatus && <p className="online-result-status" role="status">{onlineResultStatus}</p>}
       <div className="completion-actions">
         <button className="copy-completion" onClick={shareCompletionImage}>Copy result image</button>

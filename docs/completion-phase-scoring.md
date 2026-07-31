@@ -104,5 +104,5 @@ Add focused tests proving that:
 Mark `CR-225` implemented only after the focused scoring/presentation tests
 pass. This ticket intentionally changes presentation only. The shared
 presentation helper and focused browser regression now cover the result card,
-copied text, generated image data, Run-ID proof JSON, negative contributions,
+copied text, generated image data, Run-ID calculation, negative contributions,
 and direct-phase baseline.

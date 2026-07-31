@@ -56,7 +56,7 @@ change before implementation.
 - Phase cards present the cumulative score at the end of each phase as their
   primary value. Their smaller `Phase contribution` value is that phase's
   signed score change relative to the normal 1,000-point attempt baseline.
-  Browser cards, copied summaries, generated images, and Run-ID proof JSON use
+  Browser cards, copied summaries, generated images, and Run-ID calculation use
   the same derivation; direct-phase practice still starts at 1,000 and ends at
   its authoritative final practice score. This is presentation only and does
   not make the stored display-normalized phase values individually additive.
@@ -72,8 +72,15 @@ change before implementation.
 - Every result card and copied result image carries a quiet browser-generated
   `Run-ID`. It is the truncated SHA-256 checksum of versioned canonical JSON
   containing the displayed run values and remains available without the API.
-  The exact proof JSON is copyable. This detects ordinary edits but is not an
-  unforgeable signature because the browser contains the public algorithm.
+  Copied result text stays human-readable and ends with the Run-ID; it does not
+  embed canonical JSON or a trainer URL. The Run-ID itself is branded quietly
+  near the top of the card without a separate copy action. It detects ordinary
+  edits but is not an unforgeable signature because the browser contains the
+  public algorithm.
+- Generated result images mirror the compact browser card hierarchy and carry
+  the same top Run-ID stamp. They do not include a hostname, URL, checksum
+  explanation, or embedded achievement list; genuine achievement unlocks stay
+  in the browser popup system.
 
 ## SPEC-005 · Background audio
 

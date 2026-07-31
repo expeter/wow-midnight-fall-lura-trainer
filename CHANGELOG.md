@@ -2,15 +2,28 @@
 
 ## Unreleased
 
+## 0.9.1 · 2026-07-31
+
+- CR-228: Redesign copied result images to mirror the approved compact browser
+  card, including its top Run-ID stamp and five phase cards, while removing the
+  hostname, “Client checksum” footer, and embedded achievement list. Tracked
+  from `INBOX-20260731-203647-31fd16`.
+- CR-227: Keep copied result text concise and human-readable, ending with the
+  Run-ID while omitting canonical JSON and the trainer URL.
+- BUG-156: Compact Test previews, practice clears, and full completion results
+  into one share-card-like desktop layout. Achievement unlocks remain popups
+  instead of being duplicated inside the card, while the non-copyable Run-ID
+  is branded near the top. Tracked from `INBOX-20260731-202036-2d506e`.
+
 ## 0.9.0 · 2026-07-31
 
 - CR-225: Show cumulative end-of-phase scores on completion cards, copied
-  summaries, generated images, and Run-ID proof JSON, with each signed score
+  summaries, generated images, and the Run-ID calculation, with each signed score
   delta explicitly labelled `Phase contribution`. Scoring and leaderboard
   comparability are unchanged.
 - FR-071: Add a quiet offline browser-generated `Run-ID` to result cards and
   copied images. It checks versioned canonical result JSON with SHA-256, offers
-  the exact proof data for copying, and is stored with accepted API attempts
+  the exact run data in copied result text, and is stored with accepted API attempts
   when online without claiming to be an unforgeable server signature.
 
 ## 0.8.0 · 2026-07-31

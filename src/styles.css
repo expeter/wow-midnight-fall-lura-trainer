@@ -473,15 +473,17 @@
 .result-mistakes li b { color: #ff7184; font: 10px 'DM Mono', monospace; }
 .result-mistakes summary { cursor: pointer; color: #aeb8d0; font: 600 12px 'DM Mono', monospace; letter-spacing: .06em; text-transform: uppercase; }
 .result-mistakes[open] summary { margin-bottom: 16px; color: #f6f4ee; }
-.results { width: min(900px, 100%); max-width: 900px; padding-top: 5vh; }
-.completion-card { position: relative; overflow: hidden; margin-bottom: 22px; padding: clamp(26px, 5vw, 50px); border: 1px solid rgba(115,224,193,.34); border-radius: 22px; background: radial-gradient(circle at 86% 12%, rgba(115,224,193,.17), transparent 35%), linear-gradient(145deg, #111a30, #090d19 72%); box-shadow: 0 30px 90px rgba(0,0,0,.42); }
+.results { width: min(1120px, 100%); max-width: 1120px; padding-top: 24px; }
+.completion-card { position: relative; overflow: hidden; margin-bottom: 16px; padding: 28px 30px 24px; border: 1px solid rgba(115,224,193,.34); border-radius: 18px; background: radial-gradient(circle at 86% 12%, rgba(115,224,193,.17), transparent 35%), linear-gradient(145deg, #111a30, #090d19 72%); box-shadow: 0 24px 70px rgba(0,0,0,.42); }
 .completion-card.achievement-unlocked { border-color: rgba(255,211,105,.62); background: radial-gradient(circle at 86% 12%, rgba(255,211,105,.2), transparent 36%), linear-gradient(145deg, #1b2135, #0a0d18 72%); box-shadow: 0 30px 90px rgba(0,0,0,.48), inset 0 0 70px rgba(255,211,105,.035); }
 .completion-card.result-preview { border-style: dashed; }
-.completion-preview-note { width: fit-content; margin: -14px 0 24px; padding: 8px 11px; border: 1px solid rgba(255,217,120,.35); border-radius: 7px; color: #ffd978; background: rgba(255,217,120,.07); font: 11px 'DM Mono', monospace; }
-.completion-card h1 { max-width: 690px; margin-bottom: 14px; font-size: clamp(45px, 8vw, 76px); }
-.completion-player-name { margin: 0; color: #f8fafc; font-size: clamp(28px, 4vw, 38px); line-height: 1.05; }
-.completion-played-position { margin: 5px 0 18px; color: #8e9bb6; font: 13px 'DM Mono', monospace; }
-.completion-card .lede { margin: 0 0 28px; max-width: 660px; }
+.completion-card-header { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 9px; }
+.completion-card-header .eyebrow { margin: 0; }
+.completion-preview-note { width: fit-content; margin: 10px 0 0; padding: 6px 9px; border: 1px solid rgba(255,217,120,.35); border-radius: 7px; color: #ffd978; background: rgba(255,217,120,.07); font: 10px 'DM Mono', monospace; }
+.completion-card h1 { max-width: 690px; margin-bottom: 8px; font-size: clamp(40px, 5vw, 58px); }
+.completion-identity { display: flex; align-items: baseline; gap: 13px; }
+.completion-player-name { margin: 0; color: #f8fafc; font-size: clamp(22px, 3vw, 29px); line-height: 1.05; }
+.completion-played-position { margin: 0; color: #8e9bb6; font: 11px 'DM Mono', monospace; }
 .completion-glow { position: absolute; top: -42px; right: 18px; color: rgba(115,224,193,.14); font-size: 210px; line-height: 1; transform: rotate(12deg); pointer-events: none; }
 .achievement-unlocked .completion-glow { color: rgba(255,211,105,.16); }
 .achievement-badge { position: relative; display: flex; align-items: center; gap: 15px; width: fit-content; max-width: 100%; padding: 13px 18px; border: 1px solid rgba(115,224,193,.28); border-radius: 999px; background: rgba(5,9,18,.52); }
@@ -567,25 +569,23 @@
 .achievement-requirement-progress i { display: block; height: 100%; border-radius: inherit; background: var(--badge-accent); box-shadow: 0 0 10px color-mix(in srgb, var(--badge-accent) 55%, transparent); }
 .achievement-requirement-progress small { color: #aab5ca; font: 700 11px 'DM Mono', monospace; white-space: nowrap; }
 .achievement-catalog .achievement-earned-at { margin-top: 7px; color: #d6bc70; }
-.completion-summary { display: grid; grid-template-columns: 1.25fr 1fr 1fr; gap: 1px; margin: 30px 0 18px; overflow: hidden; border: 1px solid #28334d; border-radius: 12px; background: #28334d; }
-.completion-summary > div { padding: 17px 19px; background: rgba(8,12,23,.8); }
+.completion-summary { display: grid; grid-template-columns: 1.25fr 1fr 1fr; gap: 1px; margin: 16px 0 11px; overflow: hidden; border: 1px solid #28334d; border-radius: 10px; background: #28334d; }
+.completion-summary > div { padding: 11px 15px; background: rgba(8,12,23,.8); }
 .completion-summary strong, .completion-summary span { display: block; }
-.completion-summary strong { color: #f8fafc; font-size: 26px; }
+.completion-summary strong { color: #f8fafc; font-size: 22px; }
 .completion-summary span { margin-top: 3px; color: #7f8da8; font: 10px 'DM Mono', monospace; letter-spacing: .09em; text-transform: uppercase; }
-.phase-results { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; }
-.phase-results article { position: relative; min-height: 126px; padding: 16px; border: 1px solid #28334d; border-radius: 11px; background: rgba(9,14,27,.68); }
+.phase-results { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.phase-results article { position: relative; min-height: 104px; padding: 11px 12px; border: 1px solid #28334d; border-radius: 10px; background: rgba(9,14,27,.68); }
 .phase-results article > span { color: #52617f; font: 10px 'DM Mono', monospace; }
-.phase-results h2 { margin: 13px 0 14px; font-size: 15px; }
+.phase-results h2 { margin: 7px 0 7px; font-size: 14px; }
 .phase-results strong, .phase-results small { display: block; }
 .phase-results strong { color: #73e0c1; font-size: 16px; }
 .phase-results small { margin-top: 3px; color: #8190ad; font: 10px 'DM Mono', monospace; }
-.completion-extras { display: flex; gap: 10px; margin: 16px 2px 0; color: #9aa7c0; font-size: 12px; }
+.completion-extras { display: flex; gap: 10px; margin: 11px 2px 0; color: #9aa7c0; font-size: 12px; }
 .completion-extras strong { color: #e7eaf2; }
-.completion-run-id { display: flex; align-items: center; gap: 7px; margin: 9px 2px 0; color: #65728d; font: 10px 'DM Mono', monospace; }
-.completion-run-id code { color: #7d89a1; font: inherit; }
-.completion-run-id button { width: auto; padding: 3px 6px; border-color: #29344b; color: #7d89a1; background: transparent; font-size: 9px; }
-.completion-run-id button:disabled { opacity: .45; cursor: wait; }
-.completion-actions { display: flex; align-items: center; gap: 13px; margin-top: 22px; }
+.completion-run-id { position: relative; display: flex; align-items: center; gap: 8px; margin: 0; padding: 7px 10px; border: 1px solid rgba(115,224,193,.22); border-radius: 7px; color: #6f7c96; background: rgba(5,9,18,.44); font: 9px 'DM Mono', monospace; letter-spacing: .08em; text-transform: uppercase; }
+.completion-run-id code { color: #94a2ba; font: inherit; letter-spacing: .02em; }
+.completion-actions { display: flex; align-items: center; gap: 11px; margin-top: 14px; }
 .copy-completion { padding: 12px 17px; color: #07121a; border-color: #73e0c1; background: #73e0c1; font-weight: 800; }
 .completion-actions .secondary { padding: 12px 17px; }
 .completion-actions [role='status'] { color: #8e9bb6; font-size: 11px; }
@@ -1198,13 +1198,14 @@
 .results .completion-extras { font-size: 14px; }
 
 /* Completion card overrides the compact legacy results width. */
-.results { width: min(900px, 100%); max-width: 900px; }
+.results { width: min(1120px, 100%); max-width: 1120px; }
 
 @media (max-width: 650px) {
   .setup-jump-nav span { width: 100%; margin-bottom: 4px; }
   .setup-jump-nav a { flex: 1 1 50%; padding: 4px 8px; }
   .results { padding: 24px 14px; }
   .completion-card { padding: 25px 18px; border-radius: 15px; }
+  .completion-card-header, .completion-identity { align-items: flex-start; flex-direction: column; gap: 7px; }
   .achievement-badge { align-items: flex-start; border-radius: 13px; }
   .achievement-list { grid-template-columns: 1fr; }
   .completion-summary { grid-template-columns: 1fr; }

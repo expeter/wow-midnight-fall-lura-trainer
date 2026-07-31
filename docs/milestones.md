@@ -6,11 +6,12 @@ in [`specifications.md`](specifications.md).
 
 ## Current release boundary
 
-- Release candidate: `v0.9.0`; deployed release remains `v0.8.0` until the
+- Current release line: `v0.9.1`; frontend deployment remains pending until the
   frontend/API production checks complete.
-- `v0.9.0` adds offline result Run-IDs and cumulative completion-phase
-  presentation while keeping controlled-player Phase 2 beam duty and the
-  two-tank encounter roles in localhost preview.
+- `v0.9.1` completes the interrupted Run-ID release with a compact shared
+  result card while keeping controlled-player Phase 2 beam duty and the
+  two-tank encounter roles in localhost preview. The v0.9.0 API deployed, but
+  its Pages deployment was blocked by documentation drift.
 - Current leaderboard season: `season-1`. No milestone or SemVer bump changes
   it automatically.
 
@@ -35,7 +36,7 @@ shell never silently mistakes an expired server session for a valid login.
 This patch retains `season-1`: it repairs attribution and version acceptance
 without changing encounter scoring or ranking order.
 
-- `CR-226` — publish v0.9.0 with synchronized frontend/API compatibility and
+- `CR-226` — publish v0.9.1 with synchronized frontend/API compatibility and
   verify production leaderboard continuity while retaining `season-1`.
 
 ## M1 · Encounter completion

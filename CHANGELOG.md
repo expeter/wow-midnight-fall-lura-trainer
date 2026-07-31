@@ -4,6 +4,10 @@
 
 ## 0.7.2 · 2026-07-31
 
+- BUG-155: Restore verified online-attempt issuance by aligning the API with
+  trainer v0.7.2. Root trainer-version changes now trigger the independently
+  tested API deployment, and production verification requires the public API
+  health version to match. Leaderboard season `season-1` is unchanged.
 - BUG-154: Keep Phase 2 moving-orb beam duty on NPCs in public play so a
   randomly selected controlled player cannot block the live run. The complete
   player-aiming and miss-wipe mechanic remains available on localhost for

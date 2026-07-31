@@ -4,6 +4,7 @@
 
 ## 0.6.2 · 2026-07-31
 
+- Stabilized the two release-gating opening/P2 browser assertions without changing encounter behavior.
 - BUG-145: Revalidate the online session before every run and reject stale
   authenticated wipe submissions instead of silently publishing them as
   anonymous activity. A server-issued attempt remains bound to its account and

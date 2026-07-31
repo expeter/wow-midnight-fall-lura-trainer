@@ -457,6 +457,7 @@ Expected: only the active T/X/O pair resolves; other contacts are ignored.
 | `BUG-108` | Implemented | Restore immediate visual confirmation when the complete raid plan is saved, without changing persistence or raid-plan contents. Covered by component and browser regressions. |
 | `BUG-109` | Implemented | Changing Phase 2 crystal-player assignments updates crystal ownership without moving players or rewriting their saved raid-plan positions. Covered by component and browser regressions. |
 | `BUG-110` | Implemented | Intermission NPC Starsplinters prioritize avoiding the controlled player's crystal, and a crystal hit resolves at most once. Covered by focused Starsplinter and client regressions. Tracked from [`INBOX-20260729-180740-846945`](../inbox/INBOX-20260729-180740-846945.md). |
+| `BUG-146` | Implemented | Stabilized the opening/P2 release browser shard without changing encounter mechanics: the Phase 2 score-label assertion selects the exact HUD label, and the Main Ability regression waits until the arena input listener is mounted before sending its first key event. Covered by both focused browser regressions. |
 
 ## Implemented feature inventory
 

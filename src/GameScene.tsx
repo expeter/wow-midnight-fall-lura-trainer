@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import type { RunAttributionMode } from './online'
+import { FEATURE_FLAGS } from './features'
 import { p4SplinterSetActive } from './game'
 import { angleToward, assignmentRevealDistance, constrainP3NpcTargetToSide, crystalCarrierPosition, distance, distanceToSegment, hasActiveP3CrystalLight, isActiveP3RuneDuty, jumpHeights, keepP3CrystalPoolCovered, keepP3NpcInSoak, keepP4NpcInProtection, npcEntryPosition, OPENING_BOOST_SECONDS, P1_STAR_LENGTH, p2BeamAimPosition, p2FinalRegroupActive, P2_ORBIT_SPEED, P2_ORB_RETURN_GLOW_SECONDS, P2_ORB_RETURN_SECONDS, P2_ORB_RETURN_TRAVEL_SECONDS, P2_PERSONAL_CIRCLE_INNER_RADIUS, P2_PERSONAL_CIRCLE_OUTER_RADIUS, P2_PULL_SECONDS, P2_SPREAD_SECONDS, p2NpcRoamingPosition, p2NpcShouldReturnToSoak, p2OrbPosition, p2OrbReturnState, p2ReturningOrbPositions, p3ActiveCrystalAssignments, P3_APPROACH_NPC_SPEED_MULTIPLIER, p3ArchangelStackPosition, p3BossPosition, p3CrystalPoolCoverageTargets, p3FlightPosition, P3_FLIGHT_SECONDS, p3LandingGroupIndex, p3LandingPlanIndex, p3LandingPosition, p3LandingSoakPositions, p3LightCenters, p3NpcPoolAssignment, p3NpcRuneReactionDelay, p3NpcSoaksActive, p3PoolCenters, p3PoolLayoutId, p3ProtectionBubbleCenter, p3RuneEdges, p3RuneOrbs, p3RunePartnerPosition, p3SideForPosition, p3StarsTiming, playerCarriesCrystal, P3_LANDING_SOAK_RADIUS, P3_LIGHT_RADIUS, P3_MEMORY_PANEL_SECONDS, P3_MEMORY_START_SECONDS, P3_OUTER_RADIUS, P3_POOL_HEALTH, P3_POOL_RADIUS, p4EncounterBoxStates, p4FrontSoakerPosition, p4GroupPosition, p4NpcOrdinalForProfile, p4NpcRelocationPace, p4NpcSplinterActorOrdinals, p4NpcSplinterPosition, p4PlayerSplinterDuty, p4ProtectionCenter, p4RelocationProgress, p4SplinterAge, p4SplinterHitsGroup, p4SplinterResolutionActive, p4SplinterRotation, p4StackPosition, p4TankAvoidSplinters, p4TankConeActive, p4TankConeHitsBox, p4TransitionStartPosition, P4_FRONT_CONE_RANGE, P4_HEAVEN_MOVE_SECONDS, P4_HEAVEN_START_SECONDS, P4_KNOCKUP_SECONDS, P4_MOVEMENT_MULTIPLIER, P4_PROTECTION_RADIUS, P4_SPLINTER_DETONATION_SECONDS, roamingNpcPosition, safestStarsplinterRotation, separateP3NpcTarget, shouldApplyP3NpcDisplacement, shouldHoldP3RunePartner, type Difficulty, type PlayerClass, type PlayerProfile, type Point, type RuneSymbol } from './game'
 import { p3SectorMovementSpeed, p3SpreadPosition, p4PlayerSplinterHitsNpc, p4RenderedNpcSplinterHitsPlayer, p4RenderedNpcSplinterOrigin, p4TankKillsBox } from './game'
@@ -1164,16 +1165,18 @@ export default function GameScene(props: SceneProps) {
       const scriptedP4Stack = state.event === 'p4-cycle'
         ? p4GroupPosition(p4VisualCycle, state.eventTime, WORLD.center)
         : p4StackPosition(1, WORLD.center)
-      const activeP4ProtectionCenter = p4ProtectionCenter(
-        scriptedP4Stack,
-        state.player,
-        state.playerTankRole,
-        renderedNpcPositions,
-        npcProfileIndices,
-        state.tankAssignments,
-      )
+      const activeP4ProtectionCenter = FEATURE_FLAGS.tankRoles
+        ? p4ProtectionCenter(
+          scriptedP4Stack,
+          state.player,
+          state.playerTankRole,
+          renderedNpcPositions,
+          npcProfileIndices,
+          state.tankAssignments,
+        )
+        : scriptedP4Stack
       renderer.domElement.dataset.p4ProtectionCenter = `${activeP4ProtectionCenter.x},${activeP4ProtectionCenter.y}`
-      const p4SplinterActorOrdinals = p4NpcSplinterActorOrdinals(npcProfileIndices, state.tankAssignments)
+      const p4SplinterActorOrdinals = FEATURE_FLAGS.tankRoles ? p4NpcSplinterActorOrdinals(npcProfileIndices, state.tankAssignments) : [1, 4, 7]
       const npcPositions = npcs.map((sprite, index) => {
         const baseIndex = npcProfileIndices[index]
         const npcP3Side = p3SideOf(baseIndex)
@@ -1269,10 +1272,11 @@ export default function GameScene(props: SceneProps) {
         let p3RunePairApproach = false
         let p3PoolTarget: Point | null = null
         if (phaseFour) {
-          p3Target = state.event === 'p4-cycle' && baseIndex === state.tankAssignments[1]
+          p3Target = FEATURE_FLAGS.tankRoles && state.event === 'p4-cycle' && baseIndex === state.tankAssignments[1]
             ? scriptedP4Stack
             : activeP4ProtectionCenter
-          if (state.event === 'p4-cycle' && baseIndex === state.tankAssignments[0] && state.playerTankRole !== 0) {
+          const frontNpc = FEATURE_FLAGS.tankRoles ? baseIndex === state.tankAssignments[0] && state.playerTankRole !== 0 : index === 0
+          if (state.event === 'p4-cycle' && frontNpc) {
             if (p4SplinterSetActive(p4VisualCycle, state.eventTime)) {
               p3Target = activeP4ProtectionCenter
             } else {
@@ -1460,7 +1464,7 @@ export default function GameScene(props: SceneProps) {
         const phaseMovementSpeed = state.movementSpeed * (phaseFour && state.event === 'p4-cycle' ? P4_MOVEMENT_MULTIPLIER : 1)
         if (previousPosition && !forcedMovement) position = walkTowards(previousPosition, position, simulationDelta, phaseMovementSpeed * openingMultiplier)
         if (phaseFour && state.event === 'p4-cycle') {
-          position = baseIndex === state.tankAssignments[1]
+          position = FEATURE_FLAGS.tankRoles && baseIndex === state.tankAssignments[1]
             ? position
             : keepP4NpcInProtection(position, activeP4ProtectionCenter)
         }
@@ -1909,11 +1913,12 @@ export default function GameScene(props: SceneProps) {
               if (boxState.active && p4SplinterHitsGroup(origin, rotation, boxState.position, boxState.size)) destroyedP4BoxIds.add(boxState.id)
             })
           }
-          const coneTankOrdinal = p4NpcOrdinalForProfile(npcProfileIndices, state.tankAssignments[0])
-          const npcConeOrigin = coneTankOrdinal === null ? frontSoaker : npcPositions[coneTankOrdinal] ?? frontSoaker
-          const frontConeActive = state.playerTankRole === 0 ? state.playerTankConeActive : p4TankConeActive(state.eventTime)
-          const coneOrigin = state.playerTankRole === 0 ? state.player : npcConeOrigin
-          const coneAngle = state.playerTankRole === 0 ? state.playerTankConeAngle : Math.atan2(WORLD.center.y - coneOrigin.y, WORLD.center.x - coneOrigin.x)
+          const coneTankOrdinal = FEATURE_FLAGS.tankRoles ? p4NpcOrdinalForProfile(npcProfileIndices, state.tankAssignments[0]) : null
+          const npcConeOrigin = FEATURE_FLAGS.tankRoles && coneTankOrdinal !== null ? npcPositions[coneTankOrdinal] ?? frontSoaker : frontSoaker
+          const playerOwnsCone = FEATURE_FLAGS.tankRoles && state.playerTankRole === 0
+          const frontConeActive = playerOwnsCone ? state.playerTankConeActive : p4TankConeActive(state.eventTime)
+          const coneOrigin = playerOwnsCone ? state.player : npcConeOrigin
+          const coneAngle = playerOwnsCone ? state.playerTankConeAngle : Math.atan2(WORLD.center.y - coneOrigin.y, WORLD.center.x - coneOrigin.x)
           if (frontConeActive) addFrontalCone(hazards, coneOrigin, coneAngle, P4_FRONT_CONE_RANGE, 0xffdc67, .46)
           for (const boxState of boxes) {
             if (!boxState.active) continue

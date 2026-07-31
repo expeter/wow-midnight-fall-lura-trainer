@@ -28,4 +28,6 @@ case "${preset}" in
 esac
 
 cd -- "${repository_root}"
+export LURA_E2E_PORT="${LURA_E2E_PORT:-4179}"
+export LURA_E2E_ISOLATED=1
 exec ./scripts/playwright-local.sh --grep "${grep_pattern}" --retries=0

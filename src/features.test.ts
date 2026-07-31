@@ -13,10 +13,12 @@ describe('feature gates', () => {
     expect(featureFlagsForHost('localhost')).toMatchObject({
       phaseOne: true,
       encounterSounds: true,
+      tankRoles: true,
     })
     expect(featureFlagsForHost('expeter.github.io')).toMatchObject({
       phaseOne: true,
       encounterSounds: true,
+      tankRoles: false,
     })
   })
 })

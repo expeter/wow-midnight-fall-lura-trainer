@@ -9,6 +9,27 @@ test('publishes the trainer favicon', async ({ page, request }) => {
   expect((await favicon.body()).byteLength).toBeGreaterThan(1000)
 })
 
+test('keeps the unreleased tank-role preview off public hosts', async ({ page }) => {
+  const localOrigin = process.env.LURA_E2E_PORT
+    ? `http://127.0.0.1:${process.env.LURA_E2E_PORT}`
+    : 'http://127.0.0.1:4173'
+  const publicOrigin = localOrigin.replace('127.0.0.1', 'lura-public.test')
+  await page.route(`${publicOrigin}/**`, async route => {
+    const response = await route.fetch({
+      url: route.request().url().replace(publicOrigin, localOrigin),
+    })
+    await route.fulfill({ response })
+  })
+  await page.goto(publicOrigin)
+
+  await expect(page.getByRole('heading', { name: 'Two Heaven’s Lance tanks' })).toHaveCount(0)
+  await expect(page.getByLabel('Taunt / tank action keybind')).toHaveCount(0)
+  await page.getByRole('button', { name: 'P2', exact: true }).click()
+  await page.getByRole('button', { name: /Enter P2/ }).click()
+  await expect(page.getByLabel("Heaven's Lance tank mechanic")).toHaveCount(0)
+  await expect(page.locator('.arena-wrap')).not.toHaveAttribute('data-lance-stage')
+})
+
 test('keeps optional login and public leaderboards usable without the API', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: 'Leaderboard', exact: true }).click()

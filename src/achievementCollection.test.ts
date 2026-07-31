@@ -4,6 +4,7 @@ import {
   achievementCatalog,
   achievementProgress,
   collectibleAchievements,
+  currentRunAchievements,
   emptyCollection,
   flawlessFullRunStreak,
   mergeEarnedAchievements,
@@ -61,6 +62,18 @@ describe('canonical achievement rules', () => {
     allPhaseRecovery: true,
     phaseClears: 5,
     ...overrides,
+  })
+
+  it('keeps unreleased tank achievements out of the public catalog and awards', () => {
+    const tankIds = ['heavens-lance-warden', 'dawnforged-vanguard', 'p4-frontal-tank', 'p4-protection-tank']
+    expect(achievementCatalog(false).map(achievement => achievement.id)).not.toEqual(expect.arrayContaining(tankIds))
+    expect(currentRunAchievements({
+      ...normalFlawless,
+      tankRole: true,
+      tankCrystalRole: true,
+      p4ConeTankRole: true,
+      p4ProtectionTankRole: true,
+    }, false).map(achievement => achievement.id)).not.toEqual(expect.arrayContaining(tankIds))
   })
 
   it('awards overlapping full-run and per-phase feats without repeated variants', () => {

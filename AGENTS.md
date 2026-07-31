@@ -30,6 +30,12 @@ When mechanics, scoring, achievement eligibility, validation, or accepted-run
 comparability may affect rankings, warn the user and ask whether a new season
 is wanted. A SemVer release never implies a leaderboard-season change.
 
+Use `./scripts/test-e2e-focused.sh <preset-or-free-text>` for focused
+Playwright regressions. Do not bypass it with direct `npx playwright` or ad-hoc
+grep commands; the wrapper owns the repository-local browser path, server, and
+zero-retry policy. Use `npm run test:e2e:local` only when the complete browser
+suite or Playwright arguments outside the focused wrapper are required.
+
 Do not change encounter mechanics merely to make a test pass. Rendering,
 collision, NPC movement, timers, raid-plan assignments, and the documented
 encounter contract must agree.

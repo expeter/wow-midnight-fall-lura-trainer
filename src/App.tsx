@@ -678,7 +678,7 @@ export default function App() {
   const activeCrystalAssignments = event.startsWith('p1-') ? p1CrystalAssignments : event.startsWith('p2-') ? p2CrystalAssignments : event.startsWith('p3-') ? p3CrystalAssignments : event.startsWith('p4-') ? NO_CRYSTAL_ASSIGNMENTS : intermissionCrystalAssignments
   const entryCrystalAssignments = entryMode === 'arena0' ? p1CrystalAssignments : entryMode === 'arena2' ? p2CrystalAssignments : entryMode === 'arena3' ? p3CrystalAssignments : entryMode === 'arena4' ? NO_CRYSTAL_ASSIGNMENTS : intermissionCrystalAssignments
   const activeCrystalCarriers = crystalNpcOrdinals(activeCrystalAssignments, assignment)
-  const controlledTank = (tankAssignments.indexOf(assignment) >= 0 ? tankAssignments.indexOf(assignment) : null) as TankIndex | null
+  const controlledTank = (FEATURE_FLAGS.tankRoles && tankAssignments.indexOf(assignment) >= 0 ? tankAssignments.indexOf(assignment) : null) as TankIndex | null
   const hitRef = useRef(false)
   const unsafeRef = useRef(false)
   const wipeRef = useRef(false)
@@ -1394,7 +1394,7 @@ export default function App() {
       previous = now
       eventTimeRef.current += dt; setEventTime(eventTimeRef.current); timeRef.current += dt; setStats(s => ({ ...s, time: s.time + dt }))
       const tankResult = advanceTankMechanic(tankMechanicRef.current, dt, {
-        active: tankMechanicActiveForEvent(event),
+        active: FEATURE_FLAGS.tankRoles && tankMechanicActiveForEvent(event),
         controlledTank,
         controlledTankHasCrystal: controlledTank !== null && activeCrystalAssignments.includes(assignment) && !crystalSpent,
         heroic: difficulty === 'hard',
@@ -2243,10 +2243,12 @@ export default function App() {
         : p4StackPosition(1, WORLD.center)
       const npcProfileIndices = p4NpcProfileIndices(profiles.length, assignment)
       const stack = event === 'p4-cycle'
-        ? p4ProtectionCenter(scriptedStack, position, controlledTank, renderedNpcPositionsRef.current, npcProfileIndices, tankAssignments)
+        ? FEATURE_FLAGS.tankRoles
+          ? p4ProtectionCenter(scriptedStack, position, controlledTank, renderedNpcPositionsRef.current, npcProfileIndices, tankAssignments)
+          : scriptedStack
         : scriptedStack
       if (event === 'p4-cycle') {
-        const splinterActorOrdinals = p4NpcSplinterActorOrdinals(npcProfileIndices, tankAssignments)
+        const splinterActorOrdinals = FEATURE_FLAGS.tankRoles ? p4NpcSplinterActorOrdinals(npcProfileIndices, tankAssignments) : [1, 4, 7]
         const encounterBoxes = p4EncounterBoxStates(p4CycleRef.current, eventTimeRef.current, WORLD.center)
         const destroyBoxesHitBySplinter = (origin: Point, rotation: number) => encounterBoxes.forEach(box => {
           if (box.active && p4SplinterHitsGroup(origin, rotation, box.position, box.size) && !p4DestroyedBoxIdsRef.current.has(box.id)) {
@@ -2274,16 +2276,18 @@ export default function App() {
           const origin = p4RenderedNpcSplinterOrigin(renderedNpcPositionsRef.current, ordinal, fallbackOrigin, splinterActorOrdinals)
           destroyBoxesHitBySplinter(origin, rotation)
         }
-        const coneTankOrdinal = p4NpcOrdinalForProfile(npcProfileIndices, tankAssignments[0])
-        const frontSoaker = controlledTank === 0
-          ? position
-          : coneTankOrdinal === null
-            ? p4FrontSoakerPosition(stack, WORLD.center)
-            : renderedNpcPositionsRef.current[coneTankOrdinal] ?? p4FrontSoakerPosition(stack, WORLD.center)
-        const frontConeActive = controlledTank === 0 ? timeRef.current < p4PlayerConeUntilRef.current : p4TankConeActive(eventTimeRef.current)
-        const frontConeAngle = controlledTank !== 0
-          ? Math.atan2(WORLD.center.y - frontSoaker.y, WORLD.center.x - frontSoaker.x)
-          : Math.atan2(cameraForward.current.y, cameraForward.current.x)
+        const coneTankOrdinal = FEATURE_FLAGS.tankRoles ? p4NpcOrdinalForProfile(npcProfileIndices, tankAssignments[0]) : null
+        const frontSoaker = !FEATURE_FLAGS.tankRoles
+          ? p4FrontSoakerPosition(stack, WORLD.center)
+          : controlledTank === 0
+            ? position
+            : coneTankOrdinal === null
+              ? p4FrontSoakerPosition(stack, WORLD.center)
+              : renderedNpcPositionsRef.current[coneTankOrdinal] ?? p4FrontSoakerPosition(stack, WORLD.center)
+        const frontConeActive = FEATURE_FLAGS.tankRoles && controlledTank === 0 ? timeRef.current < p4PlayerConeUntilRef.current : p4TankConeActive(eventTimeRef.current)
+        const frontConeAngle = FEATURE_FLAGS.tankRoles && controlledTank === 0
+          ? Math.atan2(cameraForward.current.y, cameraForward.current.x)
+          : Math.atan2(WORLD.center.y - frontSoaker.y, WORLD.center.x - frontSoaker.x)
         encounterBoxes.forEach(box => {
           const tankDestroyed = p4TankKillsBox(box.position, frontSoaker)
             || frontConeActive && p4TankConeHitsBox(box.position, frontSoaker, frontConeAngle, box.size / 2)
@@ -2815,7 +2819,7 @@ export default function App() {
     <section className="setup-tab-panel" aria-label="Keyboard settings" hidden={setupTab !== 'keyboard'}>
     <div className="plan-heading setup-section-heading" id="keyboard-settings"><p className="eyebrow">KEYBOARD SETTINGS</p><h2>Keyboard &amp; mouse controls</h2><p className="hint">Configure movement and action bindings, keyboard turning, and mouse-camera behavior.</p><a className="setup-back-to-top" href="#setup-top" aria-label="Back to top from Keyboard settings" onClick={event => scrollToSetupSection(event, 'setup-top')}>↑ Top</a></div>
     <section className="practice-settings">
-      <fieldset className="input-settings"><legend>Input bindings</legend><div className="input-settings-layout"><section className="keyboard-settings"><header><h3>Keyboard</h3><p>Click a binding, then press its new key. Reusing a key leaves the previous action unbound.</p></header><label className="speed-control rotation-speed-control">Rotation speed <strong>{rotationSpeed}°/s</strong><input aria-label="Keyboard rotation speed" type="range" min="45" max="270" step="15" value={rotationSpeed} onChange={event => setRotationSpeed(Number(event.target.value))} /></label><div className="keybind-grid">{KEY_BIND_LABELS.map(binding => { const value = keyBindings[binding.action]; return <label className="keybind-control" key={binding.action}><span>{binding.label}</span><input aria-label={`${binding.label} keybind`} aria-invalid={!value} className={!value ? 'missing-keybind' : ''} placeholder="Unbound" readOnly value={value ? keyLabel(value) : ''} onKeyDown={event => { event.preventDefault(); event.stopPropagation(); setKeyBindings(current => assignUniqueKey(current, binding.action, event.code)) }} /></label> })}</div><button className="reset-keys" onClick={() => setKeyBindings({ ...DEFAULT_KEY_BINDINGS })}>Reset keybindings</button></section><section className="mouse-settings"><header><h3>Mouse camera</h3><p>Left-drag looks around. Right-drag changes the view and player facing. The wheel controls zoom.</p></header><div className="camera-invert-controls"><label className="checkbox-control"><input aria-label="Invert camera horizontal" type="checkbox" checked={invertCameraX} onChange={event => setInvertCameraX(event.target.checked)} /><span>Invert camera X<span>Reverse left/right mouse look.</span></span></label><label className="checkbox-control"><input aria-label="Invert camera vertical" type="checkbox" checked={invertCameraY} onChange={event => setInvertCameraY(event.target.checked)} /><span>Invert camera Y<span>Reverse up/down mouse look.</span></span></label></div></section></div></fieldset>
+      <fieldset className="input-settings"><legend>Input bindings</legend><div className="input-settings-layout"><section className="keyboard-settings"><header><h3>Keyboard</h3><p>Click a binding, then press its new key. Reusing a key leaves the previous action unbound.</p></header><label className="speed-control rotation-speed-control">Rotation speed <strong>{rotationSpeed}°/s</strong><input aria-label="Keyboard rotation speed" type="range" min="45" max="270" step="15" value={rotationSpeed} onChange={event => setRotationSpeed(Number(event.target.value))} /></label><div className="keybind-grid">{KEY_BIND_LABELS.filter(binding => FEATURE_FLAGS.tankRoles || binding.action !== 'taunt').map(binding => { const value = keyBindings[binding.action]; return <label className="keybind-control" key={binding.action}><span>{binding.label}</span><input aria-label={`${binding.label} keybind`} aria-invalid={!value} className={!value ? 'missing-keybind' : ''} placeholder="Unbound" readOnly value={value ? keyLabel(value) : ''} onKeyDown={event => { event.preventDefault(); event.stopPropagation(); setKeyBindings(current => assignUniqueKey(current, binding.action, event.code)) }} /></label> })}</div><button className="reset-keys" onClick={() => setKeyBindings({ ...DEFAULT_KEY_BINDINGS })}>Reset keybindings</button></section><section className="mouse-settings"><header><h3>Mouse camera</h3><p>Left-drag looks around. Right-drag changes the view and player facing. The wheel controls zoom.</p></header><div className="camera-invert-controls"><label className="checkbox-control"><input aria-label="Invert camera horizontal" type="checkbox" checked={invertCameraX} onChange={event => setInvertCameraX(event.target.checked)} /><span>Invert camera X<span>Reverse left/right mouse look.</span></span></label><label className="checkbox-control"><input aria-label="Invert camera vertical" type="checkbox" checked={invertCameraY} onChange={event => setInvertCameraY(event.target.checked)} /><span>Invert camera Y<span>Reverse up/down mouse look.</span></span></label></div></section></div></fieldset>
     </section>
     </section>
     <section className="setup-tab-panel" aria-label="HUD settings" hidden={setupTab !== 'hud'}>
@@ -2825,8 +2829,8 @@ export default function App() {
     </section>
     <section className="setup-tab-panel" aria-label="Raid plan" hidden={setupTab !== 'raidplan'}>
     <div className="plan-heading raid-planning-heading" id="raid-planning"><p className="eyebrow">RAID PLANNING</p><h2>Layouts and sharing</h2><p className="hint">Load a guild layout, exchange a complete plan, or configure each phase below.</p><a className="setup-back-to-top" href="#setup-top" aria-label="Back to top from Raid planning" onClick={event => scrollToSetupSection(event, 'setup-top')}>↑ Top</a></div>
-    <fieldset className="raid-share-settings" aria-label="Raid-plan sharing"><legend>Raid-plan sharing</legend><p className="assignment">Save, load, or share the complete plan<span>Names, classes, tank/crystal roles, all phase positions, and start slots are included.</span></p><div className="editor-actions"><button className={layoutSaveConfirmed ? 'save-confirmed' : ''} onClick={savePositions}>{layoutSaveConfirmed ? '✓ Layout saved' : 'Save layout'}</button><button onClick={resetPositions}>Reset</button></div><button className="asgard-plan-link" type="button" onClick={loadAsgardRaidPlan}>Load I Asgard I raid plan<span>Bundled guild layout · loads here and saves to this browser</span></button><label className="profile-control">Share link or code<input aria-label="Raid plan share code" value={shareInput} onChange={event => setShareInput(event.target.value)} placeholder="Paste a shared plan here" /></label><div className="editor-actions"><button onClick={copyRaidPlan}>Copy share link</button><button onClick={applyRaidPlan}>Load shared plan</button></div>{shareStatus && <p className="share-status" role="status">{shareStatus}</p>}</fieldset>
-    <TankAssignmentEditor assignments={tankAssignments} profiles={profiles} onChange={(slot, playerIndex) => setTankAssignments(current => updateTankAssignment(current, slot, playerIndex))} />
+    <fieldset className="raid-share-settings" aria-label="Raid-plan sharing"><legend>Raid-plan sharing</legend><p className="assignment">Save, load, or share the complete plan<span>Names, classes, crystal roles, all phase positions, and start slots are included.</span></p><div className="editor-actions"><button className={layoutSaveConfirmed ? 'save-confirmed' : ''} onClick={savePositions}>{layoutSaveConfirmed ? '✓ Layout saved' : 'Save layout'}</button><button onClick={resetPositions}>Reset</button></div><button className="asgard-plan-link" type="button" onClick={loadAsgardRaidPlan}>Load I Asgard I raid plan<span>Bundled guild layout · loads here and saves to this browser</span></button><label className="profile-control">Share link or code<input aria-label="Raid plan share code" value={shareInput} onChange={event => setShareInput(event.target.value)} placeholder="Paste a shared plan here" /></label><div className="editor-actions"><button onClick={copyRaidPlan}>Copy share link</button><button onClick={applyRaidPlan}>Load shared plan</button></div>{shareStatus && <p className="share-status" role="status">{shareStatus}</p>}</fieldset>
+    {FEATURE_FLAGS.tankRoles && <TankAssignmentEditor assignments={tankAssignments} profiles={profiles} onChange={(slot, playerIndex) => setTankAssignments(current => updateTankAssignment(current, slot, playerIndex))} />}
     {FEATURE_FLAGS.phaseOne && <><div className="plan-heading"><p className="eyebrow">PHASE 1 RAID PLAN</p><h2>Interrupt and crystal positions</h2><p className="hint">P1 uses the wider outer arena. Player assignments must remain between the central void and outer wall; L’ura’s opening position remains freely assignable.</p></div><P2PositionMap phaseOne bossPosition={p1BossOpening} onBossChange={setP1BossOpening} mapLabel="Phase 1 position map" buttonLabel="P1" assignment={assignment} positions={p1Positions} profiles={profiles.map((profile, index) => ({ ...profile, crystal: p1CrystalAssignments.includes(index) }))} onChange={(index, point) => { setAssignment(index); setP1Positions(current => normalizeP1Assignments(current.map((position, positionIndex) => positionIndex === index ? point : position))) }} /><CrystalAssignmentEditor phaseLabel="Phase 1" assignments={p1CrystalAssignments} profiles={profiles} onChange={(slot, playerIndex) => setP1CrystalAssignments(current => updateCrystalAssignmentSlot(current, slot, playerIndex))} /></>}
     <div className="plan-heading"><p className="eyebrow">INTERMISSION RAID PLAN</p><h2>Opening positions</h2><p className="hint">Drag all 20 players into the playable ring and place the four start-slot orientation anchors.</p></div>
     <PositionMap assignment={assignment} positions={positions} startSlots={startSlots} profiles={intermissionProfiles} onPositionChange={(index, point) => { setAssignment(index); setPositions(current => current.map((position, positionIndex) => positionIndex === index ? point : position)) }} onStartSlotChange={(index, point) => setStartSlots(current => current.map((slot, slotIndex) => slotIndex === index ? clampStartSlot(point) : slot))} />
@@ -3413,7 +3417,7 @@ function GameArena(props: { activityNotification: ActivityFeedRow | undefined; h
   const p1DisplayState = p1AssignedCastActive && !p1KickWindowOpen && !props.p1InterruptPressed
     ? 'red'
     : p1InterruptState(props.p1InterruptAssignment, props.p1InterruptCast)
-  const tankMechanicVisible = props.tankMechanic.stage !== 'suspended'
+  const tankMechanicVisible = FEATURE_FLAGS.tankRoles && props.tankMechanic.stage !== 'suspended'
   const activeTankProfile = props.profiles[props.tankAssignments[props.tankMechanic.activeTank]]
   const playerIsActiveTank = props.controlledTank === props.tankMechanic.activeTank
   const tankCallout = props.tankMechanic.stage === 'burst'
@@ -3457,12 +3461,12 @@ function GameArena(props: { activityNotification: ActivityFeedRow | undefined; h
         data-played-name={identityProps.playerDisplayName}
         data-verified-character={identityProps.verifiedCharacterLabel ?? ''}
         data-player-profile={`${props.profiles[props.assignment].name}|${props.profiles[props.assignment].playerClass}`}
-        data-tank-role={props.controlledTank === null ? 'none' : `tank-${props.controlledTank + 1}`}
-        data-lance-stage={props.tankMechanic.stage}
-        data-lance-counter={props.tankMechanic.counter}
-        data-lance-impact={props.tankMechanic.impactIndex}
-        data-active-tank={props.tankAssignments[props.tankMechanic.activeTank]}
-        data-tank-shield-cooldown={props.tankMechanic.playerShieldCooldown.toFixed(2)}
+        data-tank-role={FEATURE_FLAGS.tankRoles ? props.controlledTank === null ? 'none' : `tank-${props.controlledTank + 1}` : undefined}
+        data-lance-stage={FEATURE_FLAGS.tankRoles ? props.tankMechanic.stage : undefined}
+        data-lance-counter={FEATURE_FLAGS.tankRoles ? props.tankMechanic.counter : undefined}
+        data-lance-impact={FEATURE_FLAGS.tankRoles ? props.tankMechanic.impactIndex : undefined}
+        data-active-tank={FEATURE_FLAGS.tankRoles ? props.tankAssignments[props.tankMechanic.activeTank] : undefined}
+        data-tank-shield-cooldown={FEATURE_FLAGS.tankRoles ? props.tankMechanic.playerShieldCooldown.toFixed(2) : undefined}
         data-p4-player-splinter-duty={props.controlledTank === null ? p4PlayerSplinterDuty(props.assignment, props.p4Cycle, props.p4PatternSeed) : -1}
         data-p4-tank-cone-active={props.p4PlayerConeActive}
         data-p4-tank-cone-cooldown={props.p4PlayerConeCooldown.toFixed(2)}

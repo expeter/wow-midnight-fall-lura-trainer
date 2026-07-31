@@ -50,7 +50,7 @@ export function loadConfig(environment: NodeJS.ProcessEnv = process.env): ApiCon
       .map(origin => requiredUrl(origin, 'LOCAL_ORIGINS')),
     // Release compatibility is part of the deployed code. Do not allow a
     // long-lived VPS environment file to pin an older trainer version.
-    currentTrainerVersion: '0.7.0',
+    currentTrainerVersion: '0.7.1',
     // Leaderboard continuity is an explicit release decision. Change this
     // identifier only when a new leaderboard season has been approved.
     currentLeaderboardSeason: 'season-1',

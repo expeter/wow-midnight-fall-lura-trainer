@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 0.7.1 · 2026-07-31
+
+- BUG-152: Restore the public pre-tank encounter while retaining the complete
+  Heaven's Lance and deterministic P4 tank-role implementation on localhost
+  for user validation. Public hosts no longer expose or advance tank state,
+  controls, assignments, achievements, protection ownership, cone ownership,
+  or tank-based Starsplinter selection.
+- CR-201: Make the focused Playwright wrapper the documented required workflow
+  and give it an isolated dev-server port so another running worktree cannot
+  silently supply the application under test.
 - BUG-151: Stabilize the Phase 2 personal-circle/NPC-crystal browser scenario
   against the random beam-assignment mechanic so it reaches the intended
   collision assertion without changing either encounter failure rule.

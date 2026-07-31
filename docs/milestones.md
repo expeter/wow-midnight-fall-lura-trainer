@@ -51,7 +51,7 @@ Implement in dependency order:
 2. `CR-051` — swap the second Phase 3 sequence's ground Soak and memory-game
    order after the exact overlap timing is confirmed.
 
-Completed in this milestone:
+Implemented for localhost review in this milestone:
 
 - `CR-198` — every ordinary dropped crystal now follows the global one-second
   pickup and six-second explosion lifecycle, with only a correctly committed
@@ -68,14 +68,16 @@ Completed in this milestone:
 
 - `BUG-150` — the NPC tank now holds the rendered group position throughout an
   active three-Starsplinter set and resumes its frontal route afterward.
-- `FR-068` — two explicit shared tank assignments now drive the P1/P2/P3
+- `FR-068` — two explicit shared tank assignments drive the localhost P1/P2/P3
   Heaven's Lance mitigation/swap loop. This incorporates the playable-cone
   foundation previously tracked separately by `FR-022`; `CR-195` finalizes
   which configured tank owns each Phase 4 role.
 - `FR-023` — superseded by deterministic two-tank ownership under `CR-195`.
-- `CR-195` — Tank 1 now owns the frontal cone, Tank 2 owns the moving rendered
+- `CR-195` — on localhost, Tank 1 owns the frontal cone, Tank 2 owns the moving rendered
   protection zone, neither receives Starsplinter, and each controlled role has
   its own canonical achievement.
+- `BUG-152` — public hosts retain the released pre-tank behavior while the
+  complete tank-role implementation remains available for local validation.
 - `CR-197` — full-journey achievements now require Phase 1 through Phase 4 and
   cumulative/multi-run badges display their saved progress.
 

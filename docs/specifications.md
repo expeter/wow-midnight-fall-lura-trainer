@@ -277,6 +277,12 @@ privacy, deployment, and acceptance contract.
 
 ## SPEC-017 · Tank assignments and Heaven's Lance
 
+This contract is implemented as a localhost-only encounter preview. Public
+hosts retain the pre-tank-role encounter until the user explicitly approves
+the mechanic for release. The public trainer therefore exposes no tank
+assignments, Heaven's Lance HUD/action, tank achievements, or deterministic P4
+tank ownership.
+
 - A raid plan owns exactly two distinct tank assignments. Saved, shared, and
   maintained guild plans preserve those assignments; legacy plans normalize
   to the two default tank positions.

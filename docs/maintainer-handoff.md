@@ -12,6 +12,10 @@ original chat history. It complements the detailed ticket log in
 - Intermission and Phases 2–4 are production features.
 - Phase 1 is released in production. The host feature flag remains explicit,
   but no longer hides P1 outside localhost.
+- The Heaven's Lance/two-tank work (`FR-068`, `CR-195`) is a localhost-only
+  preview. `BUG-152` restores the released public encounter: no Lance state,
+  tank setup/actions/achievements, or deterministic P4 tank ownership may leak
+  onto public hosts before explicit user approval.
 - `BUG-084` and follow-up `CR-132` make the memory sweep authoritative at
   contact: correct positions remain accepted, while an incorrect controlled
   rune fails immediately with red feedback.
@@ -182,25 +186,25 @@ npm test
 npm run build
 ```
 
-Run the focused Playwright test for the changed behavior. Run the complete
-suite when changes cross phase/state-machine boundaries:
+Run the focused Playwright test for the changed behavior through the stable
+focused wrapper. It accepts named presets or free text and owns the local
+browser path, server, and zero-retry policy:
+
+```bash
+./scripts/test-e2e-focused.sh crystal
+./scripts/test-e2e-focused.sh "released Phase 1|terminal wipe"
+```
+
+Do not bypass the focused wrapper with direct `npx playwright` or ad-hoc grep
+commands. Run the complete suite when changes cross phase/state-machine
+boundaries:
 
 ```bash
 npm run test:e2e:local
 ```
 
-The stable `test:e2e:local` wrapper owns `PLAYWRIGHT_BROWSERS_PATH`, changes to
-the repository root, and forwards every argument to Playwright. Use the same
-command prefix for focused runs instead of embedding a variable-length grep in
-the shell command:
-
-```bash
-npm run test:e2e:local -- --grep "released Phase 1|terminal wipe"
-```
-
-This keeps recurring sandbox approval scoped to
-`npm run test:e2e:local` while allowing different `--grep`, project, reporter,
-or retry arguments. Chromium is intentionally installed under
+The complete-suite wrapper remains available for Playwright arguments not
+covered by the focused wrapper. Chromium is intentionally installed under
 `.tmp/ms-playwright`, and `.tmp/` is ignored. In WSL, use Playwright's native
 Linux Chromium; do not introduce `chrome-launcher` path conversion. A process
 sandbox may require narrowly scoped permission to bind the local test server.
@@ -220,8 +224,9 @@ targeted shared mechanic timeout for renderer-heavy transitions.
 Start with [`milestones.md`](milestones.md) and confirm each ticket's current
 status in the request log.
 
-- M1 is the immediate encounter-completion milestone. `FR-049`, `FR-050`,
-  `FR-068`, and `CR-195` are complete; continue with `FR-048` and `CR-051`.
+- M1 is the immediate encounter-completion milestone. `FR-049` and `FR-050`
+  are complete; `FR-068` and `CR-195` remain localhost previews under
+  `BUG-152`. Continue with `FR-048` and `CR-051`.
   `FR-023` was superseded by the deterministic P4 tank roles.
 - M2, the ranking/achievement integrity gate discovered during `SPEC-015`, is
   complete under `BUG-136`–`BUG-143` and `SPEC-016`.

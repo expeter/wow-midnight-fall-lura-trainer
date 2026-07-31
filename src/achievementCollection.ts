@@ -1,5 +1,6 @@
 import type { Achievement, AchievementSummary, PhaseKey, PhaseResult } from './completion'
 import { ACHIEVEMENT_BY_ID, type AchievementTier } from '../api/src/achievementCatalog.js'
+import { FEATURE_FLAGS } from './features'
 
 export const ACHIEVEMENT_STORAGE_KEY = 'lura-achievement-collection'
 
@@ -122,8 +123,10 @@ function badge(id: AchievementId, cluster: AchievementCluster, label: string, fl
   return { id, key: id, cluster, label, detail: flavor, flavor, requirement, icon, available, tier: scoring?.tier ?? 'Common', points: scoring?.points ?? 10 }
 }
 
-export function achievementCatalog(): AchievementDefinition[] {
-  return DEFINITIONS
+export function achievementCatalog(tankRolesEnabled = FEATURE_FLAGS.tankRoles): AchievementDefinition[] {
+  return tankRolesEnabled
+    ? DEFINITIONS
+    : DEFINITIONS.filter(definition => !['heavens-lance-warden', 'dawnforged-vanguard', 'p4-frontal-tank', 'p4-protection-tank'].includes(definition.id))
 }
 
 function normalizedDifficulty(difficulty: string): string {
@@ -139,7 +142,7 @@ function award(id: AchievementId): AchievementDefinition {
   return DEFINITIONS.find(candidate => candidate.id === id)!
 }
 
-export function currentRunAchievements(summary: AchievementSummary): AchievementDefinition[] {
+export function currentRunAchievements(summary: AchievementSummary, tankRolesEnabled = FEATURE_FLAGS.tankRoles): AchievementDefinition[] {
   const difficulty = normalizedDifficulty(summary.difficulty)
   const results = summary.phaseResults ?? []
   const includesP3 = results.some(result => result.key === 'p3')
@@ -162,10 +165,10 @@ export function currentRunAchievements(summary: AchievementSummary): Achievement
   if ((summary.recoveryUses ?? 0) > 0) ids.push('prepared-for-every-phase')
   if (summary.fullSequence && summary.allPhaseRecovery) ids.push('never-caught-unprepared')
   if ((summary.mainAbilityCasts ?? (summary.mainAbilityEnabled ? 1 : 0)) > 0) ids.push('always-be-casting')
-  if (summary.tankRole) ids.push('heavens-lance-warden')
-  if (summary.tankCrystalRole) ids.push('dawnforged-vanguard')
-  if (summary.p4ConeTankRole) ids.push('p4-frontal-tank')
-  if (summary.p4ProtectionTankRole) ids.push('p4-protection-tank')
+  if (tankRolesEnabled && summary.tankRole) ids.push('heavens-lance-warden')
+  if (tankRolesEnabled && summary.tankCrystalRole) ids.push('dawnforged-vanguard')
+  if (tankRolesEnabled && summary.p4ConeTankRole) ids.push('p4-frontal-tank')
+  if (tankRolesEnabled && summary.p4ProtectionTankRole) ids.push('p4-protection-tank')
   if (summary.fullSequence && difficulty === 'hard' && summary.mistakes === 0 && summary.totalScore > 1100) ids.push('hard-score-flawless')
   if (summary.earlyKill) ids.push('early-kill')
   if (summary.p3EarlyClear) ids.push('p3-early-clear')

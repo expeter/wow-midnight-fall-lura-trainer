@@ -4,6 +4,9 @@
 
 ## 0.9.2 · 2026-08-01
 
+- CR-229: Release v0.9.2 with aligned frontend/API compatibility, retain
+  leaderboard `season-1`, and verify all production leaderboard views after
+  deployment.
 - BUG-157: Pin released/public Phase 2 cross beams exactly to the four raid
   markers so their display agrees with public axis-based crystal collision.
   Keep the complete moving-orb and player-aim preview on localhost.

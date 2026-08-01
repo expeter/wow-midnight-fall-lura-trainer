@@ -6,8 +6,7 @@ in [`specifications.md`](specifications.md).
 
 ## Current release boundary
 
-- Current release line: `v0.9.2`; frontend and API deployment remain pending
-  until the production checks complete.
+- Latest tagged and deployed release line: `v0.9.2`.
 - `v0.9.2` pins released Phase 2 cross beams to the raid markers while keeping
   the moving-target beam mechanic and two-tank roles in localhost preview.
 - Current leaderboard season: `season-1`. No milestone or SemVer bump changes
@@ -33,9 +32,6 @@ shell never silently mistakes an expired server session for a valid login.
 
 This patch retains `season-1`: it repairs attribution and version acceptance
 without changing encounter scoring or ranking order.
-
-- `CR-229` — publish v0.9.2 with aligned frontend/API compatibility and verify
-  production health plus leaderboard continuity.
 
 ## M1 · Encounter completion
 

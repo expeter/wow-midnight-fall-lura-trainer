@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.9.2 · 2026-08-01
+
 - BUG-157: Pin released/public Phase 2 cross beams exactly to the four raid
   markers so their display agrees with public axis-based crystal collision.
   Keep the complete moving-orb and player-aim preview on localhost.

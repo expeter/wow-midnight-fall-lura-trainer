@@ -1146,6 +1146,9 @@ export function p2BeamTargetOrbIndices(resolved: number[], impactOrbitAngle: num
 export function p2BeamAimPosition(orbIndex: number, impactOrbitAngle: number, center: Point, radius = 48): Point {
   return p2OrbPosition(orbIndex, impactOrbitAngle, center, radius)
 }
+export function p2BeamRenderAngle(beamIndex: number, aimedAngle: number, fixedToMarkers: boolean): number {
+  return fixedToMarkers ? beamIndex * Math.PI / 2 : aimedAngle
+}
 export function p2BeamHitsAssignedOrb(player: Point, orb: Point, center: Point, tolerance = 6): boolean {
   const angle = angleToward(center, player)
   const dx = orb.x - center.x

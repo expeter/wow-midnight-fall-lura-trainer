@@ -3550,6 +3550,7 @@ function GameArena(props: { activityNotification: ActivityFeedRow | undefined; h
         data-p2-soak-assignment={`${props.p2SoakPositions[props.assignment].x},${props.p2SoakPositions[props.assignment].y}`}
         data-p2-spread-assignment={`${props.p2SpreadPositions[props.assignment].x},${props.p2SpreadPositions[props.assignment].y}`}
         data-p2-beam-assignees={props.p2BeamAssignees.join(',')}
+        data-p2-beam-render-mode={FEATURE_FLAGS.p2BeamsOnMarkers ? 'raid-markers' : 'moving-targets'}
         data-p2-beam-orbs={props.p2BeamOrbIndices.join(',')}
         data-p2-resolved-orbs={props.p2ResolvedOrbIndices.join(',')}
         data-p2-cycle={props.p2Cycle}

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- BUG-157: Pin released/public Phase 2 cross beams exactly to the four raid
+  markers so their display agrees with public axis-based crystal collision.
+  Keep the complete moving-orb and player-aim preview on localhost.
+- SPEC-018: Document and regress the server-recomputed score arithmetic behind
+  the accepted 1,400-point Phase 1 example: 100 bounded Main Ability casts,
+  five 20-cast milestones, and one recovery pass add 400 points.
+
 ## 0.9.1 · 2026-07-31
 
 - CR-228: Redesign copied result images to mirror the approved compact browser

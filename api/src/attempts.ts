@@ -42,6 +42,23 @@ function hash(value: string): string {
   return createHash('sha256').update(value).digest('hex')
 }
 
+export function acceptedActionScore(input: {
+  mistakePenalty: number
+  continuousPenalty: number
+  recoveryPasses: number
+  mainAbilityCasts: number
+}): number {
+  return Math.max(
+    0,
+    1000
+      - input.mistakePenalty
+      - input.continuousPenalty
+      + input.recoveryPasses * 50
+      + input.mainAbilityCasts
+      + Math.floor(input.mainAbilityCasts / 20) * 50,
+  )
+}
+
 export function activeAttemptIdentity(
   database: Database,
   dependencies: AuthDependencies,
@@ -225,15 +242,12 @@ function validatedCompletion(input: CompletionInput, expectedPhases: readonly st
     || !Number.isInteger(continuousPenalty) || continuousPenalty < 0 || continuousPenalty > 1000
   ) throw new Error('invalid_actions')
   const mistakePenalty = mistakes.reduce((total, mistake) => total + mistake.penalty, 0)
-  const acceptedScore = Math.max(
-    0,
-    1000
-      - mistakePenalty
-      - continuousPenalty
-      + recoveryPasses * 50
-      + mainAbilityCasts
-      + Math.floor(mainAbilityCasts / 20) * 50,
-  )
+  const acceptedScore = acceptedActionScore({
+    mistakePenalty,
+    continuousPenalty,
+    recoveryPasses,
+    mainAbilityCasts,
+  })
   if (submittedScore !== acceptedScore) throw new Error('score_mismatch')
   const achievementInputs = input.achievementInputs as {
     wipeCount?: unknown

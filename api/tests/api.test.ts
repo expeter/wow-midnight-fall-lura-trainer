@@ -7,7 +7,7 @@ import { loadConfig, type ApiConfig } from '../src/config.js'
 import { applyMigrations, openDatabase, type Database } from '../src/database.js'
 import { isDatabaseBusyError } from '../src/http.js'
 import type { AuthDependencies } from '../src/auth.js'
-import { aggregateAchievementIds, leaderboardAchievementIds } from '../src/attempts.js'
+import { acceptedActionScore, aggregateAchievementIds, leaderboardAchievementIds } from '../src/attempts.js'
 import { listAchievementHall } from '../src/achievementHall.js'
 import { FIND_A_BUG_ACHIEVEMENT_ID, grantExceptionalAchievement } from '../src/exceptionalAchievements.js'
 import { listGlobalRanking, publicPlayerProfile } from '../src/globalRanking.js'
@@ -124,6 +124,17 @@ function insertAdditionalResult(
   `).run(attemptId, accountId, character.id, score, duration, trainerVersion, acceptedAt, season)
   return attemptId
 }
+
+describe('accepted action scoring', () => {
+  it('recomputes the bounded 1,400-point Phase 1 example', () => {
+    assert.equal(acceptedActionScore({
+      mistakePenalty: 0,
+      continuousPenalty: 0,
+      recoveryPasses: 1,
+      mainAbilityCasts: 100,
+    }), 1400)
+  })
+})
 
 describe('Lura API foundation', () => {
   let database: Database

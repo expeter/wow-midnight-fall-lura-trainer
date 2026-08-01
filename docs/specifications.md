@@ -354,10 +354,13 @@ The detailed encounter, UI, recovery, and edge-case contract is maintained in
   four cross regions at the predicted beam-impact moment. Targets are near the
   markers, not locked to exact cardinal coordinates; all twelve orbs are
   resolved exactly once across the three sets.
-- NPC assignees aim their beams through the predicted moving targets. If the
-  controlled player is assigned, the rendered beam runs from L'ura through
-  the player's current rendered position. That visual ray must intersect the
-  assigned orb when the beam resolves or the attempt wipes.
+- On released/public hosts, the four NPC beams render exactly through the four
+  raid-marker axes so the visible cross agrees with the axis-based crystal
+  collision rule. Localhost retains the complete moving-target preview: NPC
+  assignees aim through predicted moving targets, and a controlled-player beam
+  runs from L'ura through the player's current rendered position. That local
+  visual ray must intersect the assigned orb when the beam resolves or the
+  attempt wipes.
 - The four resolved orbs become the yellow return set while preserving their
   indices and counterclockwise motion, then glow and travel inward. They are
   not duplicated by a second overlapping orb roster.
@@ -444,7 +447,9 @@ The detailed encounter, UI, recovery, and edge-case contract is maintained in
   achievement catalogue.
 - Main ability score is finite and server-validated: accepted casts cannot
   exceed one completed cast per simulated encounter second, and accepted
-  encounter duration remains bounded.
+  encounter duration remains bounded. For example, a mistake-free Phase 1 with
+  100 accepted casts and one recovery pass scores 1,400: 1,000 base, +100
+  casts, +250 from five 20-cast milestones, and +50 recovery.
 
 ## SPEC-017 · Global dropped-crystal lifecycle
 

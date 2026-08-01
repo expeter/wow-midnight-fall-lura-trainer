@@ -33,6 +33,7 @@ test('keeps unreleased encounter previews off public hosts', async ({ page }) =>
   await expect(page.getByLabel("Heaven's Lance tank mechanic")).toHaveCount(0)
   const arena = page.locator('.arena-wrap')
   await expect(arena).not.toHaveAttribute('data-lance-stage')
+  await expect(arena).toHaveAttribute('data-p2-beam-render-mode', 'raid-markers')
   await expect(arena).toHaveAttribute('data-p2-beam-assignees', /^\d+(,\d+){3}$/, { timeout: 20_000 })
   const beamAssignees = (await arena.getAttribute('data-p2-beam-assignees'))?.split(',').map(Number) ?? []
   expect(beamAssignees).not.toContain(5)

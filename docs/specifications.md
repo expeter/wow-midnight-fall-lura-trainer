@@ -463,7 +463,9 @@ The detailed encounter, UI, recovery, and edge-case contract is maintained in
   path and must drop it before that path expires.
 - An ordinary dropped crystal that remains grounded for six simulated seconds
   explodes as a wipe. Phase-specific transitions must not silently shorten,
-  extend, or bypass that timer.
+  extend, or bypass that timer. A successful pickup atomically cancels that
+  ground timer; stale rendered age from the preceding frame cannot expire a
+  crystal that is already carried.
 - The sole committed exception is an assigned Phase 3 crystal placed inside
   its valid Dark Archangel protection position during its assigned round. It
   supplies the protection bubble and cannot be recollected or expire while

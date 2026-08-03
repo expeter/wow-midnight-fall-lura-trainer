@@ -1319,6 +1319,11 @@ export function npcEntryPosition(target: Point, startSlot: Point, index: number,
 }
 export const CRYSTAL_GROUND_EXPLOSION_SECONDS = 6
 
+export function groundCrystalHasExpired(renderedAge: number, authoritativeAge: number): boolean {
+  return renderedAge >= CRYSTAL_GROUND_EXPLOSION_SECONDS
+    && authoritativeAge >= CRYSTAL_GROUND_EXPLOSION_SECONDS
+}
+
 export function canPickupCrystal(player: Point, crystal: Point, groundAge: number, pickupRadius = 3): boolean {
   return groundAge >= 1 && distance(player, crystal) <= pickupRadius
 }

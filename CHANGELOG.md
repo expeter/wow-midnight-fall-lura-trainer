@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- BUG-158: Prevent a just-recollected Phase 2 crystal from falsely expiring
+  against its preceding rendered ground age during the final orb-return
+  sequence. Once the carried-crystal indicator returns, the ground timer is
+  cancelled.
+
 ## 0.9.2 · 2026-08-01
 
 - CR-229: Release v0.9.2 with aligned frontend/API compatibility, retain

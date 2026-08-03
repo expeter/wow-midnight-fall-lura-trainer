@@ -6,8 +6,7 @@ in [`specifications.md`](specifications.md).
 
 ## Current release boundary
 
-- Current release line: `v0.9.3`; frontend and API deployment remain pending
-  until the production checks complete.
+- Latest tagged and deployed release line: `v0.9.3`.
 - `v0.9.3` fixes the Phase 2 crystal pickup expiry race while keeping the
   moving-target beam mechanic and two-tank roles in localhost preview.
 - Current leaderboard season: `season-1`. No milestone or SemVer bump changes
@@ -33,9 +32,6 @@ shell never silently mistakes an expired server session for a valid login.
 
 This patch retains `season-1`: it repairs attribution and version acceptance
 without changing encounter scoring or ranking order.
-
-- `CR-230` — publish v0.9.3 with aligned frontend/API compatibility, retain
-  `season-1`, and verify production health plus leaderboard continuity.
 
 ## M1 · Encounter completion
 

@@ -244,7 +244,7 @@ describe('Lura API foundation', () => {
 
   it('does not let a stale environment override pin attempt compatibility', () => {
     const releaseConfig = loadConfig({ TRAINER_CURRENT_VERSION: '0.3.0' })
-    assert.equal(releaseConfig.currentTrainerVersion, '0.9.2')
+    assert.equal(releaseConfig.currentTrainerVersion, '0.9.3')
     assert.equal(releaseConfig.currentLeaderboardSeason, 'season-1')
   })
 

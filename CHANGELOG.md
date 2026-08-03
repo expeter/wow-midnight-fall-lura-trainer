@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.9.3 · 2026-08-03
+
+- CR-230: Release the Phase 2 crystal pickup expiry-race fix with aligned
+  frontend/API compatibility, retain leaderboard `season-1`, and verify both
+  production deployments plus leaderboard continuity.
 - BUG-158: Prevent a just-recollected Phase 2 crystal from falsely expiring
   against its preceding rendered ground age during the final orb-return
   sequence. Once the carried-crystal indicator returns, the ground timer is
